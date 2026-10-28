@@ -6,9 +6,12 @@ import { ASSET_CATALOG, type AssetId } from './assetCatalog';
 import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockScaleForDiameter } from './rockPackData';
 import { RECT_ROCK_PARTS, RECT_ROCK_PART_COUNT } from './rectRockData';
 import { RockColliderSystem, type RockSurface, type RockWallHit } from './RockColliderSystem';
+import { geologyIntersectsChunk } from './geologyData';
+import { GEOLOGY_COMPOSITIONS, type GeologyComposition } from './geologyPresets';
 import { chunkKey, chunkOf, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { type VegetationExclusion } from './vegetationData';
-import { CRYSTAL_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk, SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
+import { CRYSTAL_KINDS, GEOLOGY_ASSET_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk,
+  SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
 
 type Cell={cx:number;cz:number};
 type CrystalKind='cristalAzul'|'cristalCeleste'|'cristalFuego';
@@ -25,6 +28,7 @@ const isCrystal=(kind:PropKind):kind is CrystalKind=>CRYSTAL_KINDS.includes(kind
 export class WorldPropSystem {
   private readonly sources=new Map<AssetId,Mesh[]>();
   private readonly chunks=new Map<string,PropPlacement[]>();
+  private readonly formations=new Map<string,GeologyComposition>();
   private readonly resources=new Map<string,ResourceVisual>();
   private readonly specialRoots:TransformNode[]=[];
   private readonly glowMaterials=new Map<CrystalKind,StandardMaterial>();
@@ -41,7 +45,9 @@ export class WorldPropSystem {
   private clock=0;
   private respawnCheck=0;
   get activeChunkCount():number{return this.chunks.size;}
-  get visibleDecorationCount():number{return [...this.chunks.values()].flat().filter(p=>!isCrystal(p.kind)&&this.sources.has(p.kind)).length;}
+  get visibleDecorationCount():number{return this.allPlacements().filter(p=>!isCrystal(p.kind)&&this.sources.has(p.kind)).length;}
+  get activeFormationCount():number{return this.formations.size;}
+  get activeFormationIds():string[]{return [...this.formations.keys()];}
   get activeCrystalCount():number{return this.resources.size;}
   get sharedAssetCount():number{return this.sources.size;}
   get activeRockColliderCount():number{return this.rockColliders.activeColliderCount;}
@@ -53,7 +59,7 @@ export class WorldPropSystem {
 
   /** Every GLB is fetched once. Multi-mesh packs retain all of their primitives and materials. */
   async load():Promise<void>{
-    const ids:AssetId[]=[...PROP_KINDS,'crisolHerrero','islaFlotante'];
+    const ids:AssetId[]=[...PROP_KINDS,...GEOLOGY_ASSET_KINDS,'crisolHerrero','islaFlotante'];
     await Promise.all(ids.map(async id=>{
       try{
         const imported=await this.importer(ASSET_CATALOG[id].path,this.scene);
@@ -149,6 +155,16 @@ export class WorldPropSystem {
       }
       this.chunks.delete(key);changed=true;
     }
+    for(const composition of GEOLOGY_COMPOSITIONS){
+      const active=desired.some(cell=>geologyIntersectsChunk(composition.formation,
+        cell.cx,cell.cz,MAINLAND.chunkSize));
+      const supported=composition.pieces.some(p=>p.id===this.protectedRockId);
+      if(active||supported){
+        if(!this.formations.has(composition.formation.id)){
+          this.formations.set(composition.formation.id,composition);changed=true;
+        }
+      }else if(this.formations.delete(composition.formation.id))changed=true;
+    }
     this.pending=desired.filter(cell=>!this.chunks.has(chunkKey(cell.cx,cell.cz)));
     this.pending.sort((a,b)=>{
       const da=(a.cx+.5-x/MAINLAND.chunkSize)**2+(a.cz+.5-z/MAINLAND.chunkSize)**2;
@@ -173,8 +189,17 @@ export class WorldPropSystem {
 
   private syncRockColliders():void{
     if(!this.ready)return;
-    this.rockColliders.sync([...this.chunks.values()].flat(),this.focus.x,this.focus.z,this.protectedRockId);
+    const protectedIds=new Set<string>();
+    if(this.protectedRockId)protectedIds.add(this.protectedRockId);
+    for(const composition of this.formations.values())if(composition.pieces.some(p=>p.id===this.protectedRockId))
+      for(const piece of composition.pieces)protectedIds.add(piece.id);
+    this.rockColliders.sync(this.allPlacements(),this.focus.x,this.focus.z,protectedIds);
     this.colliderFocus={...this.focus};
+  }
+
+  private allPlacements():PropPlacement[]{
+    return [...this.chunks.values()].flat().concat(
+      [...this.formations.values()].flatMap(composition=>composition.pieces));
   }
 
   /** One deterministic placement batch per frame, only while new terrain cells arrive. */
@@ -201,10 +226,11 @@ export class WorldPropSystem {
 
   private refreshDecoration():void{
     if(!this.ready)return;
-    const matrices=new Map<PropKind,number[]>(PROP_KINDS.map(kind=>[kind,[]]));
+    const renderKinds:PropKind[]=[...PROP_KINDS,...GEOLOGY_ASSET_KINDS];
+    const matrices=new Map<PropKind,number[]>(renderKinds.map(kind=>[kind,[]]));
     const rockMatrices:number[][]=Array.from({length:ROCK_PART_COUNT},()=>[]);
     const rectMatrices:number[][]=Array.from({length:RECT_ROCK_PART_COUNT},()=>[]);
-    for(const placements of this.chunks.values())for(const p of placements){
+    for(const p of this.allPlacements()){
       if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
       const transform=Matrix.Compose(new Vector3(p.scaleXZ??p.scale,p.scaleY??p.scale,p.scaleXZ??p.scale),
         Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z));
@@ -212,7 +238,7 @@ export class WorldPropSystem {
       else if(p.kind==='rocasRectangulares')rectMatrices[p.pieceIndex??0]?.push(...transform.m);
       else matrices.get(p.kind)!.push(...transform.m);
     }
-    for(const kind of PROP_KINDS){
+    for(const kind of renderKinds){
       for(const [index,source] of (this.sources.get(kind)??[]).entries()){
         // Exactly ONE part per procedural placement, not all 17 parts.
         const data=kind==='packRocas'?(rockMatrices[index]??[]):
@@ -299,8 +325,8 @@ export class WorldPropSystem {
     return this.rockColliders.queryWall(x,y,z,dirX,dirZ,maxDistance);
   }
 
-  hasRockHeadroom(x:number,y:number,z:number,height:number):boolean{
-    return this.rockColliders.hasOverheadClearance(x,y,z,height);
+  hasRockHeadroom(x:number,y:number,z:number,height:number,ignoreRockId?:string):boolean{
+    return this.rockColliders.hasOverheadClearance(x,y,z,height,ignoreRockId);
   }
 
   /** Remaining simple props and the forge; rock faces use their real triangles. */
@@ -336,7 +362,7 @@ export class WorldPropSystem {
   }
 
   dispose():void{
-    this.disposed=true;this.pending=[];this.chunks.clear();
+    this.disposed=true;this.pending=[];this.chunks.clear();this.formations.clear();
     this.rockColliders.dispose();
     for(const visual of this.resources.values())visual.root.dispose(false,false);
     this.resources.clear();

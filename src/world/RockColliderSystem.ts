@@ -1,5 +1,6 @@
 import { InstancedMesh, Mesh, Ray, Scene, Vector3, VertexBuffer } from '@babylonjs/core';
 import { isWalkableRockFace } from './rectRockData';
+import { sameGeologyFormation } from './geologyData';
 import type { PropKind, PropPlacement } from './worldPropsData';
 
 const COLLIDABLE_ROCKS:readonly PropKind[]=[
@@ -72,7 +73,7 @@ export class RockColliderSystem {
     return clone;
   }
 
-  sync(placements:readonly PropPlacement[],x:number,z:number,protectedRockId:string|null):void{
+  sync(placements:readonly PropPlacement[],x:number,z:number,protectedRockIds:ReadonlySet<string>):void{
     const desired=new Map<string,{placement:PropPlacement;parts:readonly Mesh[];radius:number;height:number}>();
     for(const placement of placements){
       if(!hasRockSurface(placement.kind))continue;
@@ -85,11 +86,11 @@ export class RockColliderSystem {
           :allParts;
       if(!parts.length)continue;
       const {radius,height}=this.size(placement,parts);
-      if(placement.id!==protectedRockId&&Math.hypot(placement.x-x,placement.z-z)>this.focusRadius+radius)continue;
+      if(!protectedRockIds.has(placement.id)&&Math.hypot(placement.x-x,placement.z-z)>this.focusRadius+radius)continue;
       desired.set(placement.id,{placement,parts,radius,height});
     }
     for(const [id,entry] of this.colliders){
-      if(desired.has(id)||id===protectedRockId)continue;
+      if(desired.has(id)||protectedRockIds.has(id))continue;
       for(const instance of entry.instances)instance.dispose(false,false);
       this.colliders.delete(id);
     }
@@ -149,20 +150,28 @@ export class RockColliderSystem {
   /** Smooth only across the character's footprint; all samples still hit the real shell. */
   queryGround(x:number,z:number,originY:number,maxDistance:number,footRadius=0):RockSurface|null{
     const center=this.topAt(x,z,originY,maxDistance);
-    if(!center)return null;
-    if(footRadius<=0)return isWalkableRockFace(center.normal.y)?center:null;
-    const right=this.topAt(x+footRadius,z,originY,maxDistance,center.rockId);
-    const left=this.topAt(x-footRadius,z,originY,maxDistance,center.rockId);
-    const front=this.topAt(x,z+footRadius,originY,maxDistance,center.rockId);
-    const back=this.topAt(x,z-footRadius,originY,maxDistance,center.rockId);
-    if(!right||!left||!front||!back)return null;
-    const heights=[center.height,right.height,left.height,front.height,back.height];
-    if(Math.max(...heights)-Math.min(...heights)>.55)return null;
-    const dx=(right.height-left.height)/(2*footRadius);
-    const dz=(front.height-back.height)/(2*footRadius);
-    const normal=new Vector3(-dx,1,-dz).normalize();
+    if(footRadius<=0)return center&&isWalkableRockFace(center.normal.y)?center:null;
+    const raw=[this.topAt(x+footRadius,z,originY,maxDistance),
+      this.topAt(x-footRadius,z,originY,maxDistance),
+      this.topAt(x,z+footRadius,originY,maxDistance),
+      this.topAt(x,z-footRadius,originY,maxDistance)];
+    const reference=center??raw.find(hit=>hit!==null);
+    if(!reference)return null;
+    const compatible=(hit:RockSurface|null):hit is RockSurface=>!!hit&&
+      (hit.rockId===reference.rockId||sameGeologyFormation(hit.rockId,reference.rockId))&&
+      Math.abs(hit.height-reference.height)<=.55;
+    const [right,left,front,back]=raw.map(hit=>compatible(hit)?hit:null);
+    // A narrow mesh seam is supported when the real shell continues on both
+    // sides of the foot. Do not bridge an exposed ledge or a broad empty gap.
+    const spansFoot=!!(right&&left)||!!(front&&back);
+    if(!spansFoot&&!(center&&isWalkableRockFace(center.normal.y)&&
+      (right||left||front||back)))return null;
+    const samples=[center,right,left,front,back].filter(compatible);
+    const dx=right&&left?(right.height-left.height)/(2*footRadius):0;
+    const dz=front&&back?(front.height-back.height)/(2*footRadius):0;
+    const normal=spansFoot?new Vector3(-dx,1,-dz).normalize():center!.normal;
     if(!isWalkableRockFace(normal.y))return null;
-    return {...center,height:Math.max(center.height,heights.reduce((a,b)=>a+b,0)/5),normal};
+    return {...reference,height:samples.reduce((sum,hit)=>sum+hit.height,0)/samples.length,normal};
   }
 
   /** Exact triangle hit on a nearby rock face; never infers a wall from its box. */
@@ -189,11 +198,15 @@ export class RockColliderSystem {
     return null;
   }
 
-  hasOverheadClearance(x:number,y:number,z:number,height:number):boolean{
+  hasOverheadClearance(x:number,y:number,z:number,height:number,ignoreRockId?:string):boolean{
     const candidates=this.nearby(x,z);
     if(!candidates.size)return true;
     const ray=new Ray(new Vector3(x,y+.05,z),Vector3.Up(),height);
-    return !(this.scene.pickWithRay(ray,mesh=>candidates.has(mesh as InstancedMesh))?.hit);
+    return !(this.scene.pickWithRay(ray,mesh=>{
+      if(!candidates.has(mesh as InstancedMesh))return false;
+      const id=mesh.metadata?.rockId as string|undefined;
+      return !ignoreRockId||!id||id!==ignoreRockId&&!sameGeologyFormation(id,ignoreRockId);
+    })?.hit);
   }
 
   dispose():void{

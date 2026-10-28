@@ -17,9 +17,12 @@ assert.ok(sample.every(p=>p.yaw>=0&&p.yaw<Math.PI*2));
 assert.ok(sample.every(p=>p.kind==='plantitas1'?p.scale>2:p.kind==='tronco1'?p.scale>5:p.scale>11),'vegetation is scaled against the four-metre player');
 const blocked=sample[0];
 assert.ok(!vegetationForChunk(-8,-8,[{x:blocked.x,z:blocked.z,radius:8}]).some(p=>Math.hypot(p.x-blocked.x,p.z-blocked.z)<8));
-const treeSample=sample.find(p=>p.obstacleRadius>0);
+const treeSample=[...sample,...vegetationForChunk(-8,-2),...vegetationForChunk(-7,-1)]
+  .find(p=>p.obstacleRadius>0);
 assert.ok(treeSample);
-const nearHouse=vegetationForChunk(-8,-8,[{x:treeSample.x,z:treeSample.z,radius:5}]);
+const treeCell=chunkOf(treeSample.x,treeSample.z);
+const nearHouse=vegetationForChunk(treeCell.cx,treeCell.cz,
+  [{x:treeSample.x,z:treeSample.z,radius:5}]);
 assert.ok(nearHouse.every(p=>Math.hypot(p.x-treeSample.x,p.z-treeSample.z)>=5+VEGETATION_CONFIG.crownRadius[p.kind]*p.scale),'scaled crowns clear buildings');
 for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8],[-29,18,24]]){
   const {cx,cz}=chunkOf(x,z);

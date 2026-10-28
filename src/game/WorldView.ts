@@ -11,6 +11,7 @@ import { GeographyStream } from '../world/GeographyStream';
 import { VegetationSystem } from '../world/VegetationSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
 import { propsForChunk } from '../world/worldPropsData';
+import { GEOLOGY_FORMATIONS, geologyLocal, geologyPoint, sameGeologyFormation } from '../world/geologyData';
 import { selectRockPart } from '../world/rockPackData';
 import type { VegetationExclusion } from '../world/vegetationData';
 import { bridgeDeckAt, isInlandWater } from '../world/geographicFeatures';
@@ -19,6 +20,7 @@ import { createPointOfInterestView } from '../world/PointOfInterestView';
 import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, isLand, sampleMainlandHeight } from '../world/terrainData';
 import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type TraversalWorld } from './CharacterTraversalController';
+import { TRAVERSAL } from './traversalRules';
 
 export type Interactable = {
   id: string;
@@ -635,7 +637,11 @@ export class WorldView {
     this.lastSafePosition={x:start.x,z:start.z};
     this.jumpRequested=false;
     if(id==='brisalia')this.props.setColliderFocus(start.x,start.z,null);
-    else {this.props.setActiveChunks([],start.x,start.z);this.vegetationCenter='';}
+    else {
+      this.props.setColliderFocus(start.x,start.z,null);
+      this.props.setActiveChunks([],start.x,start.z);
+      this.vegetationCenter='';
+    }
     if(id==='brisalia')this.streamMainland(start.x,start.z);
     this.interactTarget=null;
     this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
@@ -644,6 +650,20 @@ export class WorldView {
 
   /** Old saves have only X/Z; keep a saved foot out of a newly generated rock base. */
   private safeSavedStart(x:number,z:number):{x:number;z:number}{
+    // Saves store X/Z only. A saved position on the exposed rock face would
+    // otherwise respawn at the terrain height, underneath the visible mesh.
+    for(const formation of GEOLOGY_FORMATIONS){
+      const local=geologyLocal(formation,x,z);
+      if(Math.abs(local.along)>formation.length*.5+8||local.across<=-34||
+        local.across>=30||sampleMainlandHeight(x,z)>formation.targetHeight-4)continue;
+      for(const across of [-38,-46,-55]){
+        const candidate=geologyPoint(formation,local.along,across);
+        if(isLand(candidate.x,candidate.z)&&!isInlandWater(candidate.x,candidate.z,
+          sampleMainlandHeight(candidate.x,candidate.z))){
+          x=candidate.x;z=candidate.z;break;
+        }
+      }
+    }
     const center=chunkOf(x,z);
     const exclusions=[...this.vegetationExclusions,
       ...this.store.state.structures.map(s=>({x:s.x,z:s.z,radius:5}))];
@@ -737,10 +757,15 @@ export class WorldView {
           distance:hit.distance,normalX:hit.normal.x,normalY:hit.normal.y,
           normalZ:hit.normal.z,rockId:hit.rockId,climbable:hit.climbable}:null;
       },
-      headroom:(x,y,z,room)=>!isMainland||this.props.hasRockHeadroom(x,y,z,room),
+      headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
+        this.props.hasRockHeadroom(x,y,z,room,ignoreRockId),
+      sameSupport:sameGeologyFormation,
       canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
         const elevated=feetY>height(fromX,fromZ)+4;
-        const canWalk=isMainland?isLand(nextX,nextZ)&&
+        const coastalRock=isMainland&&elevated&&!isLand(nextX,nextZ)
+          ?this.props.queryRockGround(nextX,nextZ,feetY+1.8,3,.33):null;
+        const canWalk=isMainland?(isLand(nextX,nextZ)||
+          !!coastalRock&&coastalRock.height>MAINLAND.waterLevel+1)&&
           (elevated||!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ))):
           Math.sqrt((nextX/zone.radiusX)**2+(nextZ/zone.radiusZ)**2)<.80;
         const houses=isMainland&&!elevated&&[
@@ -767,6 +792,31 @@ export class WorldView {
     }
   }
 
+  private exitEmbeddedGeology(x:number,y:number,z:number):{x:number;y:number;z:number}|null{
+    for(const formation of GEOLOGY_FORMATIONS){
+      const local=geologyLocal(formation,x,z);
+      if(Math.abs(local.along)>formation.length*.5+8||local.across<=-34||local.across>=30)
+        continue;
+      const roof=this.props.queryRockSolidTop(x,z,y+80,80);
+      if(!roof||roof.height<=y+TRAVERSAL.playerHeight+.6||
+        !roof.rockId.startsWith(`geo:${formation.id}:`))continue;
+      const outwardX=-formation.highX,outwardZ=-formation.highZ;
+      const wall=this.props.queryRockWall(x,y+1.5,z,outwardX,outwardZ,24);
+      if(!wall||!sameGeologyFormation(wall.rockId,roof.rockId))continue;
+      for(const distance of [TRAVERSAL.playerRadius+.7,2,4,8,12]){
+        const nextX=wall.point.x+outwardX*distance;
+        const nextZ=wall.point.z+outwardZ*distance;
+        if(!isLand(nextX,nextZ)||isInlandWater(nextX,nextZ,
+          sampleMainlandHeight(nextX,nextZ)))continue;
+        const nextY=this.walkHeightAt(nextX,nextZ);
+        const nextRoof=this.props.queryRockSolidTop(nextX,nextZ,nextY+80,80);
+        if(!nextRoof||nextRoof.height<=nextY+TRAVERSAL.playerHeight+.6)
+          return {x:nextX,y:nextY,z:nextZ};
+      }
+    }
+    return null;
+  }
+
   private update(dt: number): void {
     const zone=this.zones.get(this.store.state.zone)!;
     const controls=!this.blocked()&&!this.placement;
@@ -788,14 +838,26 @@ export class WorldView {
       jumpPressed:controls&&this.jumpRequested
     },this.traversalWorld(zone));
     this.jumpRequested=false;
-    const {x:localX,y:localY,z:localZ}=this.traversal.position;
+    let {x:localX,y:localY,z:localZ}=this.traversal.position;
+    if(zone.id==='brisalia'&&this.traversal.mode==='grounded'&&!this.traversal.supportRockId){
+      const exit=this.exitEmbeddedGeology(localX,localY,localZ);
+      if(exit){
+        this.traversal.teleport(exit.x,exit.y,exit.z);
+        localX=exit.x;localY=exit.y;localZ=exit.z;
+      }
+    }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
     if(zone.id==='brisalia'){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
     }
     if(walking&&this.traversal.mode!=='climbing')this.player.rotation.y=Math.atan2(direction.x,direction.z);
-    if(this.traversal.mode==='grounded'&&!this.traversal.supportRockId)
+    if(this.traversal.mode==='grounded'&&!this.traversal.supportRockId&&
+      (zone.id!=='brisalia'||!GEOLOGY_FORMATIONS.some(formation=>{
+        const local=geologyLocal(formation,localX,localZ);
+        return Math.abs(local.along)<formation.length*.5+8&&
+          local.across>-34&&local.across<30;
+      })))
       this.lastSafePosition={x:localX,z:localZ};
     this.movementTime+=dt*(walking?10:2.3);
     this.playerBody.position.y=this.traversal.mode==='grounded'

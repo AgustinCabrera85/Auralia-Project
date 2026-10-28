@@ -4,6 +4,7 @@
  *  Funciones PURAS: el atlas, las colisiones y el render comparten esta geografía.
  */
 import { applyGeographicRelief, LAKE_RESERVATIONS, RIVER_RESERVATION } from './geographicFeatures';
+import { applyGeologyRelief } from './geologyData';
 export { LAKE_RESERVATIONS, RIVER_RESERVATION } from './geographicFeatures';
 export const MAINLAND = {
   centerX: 0,
@@ -146,7 +147,8 @@ function legacyHeight(x:number,z:number):number {
 export function sampleMainlandHeight(x:number,z:number):number {
   const oldRadial=Math.hypot((x-LEGACY.centerX)/LEGACY.radiusX,(z-LEGACY.centerZ)/LEGACY.radiusZ);
   const preserve=Math.max(1-smooth(.72,1.02,oldRadial),1-smooth(155,240,Math.hypot(x,z)));
-  if(preserve>=1)return applyGeographicRelief(x,z,legacyHeight(x,z));
+  if(preserve>=1)return applyGeologyRelief(x,z,applyGeographicRelief(x,z,legacyHeight(x,z)),
+    geographyMasks(x,z).road);
   const weights=biomeWeightsAt(x,z),masks=geographyMasks(x,z),n=TERRAIN_CONFIG.noise,r=TERRAIN_CONFIG.relief;
   const broad=noise(x,z,n.broadScale,1),medium=noise(x,z,n.mediumScale,2),fine=noise(x,z,n.fineScale,3);
   const ridge=1-Math.abs(noise(x,z,115,4));
@@ -162,7 +164,7 @@ export function sampleMainlandHeight(x:number,z:number):number {
   const blended=preserve>0 ? old*preserve+height*(1-preserve) : height;
   // Existing traversable shoreline remains traversable for saved player positions.
   const compatible=oldRadial<1.1 && old>MAINLAND.waterLevel+.6 ? Math.max(blended,old) : blended;
-  return applyGeographicRelief(x,z,compatible);
+  return applyGeologyRelief(x,z,applyGeographicRelief(x,z,compatible),masks.road);
 }
 export function isLand(x:number,z:number):boolean {
   return sampleMainlandHeight(x,z) > MAINLAND.waterLevel + 0.6;

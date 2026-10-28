@@ -79,7 +79,8 @@ assert.ok(gentle.position.y>0);
 const steep=new CharacterTraversalController();
 steep.teleport(0,0,0);
 steep.step(.02,input({moveX:1,vertical:1}),slope(60));
-assert.notEqual(steep.mode,'grounded','60-degree terrain cannot be walked as a floor');
+assert.equal(steep.mode,'grounded','a 60-degree rise blocks horizontal movement');
+assert.equal(steep.position.x,0,'the capsule does not enter the steep terrain');
 
 const wallWorld=(top,climbable)=>({
   ...flat,

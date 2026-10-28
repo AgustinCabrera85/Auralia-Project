@@ -18,7 +18,7 @@
     "test:vegetation": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/VegetationSystem.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/vegetation.test.cjs",
     "test:features": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/GeographyStream.ts src/world/pointsOfInterest.ts src/world/mapProjection.ts && node tests/setup-cjs.cjs && node tests/geographic-features.test.cjs",
     "map:terrain": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/terrainData.ts src/world/mapProjection.ts && node tests/setup-cjs.cjs && node scripts/create-terrain-map.cjs",
-    "test:props": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WorldPropSystem.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/world-props.test.cjs",
+    "test:props": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WorldPropSystem.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/world-props.test.cjs && node tests/geology.test.cjs",
     "test:traversal": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/game/CharacterTraversalController.ts src/game/movement.ts && node tests/setup-cjs.cjs && node tests/traversal.test.cjs"
   },
   "dependencies": {

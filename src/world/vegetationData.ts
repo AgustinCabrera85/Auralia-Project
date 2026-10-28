@@ -1,6 +1,7 @@
-import { biomeWeightsAt, geographyMasks, hash01, isStarterArea, MAINLAND, sampleMainlandHeight } from './terrainData';
+import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isStarterArea, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { waterSurfaceAt } from './geographicFeatures';
 import { ASSET_CATALOG } from './assetCatalog';
+import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geologyData';
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
@@ -85,7 +86,7 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const seed=VEGETATION_CONFIG.seed+i*17+kinds.indexOf(kind)*1009;
       const x=(cx+hash01(cx,cz,seed+1))*size;
       const z=(cz+hash01(cx,cz,seed+2))*size;
-      if(isStarterArea(x,z))continue;
+      if(isStarterArea(x,z)||geologyFaceExcludes(x,z))continue;
       const water=MAINLAND.waterLevel;
       const h=sampleMainlandHeight(x,z);
       const tree=kind!=='plantitas1'&&kind!=='tronco1';
@@ -114,6 +115,18 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       if(tree&&placements.some(p=>p.obstacleRadius>0&&Math.hypot(p.x-x,p.z-z)<.6*(VEGETATION_CONFIG.crownRadius[p.kind]*p.scale+crownRadius)))continue;
       placements.push({kind,x,y:h,z,scale,yaw:hash01(cx,cz,seed+5)*Math.PI*2,obstacleRadius:radius});
     }
+  }
+  for(const formation of GEOLOGY_FORMATIONS)for(let i=-1;i<=1;i++){
+    const point=geologyPoint(formation,i*22,51+(i===0?8:0));
+    const cell=chunkOf(point.x,point.z);
+    if(cell.cx!==cx||cell.cz!==cz)continue;
+    const y=sampleMainlandHeight(point.x,point.z);
+    const scale=VEGETATION_CONFIG.baseScale.plantitas1;
+    if(y<=MAINLAND.waterLevel+1||geologyFaceExcludes(point.x,point.z)||
+      exclusions.some(e=>Math.hypot(point.x-e.x,point.z-e.z)<e.radius+2)||
+      placements.some(p=>p.obstacleRadius>0&&Math.hypot(point.x-p.x,point.z-p.z)<3))continue;
+    placements.push({kind:'plantitas1',x:point.x,y,z:point.z,scale,
+      yaw:hash01(i,formation.seed,9)*Math.PI*2,obstacleRadius:0});
   }
   return placements;
 }
