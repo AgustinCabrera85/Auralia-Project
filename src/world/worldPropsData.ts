@@ -1,4 +1,5 @@
 import { ASSET_CATALOG, type AssetId } from './assetCatalog';
+import { rockDiameterForPart, rockScaleForDiameter, selectRockPart } from './rockPackData';
 import { waterSurfaceAt } from './geographicFeatures';
 import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isLand, isStarterArea, MAINLAND, sampleMainlandHeight, type Biome } from './terrainData';
 import type { VegetationExclusion } from './vegetationData';
@@ -7,13 +8,13 @@ export const PROP_CONFIG={
   seed:43179,renderRadiusChunks:3,scaleVariation:.2,roadMaskLimit:.38,
   respawnMs:180000,
   candidatesPerChunk:{
-    formacionRocosa:2,packRocas:3,escalonRocoso:2,rocasRectangulares:2,mesetaPasto:2,acantilado2:1,
+    formacionRocosa:2,packRocas:16,escalonRocoso:2,rocasRectangulares:2,mesetaPasto:2,acantilado2:1,
     cristalAzul:1,cristalCeleste:1,cristalFuego:1
   }
 } as const;
 
 export type PropKind=keyof typeof PROP_CONFIG.candidatesPerChunk;
-export type PropPlacement={id:string;kind:PropKind;x:number;y:number;z:number;scale:number;yaw:number};
+export type PropPlacement={id:string;kind:PropKind;x:number;y:number;z:number;scale:number;yaw:number;partIndex?:number;rockDiameter?:number};
 export const PROP_KINDS=Object.keys(PROP_CONFIG.candidatesPerChunk) as PropKind[];
 export const CRYSTAL_KINDS:readonly PropKind[]=['cristalAzul','cristalCeleste','cristalFuego'];
 
@@ -48,19 +49,32 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
   for(const [kindIndex,kind] of PROP_KINDS.entries()){
     for(let i=0;i<PROP_CONFIG.candidatesPerChunk[kind];i++){
       const seed=PROP_CONFIG.seed+kindIndex*1009+i*29;
-      const x=(cx+hash01(cx,cz,seed))*MAINLAND.chunkSize;
-      const z=(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
+      // Natural small clusters instead of 17 rocks appearing as one pack.
+      const cluster=i%3;
+      const anchorX=(cx+hash01(cx,cz,PROP_CONFIG.seed+501+cluster*2))*MAINLAND.chunkSize;
+      const anchorZ=(cz+hash01(cx,cz,PROP_CONFIG.seed+502+cluster*2))*MAINLAND.chunkSize;
+      const angle=hash01(cx,cz,seed)*Math.PI*2;
+      const radiusFromAnchor=2+hash01(cx,cz,seed+1)*12;
+      const clamp=(v:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,v));
+      const x=kind==='packRocas' ? clamp(anchorX+Math.cos(angle)*radiusFromAnchor,cx*MAINLAND.chunkSize+2,(cx+1)*MAINLAND.chunkSize-2)
+        :(cx+hash01(cx,cz,seed))*MAINLAND.chunkSize;
+      const z=kind==='packRocas' ? clamp(anchorZ+Math.sin(angle)*radiusFromAnchor,cz*MAINLAND.chunkSize+2,(cz+1)*MAINLAND.chunkSize-2)
+        :(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
       if(!isLand(x,z)||isStarterArea(x,z))continue;
       const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);
       if(h<MAINLAND.waterLevel+.7||(water&&h<water.level+.8))continue;
       const masks=geographyMasks(x,z);
       if(masks.road>PROP_CONFIG.roadMaskLimit)continue;
-      const scale=ASSET_CATALOG[kind].referenceScale*(1+PROP_CONFIG.scaleVariation*(2*hash01(cx,cz,seed+2)-1));
-      const radius=crystal(kind)?4:Math.max(3,scale*.58);
+      const partIndex=kind==='packRocas'?selectRockPart(hash01(cx,cz,seed+7)):undefined;
+      const rockDiameter=partIndex===undefined?undefined:rockDiameterForPart(partIndex,hash01(cx,cz,seed+8));
+      const scale=partIndex!==undefined
+        ? rockScaleForDiameter(partIndex,rockDiameter!)
+        : ASSET_CATALOG[kind].referenceScale*(1+PROP_CONFIG.scaleVariation*(2*hash01(cx,cz,seed+2)-1));
+      const radius=crystal(kind)?4:partIndex!==undefined?rockDiameter!*.55:Math.max(3,scale*.58);
       if(exclusions.some(e=>Math.hypot(x-e.x,z-e.z)<e.radius+radius))continue;
       if(sampleSlope(x,z)>(kind==='mesetaPasto'?.45:crystal(kind)?.62:kind==='acantilado2'?1.3:.9))continue;
       if(!crystal(kind)){
-        const foot=scale*(kind==='acantilado2'?.35:.32);
+        const foot=partIndex!==undefined?rockDiameter!*.5:scale*(kind==='acantilado2'?.35:.32);
         const heights=[h,sampleMainlandHeight(x-foot,z),sampleMainlandHeight(x+foot,z),
           sampleMainlandHeight(x,z-foot),sampleMainlandHeight(x,z+foot)];
         if(Math.max(...heights)-Math.min(...heights)>(kind==='acantilado2'?5:2.6))continue;
@@ -69,7 +83,9 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
       let chance=0;
       for(const biome of ASSET_CATALOG[kind].biomes)chance+=weights[biome]*(density[biome]??0);
       if(hash01(cx,cz,seed+3)>chance)continue;
-      result.push({id:`prop:${kind}:${cx}:${cz}:${i}`,kind,x,y:h,z,scale,yaw:hash01(cx,cz,seed+4)*Math.PI*2});
+      if(partIndex!==undefined&&result.some(p=>p.kind==='packRocas'&&Math.hypot(p.x-x,p.z-z)<(p.rockDiameter!+rockDiameter!)*.38))continue;
+      result.push({id:`prop:${kind}:${cx}:${cz}:${i}`,kind,x,y:h,z,scale,yaw:hash01(cx,cz,seed+4)*Math.PI*2,
+        ...(partIndex===undefined?{}:{partIndex,rockDiameter})});
     }
   }
   for(const fixed of FIXED_CRYSTALS){

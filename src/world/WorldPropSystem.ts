@@ -3,6 +3,7 @@ import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { type MaterialId } from '../domain/types';
 import { GameStore } from '../domain/GameStore';
 import { ASSET_CATALOG, type AssetId } from './assetCatalog';
+import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockPartGroup, rockScaleForDiameter } from './rockPackData';
 import { chunkKey, chunkOf, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { type VegetationExclusion } from './vegetationData';
 import { CRYSTAL_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk, SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
@@ -25,6 +26,7 @@ export class WorldPropSystem {
   private readonly resources=new Map<string,ResourceVisual>();
   private readonly specialRoots:TransformNode[]=[];
   private readonly glowMaterials=new Map<CrystalKind,StandardMaterial>();
+  private copperMaterial:StandardMaterial|null=null;
   private pending:Cell[]=[];
   private center:Cell={cx:0,cz:0};
   private ready=false;
@@ -48,9 +50,28 @@ export class WorldPropSystem {
         if(this.disposed){for(const mesh of imported.meshes)mesh.dispose(false,false);return;}
         const parts=imported.meshes.filter((mesh):mesh is Mesh=>mesh instanceof Mesh&&mesh.getTotalVertices()>0);
         if(!parts.length)throw new Error(`GLB sin geometría: ${ASSET_CATALOG[id].path}`);
+        if(id==='packRocas'){
+          const indexFromName=(mesh:Mesh)=>Number(mesh.name.match(/^tripo_part_(\d+)$/)?.[1]??9999);
+          parts.sort((a,b)=>indexFromName(a)-indexFromName(b));
+          if(parts.length!==ROCK_PART_COUNT||parts.some((mesh,index)=>indexFromName(mesh)!==index))
+            throw new Error(`Rock pack: se esperaban las piezas tripo_part_0 a tripo_part_${ROCK_PART_COUNT-1}`);
+        }
         for(const [index,mesh] of parts.entries()){
           mesh.computeWorldMatrix(true);
           mesh.bakeTransformIntoVertices(mesh.getWorldMatrix().clone());
+          if(id==='packRocas'){
+            // The original GLB shows a laid-out collection. Remove that presentation
+            // translation and center/ground each rock independently.
+            mesh.refreshBoundingInfo(true);
+            const bounds=mesh.getBoundingInfo().boundingBox;
+            const min=bounds.minimum,max=bounds.maximum;
+            mesh.bakeTransformIntoVertices(Matrix.Translation(-(min.x+max.x)*.5,-min.y,-(min.z+max.z)*.5));
+            mesh.refreshBoundingInfo(true);
+            const centered=mesh.getBoundingInfo().boundingBox;
+            const width=Math.max(centered.maximum.x-centered.minimum.x,centered.maximum.z-centered.minimum.z);
+            if(Math.abs(width-ROCK_PART_FOOTPRINTS[index])>.001)
+              throw new Error(`Rock pack: la huella de la pieza ${index} cambió (${width})`);
+          }
           mesh.parent=null;
           mesh.position.setAll(0);mesh.scaling.setAll(1);mesh.rotation.setAll(0);mesh.rotationQuaternion=null;
           mesh.parent=this.parent;mesh.name=`asset-${id}-${index}`;
@@ -135,20 +156,54 @@ export class WorldPropSystem {
   private refreshDecoration():void{
     if(!this.ready)return;
     const matrices=new Map<PropKind,number[]>(PROP_KINDS.map(kind=>[kind,[]]));
+    const rockMatrices:number[][]=Array.from({length:ROCK_PART_COUNT},()=>[]);
     for(const placements of this.chunks.values())for(const p of placements){
       if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
       const transform=Matrix.Compose(new Vector3(p.scale,p.scale,p.scale),
         Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z));
-      matrices.get(p.kind)!.push(...transform.m);
+      if(p.kind==='packRocas')rockMatrices[p.partIndex??0]?.push(...transform.m);
+      else matrices.get(p.kind)!.push(...transform.m);
     }
     for(const kind of PROP_KINDS){
-      const data=matrices.get(kind)!;
-      for(const source of this.sources.get(kind)??[]){
-        source.isVisible=data.length>0;
+      for(const [index,source] of (this.sources.get(kind)??[]).entries()){
+        // Exactly ONE part per procedural placement, not all 17 parts.
+        const data=kind==='packRocas'?(rockMatrices[index]??[]):matrices.get(kind)!;
+        if(!data.length){
+          if(source.thinInstanceCount){
+            source.thinInstanceSetBuffer('matrix',null,16,true);
+            source.refreshBoundingInfo(true);
+          }
+          source.isVisible=false;
+          continue;
+        }
         source.thinInstanceSetBuffer('matrix',new Float32Array(data),16,true);
-        if(data.length)source.thinInstanceRefreshBoundingInfo();
+        source.thinInstanceRefreshBoundingInfo();
+        source.isVisible=true;
       }
     }
+  }
+
+  /** Reuse the rock pack for existing town/island stone and copper nodes. */
+  attachRockVisual(root:TransformNode,partIndex:number,diameter:number,copper=false):boolean{
+    const source=this.sources.get('packRocas')?.[partIndex];
+    if(!source)return false;
+    const clone=source.clone(`roca-${partIndex}-${root.name}`,root,false);
+    if(!clone)return false;
+    clone.parent=root;clone.position.setAll(0);clone.rotation.setAll(0);
+    clone.rotationQuaternion=null;clone.scaling.setAll(rockScaleForDiameter(partIndex,diameter));
+    clone.isVisible=true;clone.isPickable=false;clone.checkCollisions=false;
+    if(copper){
+      if(!this.copperMaterial){
+        this.copperMaterial=new StandardMaterial('veta-cobre-roca',this.scene);
+        this.copperMaterial.diffuseColor=Color3.FromHexString('#cc8651');
+        this.copperMaterial.emissiveColor=Color3.FromHexString('#4b2314');
+      }
+      // Low-poly warm vein distinguishes copper without reintroducing a sphere.
+      const vein=MeshBuilder.CreatePolyhedron(`veta-${root.name}`,{type:1,size:Math.max(.16,diameter*.18)},this.scene);
+      vein.parent=root;vein.position.set(diameter*.14,diameter*.52,0);
+      vein.rotation.z=.3;vein.material=this.copperMaterial;vein.isPickable=false;
+    }
+    return true;
   }
 
   private createResource(p:PropPlacement):void{
@@ -191,7 +246,9 @@ export class WorldPropSystem {
       if(!placements)continue;
       for(const p of placements){
         if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
-        const radius=p.scale*(p.kind==='acantilado2'?.3:p.kind==='mesetaPasto'?.22:.18);
+        if(p.kind==='packRocas'&&p.partIndex!==undefined&&rockPartGroup(p.partIndex)==='gravel')continue;
+        const radius=p.kind==='packRocas'?(p.rockDiameter??1)*.45
+          :p.scale*(p.kind==='acantilado2'?.3:p.kind==='mesetaPasto'?.22:.18);
         const d=Math.hypot(nextX-p.x,nextZ-p.z);
         if(d<radius&&d<Math.hypot(fromX-p.x,fromZ-p.z))return true;
       }
@@ -227,5 +284,6 @@ export class WorldPropSystem {
     for(const parts of this.sources.values())for(const mesh of parts)mesh.dispose(false,false);
     this.sources.clear();
     for(const mat of this.glowMaterials.values())mat.dispose();
+    this.copperMaterial?.dispose();
   }
 }

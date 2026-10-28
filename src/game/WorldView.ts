@@ -10,6 +10,7 @@ import { TerrainStream } from '../world/TerrainStream';
 import { GeographyStream } from '../world/GeographyStream';
 import { VegetationSystem } from '../world/VegetationSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
+import { selectRockPart } from '../world/rockPackData';
 import type { VegetationExclusion } from '../world/vegetationData';
 import { bridgeDeckAt, isInlandWater } from '../world/geographicFeatures';
 import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
@@ -80,6 +81,7 @@ export class WorldView {
   private readonly vegetation: VegetationSystem;
   private readonly props: WorldPropSystem;
   private readonly vegetationExclusions: VegetationExclusion[] = [];
+  private readonly rockVisualRequests:{root:TransformNode;partIndex:number;diameter:number;copper:boolean}[]=[];
   private exploreTimer = 0;
   private saveTimer = 0;
   private lastBiome = "";
@@ -143,7 +145,12 @@ export class WorldView {
       ...this.store.state.structures.map(s=>({x:s.x,z:s.z,radius:5}))
     ]);
     void this.vegetation.load();
-    void this.props.load();
+    void this.props.load().then(()=>{
+      for(const request of this.rockVisualRequests){
+        this.props.attachRockVisual(request.root,request.partIndex,request.diameter,request.copper);
+      }
+      this.rockVisualRequests.length=0;
+    });
     this.activateZone(store.state.zone);
 
     window.addEventListener('keydown', this.onKeyDown);
@@ -308,14 +315,13 @@ export class WorldView {
 
   private rock(zone: IslandInfo, x: number, z: number, copper = false): TransformNode {
     if(zone.id==='brisalia')this.vegetationExclusions.push({x,z,radius:3});
-    const root = this.host(zone, copper ? 'roca-cobre' : 'roca', x, z);
-    const gray = this.mat(copper ? 'mineral-cobre' : 'piedra-gris', copper ? '#a96f58' : '#899899');
-    const dark = this.mat('piedra-oscura', '#687c80');
-    const core = this.ball('piedra-central', root, 3.4, 0, 0.95, 0, gray);
-    core.scaling.set(1.3, 0.57, 0.85);
-    const side = this.ball('fragmento', root, 2.2, 1.2, 0.6, -0.8, dark);
-    side.scaling.y = 0.65;
-    if (copper) this.ball('veta', root, 0.72, 0.5, 1.5, 0.7, this.mat('cobre-brillante', '#e0a373', 0.28));
+    const root=this.host(zone,copper?'roca-cobre':'roca',x,z);
+    // Existing resource IDs, interaction and respawn remain unchanged.
+    // The 1K GLB is loaded once after zones have been populated.
+    const u=Math.abs(Math.sin(x*12.9898+z*78.233));
+    const partIndex=selectRockPart(copper?u*.34:u*.8);
+    const diameter=copper?2.6:1.45+u*1.25;
+    this.rockVisualRequests.push({root,partIndex,diameter,copper});
     return root;
   }
 

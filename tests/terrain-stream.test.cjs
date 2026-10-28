@@ -8,6 +8,7 @@ const scene=new Scene(engine);
 const root=new TransformNode('mainland',scene);
 const stream=new TerrainStream(scene,root);
 assert.equal(stream.activeCount,0,'no genera chunks en el constructor');
+assert.equal(scene.getMeshByName('piedras-prototipo'),null,'terrain has no procedural sphere rocks');
 stream.update(0,10);
 assert.ok(stream.activeCount>0&&stream.activeCount<=MAINLAND.chunksPerFrame,'presupuesto por fotograma');
 for(let i=0;i<100;i++)stream.update(0,10);

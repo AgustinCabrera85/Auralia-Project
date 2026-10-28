@@ -133,3 +133,10 @@ tests/
 **No se introdujo backend ni multijugador.** La edición de Navidad sigue enfocada en una primera aventura individual, construible, guardable y estable.
 
 Ver `docs/GEOGRAFIA_UPDATE_2.md` para la escala actual y `docs/ARQUITECTURA.md` para la estructura del POC.
+
+## Update 5A — rocas individuales
+
+El RockPack de 17 piezas se distribuye por geometría individual en lugar de
+replicar el conjunto; los placeholders esféricos de roca desaparecen.
+Las piedras y el cobre recolectables de Brisalia reutilizan el mismo GLB.
+Ver [Rock Asset Refactor](docs/ROCK_ASSETS_UPDATE_5A.md).

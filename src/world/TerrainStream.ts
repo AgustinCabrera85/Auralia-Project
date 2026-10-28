@@ -1,6 +1,6 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, VertexBuffer } from '@babylonjs/core';
-import { biomeAt, biomeWeightsAt, chunkKey, desiredChunks, hash01, isStarterArea, MAINLAND, sampleMainlandHeight, TERRAIN_CONFIG } from './terrainData';
-import { isInlandWater, riverSample, streamSample, waterSurfaceAt } from './geographicFeatures';
+import { biomeWeightsAt, chunkKey, desiredChunks, MAINLAND, sampleMainlandHeight, TERRAIN_CONFIG } from './terrainData';
+import { riverSample, streamSample, waterSurfaceAt } from './geographicFeatures';
 
 type Tile = {mesh:Mesh;cx:number;cz:number};
 
@@ -12,7 +12,6 @@ type Tile = {mesh:Mesh;cx:number;cz:number};
 export class TerrainStream {
   private readonly tiles=new Map<string,Tile>();
   private readonly material:StandardMaterial;
-  private readonly rockSource:Mesh;
   private centerKey='';
   private pending:{cx:number;cz:number}[]=[];
   get activeCount():number {return this.tiles.size;}
@@ -21,17 +20,6 @@ export class TerrainStream {
     this.material=new StandardMaterial('material-terreno-continental',scene);
     this.material.diffuseColor=Color3.White();
     this.material.specularColor=Color3.Black();
-    this.rockSource=this.makeSource('piedras-dispersas',MeshBuilder.CreateSphere('piedras-prototipo',{diameter:3.2,segments:5},scene),'#7d8c8b');
-  }
-  private makeSource(name:string,mesh:Mesh,color:string):Mesh{
-    mesh.name=name;
-    mesh.parent=this.parent;
-    mesh.isPickable=false;
-    const mat=new StandardMaterial(`material-${name}`,this.scene);
-    mat.diffuseColor=Color3.FromHexString(color);
-    mat.specularColor=Color3.Black();
-    mesh.material=mat;
-    return mesh;
   }
   private terrainColor(x:number,z:number,h:number):[number,number,number]{
     const water=waterSurfaceAt(x,z);
@@ -129,37 +117,11 @@ export class TerrainStream {
       this.tiles.set(chunkKey(cell.cx,cell.cz),this.createTile(cell.cx,cell.cz));
       changed=true;
     }
-    if(changed)this.updateRocks();
     return changed;
-  }
-  private writeMatrix(target:number[],x:number,y:number,z:number,sx:number,sy:number,sz:number):void{
-    target.push(sx,0,0,0,0,sy,0,0,0,0,sz,0,x,y,z,1);
-  }
-  private updateRocks():void{
-    const rocks:number[]=[];
-    for(const tile of this.tiles.values()){
-      const cx=tile.cx,cz=tile.cz,size=MAINLAND.chunkSize,originX=cx*size,originZ=cz*size;
-      const zone=biomeAt(originX+size/2,originZ+size/2);
-      const rockCount=zone==='sierras'||zone==='cumbres'?9:zone==='costa'?8:3;
-      for(let i=0;i<rockCount;i++){
-        const xx=originX+6+hash01(cx,cz,200+i*3)*(size-12);
-        const zz=originZ+6+hash01(cx,cz,201+i*3)*(size-12);
-        const yy=sampleMainlandHeight(xx,zz);
-        if(yy<1||isStarterArea(xx,zz)||isInlandWater(xx,zz,yy))continue;
-        const sc=zone==='costa'?1.25+hash01(cx,cz,202+i*3)*2.1:.5+hash01(cx,cz,202+i*3)*1.1;
-        this.writeMatrix(rocks,xx,yy+.65*sc,zz,sc,sc*.4,sc);
-      }
-    }
-    for(const [mesh,matrix] of [[this.rockSource,rocks]] as [Mesh,number[]][]){
-      // Un cero absoluto en un buffer es válido, pero se evita un upload vacío.
-      mesh.isVisible=matrix.length>0;
-      mesh.thinInstanceSetBuffer('matrix',new Float32Array(matrix),16,true);
-      mesh.thinInstanceRefreshBoundingInfo();
-    }
   }
   dispose():void{
     for(const chunk of this.tiles.values())chunk.mesh.dispose(false,false);
     this.tiles.clear();
-    this.rockSource.dispose();this.material.dispose();
+    this.material.dispose();
   }
 }
