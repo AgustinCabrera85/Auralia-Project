@@ -1,0 +1,84 @@
+import { ASSET_CATALOG, type AssetId } from './assetCatalog';
+import { waterSurfaceAt } from './geographicFeatures';
+import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isLand, isStarterArea, MAINLAND, sampleMainlandHeight, type Biome } from './terrainData';
+import type { VegetationExclusion } from './vegetationData';
+
+export const PROP_CONFIG={
+  seed:43179,renderRadiusChunks:3,scaleVariation:.2,roadMaskLimit:.38,
+  respawnMs:180000,
+  candidatesPerChunk:{
+    formacionRocosa:2,packRocas:3,escalonRocoso:2,rocasRectangulares:2,mesetaPasto:2,acantilado2:1,
+    cristalAzul:1,cristalCeleste:1,cristalFuego:1
+  }
+} as const;
+
+export type PropKind=keyof typeof PROP_CONFIG.candidatesPerChunk;
+export type PropPlacement={id:string;kind:PropKind;x:number;y:number;z:number;scale:number;yaw:number};
+export const PROP_KINDS=Object.keys(PROP_CONFIG.candidatesPerChunk) as PropKind[];
+export const CRYSTAL_KINDS:readonly PropKind[]=['cristalAzul','cristalCeleste','cristalFuego'];
+
+/** Hand placed deposits complement the seeded fields near already explorable landmarks. */
+export const FIXED_CRYSTALS=[
+  {id:'crystal:ruina-caminos',kind:'cristalAzul',x:-160,z:-210},
+  {id:'crystal:orilla-nacar',kind:'cristalCeleste',x:170,z:-260},
+  {id:'crystal:altapiedra',kind:'cristalFuego',x:-410,z:-565}
+] as const;
+export const SPECIAL_ASSETS=[
+  {id:'crisol-brisalia',kind:'crisolHerrero',x:23,z:-8,yOffset:0},
+  {id:'isla-flotante-altaluz',kind:'islaFlotante',x:580,z:-1130,yOffset:95}
+] as const;
+
+const DENSITY:Record<PropKind,Partial<Record<Biome,number>>>= {
+  formacionRocosa:{sierras:.32,cumbres:.38,ecos:.12},packRocas:{valle:.2,ecos:.2,sierras:.26,nacar:.24,costa:.12},
+  escalonRocoso:{sierras:.24,cumbres:.2},rocasRectangulares:{sierras:.22,cumbres:.3},
+  mesetaPasto:{valle:.14,nacar:.26,sierras:.12},acantilado2:{sierras:.18,cumbres:.28,costa:.22},
+  cristalAzul:{ecos:.16,nacar:.04},cristalCeleste:{ecos:.04,nacar:.16,cumbres:.025},
+  cristalFuego:{sierras:.13,cumbres:.08}
+};
+const crystal=(kind:PropKind):boolean=>CRYSTAL_KINDS.includes(kind);
+const sampleSlope=(x:number,z:number):number=>{
+  const d=3;
+  return Math.hypot(sampleMainlandHeight(x+d,z)-sampleMainlandHeight(x-d,z),
+    sampleMainlandHeight(x,z+d)-sampleMainlandHeight(x,z-d))/(2*d);
+};
+
+/** Pure chunk generator: coordinates and IDs never depend on loading order. */
+export function propsForChunk(cx:number,cz:number,exclusions:readonly VegetationExclusion[]=[]):PropPlacement[]{
+  const result:PropPlacement[]=[];
+  for(const [kindIndex,kind] of PROP_KINDS.entries()){
+    for(let i=0;i<PROP_CONFIG.candidatesPerChunk[kind];i++){
+      const seed=PROP_CONFIG.seed+kindIndex*1009+i*29;
+      const x=(cx+hash01(cx,cz,seed))*MAINLAND.chunkSize;
+      const z=(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
+      if(!isLand(x,z)||isStarterArea(x,z))continue;
+      const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);
+      if(h<MAINLAND.waterLevel+.7||(water&&h<water.level+.8))continue;
+      const masks=geographyMasks(x,z);
+      if(masks.road>PROP_CONFIG.roadMaskLimit)continue;
+      const scale=ASSET_CATALOG[kind].referenceScale*(1+PROP_CONFIG.scaleVariation*(2*hash01(cx,cz,seed+2)-1));
+      const radius=crystal(kind)?4:Math.max(3,scale*.58);
+      if(exclusions.some(e=>Math.hypot(x-e.x,z-e.z)<e.radius+radius))continue;
+      if(sampleSlope(x,z)>(kind==='mesetaPasto'?.45:crystal(kind)?.62:kind==='acantilado2'?1.3:.9))continue;
+      if(!crystal(kind)){
+        const foot=scale*(kind==='acantilado2'?.35:.32);
+        const heights=[h,sampleMainlandHeight(x-foot,z),sampleMainlandHeight(x+foot,z),
+          sampleMainlandHeight(x,z-foot),sampleMainlandHeight(x,z+foot)];
+        if(Math.max(...heights)-Math.min(...heights)>(kind==='acantilado2'?5:2.6))continue;
+      }
+      const weights=biomeWeightsAt(x,z),density=DENSITY[kind];
+      let chance=0;
+      for(const biome of ASSET_CATALOG[kind].biomes)chance+=weights[biome]*(density[biome]??0);
+      if(hash01(cx,cz,seed+3)>chance)continue;
+      result.push({id:`prop:${kind}:${cx}:${cz}:${i}`,kind,x,y:h,z,scale,yaw:hash01(cx,cz,seed+4)*Math.PI*2});
+    }
+  }
+  for(const fixed of FIXED_CRYSTALS){
+    const cell=chunkOf(fixed.x,fixed.z);
+    if(cell.cx!==cx||cell.cz!==cz)continue;
+    result.push({id:fixed.id,kind:fixed.kind,x:fixed.x,y:sampleMainlandHeight(fixed.x,fixed.z),z:fixed.z,
+      scale:ASSET_CATALOG[fixed.kind].referenceScale,yaw:0});
+  }
+  return result;
+}
+
+export function assetCategoryFor(kind:AssetId):string{return ASSET_CATALOG[kind].category;}

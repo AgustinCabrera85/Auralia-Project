@@ -1,0 +1,31 @@
+{
+  "name": "auralia-poc",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "POC expandido de Auralia: isla continental, streaming de chunks, biomas y construcción",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "tsc --noEmit",
+    "test:domain": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/domain/GameStore.ts src/persistence/SaveRepository.ts && node tests/setup-cjs.cjs && node tests/domain.test.cjs",
+    "test:atlas": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/data/world.ts && node tests/setup-cjs.cjs && node tests/atlas.test.cjs",
+    "map:static": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/data/world.ts && node tests/setup-cjs.cjs && node scripts/make-map.cjs",
+    "test": "npm run test:domain && npm run test:atlas && npm run test:geography && npm run test:stream && npm run test:vegetation && npm run test:features && npm run test:props",
+    "test:stream": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts && node tests/setup-cjs.cjs && node tests/terrain-stream.test.cjs",
+    "test:geography": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/terrainData.ts src/world/mapProjection.ts src/game/movement.ts && node tests/setup-cjs.cjs && node tests/geography.test.cjs",
+    "test:vegetation": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/VegetationSystem.ts && node tests/setup-cjs.cjs && node tests/vegetation.test.cjs",
+    "test:features": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/GeographyStream.ts src/world/pointsOfInterest.ts src/world/mapProjection.ts && node tests/setup-cjs.cjs && node tests/geographic-features.test.cjs",
+    "map:terrain": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/terrainData.ts src/world/mapProjection.ts && node tests/setup-cjs.cjs && node scripts/create-terrain-map.cjs",
+    "test:props": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WorldPropSystem.ts && node tests/setup-cjs.cjs && node tests/world-props.test.cjs"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.32.0",
+    "@babylonjs/loaders": "9.32.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "6.4.5"
+  }
+}

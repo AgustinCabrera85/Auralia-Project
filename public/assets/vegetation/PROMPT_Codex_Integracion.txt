@@ -1,0 +1,16 @@
+AURALIA — Integrar modelos de vegetación optimizados (update independiente)
+
+Trabajá sobre el repositorio actual de Auralia. No alteres las mecánicas de crafting, construcción, persistencia ni control del jugador.
+
+1) Inspeccioná cómo se cargan y distribuyen los GLB de vegetación. No crees sistemas duplicados.
+2) Conservá una copia de seguridad de los GLB originales antes de reemplazarlos.
+3) Usá los archivos de la carpeta ligero_1K para los árboles y plantas decorativos que ya existen. Mantené exactamente las rutas y nombres que espera el proyecto.
+4) Los archivos de equilibrado_2K son opcionales, para ejemplares destacados / cercanos. No cargues ambas calidades si no se usan realmente.
+5) Cada GLB debe importarse una sola vez por escena o AssetContainer. Para la vegetación estática repetida, usá thin instances. No instancies importaciones completas por árbol.
+6) Usá reglas deterministas de distribución basadas en semilla, chunks y biomas; conservá exclusiones de caminos, edificios y parcelas.
+7) Limitá por distancia y densidad el uso de Arbolito_3 (28.289 triángulos) y plantitas_1 (5.938 triángulos). Thin instances no reducen la cantidad de triángulos.
+8) No agregues LOD geométricos falsos ni cambies la geometría de los GLB; se resolverá en un update posterior.
+9) Verificá que la textura se visualiza correctamente y que los materiales no quedan rosas/blancos, y que el rendimiento no empeora.
+10) Ejecutá build y pruebas del proyecto y reportá resultados sin inventarlos.
+
+ENTREGABLE: integración puntual, resumen de archivos modificados y comparación de tiempos de carga / draw calls / triángulos visibles cuando sea posible medirlos.
