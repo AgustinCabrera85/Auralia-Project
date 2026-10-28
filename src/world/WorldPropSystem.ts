@@ -3,7 +3,9 @@ import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { type MaterialId } from '../domain/types';
 import { GameStore } from '../domain/GameStore';
 import { ASSET_CATALOG, type AssetId } from './assetCatalog';
-import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockPartGroup, rockScaleForDiameter } from './rockPackData';
+import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockScaleForDiameter } from './rockPackData';
+import { RECT_ROCK_PARTS, RECT_ROCK_PART_COUNT } from './rectRockData';
+import { RockColliderSystem, type RockSurface, type RockWallHit } from './RockColliderSystem';
 import { chunkKey, chunkOf, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { type VegetationExclusion } from './vegetationData';
 import { CRYSTAL_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk, SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
@@ -26,9 +28,14 @@ export class WorldPropSystem {
   private readonly resources=new Map<string,ResourceVisual>();
   private readonly specialRoots:TransformNode[]=[];
   private readonly glowMaterials=new Map<CrystalKind,StandardMaterial>();
+  private readonly rockColliders:RockColliderSystem;
   private copperMaterial:StandardMaterial|null=null;
   private pending:Cell[]=[];
   private center:Cell={cx:0,cz:0};
+  private lastCells:readonly Cell[]=[];
+  private focus={x:0,z:0};
+  private colliderFocus={x:Infinity,z:Infinity};
+  private protectedRockId:string|null=null;
   private ready=false;
   private disposed=false;
   private clock=0;
@@ -37,9 +44,12 @@ export class WorldPropSystem {
   get visibleDecorationCount():number{return [...this.chunks.values()].flat().filter(p=>!isCrystal(p.kind)&&this.sources.has(p.kind)).length;}
   get activeCrystalCount():number{return this.resources.size;}
   get sharedAssetCount():number{return this.sources.size;}
+  get activeRockColliderCount():number{return this.rockColliders.activeColliderCount;}
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,private readonly store:GameStore,
-    private readonly exclusions:()=>readonly VegetationExclusion[],private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){}
+    private readonly exclusions:()=>readonly VegetationExclusion[],private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){
+    this.rockColliders=new RockColliderSystem(scene,kind=>this.sources.get(kind));
+  }
 
   /** Every GLB is fetched once. Multi-mesh packs retain all of their primitives and materials. */
   async load():Promise<void>{
@@ -56,10 +66,16 @@ export class WorldPropSystem {
           if(parts.length!==ROCK_PART_COUNT||parts.some((mesh,index)=>indexFromName(mesh)!==index))
             throw new Error(`Rock pack: se esperaban las piezas tripo_part_0 a tripo_part_${ROCK_PART_COUNT-1}`);
         }
+        if(id==='rocasRectangulares'){
+          parts.sort((a,b)=>RECT_ROCK_PARTS.findIndex(part=>part.name===a.name)-
+            RECT_ROCK_PARTS.findIndex(part=>part.name===b.name));
+          if(parts.length!==RECT_ROCK_PART_COUNT||parts.some((mesh,index)=>mesh.name!==RECT_ROCK_PARTS[index].name))
+            throw new Error(`Rocas rectangulares: se esperaban ${RECT_ROCK_PART_COUNT} piezas catalogadas`);
+        }
         for(const [index,mesh] of parts.entries()){
           mesh.computeWorldMatrix(true);
           mesh.bakeTransformIntoVertices(mesh.getWorldMatrix().clone());
-          if(id==='packRocas'){
+          if(id==='packRocas'||id==='rocasRectangulares'){
             // The original GLB shows a laid-out collection. Remove that presentation
             // translation and center/ground each rock independently.
             mesh.refreshBoundingInfo(true);
@@ -69,8 +85,14 @@ export class WorldPropSystem {
             mesh.refreshBoundingInfo(true);
             const centered=mesh.getBoundingInfo().boundingBox;
             const width=Math.max(centered.maximum.x-centered.minimum.x,centered.maximum.z-centered.minimum.z);
-            if(Math.abs(width-ROCK_PART_FOOTPRINTS[index])>.001)
-              throw new Error(`Rock pack: la huella de la pieza ${index} cambió (${width})`);
+            const expected=id==='packRocas'?ROCK_PART_FOOTPRINTS[index]:RECT_ROCK_PARTS[index].footprint;
+            if(Math.abs(width-expected)>.001)
+              throw new Error(`Rock pack ${id}: la huella de la pieza ${index} cambió (${width})`);
+            if(id==='rocasRectangulares'){
+              const height=centered.maximum.y-centered.minimum.y;
+              if(Math.abs(height-RECT_ROCK_PARTS[index].sourceHeight)>.001)
+                throw new Error(`Rocas rectangulares: la altura de la pieza ${index} cambió (${height})`);
+            }
           }
           mesh.parent=null;
           mesh.position.setAll(0);mesh.scaling.setAll(1);mesh.rotation.setAll(0);mesh.rotationQuaternion=null;
@@ -86,6 +108,7 @@ export class WorldPropSystem {
     this.ready=true;
     for(const special of SPECIAL_ASSETS)this.createSpecial(special);
     this.refreshDecoration();
+    this.syncRockColliders();
   }
 
   private cloneModel(id:AssetId,name:string,root:TransformNode,scale:number):void{
@@ -108,6 +131,8 @@ export class WorldPropSystem {
   }
 
   setActiveChunks(cells:readonly Cell[],x:number,z:number):void{
+    this.lastCells=cells;
+    this.focus={x,z};
     this.center=chunkOf(x,z);
     const radius=PROP_CONFIG.renderRadiusChunks;
     const desired=cells.filter(cell=>{
@@ -117,6 +142,7 @@ export class WorldPropSystem {
     const keys=new Set(desired.map(cell=>chunkKey(cell.cx,cell.cz)));
     let changed=false;
     for(const [key,placements] of this.chunks)if(!keys.has(key)){
+      if(placements.some(p=>p.id===this.protectedRockId))continue;
       for(const p of placements){
         const visual=this.resources.get(p.id);
         if(visual){visual.root.dispose(false,false);this.resources.delete(p.id);}
@@ -130,6 +156,25 @@ export class WorldPropSystem {
       return da-db;
     });
     if(changed&&this.ready)this.refreshDecoration();
+    this.syncRockColliders();
+  }
+
+  /** Rebuild collider instances only after meaningful movement or a support change. */
+  setColliderFocus(x:number,z:number,protectedRockId:string|null=null):void{
+    const supportChanged=protectedRockId!==this.protectedRockId;
+    this.focus={x,z};
+    this.protectedRockId=protectedRockId;
+    if(supportChanged){
+      this.setActiveChunks(this.lastCells,x,z);
+      return;
+    }
+    if(Math.hypot(x-this.colliderFocus.x,z-this.colliderFocus.z)>8)this.syncRockColliders();
+  }
+
+  private syncRockColliders():void{
+    if(!this.ready)return;
+    this.rockColliders.sync([...this.chunks.values()].flat(),this.focus.x,this.focus.z,this.protectedRockId);
+    this.colliderFocus={...this.focus};
   }
 
   /** One deterministic placement batch per frame, only while new terrain cells arrive. */
@@ -141,6 +186,7 @@ export class WorldPropSystem {
       this.chunks.set(chunkKey(cell.cx,cell.cz),placements);
       for(const p of placements)if(isCrystal(p.kind))this.createResource(p);
       this.refreshDecoration();
+      this.syncRockColliders();
     }
     this.clock+=dt;this.respawnCheck+=dt;
     const check=this.respawnCheck>=1;
@@ -157,17 +203,20 @@ export class WorldPropSystem {
     if(!this.ready)return;
     const matrices=new Map<PropKind,number[]>(PROP_KINDS.map(kind=>[kind,[]]));
     const rockMatrices:number[][]=Array.from({length:ROCK_PART_COUNT},()=>[]);
+    const rectMatrices:number[][]=Array.from({length:RECT_ROCK_PART_COUNT},()=>[]);
     for(const placements of this.chunks.values())for(const p of placements){
       if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
-      const transform=Matrix.Compose(new Vector3(p.scale,p.scale,p.scale),
+      const transform=Matrix.Compose(new Vector3(p.scaleXZ??p.scale,p.scaleY??p.scale,p.scaleXZ??p.scale),
         Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z));
       if(p.kind==='packRocas')rockMatrices[p.partIndex??0]?.push(...transform.m);
+      else if(p.kind==='rocasRectangulares')rectMatrices[p.pieceIndex??0]?.push(...transform.m);
       else matrices.get(p.kind)!.push(...transform.m);
     }
     for(const kind of PROP_KINDS){
       for(const [index,source] of (this.sources.get(kind)??[]).entries()){
         // Exactly ONE part per procedural placement, not all 17 parts.
-        const data=kind==='packRocas'?(rockMatrices[index]??[]):matrices.get(kind)!;
+        const data=kind==='packRocas'?(rockMatrices[index]??[]):
+          kind==='rocasRectangulares'?(rectMatrices[index]??[]):matrices.get(kind)!;
         if(!data.length){
           if(source.thinInstanceCount){
             source.thinInstanceSetBuffer('matrix',null,16,true);
@@ -238,19 +287,29 @@ export class WorldPropSystem {
     return nearest;
   }
 
-  /** Broad, circular obstacles only for large rocks; saved positions may move out. */
-  blocksMovement(nextX:number,nextZ:number,fromX:number,fromZ:number):boolean{
-    const {cx,cz}=chunkOf(nextX,nextZ);
-    for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
-      const placements=this.chunks.get(chunkKey(cx+dx,cz+dz));
-      if(!placements)continue;
-      for(const p of placements){
-        if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
-        if(p.kind==='packRocas'&&p.partIndex!==undefined&&rockPartGroup(p.partIndex)==='gravel')continue;
-        const radius=p.kind==='packRocas'?(p.rockDiameter??1)*.45
-          :p.scale*(p.kind==='acantilado2'?.3:p.kind==='mesetaPasto'?.22:.18);
-        const d=Math.hypot(nextX-p.x,nextZ-p.z);
-        if(d<radius&&d<Math.hypot(fromX-p.x,fromZ-p.z))return true;
+  queryRockGround(x:number,z:number,originY:number,maxDistance:number,footRadius=0):RockSurface|null{
+    return this.rockColliders.queryGround(x,z,originY,maxDistance,footRadius);
+  }
+
+  queryRockSolidTop(x:number,z:number,originY:number,maxDistance:number,rockId?:string):RockSurface|null{
+    return this.rockColliders.querySolidTop(x,z,originY,maxDistance,rockId);
+  }
+
+  queryRockWall(x:number,y:number,z:number,dirX:number,dirZ:number,maxDistance:number):RockWallHit|null{
+    return this.rockColliders.queryWall(x,y,z,dirX,dirZ,maxDistance);
+  }
+
+  hasRockHeadroom(x:number,y:number,z:number,height:number):boolean{
+    return this.rockColliders.hasOverheadClearance(x,y,z,height);
+  }
+
+  /** Remaining simple props and the forge; rock faces use their real triangles. */
+  blocksMovement(nextX:number,nextZ:number,fromX:number,fromZ:number,includeRockWalls=true):boolean{
+    if(includeRockWalls){
+      const dx=nextX-fromX,dz=nextZ-fromZ,distance=Math.hypot(dx,dz);
+      if(distance>0){
+        const wall=this.queryRockWall(fromX,sampleMainlandHeight(fromX,fromZ)+1.2,fromZ,dx,dz,distance+.6);
+        if(wall&&wall.distance<=distance+.6)return true;
       }
     }
     const forge=Math.hypot(nextX-23,nextZ+8);
@@ -278,6 +337,7 @@ export class WorldPropSystem {
 
   dispose():void{
     this.disposed=true;this.pending=[];this.chunks.clear();
+    this.rockColliders.dispose();
     for(const visual of this.resources.values())visual.root.dispose(false,false);
     this.resources.clear();
     for(const root of this.specialRoots)root.dispose(false,false);

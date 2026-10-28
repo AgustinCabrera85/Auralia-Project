@@ -5,6 +5,7 @@ const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@ba
 const {VegetationSystem}=require('../.test-build/world/VegetationSystem.js');
 const {vegetationForChunk,VEGETATION_CONFIG}=require('../.test-build/world/vegetationData.js');
 const {chunkOf,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
+const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
 const sample=vegetationForChunk(-8,-8);
 assert.deepEqual(sample,vegetationForChunk(-8,-8),'same seed and chunk give identical placements');
@@ -63,8 +64,6 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     assert.equal(mesh.isPickable,false);
     assert.ok(mesh.thinInstanceCount>=0);
   }
-  assert.equal(system.blocksMovement(treeSample.x+.2,treeSample.z,treeSample.x+3,treeSample.z),true,'circular trunk stops entry');
-  assert.equal(system.blocksMovement(treeSample.x+3,treeSample.z,treeSample.x+.2,treeSample.z),false,'player can leave a trunk after loading');
   const before=system.instanceCount;
   system.setActiveChunks([],1100,-900);
   assert.equal(system.activeChunkCount,0,'released all streamed vegetation chunks');
@@ -75,6 +74,50 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   for(let i=0;i<60;i++)system.update();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
   assert.equal(imports.length,6,'reload makes no new GLB imports');
+  const target={x:-509,z:32};
+  const targetChunk=chunkOf(target.x,target.z);
+  const targetCells=[];
+  for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++)
+    targetCells.push({cx:targetChunk.cx+dx,cz:targetChunk.cz+dz});
+  system.setActiveChunks(targetCells,target.x,target.z);
+  system.setColliderFocus(target.x,target.z);
+  for(let i=0;i<60;i++)system.update();
+  const specimen=targetCells.flatMap(cell=>vegetationForChunk(cell.cx,cell.cz))
+    .find(p=>p.kind==='arbolito2'&&Math.hypot(p.x-target.x,p.z-target.z)<3);
+  assert.ok(specimen,'the tree from the reported location exists');
+  const rootSurface=system.queryTreeGround(specimen.x,specimen.z-2,specimen.y+2,3);
+  assert.ok(rootSurface&&rootSurface.height>specimen.y+.15&&rootSurface.height<specimen.y+.7,
+    'the exposed root is a low walkable surface');
+  assert.equal(system.queryTreeWall(specimen.x,specimen.y+.35,specimen.z+3,0,-1,3),null,
+    'shallow roots do not become torso walls');
+  const trunkWall=system.queryTreeWall(specimen.x,specimen.y+1.8,specimen.z+3,0,-1,3);
+  assert.ok(trunkWall&&trunkWall.distance<1.3&&trunkWall.distance>.2,
+    'real trunk mesh blocks a body approaching from the screenshot side');
+  const world={
+    ground:(x,z,originY,maxDistance)=>{
+      const root=system.queryTreeGround(x,z,originY,maxDistance);
+      return root??(specimen.y<=originY&&specimen.y>=originY-maxDistance
+        ?{height:specimen.y,normalY:1}:null);
+    },
+    solidTop:()=>null,
+    wall:(x,y,z,dx,dz,reach)=>{
+      const hit=system.queryTreeWall(x,y,z,dx,dz,reach);
+      return hit?{pointX:hit.point.x,pointY:hit.point.y,pointZ:hit.point.z,
+        distance:hit.distance,normalX:hit.normal.x,normalY:hit.normal.y,
+        normalZ:hit.normal.z,rockId:hit.id,climbable:false}:null;
+    },
+    headroom:()=>true,canMove:()=>true,fallbackHeight:()=>specimen.y
+  };
+  const player=new CharacterTraversalController();
+  player.teleport(specimen.x,specimen.y,specimen.z+4);
+  const input={moveX:0,moveZ:-1,forwardX:0,forwardZ:-1,
+    horizontal:0,vertical:0,run:false,jumpPressed:false};
+  for(let i=0;i<24;i++)player.step(.025,input,world);
+  assert.ok(player.position.z>specimen.z+2.4,
+    'the character stops before entering the trunk, even when the old circle was too small');
+  player.teleport(specimen.x,specimen.y,specimen.z-3);
+  for(let i=0;i<4;i++)player.step(.025,{...input,moveZ:1,forwardZ:1},world);
+  assert.ok(player.position.y>specimen.y+.1,'walking over the root lifts the feet');
   console.log(`✓ Vegetación: seis GLB compartidos, ${before} instancias en ${system.activeChunkCount} chunks, liberación y recarga`);
   system.dispose();scene.dispose();engine.dispose();
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -13,7 +13,8 @@ const hud = new Hud(store, {
   cancelBuild: () => world.cancelPlacement(),
   reset: () => { store.reset(); world.refreshFromSave(); },
   virtualKey: (key, active) => world.setVirtualKey(key, active),
-  gotoLandmark: id => world.teleportToLandmark(id)
+  gotoLandmark: id => world.teleportToLandmark(id),
+  canOpenPanel: () => world?.canOpenPanel()??true
 });
 
 try {

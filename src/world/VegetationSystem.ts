@@ -3,6 +3,7 @@ import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { chunkKey, chunkOf, MAINLAND } from './terrainData';
 import { VEGETATION_CONFIG, vegetationForChunk, type VegetationExclusion, type VegetationKind, type VegetationPlacement } from './vegetationData';
 import { ASSET_CATALOG } from './assetCatalog';
+import { TreeColliderSystem, type TreeSurface, type TreeWallHit } from './TreeColliderSystem';
 
 type Cell = { cx:number; cz:number };
 const kinds:readonly VegetationKind[]=['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1'];
@@ -16,6 +17,7 @@ export class VegetationSystem {
   private ready=false;
   private disposed=false;
   private visibleCount=0;
+  private readonly treeColliders:TreeColliderSystem;
 
   get activeChunkCount():number{return this.chunks.size;}
   get instanceCount():number{return this.visibleCount;}
@@ -26,7 +28,9 @@ export class VegetationSystem {
     private readonly parent:TransformNode,
     private readonly exclusions:()=>readonly VegetationExclusion[],
     private readonly importer:typeof ImportMeshAsync=ImportMeshAsync
-  ){}
+  ){
+    this.treeColliders=new TreeColliderSystem(scene,kind=>this.sources.get(kind));
+  }
 
   /** Each file is imported exactly once. A failed file leaves other species usable. */
   async load():Promise<void>{
@@ -95,6 +99,7 @@ export class VegetationSystem {
     if(!this.ready)return;
     this.visibleCount=0;
     const matrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
+    const collidable:VegetationPlacement[]=[];
     for(const [key,placements] of this.chunks){
       const [cx,cz]=key.split(':').map(Number);
       const dx=cx-this.center.cx,dz=cz-this.center.cz;
@@ -102,6 +107,7 @@ export class VegetationSystem {
       for(const p of placements){
         if(p.kind==='plantitas1'&&!plantsNear)continue;
         if(!this.sources.has(p.kind))continue;
+        if(p.obstacleRadius)collidable.push(p);
         const matrix=Matrix.Compose(new Vector3(p.scale,p.scale,p.scale),Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z));
         matrices.get(p.kind)!.push(...matrix.m);
         this.visibleCount++;
@@ -115,27 +121,36 @@ export class VegetationSystem {
       source.thinInstanceSetBuffer('matrix',new Float32Array(data),16,true);
       if(data.length)source.thinInstanceRefreshBoundingInfo();
     }
+    this.treeColliders.sync(collidable,this.treeFocus.x,this.treeFocus.z);
   }
 
-  /** Lightweight circular trunk collision, with an escape path for a saved position inside one. */
-  blocksMovement(nextX:number,nextZ:number,fromX:number,fromZ:number):boolean{
-    const {cx,cz}=chunkOf(nextX,nextZ);
-    for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
-      const placements=this.chunks.get(chunkKey(cx+dx,cz+dz));
-      if(!placements)continue;
-      for(const p of placements){
-        if(!p.obstacleRadius||!this.sources.has(p.kind))continue;
-        const distance=Math.hypot(nextX-p.x,nextZ-p.z);
-        if(distance<p.obstacleRadius&&distance<Math.hypot(fromX-p.x,fromZ-p.z))return true;
-      }
-    }
-    return false;
+  private treeFocus={x:0,z:0};
+
+  setColliderFocus(x:number,z:number):void{
+    if(Math.hypot(x-this.treeFocus.x,z-this.treeFocus.z)<1)return;
+    this.treeFocus={x,z};
+    this.syncTreeColliders();
+  }
+
+  private syncTreeColliders():void{
+    const placements:VegetationPlacement[]=[];
+    for(const chunk of this.chunks.values())for(const p of chunk)if(p.obstacleRadius)placements.push(p);
+    this.treeColliders.sync(placements,this.treeFocus.x,this.treeFocus.z);
+  }
+
+  queryTreeGround(x:number,z:number,originY:number,maxDistance:number):TreeSurface|null{
+    return this.treeColliders.queryGround(x,z,originY,maxDistance);
+  }
+
+  queryTreeWall(x:number,y:number,z:number,dx:number,dz:number,reach:number):TreeWallHit|null{
+    return this.treeColliders.queryWall(x,y,z,dx,dz,reach);
   }
 
   dispose():void{
     this.disposed=true;
     this.pending=[];
     this.chunks.clear();
+    this.treeColliders.dispose();
     for(const source of this.sources.values())source.dispose(false,false);
     this.sources.clear();
   }

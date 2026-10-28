@@ -19,7 +19,7 @@ export const ASSET_CATALOG={
   formacionRocosa:{path:'/assets/world/rocks/Formacion_rocosa_1.glb',category:'rocks',biomes:['sierras','cumbres','ecos'],referenceScale:9,interaction:'decorative',instantiation:'thin'},
   packRocas:{path:'/assets/world/rocks/Pack_rocas_1.glb',category:'rocks',biomes:['valle','ecos','nacar','sierras'],referenceScale:8,interaction:'decorative',instantiation:'thin'},
   escalonRocoso:{path:'/assets/world/rocks/Escalon_rocoso.glb',category:'rocks',biomes:['sierras','cumbres'],referenceScale:9,interaction:'decorative',instantiation:'thin'},
-  rocasRectangulares:{path:'/assets/world/rocks/Set_Rocas_Rectanculares.glb',category:'rocks',biomes:['sierras','cumbres'],referenceScale:9,interaction:'decorative',instantiation:'thin'},
+  rocasRectangulares:{path:'/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K.glb',category:'rocks',biomes:['sierras','cumbres'],referenceScale:9,interaction:'decorative',instantiation:'thin'},
   mesetaPasto:{path:'/assets/world/rocks/Meseta_rocosa_pasto.glb',category:'rocks',biomes:['valle','nacar','sierras'],referenceScale:12,interaction:'decorative',instantiation:'thin'},
   acantilado2:{path:'/assets/world/cliffs/Acantilado_2.glb',category:'cliffs',biomes:['sierras','cumbres','costa'],referenceScale:19,interaction:'decorative',instantiation:'thin'},
   cristalAzul:{path:'/assets/world/crystals/Cristal_azul_flotante.glb',category:'crystals',biomes:['ecos','nacar'],referenceScale:4.8,interaction:'resource',instantiation:'individual'},

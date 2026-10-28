@@ -10,6 +10,7 @@ import { TerrainStream } from '../world/TerrainStream';
 import { GeographyStream } from '../world/GeographyStream';
 import { VegetationSystem } from '../world/VegetationSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
+import { propsForChunk } from '../world/worldPropsData';
 import { selectRockPart } from '../world/rockPackData';
 import type { VegetationExclusion } from '../world/vegetationData';
 import { bridgeDeckAt, isInlandWater } from '../world/geographicFeatures';
@@ -17,6 +18,7 @@ import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
 import { createPointOfInterestView } from '../world/PointOfInterestView';
 import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, isLand, sampleMainlandHeight } from '../world/terrainData';
 import { cameraRelativeMovement } from './movement';
+import { CharacterTraversalController, type TraversalWorld } from './CharacterTraversalController';
 
 export type Interactable = {
   id: string;
@@ -80,6 +82,9 @@ export class WorldView {
   private readonly geography: GeographyStream;
   private readonly vegetation: VegetationSystem;
   private readonly props: WorldPropSystem;
+  private readonly traversal=new CharacterTraversalController();
+  private jumpRequested=false;
+  private lastSafePosition={x:1,z:10};
   private readonly vegetationExclusions: VegetationExclusion[] = [];
   private readonly rockVisualRequests:{root:TransformNode;partIndex:number;diameter:number;copper:boolean}[]=[];
   private exploreTimer = 0;
@@ -170,15 +175,16 @@ export class WorldView {
   private readonly onKeyDown = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const key = e.key.toLowerCase();
-    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'e', 'r'].includes(key)) e.preventDefault();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'e', 'r',' '].includes(key)) e.preventDefault();
     this.pressed.add(key);
     if (e.repeat || this.blocked()) return;
+    if(key===' '&&!this.placement)this.jumpRequested=true;
     if (key === 'e') this.interact();
     if (key === 'r' && this.placement) this.rotatePlacement();
   };
   private readonly onKeyUp = (e: KeyboardEvent) => this.pressed.delete(e.key.toLowerCase());
   private readonly onPointerDown = (e: PointerEvent) => {
-    if (e.button !== 0 || !this.placement || this.blocked()) return;
+    if (e.button !== 0 || !this.placement || this.blocked() || !this.traversal.canBuild) return;
     this.refreshPreview();
     if (!this.preview) return;
     if (!this.preview.valid) { this.callbacks.notify(this.preview.message); return; }
@@ -622,12 +628,43 @@ export class WorldView {
     this.cancelPlacement();
     const zone=this.zones.get(id)!;
     const previous=this.store.state.playerPosition;
-    const start=previous?.zone===id ? previous : zone.spawn;
+    const saved=previous?.zone===id ? previous : null;
+    const start=saved&&id==='brisalia'?this.safeSavedStart(saved.x,saved.z):saved??zone.spawn;
     this.player.position.set(zone.offset.x+start.x,id==='brisalia'?this.walkHeightAt(start.x,start.z):this.y(zone,start.x,start.z),zone.offset.z+start.z);
+    this.traversal.teleport(start.x,this.player.position.y,start.z);
+    this.lastSafePosition={x:start.x,z:start.z};
+    this.jumpRequested=false;
+    if(id==='brisalia')this.props.setColliderFocus(start.x,start.z,null);
+    else {this.props.setActiveChunks([],start.x,start.z);this.vegetationCenter='';}
     if(id==='brisalia')this.streamMainland(start.x,start.z);
     this.interactTarget=null;
     this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
     this.sendLocation();
+  }
+
+  /** Old saves have only X/Z; keep a saved foot out of a newly generated rock base. */
+  private safeSavedStart(x:number,z:number):{x:number;z:number}{
+    const center=chunkOf(x,z);
+    const exclusions=[...this.vegetationExclusions,
+      ...this.store.state.structures.map(s=>({x:s.x,z:s.z,radius:5}))];
+    const rocks=[] as ReturnType<typeof propsForChunk>;
+    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)
+      rocks.push(...propsForChunk(center.cx+dx,center.cz+dz,exclusions).filter(p=>
+        p.kind==='rocasRectangulares'||p.kind==='packRocas'));
+    for(const rock of rocks){
+      const radius=rock.worldRadius??(rock.rockDiameter??0)*.5;
+      const distance=Math.hypot(x-rock.x,z-rock.z);
+      if(distance>radius+1.2)continue;
+      const dx=distance>.01?(x-rock.x)/distance:1;
+      const dz=distance>.01?(z-rock.z)/distance:0;
+      for(const [ux,uz] of [[dx,dz],[1,0],[-1,0],[0,1],[0,-1]]){
+        const nextX=rock.x+ux*(radius+2.5),nextZ=rock.z+uz*(radius+2.5);
+        if(isLand(nextX,nextZ)&&!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ))){
+          x=nextX;z=nextZ;break;
+        }
+      }
+    }
+    return {x,z};
   }
 
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
@@ -638,6 +675,8 @@ export class WorldView {
     this.activateZone('brisalia');
     const y=this.walkHeightAt(point.x,point.z);
     this.player.position.set(point.x,y,point.z);
+    this.traversal.teleport(point.x,y,point.z);
+    this.lastSafePosition={x:point.x,z:point.z};
     this.streamMainland(point.x,point.z);
     this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
     this.store.setPlayerPosition('brisalia',point.x,point.z);
@@ -660,6 +699,61 @@ export class WorldView {
     return bridgeDeckAt(x,z)??sampleMainlandHeight(x,z);
   }
 
+  private traversalWorld(zone:IslandInfo):TraversalWorld{
+    const isMainland=zone.id==='brisalia';
+    const height=(x:number,z:number)=>isMainland?this.walkHeightAt(x,z):this.y(zone,x,z);
+    return {
+      ground:(x,z,originY,maxDistance,footRadius)=>{
+        const terrainY=height(x,z);
+        const deck=isMainland?bridgeDeckAt(x,z):null;
+        const d=.55;
+        const slope=deck!==null?1:1/Math.hypot(1,
+          (height(x+d,z)-height(x-d,z))/(2*d),(height(x,z+d)-height(x,z-d))/(2*d));
+        const terrain=terrainY<=originY+.001&&terrainY>=originY-maxDistance-.001
+          ?{height:terrainY,normalY:slope}:null;
+        const rock=isMainland?this.props.queryRockGround(x,z,originY,maxDistance,footRadius):null;
+        const root=isMainland?this.vegetation.queryTreeGround(x,z,originY,maxDistance):null;
+        const surfaces=[terrain,root,rock?{height:rock.height,normalY:rock.normal.y,rockId:rock.rockId}:null]
+          .filter((hit):hit is NonNullable<typeof hit>=>hit!==null);
+        return surfaces.reduce<typeof terrain>((highest,hit)=>
+          !highest||hit.height>highest.height?hit:highest,null);
+      },
+      solidTop:(x,z,originY,maxDistance,rockId)=>{
+        if(!isMainland)return null;
+        const hit=this.props.queryRockSolidTop(x,z,originY,maxDistance,rockId);
+        return hit?{height:hit.height,normalX:hit.normal.x,normalZ:hit.normal.z,
+          rockId:hit.rockId,centerX:hit.centerX,centerZ:hit.centerZ}:null;
+      },
+      wall:(x,y,z,dx,dz,reach)=>{
+        if(!isMainland)return null;
+        const hit=this.props.queryRockWall(x,y,z,dx,dz,reach);
+        const tree=this.vegetation.queryTreeWall(x,y,z,dx,dz,reach);
+        if(tree&&(!hit||tree.distance<hit.distance))return {
+          pointX:tree.point.x,pointY:tree.point.y,pointZ:tree.point.z,
+          distance:tree.distance,normalX:tree.normal.x,normalY:tree.normal.y,
+          normalZ:tree.normal.z,rockId:tree.id,climbable:false
+        };
+        return hit?{pointX:hit.point.x,pointY:hit.point.y,pointZ:hit.point.z,
+          distance:hit.distance,normalX:hit.normal.x,normalY:hit.normal.y,
+          normalZ:hit.normal.z,rockId:hit.rockId,climbable:hit.climbable}:null;
+      },
+      headroom:(x,y,z,room)=>!isMainland||this.props.hasRockHeadroom(x,y,z,room),
+      canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
+        const elevated=feetY>height(fromX,fromZ)+4;
+        const canWalk=isMainland?isLand(nextX,nextZ)&&
+          (elevated||!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ))):
+          Math.sqrt((nextX/zone.radiusX)**2+(nextZ/zone.radiusZ)**2)<.80;
+        const houses=isMainland&&!elevated&&[
+          {x:-8,z:-32,r:6},{x:9,z:-33,r:5.5},{x:24,z:-22,r:5},
+          {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
+        ].some(ob=>Math.hypot(ob.x-nextX,ob.z-nextZ)<ob.r);
+        return canWalk&&!houses&&
+          (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false));
+      },
+      fallbackHeight:height
+    };
+  }
+
   private streamMainland(x:number,z:number):void {
     const changed=this.mainland.update(x,z);
     const cell=chunkOf(x,z);
@@ -675,40 +769,38 @@ export class WorldView {
 
   private update(dt: number): void {
     const zone=this.zones.get(this.store.state.zone)!;
-    let walking=false;
-    if(!this.blocked()&&!this.placement){
-      const horizontal=Number(this.pressed.has('d')||this.pressed.has('arrowright'))-Number(this.pressed.has('a')||this.pressed.has('arrowleft'));
-      const vertical=Number(this.pressed.has('w')||this.pressed.has('arrowup'))-Number(this.pressed.has('s')||this.pressed.has('arrowdown'));
-      if(horizontal||vertical){
-        const look=this.camera.getTarget().subtract(this.camera.position);
-        const direction=cameraRelativeMovement({x:look.x,z:look.z},horizontal,vertical);
-        const speed=this.pressed.has('shift')?19:11;
-        const nextX=this.player.position.x-zone.offset.x+direction.x*speed*dt;
-        const nextZ=this.player.position.z-zone.offset.z+direction.z*speed*dt;
-        const canWalk=zone.id==='brisalia' ? isLand(nextX,nextZ)&&!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ)) :
-          Math.sqrt((nextX/zone.radiusX)**2+(nextZ/zone.radiusZ)**2)<.80;
-        const collides=zone.id==='brisalia'&&[
-          {x:-8,z:-32,r:6},{x:9,z:-33,r:5.5},{x:24,z:-22,r:5},
-          {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
-        ].some(ob=>Math.hypot(ob.x-nextX,ob.z-nextZ)<ob.r);
-        const vegetationBlocked=zone.id==='brisalia'&&this.vegetation.blocksMovement(
-          nextX,nextZ,this.player.position.x-zone.offset.x,this.player.position.z-zone.offset.z
-        );
-        const propBlocked=zone.id==='brisalia'&&this.props.blocksMovement(
-          nextX,nextZ,this.player.position.x-zone.offset.x,this.player.position.z-zone.offset.z
-        );
-        if(canWalk&&!collides&&!vegetationBlocked&&!propBlocked){
-          this.player.position.x=zone.offset.x+nextX;
-          this.player.position.z=zone.offset.z+nextZ;
-          this.player.rotation.y=Math.atan2(direction.x,direction.z);
-          walking=true;
-        }
-      }
+    const controls=!this.blocked()&&!this.placement;
+    const horizontal=controls?Number(this.pressed.has('d')||this.pressed.has('arrowright'))-
+      Number(this.pressed.has('a')||this.pressed.has('arrowleft')):0;
+    const vertical=controls?Number(this.pressed.has('w')||this.pressed.has('arrowup'))-
+      Number(this.pressed.has('s')||this.pressed.has('arrowdown')):0;
+    const look=this.camera.getTarget().subtract(this.camera.position);
+    const forwardLength=Math.hypot(look.x,look.z)||1;
+    const direction=cameraRelativeMovement({x:look.x,z:look.z},horizontal,vertical);
+    if(zone.id==='brisalia'){
+      this.props.setColliderFocus(this.traversal.position.x,
+        this.traversal.position.z,this.traversal.supportRockId);
+      this.vegetation.setColliderFocus(this.traversal.position.x,this.traversal.position.z);
     }
-    const localX=this.player.position.x-zone.offset.x,localZ=this.player.position.z-zone.offset.z;
-    this.player.position.y=zone.id==='brisalia'?this.walkHeightAt(localX,localZ):this.y(zone,localX,localZ);
+    const walking=this.traversal.step(dt,{
+      moveX:direction.x,moveZ:direction.z,forwardX:look.x/forwardLength,forwardZ:look.z/forwardLength,
+      horizontal,vertical,run:controls&&this.pressed.has('shift'),
+      jumpPressed:controls&&this.jumpRequested
+    },this.traversalWorld(zone));
+    this.jumpRequested=false;
+    const {x:localX,y:localY,z:localZ}=this.traversal.position;
+    this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
+    if(zone.id==='brisalia'){
+      this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
+      this.vegetation.setColliderFocus(localX,localZ);
+    }
+    if(walking&&this.traversal.mode!=='climbing')this.player.rotation.y=Math.atan2(direction.x,direction.z);
+    if(this.traversal.mode==='grounded'&&!this.traversal.supportRockId)
+      this.lastSafePosition={x:localX,z:localZ};
     this.movementTime+=dt*(walking?10:2.3);
-    this.playerBody.position.y=walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025;
+    this.playerBody.position.y=this.traversal.mode==='grounded'
+      ?walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025:0;
+    this.playerBody.rotation.z=this.traversal.mode==='climbing'?.08:0;
     this.camera.setTarget(Vector3.Lerp(this.camera.getTarget(),this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt)));
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
@@ -719,7 +811,9 @@ export class WorldView {
     this.exploreTimer+=dt;
     this.saveTimer+=dt;
     if(this.exploreTimer>0.26){this.sendLocation();this.exploreTimer=0;}
-    if(this.saveTimer>4 && walking){this.store.setPlayerPosition(zone.id,localX,localZ);this.saveTimer=0;}
+    if(this.saveTimer>4 && walking){
+      this.store.setPlayerPosition(zone.id,this.lastSafePosition.x,this.lastSafePosition.z);this.saveTimer=0;
+    }
     this.findNearest();
     if(this.placement)this.refreshPreview();
   }
@@ -731,19 +825,29 @@ export class WorldView {
     let best = 6.4;
     for (const target of zone.nodes) {
       if (!target.enabled) continue;
+      if(Math.abs(this.player.position.y-target.visual.getAbsolutePosition().y)>4.5)continue;
       const distance = Math.hypot(target.localPosition.x - playerLocal.x, target.localPosition.z - playerLocal.z);
       if (distance < best) { best = distance; nearest = target; }
     }
     if(zone.id==='brisalia'){
       const crystal=this.props.nearestResource(playerLocal.x,playerLocal.z,best);
-      if(crystal){
+      if(crystal&&Math.abs(this.player.position.y-crystal.visual.getAbsolutePosition().y)<=4.5){
         nearest={id:crystal.id,label:crystal.label,verb:`Recolectar ${crystal.label.toLowerCase()}`,type:'resource',
           localPosition:new Vector3(crystal.x,0,crystal.z),visual:crystal.visual,resource:crystal.resource,
           resourceNodeId:crystal.id,amount:crystal.amount,enabled:true};
       }
     }
-    this.interactTarget = nearest;
-    const label = nearest ? `E  ·  ${nearest.verb}` : 'WASD para caminar · E para interactuar · M para el mapa';
+    this.interactTarget = this.traversal.canInteract?nearest:null;
+    let label=nearest&&this.traversal.canInteract?`E  ·  ${nearest.verb}`:
+      'WASD caminar · Espacio saltar · E interactuar · M mapa';
+    if(this.traversal.mode==='climbing')label='W/S trepar · A/D moverse · Espacio soltarse';
+    else if(this.traversal.mode==='mantling')label='Subiendo al borde...';
+    else if(zone.id==='brisalia'&&this.traversal.mode==='grounded'){
+      const forward={x:Math.sin(this.player.rotation.y),z:Math.cos(this.player.rotation.y)};
+      const face=this.props.queryRockWall(playerLocal.x,this.player.position.y+1.15,
+        playerLocal.z,forward.x,forward.z,1.7);
+      if(face?.climbable&&face.normal.y>=-.3&&face.normal.y<=.6)label='W para trepar · Espacio para saltar';
+    }
     if (label !== this.previousHint) {
       this.previousHint = label;
       this.callbacks.hint(label);
@@ -751,12 +855,15 @@ export class WorldView {
   }
 
   setVirtualKey(key: string, active: boolean): void {
+    if(key==='space'&&active&&!this.blocked()&&!this.placement)this.jumpRequested=true;
     if (active) this.pressed.add(key); else this.pressed.delete(key);
   }
 
+  canOpenPanel():boolean{return this.traversal.canInteract;}
+
   interact(): void {
     const node = this.interactTarget;
-    if (!node || this.placement || this.blocked()) return;
+    if (!node || this.placement || this.blocked() || !this.traversal.canInteract) return;
     if(node.resourceNodeId){
       const collected=this.props.collect(node.resourceNodeId);
       if(!collected)return;
@@ -818,6 +925,7 @@ export class WorldView {
   }
 
   beginPlacement(type: BuildType): void {
+    if(!this.traversal.canBuild)return;
     this.cancelPlacement();
     const ghost = this.makeBuildMesh(type, this.plot.x, this.plot.z, 0, true);
     this.placement = { type, rotation: 0, ghost };

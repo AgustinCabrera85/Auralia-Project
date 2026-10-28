@@ -13,6 +13,7 @@ type HudActions = {
   reset: () => void;
   virtualKey: (key: string, active: boolean) => void;
   gotoLandmark: (id: string) => void;
+  canOpenPanel: () => boolean;
 };
 
 type Panel = 'map' | 'craft' | 'build' | 'help' | null;
@@ -66,6 +67,7 @@ export class Hud {
         <div class="touch-controls" aria-label="Controles táctiles">
           <div class="touch-cross"><button data-direction="w">▲</button><div><button data-direction="a">◀</button><button data-direction="s">▼</button><button data-direction="d">▶</button></div></div>
           <button class="touch-action" data-action="interact">INTERACTUAR</button>
+          <button class="touch-action" data-direction="space">SALTAR</button>
         </div>
       </div>
       <div id="panel-backdrop" class="panel-backdrop" hidden>
@@ -167,6 +169,7 @@ export class Hud {
   private text(id: string, value: string): void { document.getElementById(id)!.textContent = value; }
 
   open(which: Exclude<Panel, null>): void {
+    if(!this.actions.canOpenPanel())return;
     this.closeDialogue();
     this.panel = which;
     document.getElementById('panel-backdrop')!.hidden = false;
@@ -274,7 +277,7 @@ export class Hud {
 
   private helpMarkup(): string {
     return `<p class="panel-lead">Auralia: isla principal de aproximadamente 4 × 3 km, terreno generado por sectores, seis biomas explorables y posiciones persistentes. El mapa (M) permite teletransportarse a los miradores solamente para probar el desarrollo.</p><div class="help-grid">
-      <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr.</p></article>
+      <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr y <strong>Espacio</strong> para saltar. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
       <article><h3>🪵 Recolección</h3><p>Acercate a árboles con marcador, rocas y cristales, y presioná <strong>E</strong>. Los recursos reaparecen después de unos segundos.</p></article>
       <article><h3>⚒️ Fabricación</h3><p>Presioná <strong>C</strong>, elegí una receta y usá los materiales que reuniste. Fabricá primero el martillo.</p></article>
       <article><h3>🏡 Construcción</h3><p>Presioná <strong>B</strong>, elegí una pieza y caminá al Claro del Hogar. Click para colocar; R para girar y Esc para cancelar.</p></article>
