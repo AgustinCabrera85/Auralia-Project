@@ -93,6 +93,10 @@ export class WorldView {
   private saveTimer = 0;
   private lastBiome = "";
   private vegetationCenter = '';
+  private cameraPreferredRadius=29;
+  private cameraAppliedRadius=29;
+  private cameraOcclusionTimer=0;
+  private cameraOcclusionDistance=Infinity;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -116,7 +120,7 @@ export class WorldView {
     sun.diffuse = new Color3(1, 0.91, 0.76);
 
     this.camera = new ArcRotateCamera('camara-aventura', -Math.PI / 2.3, 1.05, 29, new Vector3(0, 3, 0), this.scene);
-    this.camera.lowerRadiusLimit = 14;
+    this.camera.lowerRadiusLimit = 4;
     this.camera.upperRadiusLimit = 46;
     this.camera.lowerBetaLimit = 0.35;
     this.camera.upperBetaLimit = 1.35;
@@ -653,6 +657,7 @@ export class WorldView {
     // Saves store X/Z only. A saved position on the exposed rock face would
     // otherwise respawn at the terrain height, underneath the visible mesh.
     for(const formation of GEOLOGY_FORMATIONS){
+      if(formation.kind==='canyon')continue;
       const local=geologyLocal(formation,x,z);
       if(Math.abs(local.along)>formation.length*.5+8||local.across<=-34||
         local.across>=30||sampleMainlandHeight(x,z)>formation.targetHeight-4)continue;
@@ -864,6 +869,7 @@ export class WorldView {
       ?walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025:0;
     this.playerBody.rotation.z=this.traversal.mode==='climbing'?.08:0;
     this.camera.setTarget(Vector3.Lerp(this.camera.getTarget(),this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt)));
+    this.updateCameraOcclusion(dt);
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
       this.vegetation.update();
@@ -878,6 +884,28 @@ export class WorldView {
     }
     this.findNearest();
     if(this.placement)this.refreshPreview();
+  }
+
+  private updateCameraOcclusion(dt:number):void{
+    const changed=this.camera.radius-this.cameraAppliedRadius;
+    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(4,
+      Math.min(46,this.cameraPreferredRadius+changed));
+    this.cameraOcclusionTimer-=dt;
+    if(this.cameraOcclusionTimer<=0){
+      this.cameraOcclusionTimer=.12;
+      const {alpha,beta}=this.camera,radius=this.cameraPreferredRadius;
+      const target=this.camera.getTarget();
+      const desired=target.add(new Vector3(
+        Math.cos(alpha)*Math.sin(beta)*radius,
+        Math.cos(beta)*radius,
+        Math.sin(alpha)*Math.sin(beta)*radius));
+      const hit=this.props.queryCameraObstruction(target,desired);
+      this.cameraOcclusionDistance=hit===null?Infinity:Math.max(4,hit-1.1);
+    }
+    const safe=Math.min(this.cameraPreferredRadius,this.cameraOcclusionDistance);
+    this.camera.radius=safe<this.camera.radius?safe:
+      this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*5);
+    this.cameraAppliedRadius=this.camera.radius;
   }
 
   private findNearest(): void {

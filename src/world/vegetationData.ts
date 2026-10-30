@@ -117,7 +117,8 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
     }
   }
   for(const formation of GEOLOGY_FORMATIONS)for(let i=-1;i<=1;i++){
-    const point=geologyPoint(formation,i*22,51+(i===0?8:0));
+    const across=formation.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
+    const point=geologyPoint(formation,i*22,across);
     const cell=chunkOf(point.x,point.z);
     if(cell.cx!==cx||cell.cz!==cz)continue;
     const y=sampleMainlandHeight(point.x,point.z);

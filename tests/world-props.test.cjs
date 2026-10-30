@@ -42,7 +42,10 @@ assert.ok(rocksFromSeveralChunks.every(p=>Number.isInteger(p.partIndex)&&p.partI
 assert.ok(new Set(rocksFromSeveralChunks.map(p=>p.partIndex)).size>4,'varied independent parts are selected');
 assert.ok(rectangularRocks.length>0,'rectangular rocks belong to global formations');
 assert.ok(rectangularRocks.every(p=>p.pieceIndex>=0&&p.pieceIndex<21&&p.diameterMeters>=7.5&&p.worldHeight>2));
-assert.ok(rectangularRocks.some(p=>p.worldHeight>=30),'monumental column appears');
+assert.ok(GEOLOGY_COMPOSITIONS.every(c=>c.pieces.some(p=>
+  (p.id.includes(':column:')||p.id.includes(':outcrop:'))&&
+  p.kind==='formacionRocosa'&&p.worldHeight<20)),
+  'each rock formation uses low solid outcrops instead of monumental columns');
 assert.equal(new Set(rectangularRocks.map(p=>p.id)).size,rectangularRocks.length,
   'global pieces keep unique stable IDs');
 for(const p of sample){
@@ -131,31 +134,32 @@ for(const p of FIXED_CRYSTALS){
   assert.equal(system.visibleDecorationCount,count,'reload has the same deterministic decoration');
   assert.equal(system.nearestResource(-160,-210,2),null,'cooldown survives unload and reload');
   assert.equal(imports.length,11,'reload does not import GLBs again');
-  const monument=rectangularRocks.find(p=>p.worldHeight>=30);
-  const monumentCell=chunkOf(monument.x,monument.z);
-  system.setActiveChunks([monumentCell],monument.x,monument.z);
+  const cliffPiece=GEOLOGY_COMPOSITIONS.find(c=>c.formation.id==='altapiedra-cliff')
+    .pieces.find(p=>p.id.includes(':wall:3'));
+  const monumentCell=chunkOf(cliffPiece.x,cliffPiece.z);
+  system.setActiveChunks([monumentCell],cliffPiece.x,cliffPiece.z);
   system.update(1/60);
   assert.ok(system.activeRockColliderCount>0,'nearby rocks have exact collider instances');
   let surface=null;
-  for(let dx=-monument.worldRadius*.6;dx<=monument.worldRadius*.6&&!surface;dx+=1.5)
-    for(let dz=-monument.worldRadius*.6;dz<=monument.worldRadius*.6&&!surface;dz+=1.5)
-      surface=system.queryRockGround(monument.x+dx,monument.z+dz,
-        monument.y+monument.worldHeight+2,monument.worldHeight+6,.33);
+  for(let dx=-cliffPiece.worldRadius*.6;dx<=cliffPiece.worldRadius*.6&&!surface;dx+=1.5)
+    for(let dz=-cliffPiece.worldRadius*.6;dz<=cliffPiece.worldRadius*.6&&!surface;dz+=1.5)
+      surface=system.queryRockGround(cliffPiece.x+dx,cliffPiece.z+dz,
+        cliffPiece.y+cliffPiece.worldHeight+2,cliffPiece.worldHeight+6,.33);
   assert.ok(surface?.rockId.startsWith('geo:altapiedra-cliff:'),
     'real triangles provide a walkable surface on the composition');
   let wall=null;
   for(const fraction of [.2,.4,.6,.8]){
-    const y=monument.y+monument.worldHeight*fraction;
+    const y=cliffPiece.y+cliffPiece.worldHeight*fraction;
     for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      wall=system.queryRockWall(monument.x+dx*(monument.worldRadius+3),y,
-        monument.z+dz*(monument.worldRadius+3),-dx,-dz,monument.worldRadius+6);
+      wall=system.queryRockWall(cliffPiece.x+dx*(cliffPiece.worldRadius+3),y,
+        cliffPiece.z+dz*(cliffPiece.worldRadius+3),-dx,-dz,cliffPiece.worldRadius+6);
       if(wall?.rockId.startsWith('geo:altapiedra-cliff:'))break;
     }
     if(wall?.rockId.startsWith('geo:altapiedra-cliff:'))break;
   }
   assert.ok(wall?.rockId.startsWith('geo:altapiedra-cliff:'),'the composition exposes a lateral wall');
-  assert.equal(wall?.climbable,true,'column carries its climb tag');
-  system.setColliderFocus(monument.x,monument.z,monument.id);
+  assert.equal(wall?.climbable,true,'cliff wall carries its climb tag');
+  system.setColliderFocus(cliffPiece.x,cliffPiece.z,cliffPiece.id);
   system.setActiveChunks([],1000,1000);
   assert.equal(system.activeFormationCount,1,'all pieces of the supporting formation survive streaming');
   system.setColliderFocus(1000,1000,null);

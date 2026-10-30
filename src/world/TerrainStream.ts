@@ -1,8 +1,10 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, VertexBuffer } from '@babylonjs/core';
 import { biomeWeightsAt, chunkKey, desiredChunks, MAINLAND, sampleMainlandHeight, TERRAIN_CONFIG } from './terrainData';
 import { riverSample, streamSample, waterSurfaceAt } from './geographicFeatures';
+import { GEOLOGY_FORMATIONS, geologyInfluence, geologyLocal } from './geologyData';
 
 type Tile = {mesh:Mesh;cx:number;cz:number};
+const CANYON_FORMATION=GEOLOGY_FORMATIONS.find(formation=>formation.kind==='canyon');
 
 /**
  * Streaming circular de mallas de terreno con muestreo determinista.
@@ -44,7 +46,22 @@ export class TerrainStream {
     const bank=Math.max(0,1-bankDistance/11);
     if(bank>0)for(let i=0;i<3;i++)c[i]=c[i]*(1-bank*.72)+[.62,.57,.43][i]*bank*.72;
     const variance=.96+.065*Math.sin(x*.15)*Math.cos(z*.11);
-    return [c[0]*variance,c[1]*variance,c[2]*variance];
+    for(let i=0;i<3;i++)c[i]*=variance;
+    const canyon=CANYON_FORMATION;
+    if(canyon){
+      const strength=geologyInfluence(canyon,x,z);
+      if(strength>.01){
+        const across=Math.abs(geologyLocal(canyon,x,z).across);
+        const floor=Math.max(0,Math.min(1,(26-across)/9))*strength;
+        const wall=Math.max(0,Math.min(1,(across-20)/10))*
+          Math.max(0,Math.min(1,(65-across)/15))*strength;
+        for(let i=0;i<3;i++){
+          c[i]=c[i]*(1-floor*.86)+[.63,.55,.43][i]*floor*.86;
+          c[i]=c[i]*(1-wall*.93)+[.58,.57,.53][i]*wall*.93;
+        }
+      }
+    }
+    return c;
   }
   private createTile(cx:number,cz:number):Tile{
     const size=MAINLAND.chunkSize;

@@ -119,6 +119,20 @@ narrowClimber.teleport(0,0,0);
 for(let i=0;i<150&&narrowClimber.mode!=='mantling';i++)
   narrowClimber.step(.02,input({moveX:1,vertical:1}),offsetTopWorld);
 assert.equal(narrowClimber.mode,'mantling','finds a valid ledge beyond a jagged near edge');
+const budgetBase=wallWorld(30,true);
+let groundQueries=0,wallQueries=0;
+const budgetWorld={...budgetBase,
+  ground:(...args)=>{groundQueries++;return budgetBase.ground(...args);},
+  wall:(...args)=>{wallQueries++;return budgetBase.wall(...args);}
+};
+const steadyClimber=new CharacterTraversalController();
+steadyClimber.teleport(0,0,0);
+steadyClimber.step(.02,input({moveX:1,vertical:1}),budgetWorld);
+groundQueries=0;wallQueries=0;
+for(let i=0;i<60;i++)steadyClimber.step(.02,input({vertical:1}),budgetWorld);
+assert.equal(steadyClimber.mode,'climbing');
+assert.ok(groundQueries<200,'mantle probes do not run on every climbing frame');
+assert.ok(wallQueries<90,'a vertical climb does not raycast for sideways movement');
 climber.teleport(0,0,0);
 climber.step(.02,input({moveX:1,vertical:1}),wallWorld(30,true));
 climber.step(.02,input({jumpPressed:true}),wallWorld(30,true));

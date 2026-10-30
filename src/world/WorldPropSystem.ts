@@ -6,7 +6,7 @@ import { ASSET_CATALOG, type AssetId } from './assetCatalog';
 import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockScaleForDiameter } from './rockPackData';
 import { RECT_ROCK_PARTS, RECT_ROCK_PART_COUNT } from './rectRockData';
 import { RockColliderSystem, type RockSurface, type RockWallHit } from './RockColliderSystem';
-import { geologyIntersectsChunk } from './geologyData';
+import { geologyIntersectsChunk, sameGeologyFormation } from './geologyData';
 import { GEOLOGY_COMPOSITIONS, type GeologyComposition } from './geologyPresets';
 import { chunkKey, chunkOf, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { type VegetationExclusion } from './vegetationData';
@@ -54,7 +54,7 @@ export class WorldPropSystem {
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,private readonly store:GameStore,
     private readonly exclusions:()=>readonly VegetationExclusion[],private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){
-    this.rockColliders=new RockColliderSystem(scene,kind=>this.sources.get(kind));
+    this.rockColliders=new RockColliderSystem(kind=>this.sources.get(kind));
   }
 
   /** Every GLB is fetched once. Multi-mesh packs retain all of their primitives and materials. */
@@ -79,6 +79,7 @@ export class WorldPropSystem {
             throw new Error(`Rocas rectangulares: se esperaban ${RECT_ROCK_PART_COUNT} piezas catalogadas`);
         }
         for(const [index,mesh] of parts.entries()){
+          const collisionOnly=id==='acantilado2'&&mesh.name==='cliff_collision';
           mesh.computeWorldMatrix(true);
           mesh.bakeTransformIntoVertices(mesh.getWorldMatrix().clone());
           if(id==='packRocas'||id==='rocasRectangulares'){
@@ -104,7 +105,7 @@ export class WorldPropSystem {
           mesh.position.setAll(0);mesh.scaling.setAll(1);mesh.rotation.setAll(0);mesh.rotationQuaternion=null;
           mesh.parent=this.parent;mesh.name=`asset-${id}-${index}`;
           mesh.isVisible=false;mesh.isPickable=false;mesh.checkCollisions=false;
-          mesh.metadata={sharedWorldAsset:id};
+          mesh.metadata={sharedWorldAsset:id,collisionOnly};
         }
         for(const mesh of imported.meshes)if(!parts.includes(mesh as Mesh))mesh.dispose(false,false);
         this.sources.set(id,parts);
@@ -177,7 +178,9 @@ export class WorldPropSystem {
 
   /** Rebuild collider instances only after meaningful movement or a support change. */
   setColliderFocus(x:number,z:number,protectedRockId:string|null=null):void{
-    const supportChanged=protectedRockId!==this.protectedRockId;
+    const supportChanged=protectedRockId!==this.protectedRockId&&
+      !(protectedRockId&&this.protectedRockId&&
+        sameGeologyFormation(protectedRockId,this.protectedRockId));
     this.focus={x,z};
     this.protectedRockId=protectedRockId;
     if(supportChanged){
@@ -240,6 +243,7 @@ export class WorldPropSystem {
     }
     for(const kind of renderKinds){
       for(const [index,source] of (this.sources.get(kind)??[]).entries()){
+        if(source.metadata?.collisionOnly===true)continue;
         // Exactly ONE part per procedural placement, not all 17 parts.
         const data=kind==='packRocas'?(rockMatrices[index]??[]):
           kind==='rocasRectangulares'?(rectMatrices[index]??[]):matrices.get(kind)!;
@@ -319,6 +323,10 @@ export class WorldPropSystem {
 
   queryRockSolidTop(x:number,z:number,originY:number,maxDistance:number,rockId?:string):RockSurface|null{
     return this.rockColliders.querySolidTop(x,z,originY,maxDistance,rockId);
+  }
+
+  queryCameraObstruction(from:Vector3,to:Vector3):number|null{
+    return this.rockColliders.queryCameraObstruction(from,to);
   }
 
   queryRockWall(x:number,y:number,z:number,dirX:number,dirZ:number,maxDistance:number):RockWallHit|null{

@@ -1,6 +1,6 @@
 import { GEOLOGY_FORMATIONS, geologyPoint, type GeologyFormation } from './geologyData';
 import { hash01, sampleMainlandHeight } from './terrainData';
-import { RECT_ROCK_PARTS, rectRockSizing } from './rectRockData';
+import { rectRockSizing } from './rectRockData';
 import { rockScaleForDiameter } from './rockPackData';
 import type { PropPlacement } from './worldPropsData';
 
@@ -16,8 +16,53 @@ export function composeGeology(f:GeologyFormation):GeologyComposition{
   const push=(role:string,i:number,p:Omit<PropPlacement,'id'>):void=>{
     pieces.push({id:`geo:${f.id}:${role}:${i}`,...p});
   };
-  const wallCount=f.kind==='coastalCliff'?9:7;
-  const wallHalf=f.length*.37;
+  if(f.kind==='canyon'){
+    // Two overlapping rock banks frame one continuous terrain floor. The source
+    // meshes have closed volumes and a cheaper, equally closed collision shell.
+    const wallsPerBank=9;
+    for(const side of [-1,1])for(let i=0;i<wallsPerBank;i++){
+      const along=(-.39+ .78*i/(wallsPerBank-1))*f.length;
+      const at=point(along,side*45);
+      const foot=point(along,side*22),crest=point(along,side*55);
+      const base=sampleMainlandHeight(foot.x,foot.z)-2.5;
+      const scale=Math.max(31,(sampleMainlandHeight(crest.x,crest.z)-base)/.86);
+      push('wall',i+(side>0?wallsPerBank:0),{kind:'acantilado2',x:at.x,y:base,z:at.z,
+        scale,scaleXZ:scale*1.08,scaleY:scale,yaw:Math.atan2(f.axisX,f.axisZ),
+        worldHeight:scale*.86,worldRadius:scale*.76,climbable:i>0&&i<wallsPerBank-1});
+    }
+    // Alternating low shelves make a route of short jumps along the canyon.
+    for(const side of [-1,1])for(let i=0;i<12;i++){
+      const along=-86+i*172/11;
+      const at=point(along,side*(22+(i%3)*1.1));
+      const scale=12.8;
+      push('step',i+(side>0?12:0),{kind:'escalonRocoso',x:at.x,
+        y:sampleMainlandHeight(at.x,at.z)-4,z:at.z,scale,
+        yaw:0,worldHeight:scale*.45,
+        worldRadius:scale*.72,climbable:false});
+    }
+    for(let i=0;i<2;i++){
+      const side=i===0?-1:1,at=point((i===0?-42:47),side*53),scale=31;
+      push('terrace',i,{kind:'mesetaPasto',x:at.x,
+        y:sampleMainlandHeight(at.x,at.z)-scale*.45+.25,z:at.z,scale,
+        yaw:0,worldHeight:scale*.45,worldRadius:scale*.72});
+      const outcrop=point((i===0?-64:64),side*61),outcropScale=16;
+      push('outcrop',i,{kind:'formacionRocosa',x:outcrop.x,
+        y:sampleMainlandHeight(outcrop.x,outcrop.z)-3,z:outcrop.z,
+        scale:outcropScale,yaw:random(i,22)*Math.PI*2,
+        worldHeight:outcropScale,worldRadius:outcropScale*.5,climbable:false});
+    }
+    for(let i=0;i<4;i++){
+      const at=point(-67+i*44,(i%2===0?-1:1)*6);
+      const partIndex=[2,4,6,8][i],rockDiameter=3.4+i*.35;
+      push('rubble',i,{kind:'packRocas',x:at.x,
+        y:sampleMainlandHeight(at.x,at.z)-.35,z:at.z,
+        scale:rockScaleForDiameter(partIndex,rockDiameter),yaw:random(i,23)*Math.PI*2,
+        partIndex,rockDiameter,worldRadius:rockDiameter*.55,climbable:false});
+    }
+    return {formation:f,pieces};
+  }
+  const wallCount=f.kind==='coastalCliff'?9:f.kind==='plateau'?8:7;
+  const wallHalf=f.length*(f.kind==='plateau'?.43:.37);
   for(let i=0;i<wallCount;i++){
     const along=-wallHalf+2*wallHalf*i/(wallCount-1)+(random(i,1)-.5)*3;
     const at=point(along,0),low=point(along,-21),high=point(along,24);
@@ -25,19 +70,18 @@ export function composeGeology(f:GeologyFormation):GeologyComposition{
     const crest=sampleMainlandHeight(high.x,high.z)+(random(i,2)-.5)*3;
     const scale=Math.max(28,(crest-base)/.86);
     push('wall',i,{kind:'acantilado2',x:at.x,y:base,z:at.z,scale,
-      yaw:Math.atan2(f.axisX,f.axisZ)+(random(i,3)-.5)*.18,
-      worldHeight:scale*.86,worldRadius:scale*.7,climbable:i>=2&&i<=wallCount-3});
+      scaleXZ:scale*1.12,scaleY:scale,
+      yaw:Math.atan2(f.axisX,f.axisZ),
+      worldHeight:scale*.86,worldRadius:scale*.78,climbable:i>=2&&i<=wallCount-3});
   }
   for(let i=0;i<2;i++){
     const along=(i===0?-.27:.24)*f.length;
     const at=point(along,-17);
-    const pieceIndex=i===0?0:3;
-    const size=rectRockSizing(pieceIndex,.35+random(i,4)*.4,.3+random(i,5)*.5);
-    push('column',i,{kind:'rocasRectangulares',x:at.x,
-      y:sampleMainlandHeight(at.x,at.z)-2,z:at.z,scale:size.scaleXZ,
-      scaleXZ:size.scaleXZ,scaleY:size.scaleY,yaw:random(i,6)*Math.PI*2,
-      pieceIndex,diameterMeters:size.diameterMeters,worldHeight:size.heightMeters,
-      worldRadius:size.broadphaseRadiusMeters,climbable:RECT_ROCK_PARTS[pieceIndex].canHaveClimbRoute});
+    const scale=14+random(i,4)*3;
+    push('column',i,{kind:'formacionRocosa',x:at.x,
+      y:sampleMainlandHeight(at.x,at.z)-3,z:at.z,scale,
+      yaw:random(i,6)*Math.PI*2,worldHeight:scale,
+      worldRadius:scale*.55,climbable:false});
   }
   for(let i=0;i<2;i++){
     const at=point((i===0?-.18:.16)*f.length,-27);

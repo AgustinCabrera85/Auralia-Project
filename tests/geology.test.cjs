@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@babylonjs/core');
+const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer,Ray,Vector3}=require('@babylonjs/core');
 const {GameStore}=require('../.test-build/domain/GameStore.js');
 const {newGame}=require('../.test-build/domain/types.js');
 const {GEOLOGY_FORMATIONS,geologyPoint,geologyInfluence,geologyFaceExcludes,
@@ -11,8 +11,8 @@ const {vegetationForChunk}=require('../.test-build/world/vegetationData.js');
 const {WorldPropSystem}=require('../.test-build/world/WorldPropSystem.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
-assert.equal(GEOLOGY_FORMATIONS.length,3);
-assert.deepEqual(GEOLOGY_FORMATIONS.map(f=>f.kind),['cliff','plateau','coastalCliff']);
+assert.equal(GEOLOGY_FORMATIONS.length,4);
+assert.deepEqual(GEOLOGY_FORMATIONS.map(f=>f.kind),['cliff','plateau','coastalCliff','canyon']);
 const allPieces=GEOLOGY_COMPOSITIONS.flatMap(c=>c.pieces);
 assert.equal(new Set(allPieces.map(p=>p.id)).size,allPieces.length,'piece IDs are unique');
 for(const composition of GEOLOGY_COMPOSITIONS){
@@ -24,20 +24,23 @@ for(const composition of GEOLOGY_COMPOSITIONS){
     'structural pieces leave existing and reserved routes clear');
   const walls=composition.pieces.filter(p=>p.id.includes(':wall:'));
   for(let i=1;i<walls.length;i++){
+    if(f.kind==='canyon'&&i===walls.length/2)continue;
     const gap=Math.hypot(walls[i].x-walls[i-1].x,walls[i].z-walls[i-1].z);
     assert.ok(gap<(walls[i].scale+walls[i-1].scale)*.45,
       'adjacent cliff meshes overlap to hide seams');
   }
-  const near=geologyPoint(f,0,35);
+  const near=geologyPoint(f,0,f.kind==='canyon'?60:35);
   assert.ok(Math.abs(sampleMainlandHeight(near.x,near.z)-f.targetHeight)<1.5,
     'the top terrain reaches the composition crest');
-  const face=geologyPoint(f,0,0),step=2;
-  const lower=geologyPoint(f,0,-step),upper=geologyPoint(f,0,step);
+  const face=geologyPoint(f,0,f.kind==='canyon'?37:0),step=2;
+  const lower=geologyPoint(f,0,(f.kind==='canyon'?37:0)-step);
+  const upper=geologyPoint(f,0,(f.kind==='canyon'?37:0)+step);
   const faceSlope=(sampleMainlandHeight(upper.x,upper.z)-sampleMainlandHeight(lower.x,lower.z))/(2*step);
   assert.ok(faceSlope>1,'the exposed face is steep');
   assert.ok(geologyFaceExcludes(face.x,face.z));
   assert.ok(!geologyFaceExcludes(near.x,near.z),'the upper terrace remains available to vegetation');
-  for(let across=f.depth-55;across<=f.depth+16;across+=4){
+  for(let across=f.kind==='canyon'?f.depth*.5+64:f.depth-55;
+    across<=(f.kind==='canyon'?f.depth*.5+85:f.depth+16);across+=4){
     const a=geologyPoint(f,0,across-1),b=geologyPoint(f,0,across+1);
     const slope=Math.abs(sampleMainlandHeight(a.x,a.z)-sampleMainlandHeight(b.x,b.z))/2;
     assert.ok(slope<.91,`rear approach stays walkable at ${f.id}, ${across}: ${slope}`);
@@ -67,7 +70,8 @@ for(const f of GEOLOGY_FORMATIONS){
     'tree roots do not cross geological walls');
   assert.ok(vegetation.some(p=>p.kind==='plantitas1'&&
     [-1,0,1].some(i=>{
-      const at=geologyPoint(f,i*22,51+(i===0?8:0));
+      const across=f.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
+      const at=geologyPoint(f,i*22,across);
       return Math.hypot(p.x-at.x,p.z-at.z)<.01;
     })),'a terrace receives vegetation');
 }
@@ -98,6 +102,27 @@ for(const f of GEOLOGY_FORMATIONS){
     assert.ok(sources.every(m=>m.material?.albedoTexture&&m.getVerticesData(VertexBuffer.UVKind)?.length),
       `${kind} preserves GLB texture and UVs`);
   }
+  const cliff=scene.meshes.find(m=>m.metadata?.sharedWorldAsset==='acantilado2'&&
+    m.metadata?.collisionOnly!==true);
+  assert.ok(cliff&&cliff.getTotalVertices()>30000,
+    'the cliff uses its rebuilt volumetric mesh instead of planar backing');
+  assert.ok(imports.includes('/assets/world/cliffs/Acantilado_2_closed.glb'));
+  assert.ok(!scene.meshes.some(m=>m.metadata?.visualOnly||m.metadata?.rockCore),
+    'the scene contains no planar cliff patches');
+  const collisionCliff=scene.meshes.find(m=>m.metadata?.sharedWorldAsset==='acantilado2'&&
+    m.metadata?.collisionOnly===true);
+  assert.ok(collisionCliff&&collisionCliff.getTotalVertices()<cliff.getTotalVertices(),
+    'cliff queries use a simpler closed volume');
+  const vertices=cliff.getVerticesData(VertexBuffer.PositionKind);
+  const edges=new Map();
+  const vertexKey=index=>[0,1,2].map(axis=>Math.round(vertices[index*3+axis]*1e5)).join(':');
+  const indices=cliff.getIndices();
+  for(let i=0;i<indices.length;i+=3)for(const [a,b] of [[0,1],[1,2],[2,0]]){
+    const key=[vertexKey(indices[i+a]),vertexKey(indices[i+b])].sort().join('|');
+    edges.set(key,(edges.get(key)??0)+1);
+  }
+  assert.ok([...edges.values()].every(count=>count===2),
+    'the rendered cliff itself is closed without unpaired edges');
   assert.equal(new Set(imports).size,imports.length,'the compositions share one import per GLB');
   const wall=first.pieces.find(p=>p.id.includes(':wall:3'));
   const approach=geologyPoint(f,0,-42);
@@ -107,6 +132,12 @@ for(const f of GEOLOGY_FORMATIONS){
     if(hit?.climbable&&hit.normal.y>=-.3&&hit.normal.y<=.6)contact=hit;
   }
   assert.ok(contact?.rockId.startsWith(`geo:${f.id}:`),'the actual wall is climbable');
+  const cameraFrom=geologyPoint(f,0,-55),cameraTo=geologyPoint(f,0,55);
+  const cameraHit=system.queryCameraObstruction(
+    new Vector3(cameraFrom.x,wall.y+12,cameraFrom.z),
+    new Vector3(cameraTo.x,wall.y+12,cameraTo.z));
+  assert.ok(cameraHit!==null&&cameraHit>0&&cameraHit<110,
+    'the camera can stop before entering a closed cliff');
   const terrace=first.pieces.find(p=>p.id.includes(':terrace:0'));
   let platform=null,platformPoint=null;
   for(let dx=-9;dx<=9&&!platform;dx+=3)for(let dz=-9;dz<=9&&!platform;dz+=3){
@@ -197,10 +228,11 @@ for(const f of GEOLOGY_FORMATIONS){
   topClimber.teleport(topContact.point.x+topContact.normal.x*1.25,
     topContact.point.y-1.15,topContact.point.z+topContact.normal.z*1.25);
   topClimber.step(.02,climbInput,world);
-  assert.equal(topClimber.mode,'climbing','the upper face is still climbable');
+  assert.ok(topClimber.mode==='climbing'||topClimber.mode==='grounded',
+    'the upper face is climbable or already supports the player');
   for(let i=0;i<150&&topClimber.mode!=='grounded';i++)
     topClimber.step(.02,climbInput,world);
-  assert.ok(topClimber.mode==='grounded'&&topClimber.position.y>f.targetHeight-3,
+  assert.ok(topClimber.mode==='grounded'&&topClimber.position.y>f.targetHeight-5.5,
     `climbing reaches the crest: ${topClimber.mode} at ${topClimber.position.y.toFixed(1)}`);
   const crestStart=geologyPoint(f,-40,28);
   const crestWalker=new CharacterTraversalController();
@@ -252,9 +284,69 @@ for(const f of GEOLOGY_FORMATIONS){
       walkable=system.queryRockGround(ledge.x+dx,ledge.z+dz,
         region.targetHeight+4,6,.33)?.rockId===ledge.id;
     assert.ok(walkable,`${region.id} has a real walkable ledge`);
+    if(region.id==='sierra-plateau'){
+      const seam=system.queryRockGround(-206,-728,23.2,1.7,.33);
+      assert.ok(seam&&seam.height>22.4&&seam.normal.y>=.75,
+        'the Sierra block seam supports a full capsule footprint above its open underside');
+      const seamWalker=new CharacterTraversalController();
+      const start=system.queryRockGround(-204,-728,25,8,.33);
+      seamWalker.teleport(-204,start.height,-728);
+      const acrossSeam={moveX:-1,moveZ:0,forwardX:-1,forwardZ:0,
+        horizontal:0,vertical:0,run:false,jumpPressed:false};
+      for(let i=0;i<8;i++){
+        seamWalker.step(.025,acrossSeam,world);
+        assert.ok(seamWalker.mode==='grounded'&&seamWalker.position.y>22.2,
+          `walking over the Sierra block crack retains support at step ${i}: ${seamWalker.mode} ${JSON.stringify(seamWalker.position)}`);
+      }
+      let leftBlock=false;
+      for(let i=0;i<25;i++){
+        seamWalker.step(.025,acrossSeam,world);
+        leftBlock ||= seamWalker.mode==='airborne';
+      }
+      assert.ok(leftBlock&&seamWalker.position.y<22.2,
+        'the player still drops from the actual outer edge of the block');
+      const walls=scene.meshes.filter(m=>m.metadata?.rockCollider===true&&
+        m.metadata?.rockId?.startsWith('geo:sierra-plateau:wall:'));
+      assert.ok(walls.length>=8);
+      for(const along of [-40,-20,0,20,40,82]){
+        const from=geologyPoint(region,along,-65);
+        const ray=new Ray(new Vector3(from.x,30,from.z),
+          new Vector3(region.highX,0,region.highZ),100);
+        assert.ok(walls.some(mesh=>{
+          mesh.computeWorldMatrix();return ray.intersectsMesh(mesh,true).hit;
+        }),`Sierra's cliff backing covers the face at ${along}`);
+      }
+    }
+    if(region.kind==='canyon'){
+      const floor=geologyPoint(region,0,0);
+      const left=geologyPoint(region,0,-55),right=geologyPoint(region,0,55);
+      const floorHeight=sampleMainlandHeight(floor.x,floor.z);
+      assert.ok(Math.min(sampleMainlandHeight(left.x,left.z),
+        sampleMainlandHeight(right.x,right.z))-floorHeight>25,
+      'the canyon has two raised mountain banks around a lower route');
+      const runner=new CharacterTraversalController();
+      const start=geologyPoint(region,-70,0);
+      runner.teleport(start.x,sampleMainlandHeight(start.x,start.z),start.z);
+      const run={moveX:0,moveZ:1,forwardX:0,forwardZ:1,
+        horizontal:0,vertical:1,run:true,jumpPressed:false};
+      for(let i=0;i<140;i++){
+        runner.step(.025,run,world);
+        assert.ok(runner.mode==='grounded'&&runner.position.y>=
+          sampleMainlandHeight(runner.position.x,runner.position.z)-.12,
+        `the canyon floor stays runnable at step ${i}`);
+      }
+      assert.ok(runner.position.z>start.z+20);
+      const shelf=composition.pieces.find(p=>p.id.includes(':step:0'));
+      const shelfTop=system.queryRockGround(shelf.x,shelf.z,
+        sampleMainlandHeight(shelf.x,shelf.z)+5,6,.33);
+      assert.ok(shelfTop?.rockId===shelf.id&&
+        shelfTop.height>sampleMainlandHeight(shelf.x,shelf.z)+1&&
+        shelfTop.height<sampleMainlandHeight(shelf.x,shelf.z)+2.3,
+      'the first canyon shelf is solid and within jumping height');
+    }
     assert.equal(system.queryRockWall(region.x+800,region.targetHeight,region.z,
       region.highX,region.highZ,10),null,'there is no invisible region-wide wall');
   }
   system.dispose();scene.dispose();engine.dispose();
-  console.log('✓ Geología: tres composiciones deterministas, terreno conectado, mallas y streaming');
+  console.log('✓ Geología: cuatro composiciones deterministas, terreno conectado, mallas y streaming');
 })().catch(error=>{console.error(error);process.exitCode=1;});

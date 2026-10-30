@@ -1,6 +1,6 @@
 import type { Biome } from './terrainData';
 
-export type GeologyKind='cliff'|'plateau'|'coastalCliff';
+export type GeologyKind='cliff'|'plateau'|'coastalCliff'|'canyon';
 export type GeologyFormation=Readonly<{
   id:string;name:string;kind:GeologyKind;biome:Biome;
   x:number;z:number;axisX:number;axisZ:number;highX:number;highZ:number;
@@ -17,7 +17,10 @@ export const GEOLOGY_FORMATIONS:readonly GeologyFormation[]=[
     length:170,depth:125,endRamp:58,targetHeight:52,seed:37029},
   {id:'auralia-coastal-cliff',name:'Acantilado de la Costa de Auralia',kind:'coastalCliff',biome:'costa',
     x:2018,z:-720,axisX:0,axisZ:1,highX:-1,highZ:0,
-    length:240,depth:145,endRamp:76,targetHeight:34,seed:37047}
+    length:240,depth:145,endRamp:76,targetHeight:34,seed:37047},
+  {id:'sierra-canyon',name:'Cañón de las Sierras',kind:'canyon',biome:'sierras',
+    x:-420,z:-1040,axisX:0,axisZ:1,highX:1,highZ:0,
+    length:240,depth:130,endRamp:38,targetHeight:60,seed:37063}
 ] as const;
 
 export function geologyFormationId(pieceId:string):string|null{
@@ -49,6 +52,12 @@ export function geologyPoint(f:GeologyFormation,along:number,across:number):{x:n
 /** The face is steep, the crest is level and both ends and rear have walkable runouts. */
 export function geologyInfluence(f:GeologyFormation,x:number,z:number):number{
   const {along,across}=geologyLocal(f,x,z);
+  if(f.kind==='canyon'){
+    if(Math.abs(along)>f.length*.5+20||Math.abs(across)>f.depth*.5+60)return 0;
+    const end=1-smooth(f.length*.5-f.endRamp,f.length*.5+20,Math.abs(along));
+    const banks=1-smooth(f.depth*.5-10,f.depth*.5+60,Math.abs(across));
+    return end*banks;
+  }
   if(Math.abs(along)>f.length*.5+12||across< -12||across>f.depth+18)return 0;
   const end=1-smooth(f.length*.5-f.endRamp,f.length*.5+12,Math.abs(along));
   const face=smooth(-12,14,across);
@@ -61,7 +70,11 @@ export function applyGeologyRelief(x:number,z:number,base:number,roadMask=0):num
   let height=base;
   for(const formation of GEOLOGY_FORMATIONS){
     const influence=geologyInfluence(formation,x,z)*(1-roadMask);
-    if(influence>0)height+=(formation.targetHeight-height)*influence;
+    if(influence<=0)continue;
+    const target=formation.kind==='canyon'
+      ?formation.targetHeight-33*(1-smooth(22,50,Math.abs(geologyLocal(formation,x,z).across)))
+      :formation.targetHeight;
+    height+=(target-height)*influence;
   }
   return height;
 }
@@ -70,12 +83,16 @@ export function applyGeologyRelief(x:number,z:number,base:number,roadMask=0):num
 export function geologyFaceExcludes(x:number,z:number):boolean{
   return GEOLOGY_FORMATIONS.some(f=>{
     const {along,across}=geologyLocal(f,x,z);
+    if(f.kind==='canyon')return Math.abs(along)<f.length*.5+10&&
+      Math.abs(across)>21&&Math.abs(across)<60;
     return Math.abs(along)<f.length*.5+10&&across> -34&&across<30;
   });
 }
 
 export function geologyIntersectsChunk(f:GeologyFormation,cx:number,cz:number,size:number):boolean{
-  const halfLength=f.length*.5+20,low=-38,high=f.depth+24;
+  const halfLength=f.length*.5+20;
+  const low=f.kind==='canyon'?-f.depth*.5-60:-38;
+  const high=f.kind==='canyon'?f.depth*.5+60:f.depth+24;
   const corners=[geologyPoint(f,-halfLength,low),geologyPoint(f,-halfLength,high),
     geologyPoint(f,halfLength,low),geologyPoint(f,halfLength,high)];
   const minX=Math.min(...corners.map(p=>p.x)),maxX=Math.max(...corners.map(p=>p.x));

@@ -32,6 +32,7 @@ export class CharacterTraversalController {
   private climbRockId:string|null=null;
   private climbNormal={x:0,z:0};
   private climbProbeHeight=1.15;
+  private mantleProbeCooldown=0;
   private lastClimbWall:TraversalWall|null=null;
   private mantle:{from:TraversalPosition;to:TraversalPosition;elapsed:number;duration:number}|null=null;
 
@@ -43,6 +44,7 @@ export class CharacterTraversalController {
     Object.assign(this.position,{x,y,z});
     this.mode='grounded';this.velocityY=0;this.supportRockId=null;
     this.climbRockId=null;this.lastClimbWall=null;this.mantle=null;
+    this.mantleProbeCooldown=0;
   }
 
   get canInteract():boolean{return this.mode!=='climbing'&&this.mode!=='mantling';}
@@ -78,7 +80,7 @@ export class CharacterTraversalController {
       }
       const wall=this.findClimbWall(world);
       if(!wall||!this.sameSupport(wall.rockId,this.climbRockId,world)){
-        if(this.lastClimbWall&&this.tryMantle(this.lastClimbWall,world))return true;
+        if(this.lastClimbWall&&this.tryMantle(this.lastClimbWall,world,input))return true;
         this.mode='airborne';this.velocityY=0;this.climbRockId=null;
         this.lastClimbWall=null;this.supportRockId=null;
         return false;
@@ -94,7 +96,11 @@ export class CharacterTraversalController {
         const fraction=Math.min(1,.14/correction);
         p.x+=correctionX*fraction;p.z+=correctionZ*fraction;
       }
-      if(input.vertical>0&&this.tryMantle(wall,world))return true;
+      this.mantleProbeCooldown=Math.max(0,this.mantleProbeCooldown-dt);
+      if(input.vertical>0&&this.mantleProbeCooldown===0){
+        this.mantleProbeCooldown=.12;
+        if(this.tryMantle(wall,world,input))return true;
+      }
       const climbDelta=input.vertical*TRAVERSAL.climbUpSpeed*dt;
       if(climbDelta>0&&world.headroom(p.x,p.y+TRAVERSAL.playerHeight-.1,p.z,
         climbDelta+.1,this.climbRockId))
@@ -110,13 +116,15 @@ export class CharacterTraversalController {
       const right={x:input.forwardZ,z:-input.forwardX};
       const sign=tangent.x*right.x+tangent.z*right.z>=0?1:-1;
       const side=input.horizontal*sign*TRAVERSAL.climbSideSpeed*dt;
-      const nextX=p.x+tangent.x*side,nextZ=p.z+tangent.z*side;
-      const sideWall=world.wall(nextX,p.y+1.1,nextZ,-wall.normalX,-wall.normalZ,
-        TRAVERSAL.climbReach+TRAVERSAL.playerRadius+.45);
-      if(sideWall&&this.sameSupport(sideWall.rockId,this.climbRockId,world)&&
-        world.canMove(nextX,nextZ,p.x,p.z,p.y)){
-        p.x=nextX;p.z=nextZ;
-        this.climbRockId=sideWall.rockId;
+      if(Math.abs(side)>1e-7){
+        const nextX=p.x+tangent.x*side,nextZ=p.z+tangent.z*side;
+        const sideWall=world.wall(nextX,p.y+1.1,nextZ,-wall.normalX,-wall.normalZ,
+          TRAVERSAL.climbReach+TRAVERSAL.playerRadius+.45);
+        if(sideWall&&this.sameSupport(sideWall.rockId,this.climbRockId,world)&&
+          world.canMove(nextX,nextZ,p.x,p.z,p.y)){
+          p.x=nextX;p.z=nextZ;
+          this.climbRockId=sideWall.rockId;
+        }
       }
       this.supportRockId=this.climbRockId;
       return climbDelta!==0||side!==0;
@@ -143,6 +151,7 @@ export class CharacterTraversalController {
           this.lastClimbWall=wall;
           this.climbNormal={x:wall.normalX,z:wall.normalZ};
           this.supportRockId=wall.rockId;this.velocityY=0;
+          this.mantleProbeCooldown=.12;
           return false;
         }
       }
@@ -160,7 +169,7 @@ export class CharacterTraversalController {
         if(wall&&wall.distance<=distance+TRAVERSAL.playerRadius){blockingWall=wall;break;}
       }
       if(blockingWall&&this.mode==='airborne'&&this.velocityY>=0&&
-        this.tryMantle(blockingWall,world))return true;
+        this.tryMantle(blockingWall,world,input))return true;
       const risingTerrain=world.fallbackHeight(nextX,nextZ)>p.y+TRAVERSAL.stepHeight;
       if(!blockingWall&&!risingTerrain&&world.canMove(nextX,nextZ,p.x,p.z,p.y)){
         if(this.mode==='grounded'){
@@ -261,13 +270,16 @@ export class CharacterTraversalController {
     return null;
   }
 
-  private tryMantle(wall:TraversalWall,world:TraversalWorld):boolean{
+  private tryMantle(wall:TraversalWall,world:TraversalWorld,input:TraversalInput):boolean{
     const p=this.position;
     const normalLength=Math.hypot(wall.normalX,wall.normalZ);
     if(normalLength<1e-5)return false;
-    const nx=wall.normalX/normalLength,nz=wall.normalZ/normalLength;
-    const tangentX=-nz,tangentZ=nx;
     let target:TraversalPosition|null=null;
+    // Sculpted cliff pieces can expose an inward-facing facet. Use the player's
+    // forward direction to keep the mantle aimed into the formation.
+    const facing=wall.normalX*input.forwardX+wall.normalZ*input.forwardZ>0?-1:1;
+    const nx=wall.normalX/normalLength*facing,nz=wall.normalZ/normalLength*facing;
+    const tangentX=-nz,tangentZ=nx;
     for(const depth of [TRAVERSAL.playerRadius+.35,TRAVERSAL.playerRadius+.8,
       TRAVERSAL.playerRadius+1.25,3]){
       for(const side of [0,-TRAVERSAL.playerRadius*.55,TRAVERSAL.playerRadius*.55]){
@@ -276,7 +288,8 @@ export class CharacterTraversalController {
         const top=world.ground(x,z,p.y+TRAVERSAL.mantleMaxHeight+.2,
           TRAVERSAL.mantleMaxHeight+.4,TRAVERSAL.playerRadius*.45);
         if(!top||!top.rockId||!this.sameSupport(top.rockId,wall.rockId,world)||
-          !canMantleRise(top.height-p.y,world.headroom(x,top.height+.05,z,TRAVERSAL.playerHeight-.1))||
+          !canMantleRise(top.height-p.y,world.headroom(x,top.height+.05,z,
+            TRAVERSAL.playerHeight-.1,top.rockId))||
           !world.canMove(x,z,p.x,p.z,p.y))continue;
         const inward=world.ground(x-nx*.7,z-nz*.7,top.height+.5,1.1,
           TRAVERSAL.playerRadius*.45);
