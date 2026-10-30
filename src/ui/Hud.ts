@@ -1,7 +1,7 @@
 import { MAP_LOCATIONS, ZONES, type ZoneId } from '../data/world';
 import { GameStore, type Milestone } from '../domain/GameStore';
 import { BUILD_CATALOG, RECIPES, costAsText, hasCost } from '../domain/recipes';
-import { ITEM_ICON, ITEM_LABEL, MATERIALS, type BuildType } from '../domain/types';
+import { ITEM_ICON, ITEM_LABEL, MATERIALS, type BuildType, type Structure } from '../domain/types';
 import { LANDMARKS } from '../world/terrainData';
 import { mapPercent } from '../world/mapProjection';
 import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
@@ -10,6 +10,9 @@ type HudActions = {
   interact: () => void;
   beginBuild: (type: BuildType) => void;
   cancelBuild: () => void;
+  removeSelected:()=>void;
+  replaceSelected:(type:BuildType)=>void;
+  undoLastBuild:()=>void;
   reset: () => void;
   virtualKey: (key: string, active: boolean) => void;
   gotoLandmark: (id: string) => void;
@@ -58,6 +61,7 @@ export class Hud {
         <div class="compass"><div class="compass-n">N</div><span>✧</span><small id="biome-short">BRISALIA</small></div>
         <div class="terrain-status"><strong id="region-explore">Valle de los Faroles</strong><small><span id="position-explore">X 1 · Z 10</span><span> · </span><span id="chunks-explore">sectores…</span></small></div>
         <div class="interaction-pill" id="interaction-hint">WASD para caminar · E para interactuar · M para el mapa</div>
+        <aside id="build-selection" class="build-selection" hidden></aside>
         <div class="footer-hud"><div class="inventory-label">MOCHILA <span>recursos</span></div><div id="inventory" class="inventory-items"></div><div class="key-help">W A S D <span>mover</span> · RATÓN <span>cámara</span> · SHIFT <span>correr</span></div></div>
         <div id="toast" class="toast" role="status"></div>
         <div id="dialogue" class="dialogue" hidden>
@@ -94,7 +98,7 @@ export class Hud {
   get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible; }
 
   private readonly onClick = (event: MouseEvent) => {
-    const element = (event.target as HTMLElement).closest<HTMLElement>('[data-panel], [data-action], [data-recipe], [data-build], [data-marker], [data-map-view], [data-landmark]');
+    const element = (event.target as HTMLElement).closest<HTMLElement>('[data-panel], [data-action], [data-recipe], [data-build], [data-replace], [data-marker], [data-map-view], [data-landmark]');
     if (!element) {
       if (event.target === document.getElementById('panel-backdrop')) this.close();
       return;
@@ -114,11 +118,14 @@ export class Hud {
       this.actions.beginBuild(type);
       return;
     }
+    if(element.dataset.replace){this.actions.replaceSelected(element.dataset.replace as BuildType);return;}
     const action = element.dataset.action;
     if (action === 'close-panel') this.close();
     if (action === 'close-dialogue') this.closeDialogue();
     if (action === 'interact') this.actions.interact();
     if (action === 'cancel-build') { this.actions.cancelBuild(); this.notify('Modo construcción cancelado.'); }
+    if (action === 'remove-piece') this.actions.removeSelected();
+    if (action === 'undo-build') this.actions.undoLastBuild();
     if (action === 'reset' && window.confirm('¿Comenzar una partida nueva? Se perderá el progreso guardado en este navegador.')) {
       this.actions.reset(); this.close(); this.notify('Nueva partida creada.');
     }
@@ -267,12 +274,31 @@ export class Hud {
 
   private buildMarkup(): string {
     const inv = this.store.state.inventory;
-    return `<p class="panel-lead">Colocá piezas en el <strong>Claro del Hogar</strong> (sector delimitado al oeste del pueblo). Primero fabricá un martillo. <strong>R</strong> gira las piezas, <strong>clic</strong> coloca y <strong>Esc</strong> cancela.</p>
-      <div class="catalog-grid">${BUILD_CATALOG.map(r => {
+    const groups=['Cimientos y pisos','Paredes y aberturas','Techos','Decoración'] as const;
+    return `<p class="panel-lead">En el <strong>Claro del Hogar</strong>, elegí una pieza y buscá un encastre. <strong>R</strong> gira, <strong>clic</strong> coloca y <strong>Esc</strong> cancela. Hacé clic en una pieza construida para retirarla o cambiar una pared. Recuperás todos los materiales al desmontar.</p>
+      <div class="data-actions"><button data-action="undo-build">Deshacer última colocación (Z)</button></div>
+      ${groups.map(group=>`<h3 class="build-group-title">${group}</h3><div class="catalog-grid">${BUILD_CATALOG.filter(r=>r.group===group).map(r => {
         const enough = hasCost(inv, r.requires), hammer = inv.hammer > 0;
-        const icon = ({ floor:'▦',wall:'▥','stone-wall':'▥','metal-wall':'▥',roof:'⌂',post:'✧' } as const)[r.type];
-        return `<article class="catalog-card"><div class="catalog-icon">${icon}</div><h3>${r.title}</h3><p>${r.description}</p><div class="catalog-cost">${costAsText(r.requires)}</div><button data-build="${r.type}" ${!hammer || !enough || this.store.state.zone !== 'brisalia' ? 'disabled' : ''}>${!hammer ? 'Necesitás un martillo' : !enough ? 'Faltan materiales' : this.store.state.zone !== 'brisalia' ? 'Volvé a Brisalia' : 'Colocar pieza'}</button></article>`;
-      }).join('')}</div>`;
+        const icon=({'foundation':'▤',floor:'▦',wall:'▥','stone-wall':'▥',
+          'metal-wall':'▥','door-wall':'▯','window-wall':'▣',roof:'⌂',
+          'roof-section':'⌂',post:'✧'} as const)[r.type];
+        const available=Object.entries(r.requires).map(([item,count])=>
+          `${ITEM_LABEL[item as keyof typeof ITEM_LABEL]} ${inv[item as keyof typeof inv]}/${count}`).join(' · ');
+        return `<article class="catalog-card"><div class="catalog-icon">${icon}</div><h3>${r.title}</h3><p>${r.description}</p><div class="catalog-cost">${costAsText(r.requires)}</div><small class="build-available">Tenés: ${available}</small><button data-build="${r.type}" ${!hammer || !enough || this.store.state.zone !== 'brisalia' ? 'disabled' : ''}>${!hammer ? 'Necesitás un martillo' : !enough ? 'Faltan materiales' : this.store.state.zone !== 'brisalia' ? 'Volvé a Brisalia' : 'Colocar pieza'}</button></article>`;
+      }).join('')}</div>`).join('')}`;
+  }
+
+  setSelectedStructure(structure:Structure|null):void{
+    const panel=document.getElementById('build-selection')!;
+    panel.hidden=!structure;
+    if(!structure){panel.innerHTML='';return;}
+    const definition=BUILD_CATALOG.find(item=>item.type===structure.type);
+    const replacements=['wall','stone-wall','metal-wall','door-wall','window-wall']
+      .filter(type=>type!==structure.type&&!structure.legacy);
+    panel.innerHTML=`<strong>${definition?.title??structure.type}${structure.legacy?' · pieza antigua':''}</strong>
+      <small>Costo original: ${definition?costAsText(definition.requires):'sin receta'} · reintegro completo</small>
+      <div class="build-selection-actions"><button data-action="remove-piece">Retirar pieza</button>
+      ${replacements.map(type=>`<button data-replace="${type}">Cambiar por ${BUILD_CATALOG.find(item=>item.type===type)?.title}</button>`).join('')}</div>`;
   }
 
   private helpMarkup(): string {

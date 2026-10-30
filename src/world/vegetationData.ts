@@ -5,7 +5,7 @@ import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geology
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
-  renderRadiusChunks: { trees: 3, plants: 2 },
+  renderRadiusChunks: { trees: 12, plants: 2 },
   candidatesPerChunk: { arbolito1: 8, arbolito2: 12, arbolito3: 2, plantitas1: 16, arbolitoSeco: 3, tronco1: 4 },
   // The player is roughly 4 m tall; these sizes keep the trees visually dominant.
   baseScale: {

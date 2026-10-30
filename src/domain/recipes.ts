@@ -27,16 +27,21 @@ export type BuildDefinition = {
   type: BuildType;
   title: string;
   description: string;
+  group:'Cimientos y pisos'|'Paredes y aberturas'|'Techos'|'Decoración';
   requires: Partial<Record<ItemId, number>>;
 };
 
 export const BUILD_CATALOG: readonly BuildDefinition[] = [
-  { type: 'floor', title: 'Piso de madera', description: 'Módulo de 4 × 4 unidades.', requires: { wood: 2 } },
-  { type: 'wall', title: 'Pared de madera', description: 'Pared orientable con la tecla R.', requires: { wood: 2 } },
-  { type: 'stone-wall', title: 'Muro de piedra', description: 'Una variante resistente para los edificios.', requires: { stone: 3 } },
-  { type: 'metal-wall', title: 'Panel de cobre', description: 'Primer módulo de construcción metálica.', requires: { copper: 3, stone: 1 } },
-  { type: 'roof', title: 'Techo de tejas', description: 'Techo de cuatro aguas para tu cabaña.', requires: { wood: 3, stone: 1 } },
-  { type: 'post', title: 'Farol de piedra', description: 'Decoración luminosa para el jardín.', requires: { stone: 2, copper: 1 } }
+  {type:'foundation',title:'Cimiento',description:'Base firme de 4 × 4 con soportes en desniveles.',group:'Cimientos y pisos',requires:{wood:2,stone:2}},
+  {type:'floor',title:'Piso de madera',description:'Módulo horizontal de 4 × 4.',group:'Cimientos y pisos',requires:{wood:2}},
+  {type:'wall',title:'Pared de madera',description:'Se encastra en el borde de un piso.',group:'Paredes y aberturas',requires:{wood:2}},
+  {type:'stone-wall',title:'Muro de piedra',description:'Pared de piedra con juntas visibles.',group:'Paredes y aberturas',requires:{stone:3}},
+  {type:'metal-wall',title:'Panel de cobre',description:'Pared de metal con remaches.',group:'Paredes y aberturas',requires:{copper:3,stone:1}},
+  {type:'door-wall',title:'Pared con puerta',description:'Entrada abierta para caminar al interior.',group:'Paredes y aberturas',requires:{wood:3}},
+  {type:'window-wall',title:'Pared con ventana',description:'Abertura con marco y luz.',group:'Paredes y aberturas',requires:{wood:2,stone:1}},
+  {type:'roof',title:'Techo a dos aguas',description:'Sección modular apoyada en dos paredes.',group:'Techos',requires:{wood:3,stone:1}},
+  {type:'roof-section',title:'Alero de techo',description:'Otra sección que continúa el tejado.',group:'Techos',requires:{wood:3,stone:1}},
+  {type:'post',title:'Columna',description:'Poste de esquina para estructurar la casa.',group:'Decoración',requires:{stone:2,copper:1}}
 ];
 
 export function hasCost(inventory: Inventory, cost: Partial<Record<ItemId, number>>): boolean {

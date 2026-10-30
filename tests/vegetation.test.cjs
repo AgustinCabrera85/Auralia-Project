@@ -4,7 +4,7 @@ const path=require('node:path');
 const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@babylonjs/core');
 const {VegetationSystem}=require('../.test-build/world/VegetationSystem.js');
 const {vegetationForChunk,VEGETATION_CONFIG}=require('../.test-build/world/vegetationData.js');
-const {chunkOf,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
+const {chunkOf,desiredChunks,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
 const sample=vegetationForChunk(-8,-8);
@@ -49,11 +49,41 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   await system.load();
   assert.equal(system.sharedMeshCount,6,'six imported source meshes');
-  assert.equal(imports.length,6,'each GLB imported once');
-  assert.equal(new Set(imports).size,6);
+  assert.equal(imports.length,10,'six source GLBs and four visual LODs imported once');
+  assert.equal(new Set(imports).size,10);
   for(let i=0;i<60;i++)system.update();
-  assert.ok(system.activeChunkCount>0&&system.activeChunkCount<=cells.length);
+  assert.ok(system.activeChunkCount>cells.length&&
+    system.activeChunkCount<=desiredChunks(center.cx*MAINLAND.chunkSize,
+      center.cz*MAINLAND.chunkSize,VEGETATION_CONFIG.renderRadiusChunks.trees).length,
+  'distant trees stream beyond the playable terrain ring');
   assert.ok(system.instanceCount>0,'thin instance buffers populated');
+  const farTree=scene.getMeshByName('vegetacion-arbolito2-far');
+  assert.ok(farTree&&farTree.getTotalVertices()>0&&farTree.getTotalIndices()/3<1200,
+    'distant trees use a simplified version of the source GLB');
+  assert.ok(farTree.thinInstanceCount>0,'distant trees switch to the proxy');
+  assert.equal(farTree.material,scene.getMeshByName('vegetacion-arbolito2').material,
+    'near and far models share the original texture and PBR settings');
+  const meshBounds=mesh=>{
+    const positions=mesh.getVerticesData(VertexBuffer.PositionKind);
+    const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+    for(let i=0;i<positions.length;i++){
+      const axis=i%3;min[axis]=Math.min(min[axis],positions[i]);
+      max[axis]=Math.max(max[axis],positions[i]);
+    }
+    return {min,max};
+  };
+  const originalBounds=meshBounds(scene.getMeshByName('vegetacion-arbolito2'));
+  const lodBounds=meshBounds(farTree);
+  for(let axis=0;axis<3;axis++){
+    assert.ok(Math.abs(originalBounds.min[axis]-lodBounds.min[axis])<.07&&
+      Math.abs(originalBounds.max[axis]-lodBounds.max[axis])<.07,
+    'near and far tree pivots and silhouettes agree');
+  }
+  assert.ok(farTree.getVerticesData(VertexBuffer.UVKind)?.length>0,
+    'the distant mesh retains UVs for the original texture');
+  assert.ok(system.farInstanceCount>0&&system.farInstanceCount<system.instanceCount,
+    'near and far tree visuals coexist without changing placement totals');
+  assert.equal(farTree.isPickable,false,'distant silhouettes do not affect collisions');
   for(const kind of ['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1']){
     const mesh=scene.getMeshByName(`vegetacion-${kind}`);
     assert.ok(mesh&&mesh.getTotalVertices()>0,'source geometry retained');
@@ -76,7 +106,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   for(let i=0;i<60;i++)system.update();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
-  assert.equal(imports.length,6,'reload makes no new GLB imports');
+  assert.equal(imports.length,10,'reload makes no new GLB imports');
   const target={x:-509,z:32};
   const targetChunk=chunkOf(target.x,target.z);
   const targetCells=[];

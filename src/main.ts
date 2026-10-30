@@ -11,6 +11,9 @@ const hud = new Hud(store, {
   interact: () => world.interact(),
   beginBuild: type => world.beginPlacement(type),
   cancelBuild: () => world.cancelPlacement(),
+  removeSelected:()=>world.removeSelected(),
+  replaceSelected:type=>world.replaceSelected(type),
+  undoLastBuild:()=>world.undoLastPlacement(),
   reset: () => { store.reset(); world.refreshFromSave(); },
   virtualKey: (key, active) => world.setVirtualKey(key, active),
   gotoLandmark: id => world.teleportToLandmark(id),
@@ -27,7 +30,8 @@ try {
     onExplore: (x,z,region,chunks) => hud.onExplore(x,z,region,chunks),
     onBuild: () => {
       if (store.milestone === 'sail') hud.notify('¡Tu hogar ya tiene sus primeras piezas! Buscá el muelle al sur.');
-    }
+    },
+    onStructureSelected:structure=>hud.setSelectedStructure(structure)
   }, () => hud.isModalOpen);
   window.setTimeout(() => hud.notify('¡Bienvenido a Auralia! Buscá materiales, conocé Brisalia y construí tu hogar.'), 800);
 } catch (error) {

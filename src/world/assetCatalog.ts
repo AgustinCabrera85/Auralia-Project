@@ -30,3 +30,10 @@ export const ASSET_CATALOG={
 } as const satisfies Record<string,AssetDefinition>;
 
 export type AssetId=keyof typeof ASSET_CATALOG;
+export const CLIFF_LOD_PATH='/assets/world/cliffs/Acantilado_2_lod.glb';
+export const TREE_LOD_PATHS={
+  arbolito1:'/assets/vegetation/Arbolito_1_lod.glb',
+  arbolito2:'/assets/vegetation/Arbolito_2_lod.glb',
+  arbolito3:'/assets/vegetation/Arbolito_3_lod.glb',
+  arbolitoSeco:'/assets/world/vegetation/Arbolito_sin_hojas_lod.glb'
+} as const;

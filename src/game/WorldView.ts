@@ -1,19 +1,26 @@
 import {
   ArcRotateCamera, Color3, Color4, DirectionalLight, Engine, HemisphericLight,
-  Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, Vector3,
+  Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
   VertexBuffer, VertexData, PointLight
 } from '@babylonjs/core';
 import type { ZoneId } from '../data/world';
 import type { BuildType, MaterialId, Structure } from '../domain/types';
 import { GameStore } from '../domain/GameStore';
+import { anchorFor, buildingBlocksMove, buildingFloorAt, buildingHeadroom,
+  footprint, nearestEdgeSide, type BuildObstacle, type BuildPlan } from '../domain/buildingRules';
+import { BUILD_CATALOG, costAsText } from '../domain/recipes';
+import { BuildVisuals } from '../world/building/BuildVisuals';
 import { TerrainStream } from '../world/TerrainStream';
+import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
+import { LandscapeDebug } from '../world/LandscapeDebug';
 import { GeographyStream } from '../world/GeographyStream';
 import { VegetationSystem } from '../world/VegetationSystem';
+import { GrassFieldSystem } from '../world/grass/GrassFieldSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
 import { propsForChunk } from '../world/worldPropsData';
 import { GEOLOGY_FORMATIONS, geologyLocal, geologyPoint, sameGeologyFormation } from '../world/geologyData';
 import { selectRockPart } from '../world/rockPackData';
-import type { VegetationExclusion } from '../world/vegetationData';
+import { vegetationForChunk, type VegetationExclusion } from '../world/vegetationData';
 import { bridgeDeckAt, isInlandWater } from '../world/geographicFeatures';
 import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
 import { createPointOfInterestView } from '../world/PointOfInterestView';
@@ -48,7 +55,8 @@ type IslandInfo = {
   nodes: Interactable[];
 };
 
-type BuildPreview = { localX: number; localZ: number; type: BuildType; rotation: number; valid: boolean; message: string };
+type BuildPreview = { localX: number; localZ: number; type: BuildType; rotation: number;
+  valid: boolean; message: string; plan:BuildPlan|null };
 
 type WorldCallbacks = {
   notify: (message: string) => void;
@@ -57,6 +65,7 @@ type WorldCallbacks = {
   hint: (message: string) => void;
   onTravel: (destination: ZoneId) => void;
   onBuild: (structure: Structure) => void;
+  onStructureSelected:(structure:Structure|null)=>void;
   onExplore: (x: number, z: number, name: string, chunks: number) => void;
 };
 
@@ -71,6 +80,9 @@ export class WorldView {
   private readonly zones = new Map<ZoneId, IslandInfo>();
   private readonly materials = new Map<string, StandardMaterial>();
   private readonly built = new Map<string, TransformNode>();
+  private readonly buildVisuals:BuildVisuals;
+  private readonly buildObstacles:BuildObstacle[]=[];
+  private selectedStructureId:string|null=null;
   private readonly pressed = new Set<string>();
   private player!: TransformNode;
   private playerBody!: TransformNode;
@@ -83,6 +95,7 @@ export class WorldView {
   private readonly mainland: TerrainStream;
   private readonly geography: GeographyStream;
   private readonly vegetation: VegetationSystem;
+  private readonly grass: GrassFieldSystem;
   private readonly props: WorldPropSystem;
   private readonly traversal=new CharacterTraversalController();
   private jumpRequested=false;
@@ -93,6 +106,10 @@ export class WorldView {
   private saveTimer = 0;
   private lastBiome = "";
   private vegetationCenter = '';
+  private grassStatsOverlay:HTMLDivElement|null=null;
+  private grassInstrumentation:SceneInstrumentation|null=null;
+  private landscapeDebug:LandscapeDebug|null=null;
+  private grassStatsTimer=0;
   private cameraPreferredRadius=29;
   private cameraAppliedRadius=29;
   private cameraOcclusionTimer=0;
@@ -108,9 +125,7 @@ export class WorldView {
     this.engine.setHardwareScalingLevel(Math.min(1.35, Math.max(1, window.devicePixelRatio / 1.7)));
     this.scene = new Scene(this.engine);
     this.scene.clearColor = new Color4(0.73, 0.85, 0.97, 1);
-    this.scene.fogMode = Scene.FOGMODE_EXP2;
-    this.scene.fogDensity = 0.0023;
-    this.scene.fogColor = new Color3(0.71, 0.84, 0.95);
+    applyLandscapeAtmosphere(this.scene);
 
     const hemi = new HemisphericLight('ambiente', new Vector3(0, 1, 0), this.scene);
     hemi.intensity = 0.88;
@@ -125,7 +140,7 @@ export class WorldView {
     this.camera.lowerBetaLimit = 0.35;
     this.camera.upperBetaLimit = 1.35;
     this.camera.wheelPrecision = 32;
-    this.camera.maxZ = 1300;
+    this.camera.maxZ = LANDSCAPE_ATMOSPHERE_CONFIG.cameraFar;
     this.camera.panningSensibility = 0;
     this.camera.inertia = 0.7;
     this.camera.attachControl(canvas, true);
@@ -145,16 +160,28 @@ export class WorldView {
     this.populateMainland();
     this.populateFireflyIsland();
     this.createPlayer();
+    this.buildVisuals=new BuildVisuals(this.scene,continentRoot,sampleMainlandHeight);
+    this.buildObstacles.push(...this.collectBuildObstacles());
+    this.store.setBuildEnvironment(()=>({heightAt:sampleMainlandHeight,
+      obstacles:this.buildObstacles,player:this.traversal.position}));
 
-    for (const s of store.state.structures) this.drawStructure(s);
+    for (const s of store.state.structures) this.drawStructure(s,false);
     this.vegetation=new VegetationSystem(this.scene,continentRoot,()=>[
       ...this.vegetationExclusions,
-      ...this.store.state.structures.map(s=>({x:s.x,z:s.z,radius:5}))
+      ...this.store.state.structures.map(footprint)
+    ]);
+    this.grass=new GrassFieldSystem(this.scene,continentRoot,()=>[
+      ...this.vegetationExclusions.filter(e=>
+        !(e.x===this.plot.x&&e.z===this.plot.z&&e.radius===24)),
+      ...this.store.state.structures.map(footprint)
     ]);
     this.props=new WorldPropSystem(this.scene,continentRoot,this.store,()=>[
       ...this.vegetationExclusions,
-      ...this.store.state.structures.map(s=>({x:s.x,z:s.z,radius:5}))
+      ...this.store.state.structures.map(footprint)
     ]);
+    if(new URLSearchParams(window.location.search).has('landscapeDebug'))
+      this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
+        this.props,this.vegetation,this.grass);
     void this.vegetation.load();
     void this.props.load().then(()=>{
       for(const request of this.rockVisualRequests){
@@ -163,6 +190,14 @@ export class WorldView {
       this.rockVisualRequests.length=0;
     });
     this.activateZone(store.state.zone);
+    if(new URLSearchParams(window.location.search).has('grassStats')){
+      this.grassInstrumentation=new SceneInstrumentation(this.scene);
+      this.grassStatsOverlay=document.createElement('div');
+      this.grassStatsOverlay.style.cssText='position:fixed;right:10px;bottom:10px;z-index:20;'+
+        'padding:8px 10px;background:#10241bd9;color:#e9ffdb;font:12px monospace;'+
+        'white-space:pre;pointer-events:none;border-radius:6px';
+      document.body.appendChild(this.grassStatsOverlay);
+    }
 
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -173,6 +208,7 @@ export class WorldView {
       const dt = Math.min(this.engine.getDeltaTime() / 1000, 0.045);
       this.update(dt);
       this.scene.render();
+      this.updateGrassStats(dt);
     });
   }
 
@@ -184,19 +220,32 @@ export class WorldView {
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'e', 'r',' '].includes(key)) e.preventDefault();
     this.pressed.add(key);
     if (e.repeat || this.blocked()) return;
+    if(this.landscapeDebug?.handleKey(key)){e.preventDefault();return;}
     if(key===' '&&!this.placement)this.jumpRequested=true;
     if (key === 'e') this.interact();
     if (key === 'r' && this.placement) this.rotatePlacement();
+    if (key === 'z' && !this.placement) this.undoLastPlacement();
   };
   private readonly onKeyUp = (e: KeyboardEvent) => this.pressed.delete(e.key.toLowerCase());
   private readonly onPointerDown = (e: PointerEvent) => {
-    if (e.button !== 0 || !this.placement || this.blocked() || !this.traversal.canBuild) return;
+    if (e.button !== 0 || this.blocked() || !this.traversal.canBuild) return;
+    if(!this.placement){
+      const hit=this.scene.pick(this.scene.pointerX,this.scene.pointerY,
+        mesh=>typeof mesh.metadata?.structureId==='string');
+      const id=hit?.pickedMesh?.metadata?.structureId as string|undefined;
+      this.selectedStructureId=id??null;
+      this.callbacks.onStructureSelected(id?
+        this.store.state.structures.find(s=>s.id===id)??null:null);
+      return;
+    }
     this.refreshPreview();
     if (!this.preview) return;
     if (!this.preview.valid) { this.callbacks.notify(this.preview.message); return; }
     const outcome = this.store.build(this.preview.type, this.preview.localX, this.preview.localZ, this.preview.rotation);
     if (outcome.ok && outcome.structure) {
       this.drawStructure(outcome.structure);
+      this.selectedStructureId=null;
+      this.callbacks.onStructureSelected(null);
       this.callbacks.notify(outcome.message);
       this.callbacks.onBuild(outcome.structure);
       this.refreshPreview();
@@ -528,6 +577,27 @@ export class WorldView {
     this.populatePointsOfInterest(zone);
   }
 
+  private collectBuildObstacles():BuildObstacle[]{
+    const result:BuildObstacle[]=[];
+    const nearPlot=(x:number,z:number)=>Math.abs(x-this.plot.x)<this.plot.halfSize+5&&
+      Math.abs(z-this.plot.z)<this.plot.halfSize+5;
+    for(const node of this.zones.get('brisalia')!.nodes)
+      if((node.type==='resource'||node.type==='workbench'||node.type==='npc')&&
+        nearPlot(node.localPosition.x,node.localPosition.z))
+        result.push({x:node.localPosition.x,z:node.localPosition.z,radius:1.1,
+          kind:'resource'});
+    for(const cx of [-1,0])for(const cz of [0]){
+      for(const tree of vegetationForChunk(cx,cz,this.vegetationExclusions))
+        if(tree.obstacleRadius&&nearPlot(tree.x,tree.z))
+          result.push({x:tree.x,z:tree.z,radius:tree.obstacleRadius,kind:'tree'});
+      for(const prop of propsForChunk(cx,cz,this.vegetationExclusions))
+        if(nearPlot(prop.x,prop.z))result.push({x:prop.x,z:prop.z,
+          radius:prop.worldRadius??(prop.rockDiameter??1)*.5,
+          kind:prop.kind==='packRocas'?'rock':'resource'});
+    }
+    return result;
+  }
+
   private populatePointsOfInterest(zone:IslandInfo):void {
     for(const place of POINTS_OF_INTEREST){
       if(place.kind==='dock')continue; // El muelle jugable ya existe y conserva su viaje.
@@ -636,7 +706,11 @@ export class WorldView {
     const previous=this.store.state.playerPosition;
     const saved=previous?.zone===id ? previous : null;
     const start=saved&&id==='brisalia'?this.safeSavedStart(saved.x,saved.z):saved??zone.spawn;
-    this.player.position.set(zone.offset.x+start.x,id==='brisalia'?this.walkHeightAt(start.x,start.z):this.y(zone,start.x,start.z),zone.offset.z+start.z);
+    const terrainY=id==='brisalia'?this.walkHeightAt(start.x,start.z):this.y(zone,start.x,start.z);
+    const floorY=id==='brisalia'?buildingFloorAt(start.x,start.z,terrainY+1,
+      this.store.state.structures):null;
+    this.player.position.set(zone.offset.x+start.x,Math.max(terrainY,floorY??terrainY),
+      zone.offset.z+start.z);
     this.traversal.teleport(start.x,this.player.position.y,start.z);
     this.lastSafePosition={x:start.x,z:start.z};
     this.jumpRequested=false;
@@ -644,6 +718,7 @@ export class WorldView {
     else {
       this.props.setColliderFocus(start.x,start.z,null);
       this.props.setActiveChunks([],start.x,start.z);
+      this.grass.setActiveChunks([],start.x,start.z);
       this.vegetationCenter='';
     }
     if(id==='brisalia')this.streamMainland(start.x,start.z);
@@ -738,7 +813,10 @@ export class WorldView {
           ?{height:terrainY,normalY:slope}:null;
         const rock=isMainland?this.props.queryRockGround(x,z,originY,maxDistance,footRadius):null;
         const root=isMainland?this.vegetation.queryTreeGround(x,z,originY,maxDistance):null;
-        const surfaces=[terrain,root,rock?{height:rock.height,normalY:rock.normal.y,rockId:rock.rockId}:null]
+        const builtY=isMainland?buildingFloorAt(x,z,originY,this.store.state.structures):null;
+        const built=builtY!==null&&builtY>=originY-maxDistance-.001?
+          {height:builtY,normalY:1}:null;
+        const surfaces=[terrain,root,built,rock?{height:rock.height,normalY:rock.normal.y,rockId:rock.rockId}:null]
           .filter((hit):hit is NonNullable<typeof hit>=>hit!==null);
         return surfaces.reduce<typeof terrain>((highest,hit)=>
           !highest||hit.height>highest.height?hit:highest,null);
@@ -763,7 +841,8 @@ export class WorldView {
           normalZ:hit.normal.z,rockId:hit.rockId,climbable:hit.climbable}:null;
       },
       headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
-        this.props.hasRockHeadroom(x,y,z,room,ignoreRockId),
+        this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
+        buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
       canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
         const elevated=feetY>height(fromX,fromZ)+4;
@@ -778,20 +857,24 @@ export class WorldView {
           {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
         ].some(ob=>Math.hypot(ob.x-nextX,ob.z-nextZ)<ob.r);
         return canWalk&&!houses&&
-          (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false));
+          (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
+          (!isMainland||!buildingBlocksMove(fromX,fromZ,nextX,nextZ,feetY,
+            this.store.state.structures));
       },
       fallbackHeight:height
     };
   }
 
   private streamMainland(x:number,z:number):void {
-    const changed=this.mainland.update(x,z);
+    const view=this.camera.getTarget().subtract(this.camera.position);
+    const changed=this.mainland.update(x,z,view.x,view.z);
     const cell=chunkOf(x,z);
     const center=`${cell.cx}:${cell.cz}`;
     if(changed||center!==this.vegetationCenter){
       this.vegetationCenter=center;
       const cells=this.mainland.activeCells;
       this.vegetation.setActiveChunks(cells,x,z);
+      this.grass.setActiveChunks(cells,x,z);
       this.props.setActiveChunks(cells,x,z);
       this.geography.setActiveChunks(cells,x,z);
     }
@@ -873,8 +956,10 @@ export class WorldView {
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
       this.vegetation.update();
+      this.grass.update(localX,localZ);
       this.props.update(dt);
       this.geography.update();
+      this.landscapeDebug?.update(dt,localX,localZ);
     }
     this.exploreTimer+=dt;
     this.saveTimer+=dt;
@@ -1008,31 +1093,56 @@ export class WorldView {
     return base;
   }
 
-  drawStructure(structure: Structure): void {
+  drawStructure(structure: Structure,refresh=true): void {
     if (this.built.has(structure.id)) return;
-    const root = this.makeBuildMesh(structure.type, structure.x, structure.z, structure.rotation);
+    const root = structure.legacy||!structure.anchor||structure.baseY===undefined?
+      this.makeBuildMesh(structure.type,structure.x,structure.z,structure.rotation):
+      this.buildVisuals.fromStructure(structure);
+    root.getChildMeshes().forEach(mesh=>{
+      mesh.isPickable=true;
+      mesh.metadata={...mesh.metadata,structureId:structure.id};
+    });
     this.built.set(structure.id, root);
+    if(refresh)this.syncBuildExclusions();
+  }
+
+  private syncBuildExclusions():void{
+    this.grass?.refreshExclusions();
+    this.vegetation?.refreshExclusions();
   }
 
   beginPlacement(type: BuildType): void {
     if(!this.traversal.canBuild)return;
     this.cancelPlacement();
-    const ghost = this.makeBuildMesh(type, this.plot.x, this.plot.z, 0, true);
+    const x=this.plot.x,z=this.plot.z;
+    const ghost=this.buildVisuals.create(type,{x,z,rotation:0,
+      anchor:anchorFor(type,x,z),baseY:sampleMainlandHeight(x,z)},undefined,true);
     this.placement = { type, rotation: 0, ghost };
+    this.buildVisuals.setGridVisible(true);
+    this.selectedStructureId=null;
+    this.callbacks.onStructureSelected(null);
     this.callbacks.notify('Hacé clic dentro del Claro del Hogar para colocar. R para girar · Esc para salir.');
   }
 
   rotatePlacement(): void {
     if (!this.placement) return;
+    if(this.placement.type==='floor'||this.placement.type==='foundation'||
+      this.placement.type==='post')return;
     this.placement.rotation = (this.placement.rotation + 1) % 4;
-    this.placement.ghost.rotation.y = this.placement.rotation * Math.PI / 2;
+    this.refreshPreview();
   }
 
   cancelPlacement(): void {
-    if (!this.placement) return;
+    if (!this.placement){
+      this.selectedStructureId=null;
+      this.callbacks.onStructureSelected(null);
+      return;
+    }
     this.placement.ghost.dispose(false, false);
     this.placement = null;
     this.preview = null;
+    this.buildVisuals.setGridVisible(false);
+    this.buildVisuals.setAnchor(null,false);
   }
 
   get isPlacing(): boolean { return this.placement !== null; }
@@ -1042,19 +1152,63 @@ export class WorldView {
     if (!placing) return;
     const zone = this.zones.get(this.store.state.zone)!;
     if (zone.id !== 'brisalia') { placing.ghost.setEnabled(false); return; }
-    const hit = this.scene.pick(this.scene.pointerX, this.scene.pointerY, mesh => mesh.metadata?.terrainChunk === true);
-    if (!hit?.hit || !hit.pickedPoint) { placing.ghost.setEnabled(false); this.preview = null; return; }
+    const hit = this.scene.pick(this.scene.pointerX,this.scene.pointerY,
+      mesh=>mesh.metadata?.terrainChunk===true||
+        typeof mesh.metadata?.structureId==='string');
+    if (!hit?.hit || !hit.pickedPoint) {
+      placing.ghost.setEnabled(false);this.buildVisuals.setAnchor(null,false);
+      this.preview = null; return;
+    }
     const p = hit.pickedPoint;
-    const x = this.plot.x + Math.round((p.x - zone.offset.x - this.plot.x) / 4) * 4;
-    const z = this.plot.z + Math.round((p.z - zone.offset.z - this.plot.z) / 4) * 4;
-    const allowed = this.store.canBuild(placing.type, x, z);
+    const x=p.x-zone.offset.x,z=p.z-zone.offset.z;
+    const isEdge=['wall','stone-wall','metal-wall','door-wall','window-wall'].includes(placing.type);
+    const rotation=isEdge?(nearestEdgeSide(x,z)+placing.rotation)%4:placing.rotation;
+    const allowed = this.store.canBuild(placing.type, x, z, rotation);
+    const plan=allowed.plan??{x,z,rotation,anchor:anchorFor(placing.type,x,z,rotation),
+      baseY:sampleMainlandHeight(x,z)};
     placing.ghost.setEnabled(true);
-    placing.ghost.position.set(x, this.y(zone, x, z) + 0.09, z);
-    placing.ghost.rotation.y = placing.rotation * Math.PI / 2;
-    const validMaterial = this.mat('fantasma-verde', '#76e7c5', 0.28, 0.56);
-    const invalidMaterial = this.mat('fantasma-rojo', '#f17f70', 0.28, 0.56);
-    placing.ghost.getChildMeshes().forEach(m => { m.material = allowed.ok ? validMaterial : invalidMaterial; });
-    this.preview = { localX: x, localZ: z, type: placing.type, rotation: placing.rotation, valid: allowed.ok, message: allowed.message };
+    placing.ghost.position.set(plan.x,plan.baseY,plan.z);
+    placing.ghost.rotation.y=plan.rotation*Math.PI/2;
+    this.buildVisuals.setPreviewValid(placing.ghost,allowed.ok);
+    this.buildVisuals.setAnchor(plan,allowed.ok);
+    const cost=BUILD_CATALOG.find(item=>item.type===placing.type)?.requires;
+    this.callbacks.hint(`${allowed.ok?'✓':'✕'} ${allowed.message}  ·  ${cost?costAsText(cost):''}  ·  R girar · Esc cancelar`);
+    this.preview = { localX:x,localZ:z,type:placing.type,rotation,
+      valid:allowed.ok,message:allowed.message,plan };
+  }
+
+  removeSelected():void{
+    if(!this.selectedStructureId)return;
+    const result=this.store.removeStructure(this.selectedStructureId);
+    this.callbacks.notify(result.message);
+    if(!result.ok||!result.structure)return;
+    this.built.get(result.structure.id)?.dispose(false,false);
+    this.built.delete(result.structure.id);
+    this.selectedStructureId=null;
+    this.callbacks.onStructureSelected(null);
+    this.syncBuildExclusions();
+  }
+
+  replaceSelected(type:BuildType):void{
+    if(!this.selectedStructureId)return;
+    const result=this.store.replaceWall(this.selectedStructureId,type);
+    this.callbacks.notify(result.message);
+    if(!result.ok||!result.structure)return;
+    this.built.get(result.structure.id)?.dispose(false,false);
+    this.built.delete(result.structure.id);
+    this.drawStructure(result.structure);
+    this.callbacks.onStructureSelected(result.structure);
+  }
+
+  undoLastPlacement():void{
+    const result=this.store.undoLastBuild();
+    this.callbacks.notify(result.message);
+    if(!result.ok||!result.structure)return;
+    this.built.get(result.structure.id)?.dispose(false,false);
+    this.built.delete(result.structure.id);
+    this.selectedStructureId=null;
+    this.callbacks.onStructureSelected(null);
+    this.syncBuildExclusions();
   }
 
   /** Nueva partida y relectura del guardado sin recargar el navegador. */
@@ -1067,8 +1221,23 @@ export class WorldView {
     }
     for (const object of this.built.values()) object.dispose(false, false);
     this.built.clear();
-    for (const s of this.store.state.structures) this.drawStructure(s);
+    for (const s of this.store.state.structures) this.drawStructure(s,false);
+    this.syncBuildExclusions();
+    this.selectedStructureId=null;
+    this.callbacks.onStructureSelected(null);
+    this.cancelPlacement();
     this.activateZone(this.store.state.zone);
+  }
+
+  private updateGrassStats(dt:number):void{
+    if(!this.grassStatsOverlay)return;
+    this.grassStatsTimer+=dt;
+    if(this.grassStatsTimer<.5)return;
+    this.grassStatsTimer=0;
+    this.grassStatsOverlay.textContent=
+      `FPS ${this.engine.getFps().toFixed(0)}  Draw calls ${this.grassInstrumentation?.drawCallsCounter.current??0}\n`+
+      `Césped ${this.grass.instanceCount} matas  ~${this.grass.triangleCount} triángulos\n`+
+      `Terreno ${this.mainland.activeCount} chunks  Césped ${this.grass.activePatchCount} parches`;
   }
 
   dispose(): void {
@@ -1079,6 +1248,11 @@ export class WorldView {
     window.removeEventListener('resize', this.resize);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
     this.vegetation.dispose();
+    this.grass.dispose();
+    this.buildVisuals.dispose();
+    this.grassInstrumentation?.dispose();
+    this.landscapeDebug?.dispose();
+    this.grassStatsOverlay?.remove();
     this.props.dispose();
     this.geography.dispose();
     this.mainland.dispose();

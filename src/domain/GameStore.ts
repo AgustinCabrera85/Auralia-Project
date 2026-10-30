@@ -1,6 +1,8 @@
 import type { ZoneId } from '../data/world';
 import { BUILD_CATALOG, RECIPES, hasCost } from './recipes';
 import { newGame, type BuildType, type ItemId, type MaterialId, type SaveGameV1, type Structure } from './types';
+import { canReplaceWall, planBuild, removalProblem, wallReplacementProblem, type BuildEnvironment } from './buildingRules';
+import { sampleMainlandHeight } from '../world/terrainData';
 import type { SaveRepository } from '../persistence/SaveRepository';
 
 export type Milestone = 'collect' | 'craft' | 'build' | 'sail' | 'light' | 'complete';
@@ -10,6 +12,8 @@ export class GameStore {
   private data: SaveGameV1;
   private readonly listeners = new Set<StoreListener>();
   private nextId = 0;
+  private lastPlacedId:string|null=null;
+  private buildEnvironment:()=>BuildEnvironment=()=>({heightAt:sampleMainlandHeight});
 
   constructor(private readonly repository: SaveRepository) {
     this.data = repository.load();
@@ -17,6 +21,7 @@ export class GameStore {
   }
 
   get state(): Readonly<SaveGameV1> { return this.data; }
+  setBuildEnvironment(provider:()=>BuildEnvironment):void{this.buildEnvironment=provider;}
 
   subscribe(listener: StoreListener): () => void {
     this.listeners.add(listener);
@@ -65,36 +70,77 @@ export class GameStore {
     return { ok: true, message: `¡Fabricaste ${recipe.title}!` };
   }
 
-  canBuild(type: BuildType, x: number, z: number): { ok: boolean; message: string } {
+  canBuild(type: BuildType, x: number, z: number, rotation=0): ReturnType<typeof planBuild> {
     const definition = BUILD_CATALOG.find(item => item.type === type);
     if (!definition) return { ok: false, message: 'Pieza inexistente.' };
     if (this.data.zone !== 'brisalia') return { ok: false, message: 'La primera parcela está en Brisalia.' };
     if (this.data.inventory.hammer < 1) return { ok: false, message: 'Primero fabricá un martillo.' };
-    if (!hasCost(this.data.inventory, definition.requires)) return { ok: false, message: 'Necesitás más materiales.' };
-    // Parcela de construcción reservada: centro (-29, 18), cuadrada, sin NPC.
-    if (Math.abs(x + 29) > 17 || Math.abs(z - 18) > 17) {
-      return { ok: false, message: 'Esta construcción va en el Claro del Hogar.' };
-    }
-    if (this.data.structures.some(b => b.type === type && Math.abs(b.x-x)<0.2 && Math.abs(b.z-z)<0.2)) {
-      return { ok: false, message: 'Ya existe esa pieza en esta celda.' };
-    }
-    return { ok: true, message: 'Se puede construir.' };
+    const decision=planBuild(type,x,z,rotation,this.data.structures,this.buildEnvironment());
+    if(!decision.ok)return decision;
+    if(!hasCost(this.data.inventory,definition.requires))
+      return {...decision,ok:false,message:'Necesitás más materiales.'};
+    return decision;
   }
 
   build(type: BuildType, x: number, z: number, rotation: number): { ok: boolean; message: string; structure?: Structure } {
-    const allowed = this.canBuild(type, x, z);
-    if (!allowed.ok) return allowed;
+    const allowed = this.canBuild(type, x, z, rotation);
+    if (!allowed.ok || !allowed.plan) return allowed;
     const definition = BUILD_CATALOG.find(item => item.type === type)!;
     for (const [key, amount] of Object.entries(definition.requires) as [ItemId, number][]) {
       this.data.inventory[key] -= amount;
     }
     const structure: Structure = {
       id: `build-${Date.now()}-${this.nextId++}`,
-      type, zone: 'brisalia', x, z, rotation: ((rotation % 4) + 4) % 4
+      type,zone:'brisalia',x:allowed.plan.x,z:allowed.plan.z,
+      rotation:allowed.plan.rotation,anchor:allowed.plan.anchor,level:0,baseY:allowed.plan.baseY
     };
     this.data.structures.push(structure);
+    this.lastPlacedId=structure.id;
     this.commit();
     return { ok: true, message: `¡Colocaste ${definition.title}!`, structure };
+  }
+
+  removeStructure(id:string):{ok:boolean;message:string;structure?:Structure}{
+    const index=this.data.structures.findIndex(s=>s.id===id);
+    if(index<0)return {ok:false,message:'No encontramos esa pieza.'};
+    const structure=this.data.structures[index];
+    const problem=removalProblem(structure,this.data.structures);
+    if(problem)return {ok:false,message:problem};
+    const cost=BUILD_CATALOG.find(item=>item.type===structure.type)?.requires;
+    if(cost)for(const [key,amount] of Object.entries(cost) as [ItemId,number][])
+      this.data.inventory[key]+=amount;
+    this.data.structures.splice(index,1);
+    if(this.lastPlacedId===id)this.lastPlacedId=null;
+    this.commit();
+    return {ok:true,message:'Pieza retirada. Recuperaste todos sus materiales.',structure};
+  }
+
+  replaceWall(id:string,type:BuildType):{ok:boolean;message:string;structure?:Structure}{
+    const old=this.data.structures.find(s=>s.id===id);
+    const next=BUILD_CATALOG.find(item=>item.type===type);
+    if(!old||!next||!canReplaceWall(old.type,type)||old.legacy||!old.anchor)
+      return {ok:false,message:'Elegí una pared existente y otro material compatible.'};
+    const placement=wallReplacementProblem(old,type,this.data.structures,
+      this.buildEnvironment().player);
+    if(placement)return {ok:false,message:placement};
+    const previous=BUILD_CATALOG.find(item=>item.type===old.type)!.requires;
+    const available={...this.data.inventory};
+    for(const [key,amount] of Object.entries(previous) as [ItemId,number][])
+      available[key]+=amount;
+    if(!hasCost(available,next.requires))return {ok:false,message:'Faltan materiales para reemplazar esa pared.'};
+    for(const [key,amount] of Object.entries(previous) as [ItemId,number][])
+      this.data.inventory[key]+=amount;
+    for(const [key,amount] of Object.entries(next.requires) as [ItemId,number][])
+      this.data.inventory[key]-=amount;
+    const replacement={...old,type};
+    this.data.structures[this.data.structures.indexOf(old)]=replacement;
+    this.commit();
+    return {ok:true,message:`Pared cambiada por ${next.title}.`,structure:replacement};
+  }
+
+  undoLastBuild():{ok:boolean;message:string;structure?:Structure}{
+    if(!this.lastPlacedId)return {ok:false,message:'No hay una colocación reciente para deshacer.'};
+    return this.removeStructure(this.lastPlacedId);
   }
 
   setPlayerPosition(zone:ZoneId,x:number,z:number):void {
@@ -132,6 +178,7 @@ export class GameStore {
     this.repository.clear();
     this.data = newGame();
     this.nextId = 0;
+    this.lastPlacedId=null;
     this.commit();
   }
 }

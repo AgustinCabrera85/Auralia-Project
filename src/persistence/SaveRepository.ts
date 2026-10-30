@@ -20,6 +20,16 @@ export class LocalStorageSaveRepository implements SaveRepository {
       return {
         ...parsed,
         inventory: { ...emptyInventory(), ...parsed.inventory },
+        structures:parsed.structures.map(structure=>{
+          const anchor=structure.anchor;
+          const valid=anchor&&['cell','edge','corner','roof'].includes(anchor.kind)&&
+            Number.isInteger(anchor.i)&&Number.isInteger(anchor.j)&&
+            Number.isInteger(anchor.level)&&anchor.level>=0&&anchor.level<=10&&
+            (anchor.kind!=='edge'||Number.isInteger(anchor.side)&&anchor.side!>=0&&anchor.side!<=3)&&
+            Number.isFinite(structure.baseY);
+          return valid?structure:{...structure,anchor:undefined,level:undefined,
+            baseY:undefined,legacy:true};
+        }),
         discoveredPlaces:Array.isArray(parsed.discoveredPlaces)
           ? parsed.discoveredPlaces.filter((id):id is string=>typeof id==='string'&&/^[a-z0-9-]{1,64}$/.test(id)).slice(0,100)
           : [],
@@ -61,7 +71,8 @@ export class LocalStorageSaveRepository implements SaveRepository {
           !Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>10000||Math.abs(p.z)>10000) return false;
     }
     return obj.structures.every(s => s && typeof s.id === 'string' &&
-      ['floor','wall','stone-wall','metal-wall','roof','post'].includes(s.type) &&
+      ['foundation','floor','wall','stone-wall','metal-wall','door-wall','window-wall',
+        'roof','roof-section','post'].includes(s.type) &&
       s.zone === 'brisalia' && Number.isFinite(s.x) && Number.isFinite(s.z) &&
       Number.isFinite(s.rotation));
   }

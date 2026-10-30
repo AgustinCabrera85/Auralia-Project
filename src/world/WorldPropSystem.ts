@@ -2,13 +2,15 @@ import { Color3, ImportMeshAsync, Matrix, Mesh, MeshBuilder, Quaternion, Scene, 
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { type MaterialId } from '../domain/types';
 import { GameStore } from '../domain/GameStore';
-import { ASSET_CATALOG, type AssetId } from './assetCatalog';
+import { ASSET_CATALOG, CLIFF_LOD_PATH, type AssetId } from './assetCatalog';
 import { ROCK_PART_COUNT, ROCK_PART_FOOTPRINTS, rockScaleForDiameter } from './rockPackData';
 import { RECT_ROCK_PARTS, RECT_ROCK_PART_COUNT } from './rectRockData';
 import { RockColliderSystem, type RockSurface, type RockWallHit } from './RockColliderSystem';
 import { geologyIntersectsChunk, sameGeologyFormation } from './geologyData';
 import { GEOLOGY_COMPOSITIONS, type GeologyComposition } from './geologyPresets';
 import { chunkKey, chunkOf, MAINLAND, sampleMainlandHeight } from './terrainData';
+import { configureGeologyMaterial } from './LandscapeAtmosphere';
+import { TERRAIN_LOD_CONFIG } from './terrainLod';
 import { type VegetationExclusion } from './vegetationData';
 import { CRYSTAL_KINDS, GEOLOGY_ASSET_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk,
   SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
@@ -27,6 +29,7 @@ const isCrystal=(kind:PropKind):kind is CrystalKind=>CRYSTAL_KINDS.includes(kind
 /** Shared GLBs, streamed decoration and individually identified collectible crystals. */
 export class WorldPropSystem {
   private readonly sources=new Map<AssetId,Mesh[]>();
+  private cliffLodSource:Mesh|null=null;
   private readonly chunks=new Map<string,PropPlacement[]>();
   private readonly formations=new Map<string,GeologyComposition>();
   private readonly resources=new Map<string,ResourceVisual>();
@@ -39,9 +42,11 @@ export class WorldPropSystem {
   private lastCells:readonly Cell[]=[];
   private focus={x:0,z:0};
   private colliderFocus={x:Infinity,z:Infinity};
+  private decorationFocus={x:Infinity,z:Infinity};
   private protectedRockId:string|null=null;
   private ready=false;
   private disposed=false;
+  private geologyAdjusted=true;
   private clock=0;
   private respawnCheck=0;
   get activeChunkCount():number{return this.chunks.size;}
@@ -106,16 +111,42 @@ export class WorldPropSystem {
           mesh.parent=this.parent;mesh.name=`asset-${id}-${index}`;
           mesh.isVisible=false;mesh.isPickable=false;mesh.checkCollisions=false;
           mesh.metadata={sharedWorldAsset:id,collisionOnly};
+          configureGeologyMaterial(mesh.material,id,this.geologyAdjusted);
         }
         for(const mesh of imported.meshes)if(!parts.includes(mesh as Mesh))mesh.dispose(false,false);
         this.sources.set(id,parts);
       }catch(error){console.warn(`[Auralia] No se pudo cargar ${ASSET_CATALOG[id].path}`,error);}
     }));
     if(this.disposed)return;
+    await this.loadCliffLod();
+    if(this.disposed)return;
     this.ready=true;
     for(const special of SPECIAL_ASSETS)this.createSpecial(special);
     this.refreshDecoration();
     this.syncRockColliders();
+  }
+
+  private async loadCliffLod():Promise<void>{
+    const original=this.sources.get('acantilado2')?.find(mesh=>
+      mesh.metadata?.collisionOnly!==true);
+    if(!original)return;
+    try{
+      const imported=await this.importer(CLIFF_LOD_PATH,this.scene);
+      if(this.disposed){for(const mesh of imported.meshes)mesh.dispose(false,false);return;}
+      const mesh=imported.meshes.find(part=>part instanceof Mesh&&part.getTotalVertices()>0) as Mesh|undefined;
+      if(!mesh)throw new Error('El acantilado LOD no tiene geometría.');
+      mesh.computeWorldMatrix(true);
+      mesh.bakeTransformIntoVertices(mesh.getWorldMatrix().clone());
+      mesh.parent=null;mesh.position.setAll(0);mesh.scaling.setAll(1);
+      mesh.rotation.setAll(0);mesh.rotationQuaternion=null;
+      mesh.parent=this.parent;
+      mesh.name='asset-acantilado2-lod';
+      mesh.material=original.material;
+      mesh.isVisible=false;mesh.isPickable=false;mesh.checkCollisions=false;
+      mesh.metadata={sharedWorldAsset:'acantilado2Lod',collisionOnly:false};
+      for(const part of imported.meshes)if(part!==mesh)part.dispose(false,false);
+      this.cliffLodSource=mesh;
+    }catch(error){console.warn(`[Auralia] No se pudo cargar ${CLIFF_LOD_PATH}`,error);}
   }
 
   private cloneModel(id:AssetId,name:string,root:TransformNode,scale:number):void{
@@ -135,6 +166,15 @@ export class WorldPropSystem {
     root.position.set(special.x,sampleMainlandHeight(special.x,special.z)+special.yOffset,special.z);
     this.cloneModel(special.kind,special.id,root,ASSET_CATALOG[special.kind].referenceScale);
     this.specialRoots.push(root);
+  }
+
+  /** Debug comparison restores the glTF defaults without touching its texture. */
+  setGeologyAdjusted(adjusted:boolean):void{
+    if(this.geologyAdjusted===adjusted)return;
+    this.geologyAdjusted=adjusted;
+    for(const id of [...GEOLOGY_ASSET_KINDS,'packRocas'] as AssetId[])
+      for(const source of this.sources.get(id)??[])
+        configureGeologyMaterial(source.material,id,adjusted);
   }
 
   setActiveChunks(cells:readonly Cell[],x:number,z:number):void{
@@ -157,8 +197,9 @@ export class WorldPropSystem {
       this.chunks.delete(key);changed=true;
     }
     for(const composition of GEOLOGY_COMPOSITIONS){
-      const active=desired.some(cell=>geologyIntersectsChunk(composition.formation,
-        cell.cx,cell.cz,MAINLAND.chunkSize));
+      const active=composition.pieces.some(piece=>Math.hypot(piece.x-x,piece.z-z)<
+        TERRAIN_LOD_CONFIG.farRadius+160)||desired.some(cell=>
+          geologyIntersectsChunk(composition.formation,cell.cx,cell.cz,MAINLAND.chunkSize));
       const supported=composition.pieces.some(p=>p.id===this.protectedRockId);
       if(active||supported){
         if(!this.formations.has(composition.formation.id)){
@@ -172,7 +213,8 @@ export class WorldPropSystem {
       const db=(b.cx+.5-x/MAINLAND.chunkSize)**2+(b.cz+.5-z/MAINLAND.chunkSize)**2;
       return da-db;
     });
-    if(changed&&this.ready)this.refreshDecoration();
+    if(this.ready&&(changed||Math.hypot(x-this.decorationFocus.x,
+      z-this.decorationFocus.z)>72))this.refreshDecoration();
     this.syncRockColliders();
   }
 
@@ -187,6 +229,8 @@ export class WorldPropSystem {
       this.setActiveChunks(this.lastCells,x,z);
       return;
     }
+    if(this.ready&&Math.hypot(x-this.decorationFocus.x,
+      z-this.decorationFocus.z)>72)this.refreshDecoration();
     if(Math.hypot(x-this.colliderFocus.x,z-this.colliderFocus.z)>8)this.syncRockColliders();
   }
 
@@ -229,15 +273,20 @@ export class WorldPropSystem {
 
   private refreshDecoration():void{
     if(!this.ready)return;
+    this.decorationFocus={...this.focus};
     const renderKinds:PropKind[]=[...PROP_KINDS,...GEOLOGY_ASSET_KINDS];
     const matrices=new Map<PropKind,number[]>(renderKinds.map(kind=>[kind,[]]));
+    const cliffLodMatrices:number[]=[];
     const rockMatrices:number[][]=Array.from({length:ROCK_PART_COUNT},()=>[]);
     const rectMatrices:number[][]=Array.from({length:RECT_ROCK_PART_COUNT},()=>[]);
     for(const p of this.allPlacements()){
       if(isCrystal(p.kind)||!this.sources.has(p.kind))continue;
       const transform=Matrix.Compose(new Vector3(p.scaleXZ??p.scale,p.scaleY??p.scale,p.scaleXZ??p.scale),
         Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z));
-      if(p.kind==='packRocas')rockMatrices[p.partIndex??0]?.push(...transform.m);
+      if(p.kind==='acantilado2'&&this.cliffLodSource&&
+        Math.hypot(p.x-this.focus.x,p.z-this.focus.z)>TERRAIN_LOD_CONFIG.cliffDetailDistance)
+        cliffLodMatrices.push(...transform.m);
+      else if(p.kind==='packRocas')rockMatrices[p.partIndex??0]?.push(...transform.m);
       else if(p.kind==='rocasRectangulares')rectMatrices[p.pieceIndex??0]?.push(...transform.m);
       else matrices.get(p.kind)!.push(...transform.m);
     }
@@ -258,6 +307,18 @@ export class WorldPropSystem {
         source.thinInstanceSetBuffer('matrix',new Float32Array(data),16,true);
         source.thinInstanceRefreshBoundingInfo();
         source.isVisible=true;
+      }
+    }
+    if(this.cliffLodSource){
+      const source=this.cliffLodSource;
+      if(cliffLodMatrices.length){
+        source.thinInstanceSetBuffer('matrix',new Float32Array(cliffLodMatrices),16,true);
+        source.thinInstanceRefreshBoundingInfo();
+        source.isVisible=true;
+      }else{
+        source.thinInstanceSetBuffer('matrix',null,16,true);
+        source.refreshBoundingInfo(true);
+        source.isVisible=false;
       }
     }
   }
@@ -375,6 +436,8 @@ export class WorldPropSystem {
     for(const visual of this.resources.values())visual.root.dispose(false,false);
     this.resources.clear();
     for(const root of this.specialRoots)root.dispose(false,false);
+    this.cliffLodSource?.dispose(false,false);
+    this.cliffLodSource=null;
     for(const parts of this.sources.values())for(const mesh of parts)mesh.dispose(false,false);
     this.sources.clear();
     for(const mat of this.glowMaterials.values())mat.dispose();

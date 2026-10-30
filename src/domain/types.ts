@@ -2,7 +2,12 @@ import type { ZoneId } from '../data/world';
 
 export type ItemId = 'wood' | 'stone' | 'copper' | 'spark' | 'fireCrystal' | 'hammer' | 'pickaxe' | 'lantern';
 export type MaterialId = 'wood' | 'stone' | 'copper' | 'spark' | 'fireCrystal';
-export type BuildType = 'floor' | 'wall' | 'roof' | 'stone-wall' | 'metal-wall' | 'post';
+export type BuildType = 'foundation' | 'floor' | 'wall' | 'stone-wall' | 'metal-wall' |
+  'door-wall' | 'window-wall' | 'roof' | 'roof-section' | 'post';
+export type BuildAnchor = {
+  kind:'cell'|'edge'|'corner'|'roof';
+  i:number;j:number;side?:0|1|2|3;level:number;
+};
 export type Inventory = Record<ItemId, number>;
 
 export type Structure = {
@@ -12,6 +17,11 @@ export type Structure = {
   x: number;
   z: number;
   rotation: number;
+  /** Missing on old saves. Legacy pieces keep their original coordinates and appearance. */
+  anchor?:BuildAnchor;
+  level?:number;
+  baseY?:number;
+  legacy?:boolean;
 };
 
 export type SaveGameV1 = {

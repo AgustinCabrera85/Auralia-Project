@@ -189,7 +189,7 @@ export function chunkOf(x:number,z:number): {cx:number;cz:number} {
   return {cx:Math.floor(x/MAINLAND.chunkSize),cz:Math.floor(z/MAINLAND.chunkSize)};
 }
 export function chunkKey(cx:number,cz:number):string {return `${cx}:${cz}`;}
-export function desiredChunks(x:number,z:number,radius=MAINLAND.visibleRadius):{cx:number;cz:number}[] {
+export function desiredChunks(x:number,z:number,radius:number=MAINLAND.visibleRadius):{cx:number;cz:number}[] {
   const p=chunkOf(x,z),found:{cx:number;cz:number}[]=[];
   for(let dz=-radius;dz<=radius;dz++)for(let dx=-radius;dx<=radius;dx++){
     // Optional circular cut reduces draw calls at the corners.

@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {NullEngine,Scene,TransformNode,ImportMeshAsync}=require('@babylonjs/core');
+const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@babylonjs/core');
 const {GameStore}=require('../.test-build/domain/GameStore.js');
 const {newGame}=require('../.test-build/domain/types.js');
 const {ASSET_CATALOG}=require('../.test-build/world/assetCatalog.js');
@@ -71,22 +71,38 @@ for(const p of FIXED_CRYSTALS){
   system.setActiveChunks(cells,-160,-210);
   await system.load();
   assert.equal(system.sharedAssetCount,11,'all eleven new non-vegetation GLBs loaded once');
-  assert.equal(imports.length,11);
-  assert.equal(new Set(imports).size,11);
+  assert.equal(imports.length,12,'one cliff visual LOD is loaded in addition to shared assets');
+  assert.equal(new Set(imports).size,12);
+  const cliffLod=scene.getMeshByName('asset-acantilado2-lod');
+  const cliffOriginal=scene.meshes.find(m=>m.name.startsWith('asset-acantilado2-')&&
+    m.metadata?.collisionOnly===false&&m!==cliffLod);
+  assert.ok(cliffLod&&cliffOriginal&&cliffLod.getTotalIndices()<cliffOriginal.getTotalIndices()/5,
+    'the far cliff uses a simplified visual mesh');
+  assert.equal(cliffLod.material,cliffOriginal.material,'both cliff LODs share the 1K GLB texture');
   assert.ok(scene.meshes.filter(m=>m.metadata?.sharedWorldAsset).every(m=>m.material?.albedoTexture),'all imported prop meshes retain their GLB textures');
   assert.equal(scene.meshes.filter(m=>m.name.startsWith('asset-packRocas-')).length,17,'multi-mesh rock pack retained');
   const rectSources=scene.meshes.filter(m=>m.name.startsWith('asset-rocasRectangulares-'));
   assert.equal(rectSources.length,21,'all 21 rectangular meshes retained');
-  assert.ok(rectSources.every((m,i)=>Math.abs(m.getBoundingInfo().boundingBox.minimum.y)<.01&&
-    Math.abs(Math.max(m.getBoundingInfo().boundingBox.maximum.x-m.getBoundingInfo().boundingBox.minimum.x,
-      m.getBoundingInfo().boundingBox.maximum.z-m.getBoundingInfo().boundingBox.minimum.z)-RECT_ROCK_PARTS[i].footprint)<.001));
+  const sourceBounds=mesh=>{
+    const p=mesh.getVerticesData(VertexBuffer.PositionKind);
+    const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+    for(let i=0;i<p.length;i++){
+      const axis=i%3;min[axis]=Math.min(min[axis],p[i]);max[axis]=Math.max(max[axis],p[i]);
+    }
+    return {min,max};
+  };
+  assert.ok(rectSources.every((m,i)=>{
+    const {min,max}=sourceBounds(m);
+    return Math.abs(min[1])<.01&&
+      Math.abs(Math.max(max[0]-min[0],max[2]-min[2])-RECT_ROCK_PARTS[i].footprint)<.001;
+  }));
   const rockSources=scene.meshes.filter(m=>m.name.startsWith('asset-packRocas-'));
   assert.ok(rockSources.every(m=>m.material?.albedoTexture),'rock pack keeps textured PBR materials');
   for(const source of rockSources){
-    const bb=source.getBoundingInfo().boundingBox;
-    assert.ok(Math.abs((bb.minimum.x+bb.maximum.x)*.5)<.01,'individual rock centered X');
-    assert.ok(Math.abs((bb.minimum.z+bb.maximum.z)*.5)<.01,'individual rock centered Z');
-    assert.ok(Math.abs(bb.minimum.y)<.01,'individual rock grounded Y');
+    const {min,max}=sourceBounds(source);
+    assert.ok(Math.abs((min[0]+max[0])*.5)<.01,'individual rock centered X');
+    assert.ok(Math.abs((min[2]+max[2])*.5)<.01,'individual rock centered Z');
+    assert.ok(Math.abs(min[1])<.01,'individual rock grounded Y');
   }
   const node=new TransformNode('test-stone',scene);
   assert.equal(system.attachRockVisual(node,3,2.5,false),true,'rock can be attached to an existing resource');
@@ -100,7 +116,9 @@ for(const p of FIXED_CRYSTALS){
   for(let i=0;i<60;i++)system.update(1/60);
   assert.ok(system.activeChunkCount>0&&system.activeChunkCount<=cells.length);
   assert.ok(system.visibleDecorationCount>0,'decorative thin instances populated');
-  const placedRocks=[...system['chunks'].values()].flat().filter(p=>p.kind==='packRocas');
+  const placedRocks=[...system['chunks'].values()].flat().concat(
+    GEOLOGY_COMPOSITIONS.filter(c=>system.activeFormationIds.includes(c.formation.id))
+      .flatMap(c=>c.pieces)).filter(p=>p.kind==='packRocas');
   const instances=rockSources.reduce((total,src)=>total+src.thinInstanceCount,0);
   assert.equal(instances,placedRocks.length,'one visual rock per placement, never 17');
   const activeRect=GEOLOGY_COMPOSITIONS.filter(c=>system.activeFormationIds.includes(c.formation.id))
@@ -133,7 +151,7 @@ for(const p of FIXED_CRYSTALS){
   for(let i=0;i<60;i++)system.update(1/60);
   assert.equal(system.visibleDecorationCount,count,'reload has the same deterministic decoration');
   assert.equal(system.nearestResource(-160,-210,2),null,'cooldown survives unload and reload');
-  assert.equal(imports.length,11,'reload does not import GLBs again');
+  assert.equal(imports.length,12,'reload does not import GLBs again');
   const cliffPiece=GEOLOGY_COMPOSITIONS.find(c=>c.formation.id==='altapiedra-cliff')
     .pieces.find(p=>p.id.includes(':wall:3'));
   const monumentCell=chunkOf(cliffPiece.x,cliffPiece.z);
