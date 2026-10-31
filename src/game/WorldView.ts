@@ -14,6 +14,7 @@ import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
 import { LandscapeDebug } from '../world/LandscapeDebug';
 import { GeographyStream } from '../world/GeographyStream';
+import { OceanWater } from '../world/water/OceanWater';
 import { VegetationSystem } from '../world/VegetationSystem';
 import { GrassFieldSystem } from '../world/grass/GrassFieldSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
@@ -74,6 +75,7 @@ const ISLAND_OFFSET = { x: -210, z: 420 };
 
 /** Vista del mundo con terreno por chunks y vegetación GLB compartida. */
 export class WorldView {
+  private ocean: OceanWater | null = null;
   readonly engine: Engine;
   readonly scene: Scene;
   readonly camera: ArcRotateCamera;
@@ -265,25 +267,7 @@ export class WorldView {
   }
 
   private createSea(): void {
-    const sea = MeshBuilder.CreateGround('Mar de Auralia', { width: 5600, height: 5000 }, this.scene);
-    sea.position.set(MAINLAND.centerX,MAINLAND.waterLevel,MAINLAND.centerZ);
-    const water = this.mat('agua-turquesa', '#4babc1', 0.2);
-    water.specularColor = new Color3(0.55, 0.74, 0.79);
-    sea.material = water;
-    sea.isPickable = false;
-
-    // Manchas en el agua para dar profundidad visual, sin shaders de producción todavía.
-    const foam = this.mat('espuma-lejana', '#b6e9df', 0.15, 0.32);
-    for (let i = 0; i < 28; i++) {
-      const x = Math.sin(i * 17.3) * (100 + (i % 6) * 43);
-      const z = Math.cos(i * 11.7) * (110 + (i % 5) * 42);
-      const patch = MeshBuilder.CreateDisc(`brillo-mar-${i}`, { radius: 2.5 + i % 4, tessellation: 20 }, this.scene);
-      patch.rotation.x = Math.PI / 2;
-      patch.position.set(x, -0.09, z);
-      patch.scaling.y = 0.25;
-      patch.material = foam;
-      patch.isPickable = false;
-    }
+    this.ocean = new OceanWater(this.scene, { waveStrength: .85, normalStrength: 1 });
   }
 
   private terrainHeight(x: number, z: number, zone: IslandInfo): number {
@@ -935,6 +919,7 @@ export class WorldView {
       }
     }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
+    this.ocean?.update(dt,this.player.position);
     if(zone.id==='brisalia'){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
@@ -958,7 +943,7 @@ export class WorldView {
       this.vegetation.update();
       this.grass.update(localX,localZ);
       this.props.update(dt);
-      this.geography.update();
+      this.geography.update(dt);
       this.landscapeDebug?.update(dt,localX,localZ);
     }
     this.exploreTimer+=dt;
@@ -1255,6 +1240,7 @@ export class WorldView {
     this.grassStatsOverlay?.remove();
     this.props.dispose();
     this.geography.dispose();
+    this.ocean?.dispose();
     this.mainland.dispose();
     this.scene.dispose();
     this.engine.dispose();
