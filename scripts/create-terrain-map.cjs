@@ -74,7 +74,7 @@ const islandEls=isles.map((s,i)=>{
  return `<g>${ell}<circle cx="${px(s.x)}" cy="${py(s.z)}" r="${i===0?8:5}" fill="#ffe2a2"/><title>${s.name}</title></g>`;
 }).join('');
 const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="title desc">
-<title id="title">Auralia, mapa geográfico técnico · Update 3</title>
+<title id="title">Auralia, mapa geográfico técnico</title>
 <desc id="desc">Isla principal de aproximadamente 4 por 3 km con seis biomas, río descendente, Lago de Nácar, arroyos y espacio marítimo para otras islas.</desc>
 <defs>
 <radialGradient id="sea"><stop stop-color="#3d91aa"/><stop offset="1" stop-color="#164c72"/></radialGradient>
@@ -104,7 +104,7 @@ ${labelEl}
 <path d="M${point(33,120)} Q${point(-22,272)} ${point(-210,420)}" fill="none" stroke="#9ee1ee" stroke-width="5" stroke-dasharray="14 12" opacity=".94"/>
 <g transform="translate(45 44)"><rect width="480" height="98" rx="18" fill="#103d51" stroke="#e4cb93" stroke-width="3"/>
 <text x="23" y="42" font-family="Georgia,serif" font-size="38" fill="#ffedc5">AURALIA</text>
-<text x="25" y="70" font-size="17" fill="#c6e8df">GEOGRAFÍA JUGABLE · UPDATE 3 · 4 × 3 KM</text></g>
+<text x="25" y="70" font-size="17" fill="#c6e8df">GEOGRAFÍA JUGABLE · 4 × 3 KM</text></g>
 <g transform="translate(1045 885)"><rect width="310" height="193" rx="15" fill="#103c4fe8" stroke="#d4c295" stroke-width="2"/>
 <text x="20" y="32" fill="#f8e7bd" font-size="22" font-family="Georgia">Referencias</text>
 <circle cx="32" cy="62" r="8" fill="#f3c979"/><text x="55" y="68" font-size="16" fill="#d9f0e5">Hitos explorables</text>

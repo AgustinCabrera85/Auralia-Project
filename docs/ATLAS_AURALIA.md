@@ -4,7 +4,7 @@
 
 **Auralia es una gran isla principal, rodeada por archipiélagos y pequeños islotes.** Los caminos y ríos articulan las regiones continentales; los faros y puertos conectan las islas. Cada nueva ciudad se ubica dentro de una zona definida sin alterar las coordenadas narrativas de los asentamientos anteriores.
 
-El mapa ilustrado es conceptual y **no** sirve como heightmap ni como una medición geodésica. Sus puntos normalizados se almacenan en `src/data/world.ts`. Al comenzar el terreno definitivo, establecer un sistema de coordenadas local por región y anclas estables para caminos/rutas.
+El mapa ilustrado es conceptual y **no** sirve como heightmap ni como una medición geodésica. Sus puntos normalizados se almacenan en `src/data/world.ts`. Las coordenadas y alturas jugables se documentan en [Geografía jugable](GEOGRAFIA.md) y se definen en `src/world/terrainData.ts`.
 
 ## Distribución de la isla principal
 
@@ -39,21 +39,9 @@ No todos los caminos deben estar abiertos en la versión inicial; podrán aparec
 
 **Reservas geográficas:** suroeste fuera del atlas, costa este lejana, mares australes, archipiélago norte y cuevas bajo el continente. No se detallan todavía para evitar que un diseño cerrado condicione futuras ideas.
 
-## Primera región: Brisalia (layout del POC)
+## Primera región: Brisalia
 
-El terreno 3D es un microescenario de prueba con un recorte costero provisional; la geografía definitiva del valle puede crecer hacia el norte sin desplazar el atlas principal.
-
-| Punto local (x,z) | Lugar | Propósito |
-| --- | --- | --- |
-| (1,10) | Llegada del personaje | Comienzo y guía |
-| (1,-19) | Plaza de Brisalia | Centro social y fuente |
-| (-10,7) | Banco de carpintería | Fabricación de herramientas |
-| (-29,18) | Claro del Hogar | Parcela 34 × 34, construcción modular |
-| (-54,24) | Bosque de recolección | Madera renovable |
-| (40,8) | Cantera | Piedra y cobre |
-| (12,56) | Muelle sur | Navegación a Luciérnagas |
-
-La Isla de las Luciérnagas tiene una zona local independiente, un pequeño santuario, árboles extraños, cristales y muelle de retorno. **Las coordenadas locales no equivalen a los píxeles del mapa conceptual**.
+Brisalia contiene el inicio, talleres, recursos y el Claro del Hogar. El embarcadero jugable está en `(33, 120)` y conecta con la Isla de las Luciérnagas, que usa coordenadas locales independientes. Las posiciones actuales de los hitos se mantienen en `terrainData.ts` y `pointsOfInterest.ts`.
 
 ## Guía geográfica al sumar nuevas ciudades
 

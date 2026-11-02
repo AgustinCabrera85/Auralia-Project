@@ -141,6 +141,16 @@ export function applyGeographicRelief(x:number,z:number,base:number):number{
     const blend=1-smooth(width*.72,width+18,distance);
     height=Math.min(height,height*(1-blend)+(level-route.depth)*blend);
   }
+  // A shallow east-bank saddle above the falls sits below the river surface.
+  // Give this reach a broad crest so the water meets a visible, walkable bank.
+  const upper=riverSample(x,z);
+  const reach=smooth(-1210,-1180,z)*(1-smooth(-1120,-1090,z));
+  if(reach>0&&upper.distance<upper.width+42){
+    const inner=smooth(upper.width+1,upper.width+9,upper.distance);
+    const outer=1-smooth(upper.width+28,upper.width+42,upper.distance);
+    const bank=reach*inner*outer;
+    height+=Math.max(0,upper.level+1.5-height)*bank;
+  }
   for(const island of LAKE_ISLANDS){
     const d=Math.hypot(x-island.x,z-island.z);
     const rise=island.rise*(1-smooth(island.radius*.4,island.radius,d));

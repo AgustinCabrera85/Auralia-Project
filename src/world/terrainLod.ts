@@ -31,6 +31,17 @@ export const childrenOf=(cell:TerrainCell):TerrainCell[]=>[
 export const parentOf=(cell:TerrainCell):TerrainCell=>
   ({cx:Math.floor(cell.cx/2),cz:Math.floor(cell.cz/2)});
 
+/** Interpolate the same two triangles emitted by a near TerrainStream tile. */
+export function nearTerrainHeightAt(x:number,z:number,heightAtGrid:(x:number,z:number)=>number):number{
+  const step=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
+  const x0=Math.floor(x/step)*step,z0=Math.floor(z/step)*step;
+  const tx=(x-x0)/step,tz=(z-z0)/step;
+  const a=heightAtGrid(x0,z0),b=heightAtGrid(x0+step,z0);
+  const c=heightAtGrid(x0,z0+step),d=heightAtGrid(x0+step,z0+step);
+  return tx+tz<=1?a+tx*(b-a)+tz*(c-a):
+    d+(1-tz)*(b-d)+(1-tx)*(c-d);
+}
+
 /** Distance to the closest point of a tile, so edge tiles retain coverage. */
 export function tileDistance(cell:TerrainCell,size:number,x:number,z:number):number{
   const dx=Math.max(0,Math.abs((cell.cx+.5)*size-x)-size*.5);

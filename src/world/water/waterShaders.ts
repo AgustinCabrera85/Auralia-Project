@@ -131,7 +131,7 @@ void main(void) {
   vSurfaceNormal = normalize(mat3(world) * normal);
   // Directional normals animate the flow without opening cracks in the
   // river mesh when a vertical ripple dips beneath the terrain.
-  float bankSink = smoothstep(.35,.98,color.r) * .18;
+  float bankSink = smoothstep(.35,.98,color.r) * .05;
   vec3 movedLocal = position + vec3(0.0, -bankSink, 0.0);
   vWorldPos = (world * vec4(movedLocal,1.0)).xyz;
   gl_Position = worldViewProjection * vec4(movedLocal,1.0);
@@ -208,8 +208,7 @@ void main(void) {
   float roughFoam = smoothstep(.43,.77,foamNoise) *
                     (turbulence*.70 + shore*.48);
   // Foam is spatially localized to turns/rapids/obstacles and banks.
-  float fallingFoam = cascade * (.18 + .48 * smoothstep(.34,.77,foamNoise));
-  float foam = clamp(roughFoam * mix(.26,1.0,flowAmount) + fallingFoam,0.0,.9);
+  float foam = clamp(roughFoam * mix(.26,1.0,flowAmount),0.0,.82);
   colorWater = mix(colorWater,vec3(.78,.94,.89),foam);
   float dist = distance(uCameraPosition,vWorldPos);
   float fog = 1.0-exp(-pow(uFogDensity*dist,2.0));

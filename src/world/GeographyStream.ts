@@ -1,9 +1,12 @@
 import { Mesh, Scene, ShaderMaterial, TransformNode, VertexData } from '@babylonjs/core';
-import { sampleRiverFlow, visualWaterLevel, visualWaterSurfaceAt } from './water/riverFlow';
+import { dryWaterHeight, sampleRiverFlow, visualWaterLevel, visualWaterSurfaceAt } from './water/riverFlow';
 import { createRiverWaterMaterial } from './water/RiverMaterial';
 import { acquireWaterTextures, updateWaterUniforms, type WaterTextureBank } from './water/waterResources';
+import { WaterfallSurface } from './water/WaterfallSurface';
+import { waterfallCutContainsCell, waterfallCutTouchesChunk, waterfallGroundAt } from './water/WaterfallGeometry';
 import { chunkKey, MAINLAND, sampleMainlandHeight } from './terrainData';
-import { WATERFALL, waterNearChunk, waterSurfaceAt } from './geographicFeatures';
+import { nearTerrainHeightAt } from './terrainLod';
+import { riverSample, streamSample, waterNearChunk, waterSurfaceAt } from './geographicFeatures';
 
 type Cell={cx:number;cz:number};
 type WaterJob=Cell&{lod:'near'|'far'};
@@ -16,6 +19,7 @@ export class GeographyStream {
   private pending:WaterJob[]=[];
   private readonly material:ShaderMaterial;
   private readonly waterTextures:WaterTextureBank;
+  private waterfall:WaterfallSurface|null=null;
   private time=0;
 
   get activeCount():number{return [...this.meshes.values()].filter(Boolean).length;}
@@ -28,7 +32,13 @@ export class GeographyStream {
 
   setActiveChunks(cells:readonly Cell[],x:number,z:number):void{
     const size=MAINLAND.chunkSize;
-    const desired=cells.filter(c=>waterNearChunk(c.cx,c.cz,size));
+    const hasWater=(cx:number,cz:number):boolean=>
+      waterNearChunk(cx,cz,size)||(
+        cz*size<=-1060&&(cz+1)*size>=-1800&&
+        // The upper visual bank can extend to the valley wall, so retain
+        // chunks whose corners may contain that bank even if the center is dry.
+        riverSample((cx+.5)*size,(cz+.5)*size).distance<90+size*.72);
+    const desired=cells.filter(c=>hasWater(c.cx,c.cz));
     const nearKeys=new Set(desired.map(c=>chunkKey(c.cx,c.cz)));
     const far:Cell[]=[];
     const farKeys=new Set<string>();
@@ -39,8 +49,16 @@ export class GeographyStream {
       if(nearKeys.has(key))continue;
       const dx=Math.max(0,Math.abs((cx+.5)*size-x)-size/2);
       const dz=Math.max(0,Math.abs((cz+.5)*size-z)-size/2);
-      if(Math.hypot(dx,dz)>FAR_WATER_RADIUS||!waterNearChunk(cx,cz,size))continue;
+      if(Math.hypot(dx,dz)>FAR_WATER_RADIUS||!hasWater(cx,cz))continue;
       far.push({cx,cz});farKeys.add(key);
+    }
+    const waterfallVisible=[...desired,...far].some(cell=>
+      waterfallCutTouchesChunk(cell.cx,cell.cz,size));
+    if(waterfallVisible&&!this.waterfall)
+      this.waterfall=new WaterfallSurface(this.scene,this.parent,this.waterTextures);
+    else if(!waterfallVisible&&this.waterfall){
+      this.waterfall.dispose();
+      this.waterfall=null;
     }
     for(const [key,mesh] of this.meshes)if(!nearKeys.has(key)&&(!farKeys.has(key)||this.farMeshes.has(key))){
       mesh?.dispose(false,false);
@@ -66,6 +84,7 @@ export class GeographyStream {
   update(dt=1/60):void{
     this.time+=Math.min(.10,Math.max(0,dt));
     updateWaterUniforms(this.material,this.scene,this.time);
+    this.waterfall?.update(this.time);
     for(let generated=0;generated<2&&this.pending.length;generated++){
       const {cx,cz,lod}=this.pending.shift()!;
       const key=chunkKey(cx,cz);
@@ -89,19 +108,31 @@ export class GeographyStream {
   private createWater(cx:number,cz:number,step:number,lod:'near'|'far'):Mesh|null{
     const size=MAINLAND.chunkSize;
     const positions:number[]=[],normals:number[]=[],colors:number[]=[],uv2:number[]=[],indices:number[]=[];
-    const cornerCache=new Map<string,{surface:ReturnType<typeof waterSurfaceAt>;ground:number}>();
+    const terrainGrid=new Map<string,number>();
+    const terrainAtGrid=(x:number,z:number):number=>{
+      const key=`${x}:${z}`;
+      let height=terrainGrid.get(key);
+      if(height===undefined){height=sampleMainlandHeight(x,z);terrainGrid.set(key,height);}
+      return height;
+    };
+    const cornerCache=new Map<string,{
+      surface:ReturnType<typeof waterSurfaceAt>;ground:number;renderedGround:number
+    }>();
     const cornerAt=(ix:number,iz:number)=>{
       const key=`${ix}:${iz}`;
       let point=cornerCache.get(key);
       if(!point){
         const px=cx*size+ix*step,pz=cz*size+iz*step;
-        const ground=sampleMainlandHeight(px,pz);
-        point={surface:visualWaterSurfaceAt(px,pz,ground),ground};
+        const renderedGround=nearTerrainHeightAt(px,pz,terrainAtGrid);
+        const ground=Math.max(waterfallGroundAt(px,pz),renderedGround);
+        point={surface:visualWaterSurfaceAt(px,pz,ground),ground,renderedGround};
         cornerCache.set(key,point);
       }
       return point;
     };
     const emitQuad=(ix:number,iz:number,scale:number):void=>{
+      const x=cx*size+ix*step,z=cz*size+iz*step;
+      if(waterfallCutContainsCell(x,z,step*scale))return;
       const corners:[[number,number],[number,number],[number,number],[number,number]]=[
         [ix,iz],[ix+scale,iz],[ix+scale,iz+scale],[ix,iz+scale]
       ];
@@ -112,7 +143,7 @@ export class GeographyStream {
       const start=positions.length/3;
       for(const [gx,gz] of corners){
         const px=cx*size+gx*step,pz=cz*size+gz*step;
-        const {surface:sampled,ground}=cornerAt(gx,gz);
+        const {surface:sampled,ground,renderedGround}=cornerAt(gx,gz);
         const surface=sampled??reference;
         const level=visualWaterLevel(px,pz,surface);
         const depth=Math.max(0,level-ground);
@@ -123,21 +154,22 @@ export class GeographyStream {
         const shore=wet?1-Math.min(1,depth/.5):1;
         // A dry corner always uses its terrain height, regardless of which
         // adjacent water quad emitted it. This closes seams at route bends.
-        const fallT=(WATERFALL.top-level)/(WATERFALL.top-WATERFALL.bottom);
-        const fallArc=wet&&surface.kind==='river'&&Math.abs(px-WATERFALL.x)<28&&
-          pz>WATERFALL.topZ-4&&pz<WATERFALL.bottomZ+4&&fallT>0&&fallT<1
-          ? .25*Math.sin(Math.PI*fallT)*Math.min(1,depth/.8):0;
-        // Bulge the falling sheet downstream; endpoints stay fixed, so the
-        // upper and lower river meshes meet the cascade without a hard lip.
-        positions.push(px,wet?level+.035:ground-.05,pz+fallArc);
+        // Keep dry water vertices below both the waterline and the actual
+        // terrain triangle. Otherwise they climb the bank into blue spikes.
+        const dryLevel=surface.kind==='river'?Math.min(level,riverSample(px,pz).level):
+          surface.kind==='stream'?Math.min(level,streamSample(px,pz).level):level;
+        positions.push(px,wet?level+.035:dryWaterHeight(ground,renderedGround,dryLevel),pz);
         normals.push(0,1,0);
         uv2.push(flow.directionX,flow.directionZ);
         // shore, speed, turbulence, depth (alpha channel stores depth, not opacity)
-        colors.push(shore,Math.min(1,flow.velocity/4),flow.turbulence,Math.min(1,depth/5));
+        colors.push(shore,Math.min(1,flow.velocity/4),flow.turbulence,
+          wet?Math.min(1,depth/5):0);
       }
-      indices.push(start,start+1,start+2,start,start+2,start+3);
+      // Use the same diagonal as the terrain mesh beneath each water quad.
+      indices.push(start,start+1,start+3,start+1,start+2,start+3);
     };
     for(let iz=0;iz<size/step;iz++)for(let ix=0;ix<size/step;ix++){
+      if(waterfallCutContainsCell(cx*size+ix*step,cz*size+iz*step,step))continue;
       const points=[cornerAt(ix,iz),cornerAt(ix+1,iz),cornerAt(ix+1,iz+1),cornerAt(ix,iz+1)];
       const x=cx*size+(ix+.5)*step,z=cz*size+(iz+.5)*step;
       const wetPoint=points.find(point=>point.surface&&point.ground<point.surface.level-.035);
@@ -190,6 +222,8 @@ export class GeographyStream {
 
   dispose():void{
     this.pending=[];
+    this.waterfall?.dispose();
+    this.waterfall=null;
     for(const mesh of this.meshes.values())mesh?.dispose(false,false);
     this.meshes.clear();
     for(const mesh of this.farMeshes.values())mesh?.dispose(false,false);

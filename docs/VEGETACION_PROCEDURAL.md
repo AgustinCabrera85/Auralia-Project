@@ -43,4 +43,4 @@ En la prueba de una zona continental se midieron **162 instancias visibles en 37
 
 ## Límites actuales
 
-No hay LOD, viento ni animación para estos GLB. La colisión de troncos es circular en el plano y no usa un cuerpo físico.
+Cuatro especies de árboles tienen GLB simplificados para la distancia, según [Terreno distante y atmósfera](LANDSCAPE_LOD.md); los demás modelos no tienen LOD. No hay viento ni animación para estos GLB. La colisión de troncos es circular en el plano y no usa un cuerpo físico.
