@@ -1,4 +1,4 @@
-import { Color3, Color4, DirectionalLight, HemisphericLight, Scene, type ArcRotateCamera } from '@babylonjs/core';
+import { Color3, Color4, DirectionalLight, HemisphericLight, Scene, Vector3, type ArcRotateCamera } from '@babylonjs/core';
 import {
   sampleClimate, SEASONS, SEASON_LABELS, WEATHERS, WEATHER_LABELS,
   REAL_SECONDS_PER_GAME_DAY, START_HOUR,
@@ -12,6 +12,7 @@ import { getAuraliaWind, type AuraliaWindState } from '../AuraliaWindSystem';
 /** One shared environmental clock for every playable zone of Auralia. */
 export class EnvironmentSystem {
   private readonly sky:SkyDome;
+  private readonly moon:DirectionalLight;
   private readonly precipitation:Precipitation;
   private readonly wind:AuraliaWindState;
   private elapsed:number;
@@ -41,6 +42,11 @@ export class EnvironmentSystem {
     this.originalHemiIntensity=hemi.intensity;
     this.wind=getAuraliaWind(scene);
     this.sky=new SkyDome(scene,camera);
+    // One cool directional fill follows the moon; it needs no shadow map.
+    this.moon=new DirectionalLight('luz-lunar',new Vector3(0,-1,0),scene);
+    this.moon.diffuse=new Color3(.48,.63,.90);
+    this.moon.specular=new Color3(.14,.19,.28);
+    this.moon.intensity=0;
     this.precipitation=new Precipitation(scene,camera);
     if(new URLSearchParams(location.search).has('climateDebug'))this.createDebugPanel();
     this.update(0);
@@ -79,6 +85,12 @@ export class EnvironmentSystem {
 
     // Existing sun and hemispheric lights are modified; no duplicate light sources.
     this.sun.direction.set(-frame.sunDirection[0],-frame.sunDirection[1],-frame.sunDirection[2]);
+    // Babylon light direction points toward the world, opposite the moon's
+    // position in the dome. Clouds and storms dim its restrained night fill.
+    this.moon.direction.set(frame.sunDirection[0],frame.sunDirection[1],frame.sunDirection[2]);
+    const moonHeight=Math.max(0,-frame.sunHeight);
+    this.moon.intensity=.18*frame.night*Math.min(1,moonHeight/.25)*
+      (1-weather.darken*.78)*(1-weather.cloud*.42);
     // Gentle broad illumination changes as animated cloud bands pass overhead.
     // This avoids expensive shadow-maps for the whole streamed world.
     const cloudShadow=weather.cloud*.14*(.5+.5*Math.sin(this.animationSeconds*.055+
@@ -87,7 +99,7 @@ export class EnvironmentSystem {
       (1-weather.darken*.72)*(1-cloudShadow)+this.flash*.23;
     const sun=frame.sunColor;
     this.sun.diffuse.set(sun[0],sun[1],sun[2]);
-    this.hemi.intensity=this.originalHemiIntensity*(.32+.68*frame.dayLight)*(1-weather.darken*.40)+this.flash*.12;
+    this.hemi.intensity=this.originalHemiIntensity*(.37+.63*frame.dayLight)*(1-weather.darken*.40)+this.flash*.12;
     this.hemi.diffuse=Color3.Lerp(new Color3(.43,.53,.74),new Color3(.95,.97,1),frame.dayLight);
     this.hemi.groundColor=Color3.Lerp(new Color3(.14,.18,.26),new Color3(.48,.55,.62),frame.dayLight);
     const h=frame.skyHorizon;
@@ -169,6 +181,7 @@ export class EnvironmentSystem {
   dispose():void {
     this.debugPanel?.remove();
     this.precipitation.dispose();
+    this.moon.dispose();
     this.sky.dispose();
   }
 }

@@ -1,5 +1,5 @@
 import {
-  ArcRotateCamera, Color3, DirectionalLight, Engine, HemisphericLight,
+  ArcRotateCamera, ArcRotateCameraPointersInput, Color3, DirectionalLight, Engine, HemisphericLight,
   Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
   VertexBuffer, VertexData, PointLight
 } from '@babylonjs/core';
@@ -35,6 +35,8 @@ import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, 
 import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type TraversalWorld } from './CharacterTraversalController';
 import { TRAVERSAL } from './traversalRules';
+import { CAMERA_TERRAIN, cameraTerrainView } from './cameraTerrain';
+import { nearTerrainHeightAt } from '../world/terrainLod';
 
 export type Interactable = {
   id: string;
@@ -128,6 +130,7 @@ export class WorldView {
   private cameraAppliedRadius=29;
   private cameraOcclusionTimer=0;
   private cameraOcclusionDistance=Infinity;
+  private cameraFrameDt=0;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -148,15 +151,18 @@ export class WorldView {
     sun.diffuse = new Color3(1, 0.91, 0.76);
 
     this.camera = new ArcRotateCamera('camara-aventura', -Math.PI / 2.3, 1.05, 29, new Vector3(0, 3, 0), this.scene);
-    this.camera.lowerRadiusLimit = 4;
+    this.camera.lowerRadiusLimit = CAMERA_TERRAIN.minRadius;
     this.camera.upperRadiusLimit = 46;
-    this.camera.lowerBetaLimit = 0.35;
-    this.camera.upperBetaLimit = 1.35;
+    this.camera.lowerBetaLimit = 0.4;
+    this.camera.upperBetaLimit = 1.95;
     this.camera.wheelPrecision = 32;
+    this.camera.minZ = .15;
     this.camera.maxZ = LANDSCAPE_ATMOSPHERE_CONFIG.cameraFar;
     this.camera.panningSensibility = 0;
-    this.camera.inertia = 0.7;
+    this.camera.inertia = 0.55;
     this.camera.attachControl(canvas, true);
+    const pointerInput=this.camera.inputs.attached.pointers as ArcRotateCameraPointersInput;
+    pointerInput.angularSensibilityY=650;
     this.climate=new EnvironmentSystem(this.scene,this.camera,sun,hemi,
       store.state.environment?.elapsedHours);
     // Las flechas se reservan para el personaje, no para orbitar la cámara.
@@ -227,8 +233,11 @@ export class WorldView {
     window.addEventListener('blur', this.onBlur);
     window.addEventListener('resize', this.resize);
     canvas.addEventListener('pointerdown', this.onPointerDown);
+    this.scene.onBeforeRenderObservable.add(()=>this.updateCameraOcclusion(
+      this.cameraFrameDt,this.zones.get(this.store.state.zone)!));
     this.engine.runRenderLoop(() => {
       const dt = Math.min(this.engine.getDeltaTime() / 1000, 0.045);
+      this.cameraFrameDt=dt;
       this.update(dt);
       this.scene.render();
       this.updateGrassStats(dt);
@@ -729,7 +738,7 @@ export class WorldView {
     }
     if(id==='brisalia')this.streamMainland(start.x,start.z);
     this.interactTarget=null;
-    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
+    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)),false,false,true);
     this.sendLocation();
   }
 
@@ -788,7 +797,7 @@ export class WorldView {
     if((id===FOLIAGE_FOREST.id||id===FOLIAGE_FOREST.flowerMeadow.id)&&!this.landscapeDebug)
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
         this.props,this.vegetation,this.grass,this.authoredAssets);
-    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
+    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)),false,false,true);
     this.store.setPlayerPosition('brisalia',point.x,point.z);
     this.sendLocation();
     this.callbacks.notify(`Explorando: ${point.name}`);
@@ -933,16 +942,15 @@ export class WorldView {
       Number(this.pressed.has('a')||this.pressed.has('arrowleft')):0;
     const vertical=controls?Number(this.pressed.has('w')||this.pressed.has('arrowup'))-
       Number(this.pressed.has('s')||this.pressed.has('arrowdown')):0;
-    const look=this.camera.getTarget().subtract(this.camera.position);
-    const forwardLength=Math.hypot(look.x,look.z)||1;
-    const direction=cameraRelativeMovement({x:look.x,z:look.z},horizontal,vertical);
+    const forwardX=-Math.cos(this.camera.alpha),forwardZ=-Math.sin(this.camera.alpha);
+    const direction=cameraRelativeMovement({x:forwardX,z:forwardZ},horizontal,vertical);
     if(zone.id==='brisalia'){
       this.props.setColliderFocus(this.traversal.position.x,
         this.traversal.position.z,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(this.traversal.position.x,this.traversal.position.z);
     }
     const walking=this.traversal.step(dt,{
-      moveX:direction.x,moveZ:direction.z,forwardX:look.x/forwardLength,forwardZ:look.z/forwardLength,
+      moveX:direction.x,moveZ:direction.z,forwardX,forwardZ,
       horizontal,vertical,run:controls&&this.pressed.has('shift'),
       jumpPressed:controls&&this.jumpRequested
     },this.traversalWorld(zone));
@@ -973,8 +981,10 @@ export class WorldView {
     this.playerBody.position.y=this.traversal.mode==='grounded'
       ?walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025:0;
     this.playerBody.rotation.z=this.traversal.mode==='climbing'?.08:0;
-    this.camera.setTarget(Vector3.Lerp(this.camera.getTarget(),this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt)));
-    this.updateCameraOcclusion(dt);
+    const target=Vector3.Lerp(this.camera.getTarget(),
+      this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt));
+    target.y=Math.max(target.y,this.player.position.y+1.85);
+    this.camera.setTarget(target,false,false,true);
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
       this.vegetation.update();
@@ -995,23 +1005,43 @@ export class WorldView {
     if(this.placement)this.refreshPreview();
   }
 
-  private updateCameraOcclusion(dt:number):void{
+  private updateCameraOcclusion(dt:number,zone:IslandInfo):void{
     const changed=this.camera.radius-this.cameraAppliedRadius;
-    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(4,
+    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(CAMERA_TERRAIN.minRadius,
       Math.min(46,this.cameraPreferredRadius+changed));
+    const {alpha,beta}=this.camera,radius=this.cameraPreferredRadius;
+    const direction=new Vector3(Math.cos(alpha)*Math.sin(beta),Math.cos(beta),
+      Math.sin(alpha)*Math.sin(beta));
+    const target=this.camera.getTarget();
+    const gridHeights=new Map<string,number>();
+    const groundAt=(x:number,z:number):number=>{
+      const localX=x-zone.offset.x,localZ=z-zone.offset.z;
+      const terrain=zone.id==='brisalia'
+        ?nearTerrainHeightAt(localX,localZ,(gx,gz)=>{
+          const key=`${gx}:${gz}`;
+          let height=gridHeights.get(key);
+          if(height===undefined){height=sampleMainlandHeight(gx,gz);gridHeights.set(key,height);}
+          return height;
+        })
+        :this.y(zone,localX,localZ);
+      return Math.max(terrain,MAINLAND.waterLevel,zone.id==='brisalia'
+        ?bridgeDeckAt(localX,localZ)??-Infinity:-Infinity);
+    };
+    const terrainView=cameraTerrainView(target,direction,radius,groundAt,
+      this.player.position.y+1.85);
+    if(terrainView.targetY>target.y){
+      target.y=terrainView.targetY;
+      this.camera.setTarget(target,false,false,true);
+    }
     this.cameraOcclusionTimer-=dt;
     if(this.cameraOcclusionTimer<=0){
       this.cameraOcclusionTimer=.12;
-      const {alpha,beta}=this.camera,radius=this.cameraPreferredRadius;
-      const target=this.camera.getTarget();
-      const desired=target.add(new Vector3(
-        Math.cos(alpha)*Math.sin(beta)*radius,
-        Math.cos(beta)*radius,
-        Math.sin(alpha)*Math.sin(beta)*radius));
+      const desired=target.add(direction.scale(radius));
       const hit=this.props.queryCameraObstruction(target,desired);
-      this.cameraOcclusionDistance=hit===null?Infinity:Math.max(4,hit-1.1);
+      this.cameraOcclusionDistance=hit===null?Infinity:
+        Math.max(CAMERA_TERRAIN.minRadius,hit-1.1);
     }
-    const safe=Math.min(this.cameraPreferredRadius,this.cameraOcclusionDistance);
+    const safe=Math.min(radius,this.cameraOcclusionDistance,terrainView.maxRadius);
     this.camera.radius=safe<this.camera.radius?safe:
       this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*5);
     this.cameraAppliedRadius=this.camera.radius;
