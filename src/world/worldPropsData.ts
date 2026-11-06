@@ -5,6 +5,7 @@ import { geologyFaceExcludes } from './geologyData';
 import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isLand, isStarterArea,
   MAINLAND, sampleMainlandHeight, type Biome } from './terrainData';
 import type { VegetationExclusion } from './vegetationData';
+import { insideFoliageForest } from './foliageForestConfig';
 
 export const PROP_CONFIG={
   seed:43179,renderRadiusChunks:3,scaleVariation:.2,roadMaskLimit:.38,
@@ -66,7 +67,7 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
       const z=kind==='packRocas'
         ?clamp(anchorZ+Math.sin(angle)*distance,cz*MAINLAND.chunkSize+2,(cz+1)*MAINLAND.chunkSize-2)
         :(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
-      if(!isLand(x,z)||isStarterArea(x,z)||geologyFaceExcludes(x,z))continue;
+      if(!isLand(x,z)||isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z))continue;
       const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);
       if(h<MAINLAND.waterLevel+.7||(water&&h<water.level+.8))continue;
       if(geographyMasks(x,z).road>PROP_CONFIG.roadMaskLimit)continue;

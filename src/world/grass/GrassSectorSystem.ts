@@ -6,6 +6,8 @@ import { MAINLAND, sampleMainlandHeight } from '../terrainData';
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../terrainLod';
 import type { VegetationExclusion } from '../vegetationData';
 import { GrassWindPlugin } from './GrassWindPlugin';
+import { insideFoliageForest } from '../foliageForestConfig';
+import { getAuraliaWind } from '../AuraliaWindSystem';
 
 export const GRASS_GLB='/assets/grass/grass_tufts.glb';
 const SECTOR_SIZE=MAINLAND.chunkSize;
@@ -59,6 +61,7 @@ export class GrassSectorSystem {
       if(this.disposed){for(const object of imported)object.dispose(false,false);return;}
       const selected=new Set<Mesh>();
       const windMaterials=new Set<object>();
+      const wind=getAuraliaWind(this.scene);
       for(const object of imported){
         if(!(object instanceof Mesh)||object.getTotalVertices()===0)continue;
         const match=/grass_(short|medium|tall|flower)/i.exec(object.name);
@@ -74,7 +77,7 @@ export class GrassSectorSystem {
         object.isVisible=false;object.isPickable=false;object.checkCollisions=false;
         object.metadata={grassSource:variant};
         if(object.material&&!windMaterials.has(object.material)){
-          new GrassWindPlugin(object.material);
+          new GrassWindPlugin(object.material,wind);
           windMaterials.add(object.material);
         }
         this.sources.set(variant,object);selected.add(object);
@@ -113,7 +116,8 @@ export class GrassSectorSystem {
       for(let offset=0;offset+PACKED_STRIDE<=packed.length;offset+=PACKED_STRIDE){
         const x=packed[offset],z=packed[offset+2],yaw=packed[offset+3];
         const width=packed[offset+4],height=packed[offset+5];
-        if(!Number.isFinite(x+z+yaw+width+height)||width<=0||height<=0)continue;
+        if(!Number.isFinite(x+z+yaw+width+height)||width<=0||height<=0||
+          insideFoliageForest(x,z))continue;
         const variant=grassVariant(bake.px,bake.pz,offset/PACKED_STRIDE,packed[offset+9]);
         const surface=nearTerrainSurfaceAt(x,z,heightAtGrid);
         const matrix=Matrix.Compose(new Vector3(width,height,width),

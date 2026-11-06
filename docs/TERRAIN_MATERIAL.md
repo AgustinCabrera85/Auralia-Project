@@ -27,3 +27,7 @@ Los valores predeterminados están en `TERRAIN_MATERIAL_CONFIG`. `TerrainStream`
 | `sandStrength` | 0.84 | Presencia máxima de arena en orillas. |
 
 Las distancias y pendientes se evalúan por vértice; los cambios muy finos requieren más resolución de malla y aquí se dejan al detalle de textura para conservar la geometría y las colisiones existentes.
+
+## Paleta del Bosque Ilustrado
+
+El shader aclara y calienta la capa de pasto dentro de la elipse del Bosque Ilustrado, con una transición suave en el borde. A partir de unos 95 m, un patrón sutil en coordenadas mundiales prolonga el aspecto de las matas cuando se usa el LOD lejano y después de su distancia de dibujo. Las texturas y el relieve siguen siendo los mismos. `LandscapeAtmosphere` coordina el cielo azul, la niebla menos densa y el tinte más saturado de los materiales V4; `WorldView` usa un tono tierra mate para los senderos. Así se separan mejor el suelo, las copas y el camino sin aumentar geometría ni llamadas de dibujo.

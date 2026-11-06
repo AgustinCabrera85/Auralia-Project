@@ -3,8 +3,10 @@ import { GameStore, type Milestone } from '../domain/GameStore';
 import { BUILD_CATALOG, RECIPES, costAsText, hasCost } from '../domain/recipes';
 import { ITEM_ICON, ITEM_LABEL, MATERIALS, type BuildType, type Structure } from '../domain/types';
 import { LANDMARKS } from '../world/terrainData';
+import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
 import { mapPercent } from '../world/mapProjection';
 import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
+import { SEASON_LABELS, WEATHER_ICONS, WEATHER_LABELS, type ClimateFrame } from '../world/climate/ClimateModel';
 
 type HudActions = {
   interact: () => void;
@@ -59,6 +61,7 @@ export class Hud {
           <div id="quest-progress" class="quest-progress"></div>
         </section>
         <div class="compass"><div class="compass-n">N</div><span>✧</span><small id="biome-short">BRISALIA</small></div>
+        <div class="climate-status" id="climate-status">🌤️ 09:00 · Primavera</div>
         <div class="terrain-status"><strong id="region-explore">Valle de los Faroles</strong><small><span id="position-explore">X 1 · Z 10</span><span> · </span><span id="chunks-explore">sectores…</span></small></div>
         <div class="interaction-pill" id="interaction-hint">WASD para caminar · E para interactuar · M para el mapa</div>
         <aside id="build-selection" class="build-selection" hidden></aside>
@@ -96,6 +99,15 @@ export class Hud {
   }
 
   get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible; }
+
+  setClimate(frame:ClimateFrame):void {
+    const el=document.getElementById('climate-status');
+    if(!el)return;
+    const hh=String(Math.floor(frame.hour)).padStart(2,'0');
+    const mm=String(Math.floor((frame.hour%1)*60)).padStart(2,'0');
+    el.textContent=`${WEATHER_ICONS[frame.weather]} ${hh}:${mm} · ${SEASON_LABELS[frame.season]}`;
+    el.title=WEATHER_LABELS[frame.weather];
+  }
 
   private readonly onClick = (event: MouseEvent) => {
     const element = (event.target as HTMLElement).closest<HTMLElement>('[data-panel], [data-action], [data-recipe], [data-build], [data-replace], [data-marker], [data-map-view], [data-landmark]');
@@ -204,15 +216,20 @@ export class Hud {
     if(this.mapView==='regional'){
       const pos=this.projectPosition();
       const discovered=new Set(this.store.state.discoveredPlaces??[]);
-      const placeMarkers=POINTS_OF_INTEREST.filter(place=>discovered.has(place.id)).map(place=>{
+      const placeMarkers=POINTS_OF_INTEREST.filter(place=>
+        place.id!==FOLIAGE_FOREST.id&&
+        place.id!==FOLIAGE_FOREST.flowerMeadow.id&&discovered.has(place.id)).map(place=>{
         const p=mapPercent(place.x,place.z);
         return `<span class="poi-map-marker" style="left:${p.left.toFixed(2)}%;top:${p.top.toFixed(2)}%" title="${place.name}" aria-label="Lugar descubierto: ${place.name}">◆</span>`;
       }).join('');
+      const forest=mapPercent(FOLIAGE_FOREST.x,FOLIAGE_FOREST.z);
+      const forestMarker=`<button class="poi-map-marker forest-map-marker" data-landmark="${FOLIAGE_FOREST.id}" style="left:${forest.left.toFixed(2)}%;top:${forest.top.toFixed(2)}%" title="Viajar al ${FOLIAGE_FOREST.name}" aria-label="Viajar al ${FOLIAGE_FOREST.name}">♣</button>`;
       return tabs+`<p class="panel-lead">Esta es la geografía real de la <strong>isla principal de aproximadamente 4 × 3 km</strong>. Sus seis biomas se pueden recorrer, pero <strong>las ciudades adicionales todavía no están construidas</strong>. Para facilitar las pruebas, elegí un mirador y teletransportate allí.</p>
       <div class="map-layout regional-layout">
         <div class="map-board regional-map-board">
           <img src="/assets/mapa-geografico-v0.2.svg" alt="Mapa geográfico de la isla principal con regiones, senderos e islas" />
           ${placeMarkers}
+          ${forestMarker}
           <span id="map-player" class="player-map-marker" style="left:${pos.left.toFixed(2)}%;top:${pos.top.toFixed(2)}%" title="Tu ubicación">✦</span>
         </div>
         <div class="map-details">
@@ -223,7 +240,7 @@ export class Hud {
           <div class="map-specialty"><small>VIAJE DE PRUEBA · NO MODIFICA LAS MISIONES</small><strong>Visitar un hito geográfico</strong></div>
           <div class="landmark-list">${LANDMARKS.map(land=>`<button data-landmark="${land.id}"><strong>${land.name}</strong><small>${land.description}</small></button>`).join('')}</div>
           <div class="map-specialty"><small>LUGARES DESCUBIERTOS · ${discovered.size}/${POINTS_OF_INTEREST.length}</small><strong>Accidentes y puntos de interés</strong></div>
-          <div class="landmark-list">${POINTS_OF_INTEREST.map(place=>`<button data-landmark="${place.id}"><strong>${discovered.has(place.id)?'◆ ':''}${place.name}</strong><small>${discovered.has(place.id)?place.description:'Lugar por explorar · visitar para reconocerlo'}</small></button>`).join('')}</div>
+          <div class="landmark-list">${POINTS_OF_INTEREST.map(place=>`<button data-landmark="${place.id}"><strong>${place.id===FOLIAGE_FOREST.id?'♣ ':place.id===FOLIAGE_FOREST.flowerMeadow.id?'✿ ':discovered.has(place.id)?'◆ ':''}${place.name}</strong><small>${discovered.has(place.id)||place.id===FOLIAGE_FOREST.id||place.id===FOLIAGE_FOREST.flowerMeadow.id?place.description:'Lugar por explorar · visitar para reconocerlo'}</small></button>`).join('')}</div>
           <p class="map-hint">Esta opción de viaje rápido es solo para desarrollo. Las rutas normales se pueden recorrer caminando.</p>
         </div>
       </div>`;

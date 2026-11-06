@@ -4,6 +4,7 @@ import type { TerrainStream } from './TerrainStream';
 import type { VegetationSystem } from './VegetationSystem';
 import type { WorldPropSystem } from './WorldPropSystem';
 import type { GrassSectorSystem } from './grass/GrassSectorSystem';
+import type { AuthoredAssets } from './editor/AuthoredAssets';
 
 /** Developer-only overlay: enabled with ?landscapeDebug=1. */
 export class LandscapeDebug {
@@ -17,7 +18,8 @@ export class LandscapeDebug {
 
   constructor(private readonly scene:Scene,private readonly engine:Engine,
     private readonly terrain:TerrainStream,private readonly props:WorldPropSystem,
-    private readonly vegetation:VegetationSystem,private readonly grass:GrassSectorSystem){
+    private readonly vegetation:VegetationSystem,private readonly grass:GrassSectorSystem,
+    private readonly authoredAssets?:AuthoredAssets){
     this.overlay=document.createElement('div');
     this.overlay.style.cssText='position:fixed;left:12px;top:170px;z-index:20;'+
       'padding:10px 12px;background:#10241be8;color:#e9ffdb;font:12px monospace;'+
@@ -61,6 +63,9 @@ export class LandscapeDebug {
       ` · formaciones ${this.props.activeFormationCount}\n`+
       `Árboles ${this.vegetation.instanceCount} (${this.vegetation.farInstanceCount} LOD)`+
       ` · césped ${this.grass.instanceCount}\n`+
+      (this.authoredAssets?`Foliage V4 ${this.authoredAssets.v4DrawnCount}`+
+        ` (${this.authoredAssets.v4LodCount} LOD)`+
+        ` · viento ${this.authoredAssets.windMaterialCount} materiales\n`:'')+
       `FPS ${Math.round(this.engine.getFps())} · draw calls ${draws}`+
       ` · triángulos ${Math.round(this.scene.getActiveIndices()/3)}\n`+
       `Fog ${this.fogOn?'sí':'no'} ${this.scene.fogDensity.toFixed(5)}`+

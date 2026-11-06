@@ -1,4 +1,5 @@
 /** Stable identifiers and coordinates. Add future places here, not in WorldView. */
+import { FOLIAGE_FOREST } from './foliageForestConfig';
 export type PointOfInterest={
   id:string;name:string;x:number;z:number;
   kind:'waterfall'|'ruins'|'lookout'|'cave'|'bridge'|'dock';
@@ -6,6 +7,15 @@ export type PointOfInterest={
 };
 
 export const POINTS_OF_INTEREST:readonly PointOfInterest[]=[
+  {id:FOLIAGE_FOREST.id,name:FOLIAGE_FOREST.name,x:FOLIAGE_FOREST.x,z:FOLIAGE_FOREST.z,
+    kind:'lookout',discoverRadius:55,
+    description:'Bosque extenso para observar los nuevos árboles, flores y el rendimiento del viento.',
+    dialogue:'Las copas ilustradas se mueven con la brisa. El sendero permite recorrer el bosque y comparar sus detalles de cerca y de lejos.'},
+  {id:FOLIAGE_FOREST.flowerMeadow.id,name:FOLIAGE_FOREST.flowerMeadow.name,
+    x:FOLIAGE_FOREST.flowerMeadow.x,z:FOLIAGE_FOREST.flowerMeadow.z,
+    kind:'lookout',discoverRadius:45,
+    description:'Claro de flores V4 densas para comparar colores y rendimiento.',
+    dialogue:'Las flores forman manchas de color entre las matas de pasto del bosque.'},
   {id:'cascada-valle',name:'Cascada del Valle',x:470,z:-1005,kind:'waterfall',discoverRadius:48,
     description:'Una caída del río principal al borde del valle.',
     dialogue:'El agua desciende de las cumbres por una garganta. Las rocas de esta orilla forman un mirador natural.'},

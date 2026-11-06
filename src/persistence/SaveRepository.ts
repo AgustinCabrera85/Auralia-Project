@@ -1,5 +1,6 @@
 import { newGame, type SaveGameV1 } from '../domain/types';
 import { type ItemId, emptyInventory } from '../domain/types';
+import { START_HOUR } from '../world/climate/ClimateModel';
 
 /** Se puede reemplazar por IndexedDB o una API remota sin cambiar la lógica del juego. */
 export interface SaveRepository {
@@ -20,6 +21,9 @@ export class LocalStorageSaveRepository implements SaveRepository {
       return {
         ...parsed,
         inventory: { ...emptyInventory(), ...parsed.inventory },
+        environment: parsed.environment && Number.isFinite(parsed.environment.elapsedHours) &&
+          parsed.environment.elapsedHours>=0 && parsed.environment.elapsedHours<=24*365*100
+          ?{elapsedHours:parsed.environment.elapsedHours}:{elapsedHours:START_HOUR},
         structures:parsed.structures.map(structure=>{
           const anchor=structure.anchor;
           const valid=anchor&&['cell','edge','corner','roof'].includes(anchor.kind)&&

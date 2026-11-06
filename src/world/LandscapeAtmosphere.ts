@@ -1,10 +1,11 @@
-import { Color3, PBRMaterial, Scene, type Material } from '@babylonjs/core';
+import { Color3, Color4, PBRMaterial, Scene, type Material } from '@babylonjs/core';
 
 /** Scene fog is the sole atmospheric pass for Babylon materials and custom shaders. */
 export const LANDSCAPE_ATMOSPHERE_CONFIG={
   fogMode:Scene.FOGMODE_EXP2,
-  fogDensity:.00135,
-  fogColor:'#b5d6f2',
+  fogDensity:.00072,
+  fogColor:'#8db8c7',
+  skyColor:'#70afe4',
   cameraFar:1900,
   importedDirectIntensity:.62,
   cliffMetallic:0,
@@ -16,6 +17,30 @@ export function applyLandscapeAtmosphere(scene:Scene):void{
   scene.fogMode=LANDSCAPE_ATMOSPHERE_CONFIG.fogMode;
   scene.fogDensity=LANDSCAPE_ATMOSPHERE_CONFIG.fogDensity;
   scene.fogColor=Color3.FromHexString(LANDSCAPE_ATMOSPHERE_CONFIG.fogColor);
+  const sky=Color3.FromHexString(LANDSCAPE_ATMOSPHERE_CONFIG.skyColor);
+  scene.clearColor=new Color4(sky.r,sky.g,sky.b,1);
+}
+
+const tunedFoliageMaterials=new WeakSet<Material>();
+
+/** Warmer bark and fuller greens for the illustrated GLBs under the scene lights. */
+export function configureFoliageV4Material(material:Material|null):void{
+  if(!(material instanceof PBRMaterial)||
+    !material.name.startsWith('Auralia_V4_')||tunedFoliageMaterials.has(material))return;
+  tunedFoliageMaterials.add(material);
+  material.fogEnabled=true;
+  material.directIntensity=.88;
+  const name=material.name.toLowerCase();
+  if(name.includes('_wood_')||name.endsWith('_twig'))
+    material.albedoColor=material.albedoColor.multiply(new Color3(.88,.76,.66));
+  else if(name.includes('_leaves_'))
+    material.albedoColor=material.albedoColor.multiply(new Color3(.73,.93,.61));
+  else if(name.includes('_meadow_')||name.includes('_green_'))
+    material.albedoColor=material.albedoColor.multiply(new Color3(.76,.96,.65));
+  else if(name.includes('_flower_pink'))
+    material.albedoColor=material.albedoColor.multiply(new Color3(.98,.77,.88));
+  else if(name.includes('_flower_blue'))
+    material.albedoColor=material.albedoColor.multiply(new Color3(.75,.86,.98));
 }
 
 /** The cliff GLB omits metallic/roughness factors, so glTF defaults to metal=1. */

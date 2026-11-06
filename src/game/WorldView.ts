@@ -1,5 +1,5 @@
 import {
-  ArcRotateCamera, Color3, Color4, DirectionalLight, Engine, HemisphericLight,
+  ArcRotateCamera, Color3, DirectionalLight, Engine, HemisphericLight,
   Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
   VertexBuffer, VertexData, PointLight
 } from '@babylonjs/core';
@@ -15,7 +15,10 @@ import { AuthoredAssets } from '../world/editor/AuthoredAssets';
 import { authoredAssetExclusions, blocksAuthoredMovement } from '../world/editor/WorldEditState';
 import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
+import { EnvironmentSystem } from '../world/climate/EnvironmentSystem';
+import type { ClimateFrame } from '../world/climate/ClimateModel';
 import { LandscapeDebug } from '../world/LandscapeDebug';
+import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
 import { GeographyStream } from '../world/GeographyStream';
 import { OceanWater } from '../world/water/OceanWater';
 import { VegetationSystem } from '../world/VegetationSystem';
@@ -71,6 +74,7 @@ type WorldCallbacks = {
   onBuild: (structure: Structure) => void;
   onStructureSelected:(structure:Structure|null)=>void;
   onExplore: (x: number, z: number, name: string, chunks: number) => void;
+  onClimate: (frame: ClimateFrame) => void;
 };
 
 const TOWN_OFFSET = { x: 0, z: 0 };
@@ -82,6 +86,9 @@ export class WorldView {
   readonly engine: Engine;
   readonly scene: Scene;
   readonly camera: ArcRotateCamera;
+  private readonly climate:EnvironmentSystem;
+  private climateSaveTimer=0;
+  private climateHudTimer=0;
   private readonly zones = new Map<ZoneId, IslandInfo>();
   private readonly materials = new Map<string, StandardMaterial>();
   private readonly built = new Map<string, TransformNode>();
@@ -131,7 +138,6 @@ export class WorldView {
     this.engine = new Engine(canvas, true, { antialias: true, adaptToDeviceRatio: true });
     this.engine.setHardwareScalingLevel(Math.min(1.35, Math.max(1, window.devicePixelRatio / 1.7)));
     this.scene = new Scene(this.engine);
-    this.scene.clearColor = new Color4(0.73, 0.85, 0.97, 1);
     applyLandscapeAtmosphere(this.scene);
 
     const hemi = new HemisphericLight('ambiente', new Vector3(0, 1, 0), this.scene);
@@ -151,6 +157,8 @@ export class WorldView {
     this.camera.panningSensibility = 0;
     this.camera.inertia = 0.7;
     this.camera.attachControl(canvas, true);
+    this.climate=new EnvironmentSystem(this.scene,this.camera,sun,hemi,
+      store.state.environment?.elapsedHours);
     // Las flechas se reservan para el personaje, no para orbitar la cámara.
     this.camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
 
@@ -195,7 +203,7 @@ export class WorldView {
     void this.authoredAssets.sync();
     if(new URLSearchParams(window.location.search).has('landscapeDebug'))
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
-        this.props,this.vegetation,this.grass);
+        this.props,this.vegetation,this.grass,this.authoredAssets);
     void this.vegetation.load();
     void this.props.load().then(()=>{
       for(const request of this.rockVisualRequests){
@@ -204,6 +212,7 @@ export class WorldView {
       this.rockVisualRequests.length=0;
     });
     this.activateZone(store.state.zone);
+    this.callbacks.onClimate(this.climate.frame);
     if(new URLSearchParams(window.location.search).has('grassStats')){
       this.grassInstrumentation=new SceneInstrumentation(this.scene);
       this.grassStatsOverlay=document.createElement('div');
@@ -419,7 +428,8 @@ export class WorldView {
   }
 
   private path(zone: IslandInfo, coords: readonly (readonly [number, number])[], width = 5): void {
-    const sand = this.mat('sendero', '#d0b987');
+    const sand = this.mat('sendero', '#82704f');
+    sand.specularColor=Color3.Black();
     for(let i=1;i<coords.length;i++){
       const [ax,az]=coords[i-1],[bx,bz]=coords[i];
       const len=Math.hypot(bx-ax,bz-az);
@@ -774,6 +784,10 @@ export class WorldView {
     this.traversal.teleport(point.x,y,point.z);
     this.lastSafePosition={x:point.x,z:point.z};
     this.streamMainland(point.x,point.z);
+    void this.authoredAssets.sync(point.x,point.z);
+    if((id===FOLIAGE_FOREST.id||id===FOLIAGE_FOREST.flowerMeadow.id)&&!this.landscapeDebug)
+      this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
+        this.props,this.vegetation,this.grass,this.authoredAssets);
     this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)));
     this.store.setPlayerPosition('brisalia',point.x,point.z);
     this.sendLocation();
@@ -902,6 +916,17 @@ export class WorldView {
   }
 
   private update(dt: number): void {
+    const climateFrame=this.climate.update(dt);
+    this.climateSaveTimer+=dt;
+    this.climateHudTimer+=dt;
+    if(this.climateHudTimer>=.5){
+      this.callbacks.onClimate(climateFrame);
+      this.climateHudTimer=0;
+    }
+    if(this.climateSaveTimer>=12){
+      this.store.setEnvironmentTime(this.climate.elapsedHours);
+      this.climateSaveTimer=0;
+    }
     const zone=this.zones.get(this.store.state.zone)!;
     const controls=!this.blocked()&&!this.placement;
     const horizontal=controls?Number(this.pressed.has('d')||this.pressed.has('arrowright'))-
@@ -1212,6 +1237,9 @@ export class WorldView {
 
   /** Nueva partida y relectura del guardado sin recargar el navegador. */
   refreshFromSave(): void {
+    this.climate.setElapsedHours(this.store.state.environment?.elapsedHours??9);
+    this.callbacks.onClimate(this.climate.frame);
+    this.climateSaveTimer=0;
     this.props.refreshFromSave();
     for (const zone of this.zones.values()) {
       for (const node of zone.nodes) {
@@ -1257,6 +1285,7 @@ export class WorldView {
     this.props.dispose();
     this.geography.dispose();
     this.ocean?.dispose();
+    this.climate.dispose();
     this.mainland.dispose();
     this.scene.dispose();
     this.engine.dispose();

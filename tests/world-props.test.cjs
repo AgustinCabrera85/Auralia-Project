@@ -109,11 +109,26 @@ for(const p of FIXED_CRYSTALS){
   assert.equal(node.getChildMeshes().filter(m=>m.getTotalVertices()>0).length,1,'one resource uses one rock mesh');
   assert.equal(node.getChildMeshes()[0].material?.albedoTexture!=null,true,'resource retains texture');
   node.dispose(false,false);
-  assert.ok(scene.getTransformNodeByName('crisol-brisalia'),'blacksmith crucible placed');
+  const forge=scene.getTransformNodeByName('crisol-brisalia');
+  assert.ok(forge,'blacksmith crucible placed');
+  const logs=forge.getChildMeshes().filter(mesh=>mesh.name.startsWith('forge-firewood-'));
+  const flames=forge.getChildMeshes().filter(mesh=>mesh.name.startsWith('forge-flame-'));
+  assert.equal(logs.length,3,'three logs fill the forge opening');
+  assert.equal(flames.length,3,'three flames burn above the firewood');
+  assert.ok(logs.every(mesh=>Math.abs(mesh.position.z)<.5&&mesh.position.y<1),
+    'firewood stays inside the crucible rather than in front of its stones');
+  assert.ok(logs.some(mesh=>mesh.position.y>.75),'the logs form a visible pile');
+  const fireLight=scene.getLightByName('forge-fire-light');
+  assert.ok(fireLight,'the fire casts a local warm light');
+  const initialFlameScale=scene.getTransformNodeByName('forge-flame-pivot-0').scaling.y;
+  const initialLight=fireLight.intensity;
   const island=scene.getTransformNodeByName('isla-flotante-altaluz');
   assert.ok(island&&island.position.y>sampleMainlandHeight(580,-1130)+90,'floating island placed above Altaluz');
   assert.ok(island.getChildMeshes().some(m=>m.isVisible&&m.material?.albedoTexture),'floating island GLB is visible and textured');
   for(let i=0;i<60;i++)system.update(1/60);
+  assert.notEqual(scene.getTransformNodeByName('forge-flame-pivot-0').scaling.y,
+    initialFlameScale,'flames flicker over time');
+  assert.notEqual(fireLight.intensity,initialLight,'firelight flickers over time');
   assert.ok(system.activeChunkCount>0&&system.activeChunkCount<=cells.length);
   assert.ok(system.visibleDecorationCount>0,'decorative thin instances populated');
   const placedRocks=[...system['chunks'].values()].flat().concat(

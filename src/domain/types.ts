@@ -1,4 +1,5 @@
 import type { ZoneId } from '../data/world';
+import { START_HOUR } from '../world/climate/ClimateModel';
 
 export type ItemId = 'wood' | 'stone' | 'copper' | 'spark' | 'fireCrystal' | 'hammer' | 'pickaxe' | 'lantern';
 export type MaterialId = 'wood' | 'stone' | 'copper' | 'spark' | 'fireCrystal';
@@ -34,6 +35,8 @@ export type SaveGameV1 = {
   discoveredPlaces?: string[];
   /** Stable crystal node IDs mapped to the millisecond when each node becomes available. */
   resourceRespawns?: Record<string,number>;
+  /** Global clock; optional so existing v1 saves remain readable. */
+  environment?: { elapsedHours:number };
   /** Opcional para abrir guardados v0.1 sin migración destructiva. */
   playerPosition?: {zone: ZoneId; x: number; z: number};
   createdAt: string;
@@ -57,6 +60,7 @@ export function newGame(): SaveGameV1 {
   const now = new Date().toISOString();
   return {
     version: 1, zone: 'brisalia', playerPosition: {zone:'brisalia',x:1,z:10}, inventory: emptyInventory(), structures: [],
-    visited: ['brisalia'], discoveredPlaces: [], resourceRespawns:{}, createdAt: now, updatedAt: now
+    visited: ['brisalia'], discoveredPlaces: [], resourceRespawns:{},
+    environment:{elapsedHours:START_HOUR}, createdAt: now, updatedAt: now
   };
 }

@@ -8,6 +8,7 @@ const {GEOLOGY_FORMATIONS,geologyPoint,geologyInfluence,geologyFaceExcludes,
 const {GEOLOGY_COMPOSITIONS,composeGeology}=require('../.test-build/world/geologyPresets.js');
 const {MAINLAND,chunkOf,geographyMasks,sampleMainlandHeight,LANDMARKS}=require('../.test-build/world/terrainData.js');
 const {vegetationForChunk}=require('../.test-build/world/vegetationData.js');
+const {insideFoliageForest}=require('../.test-build/world/foliageForestConfig.js');
 const {WorldPropSystem}=require('../.test-build/world/WorldPropSystem.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
@@ -68,12 +69,14 @@ for(const f of GEOLOGY_FORMATIONS){
     vegetation.push(...vegetationForChunk(cell.cx+dx,cell.cz+dz));
   assert.ok(vegetation.every(p=>!geologyFaceExcludes(p.x,p.z)),
     'tree roots do not cross geological walls');
-  assert.ok(vegetation.some(p=>p.kind==='plantitas1'&&
-    [-1,0,1].some(i=>{
-      const across=f.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
-      const at=geologyPoint(f,i*22,across);
-      return Math.hypot(p.x-at.x,p.z-at.z)<.01;
-    })),'a terrace receives vegetation');
+  for(const i of [-1,0,1]){
+    const across=f.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
+    const at=geologyPoint(f,i*22,across);
+    const planted=vegetation.some(p=>p.kind==='plantitas1'&&
+      Math.hypot(p.x-at.x,p.z-at.z)<.01);
+    assert.equal(planted,!insideFoliageForest(at.x,at.z),
+      'geological terrace uses procedural plants only outside the V4 biome');
+  }
 }
 
 (async()=>{

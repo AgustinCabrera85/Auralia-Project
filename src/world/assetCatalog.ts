@@ -1,4 +1,5 @@
 import type { Biome } from './terrainData';
+import { FOLIAGE_V4_ASSETS } from './foliageV4Catalog';
 
 export type AssetCategory='vegetation'|'rocks'|'cliffs'|'crystals'|'structures'|'landmarks';
 export type AssetInteraction='decorative'|'resource'|'landmark';
@@ -6,6 +7,8 @@ export type AssetInstantiation='thin'|'individual';
 export type AssetDefinition={
   path:string;category:AssetCategory;biomes:readonly Biome[];
   referenceScale:number;interaction:AssetInteraction;instantiation:AssetInstantiation;
+  collisionRadius?:number;renderDistance?:number;lodPath?:string;lodDistance?:number;
+  horizontalScale?:number;
 };
 
 /** One URL per GLB. Existing trees keep their original project paths. */
@@ -26,7 +29,8 @@ export const ASSET_CATALOG={
   cristalCeleste:{path:'/assets/world/crystals/Cristal_celeste_1.glb',category:'crystals',biomes:['ecos','nacar','cumbres'],referenceScale:6,interaction:'resource',instantiation:'individual'},
   cristalFuego:{path:'/assets/world/crystals/Cristal_de_Fuego.glb',category:'crystals',biomes:['sierras','cumbres'],referenceScale:5,interaction:'resource',instantiation:'individual'},
   crisolHerrero:{path:'/assets/world/structures/Crisol_Herrero.glb',category:'structures',biomes:['valle'],referenceScale:5,interaction:'decorative',instantiation:'individual'},
-  islaFlotante:{path:'/assets/world/landmarks/Isla_flotante_2.glb',category:'landmarks',biomes:['cumbres'],referenceScale:90,interaction:'landmark',instantiation:'individual'}
+  islaFlotante:{path:'/assets/world/landmarks/Isla_flotante_2.glb',category:'landmarks',biomes:['cumbres'],referenceScale:90,interaction:'landmark',instantiation:'individual'},
+  ...FOLIAGE_V4_ASSETS
 } as const satisfies Record<string,AssetDefinition>;
 
 export type AssetId=keyof typeof ASSET_CATALOG;

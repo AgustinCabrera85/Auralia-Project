@@ -36,6 +36,7 @@ async function main(){
   saveGrassBake(-6,-2,packed(-66,-18));
   saveGrassBake(6,-2,packed(78,-18,1));
   saveGrassBake(21,-2,packed(258,-18));
+  saveGrassBake(-61,-35,packed(-730,-420));
 
   const engine=new NullEngine(),scene=new Scene(engine);
   const root=new TransformNode('mainland',scene);
@@ -83,6 +84,8 @@ async function main(){
   exclusions=[];
   system.refreshExclusions();system.update();
   assert.deepEqual(positions(scene),initial);
+  system.setFocus(-730,-420);system.update();
+  assert.equal(system.instanceCount,0,'legacy baked grass is hidden inside the V4 forest');
   system.deactivate();
   assert.equal(system.instanceCount,0,'leaving the mainland clears grass buffers');
   system.setFocus(-55,-20);system.update();

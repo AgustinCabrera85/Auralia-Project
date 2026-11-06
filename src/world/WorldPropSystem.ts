@@ -14,6 +14,7 @@ import { TERRAIN_LOD_CONFIG } from './terrainLod';
 import { type VegetationExclusion } from './vegetationData';
 import { CRYSTAL_KINDS, GEOLOGY_ASSET_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk,
   SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
+import { ForgeFire } from './ForgeFire';
 
 type Cell={cx:number;cz:number};
 type CrystalKind='cristalAzul'|'cristalCeleste'|'cristalFuego';
@@ -34,6 +35,7 @@ export class WorldPropSystem {
   private readonly formations=new Map<string,GeologyComposition>();
   private readonly resources=new Map<string,ResourceVisual>();
   private readonly specialRoots:TransformNode[]=[];
+  private forgeFire:ForgeFire|null=null;
   private readonly glowMaterials=new Map<CrystalKind,StandardMaterial>();
   private readonly rockColliders:RockColliderSystem;
   private copperMaterial:StandardMaterial|null=null;
@@ -165,6 +167,7 @@ export class WorldPropSystem {
     root.parent=this.parent;
     root.position.set(special.x,sampleMainlandHeight(special.x,special.z)+special.yOffset,special.z);
     this.cloneModel(special.kind,special.id,root,ASSET_CATALOG[special.kind].referenceScale);
+    if(special.kind==='crisolHerrero')this.forgeFire=new ForgeFire(this.scene,root);
     this.specialRoots.push(root);
   }
 
@@ -261,6 +264,7 @@ export class WorldPropSystem {
       this.syncRockColliders();
     }
     this.clock+=dt;this.respawnCheck+=dt;
+    this.forgeFire?.update(this.clock);
     const check=this.respawnCheck>=1;
     if(check)this.respawnCheck=0;
     for(const visual of this.resources.values()){
@@ -435,6 +439,7 @@ export class WorldPropSystem {
     this.rockColliders.dispose();
     for(const visual of this.resources.values())visual.root.dispose(false,false);
     this.resources.clear();
+    this.forgeFire?.dispose();this.forgeFire=null;
     for(const root of this.specialRoots)root.dispose(false,false);
     this.cliffLodSource?.dispose(false,false);
     this.cliffLodSource=null;

@@ -33,7 +33,8 @@ assert.equal(isLand(-210,420),false,'la Isla de las Luciérnagas queda separada 
 assert.equal(isLand(800,-610),false,'cuenca lacustre de los humedales');
 assert.ok(isLand(500,-700),'orilla accesible de los humedales');
 assert.equal(LAKE_RESERVATIONS.length,2);
-assert.equal(ROAD_RESERVATIONS.filter(r=>r.existing).length,11,'caminos originales y accesos nuevos conservados');
+assert.equal(ROAD_RESERVATIONS.filter(r=>r.existing).length,12,'caminos originales y acceso al bosque conservados');
+assert.ok(ROAD_RESERVATIONS.some(r=>r.name==='Bosque Ilustrado'&&r.existing),'sendero del bosque en el mapa');
 assert.ok(geographyMasks(800,-610).lake>.99);
 assert.ok(geographyMasks(500,-900).river>.99);
 assert.ok(geographyMasks(-950,-850).road>.99);

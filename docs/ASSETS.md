@@ -7,3 +7,5 @@
 El pack de rocas se distribuye por sus **17 piezas individuales**, con selección y tamaños definidos en `src/world/rockPackData.ts`. Los depósitos recolectables de piedra y cobre también reutilizan ese GLB. Sus IDs y la lógica de recolección se conservan en el sistema de recursos. Los cristales registran tiempos de reaparición persistentes mediante `GameStore` y `SaveRepository`.
 
 Para modelos lejanos se usan los GLB simplificados de árboles y acantilados indicados por `TREE_LOD_PATHS` y `CLIFF_LOD_PATH` en el catálogo. La regeneración y los criterios de distancia están en [Terreno distante y atmósfera](LANDSCAPE_LOD.md). La vegetación tiene su detalle en [Vegetación procedural](VEGETACION_PROCEDURAL.md).
+
+El paquete [Follaje ilustrado V4](FOLIAGE_V4.md) añade árboles, arbustos, flores, pastos y enredaderas editables. Sus 27 modelos, 12 LOD originales y seis LOD generados para pastos y praderas se integran mediante el catálogo y `AuthoredAssets`. El shader V5 mueve troncos y hojas y matiza la corteza; un plugin separado conserva el viento de pastos y flores. El mapa permite viajar al Bosque Ilustrado y a su Pradera Florida para revisar aspecto y rendimiento.

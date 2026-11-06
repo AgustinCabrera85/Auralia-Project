@@ -35,6 +35,13 @@ export class GameStore {
     for (const listener of this.listeners) listener(this.data);
   }
 
+  /** Persist the environmental clock periodically rather than every frame. */
+  setEnvironmentTime(elapsedHours:number):void {
+    if(!Number.isFinite(elapsedHours)||elapsedHours<0||elapsedHours>24*365*100)return;
+    this.data.environment={elapsedHours};
+    this.commit();
+  }
+
   collect(resource: MaterialId, amount: number): boolean {
     if (!Number.isInteger(amount) || amount < 1 || amount > 10) return false;
     this.data.inventory[resource] += amount;

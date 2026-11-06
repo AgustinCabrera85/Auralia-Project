@@ -7,8 +7,8 @@ const {vegetationForChunk,VEGETATION_CONFIG}=require('../.test-build/world/veget
 const {chunkOf,desiredChunks,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
-const sample=vegetationForChunk(-8,-8);
-assert.deepEqual(sample,vegetationForChunk(-8,-8),'same seed and chunk give identical placements');
+const sample=vegetationForChunk(-5,-8);
+assert.deepEqual(sample,vegetationForChunk(-5,-8),'same seed and chunk give identical placements');
 assert.ok(sample.length>0,'sample chunk has vegetation');
 assert.ok(sample.every(p=>Math.abs(sampleMainlandHeight(p.x,p.z)-p.y)<1e-8));
 assert.ok(sample.every(p=>p.y>MAINLAND.waterLevel&&geographyMasks(p.x,p.z).road<=VEGETATION_CONFIG.roadMaskLimit));
@@ -16,7 +16,7 @@ assert.ok(sample.every(p=>!isStarterArea(p.x,p.z)));
 assert.ok(sample.every(p=>p.yaw>=0&&p.yaw<Math.PI*2));
 assert.ok(sample.every(p=>p.kind==='plantitas1'?p.scale>2:p.kind==='tronco1'?p.scale>5:p.scale>11),'vegetation is scaled against the four-metre player');
 const blocked=sample[0];
-assert.ok(!vegetationForChunk(-8,-8,[{x:blocked.x,z:blocked.z,radius:8}]).some(p=>Math.hypot(p.x-blocked.x,p.z-blocked.z)<8));
+assert.ok(!vegetationForChunk(-5,-8,[{x:blocked.x,z:blocked.z,radius:8}]).some(p=>Math.hypot(p.x-blocked.x,p.z-blocked.z)<8));
 const treeSample=[...sample,...vegetationForChunk(-8,-2),...vegetationForChunk(-7,-1)]
   .find(p=>p.obstacleRadius>0);
 assert.ok(treeSample);
