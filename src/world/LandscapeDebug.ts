@@ -3,7 +3,7 @@ import { LANDSCAPE_ATMOSPHERE_CONFIG } from './LandscapeAtmosphere';
 import type { TerrainStream } from './TerrainStream';
 import type { VegetationSystem } from './VegetationSystem';
 import type { WorldPropSystem } from './WorldPropSystem';
-import type { GrassFieldSystem } from './grass/GrassFieldSystem';
+import type { GrassSectorSystem } from './grass/GrassSectorSystem';
 
 /** Developer-only overlay: enabled with ?landscapeDebug=1. */
 export class LandscapeDebug {
@@ -17,7 +17,7 @@ export class LandscapeDebug {
 
   constructor(private readonly scene:Scene,private readonly engine:Engine,
     private readonly terrain:TerrainStream,private readonly props:WorldPropSystem,
-    private readonly vegetation:VegetationSystem,private readonly grass:GrassFieldSystem){
+    private readonly vegetation:VegetationSystem,private readonly grass:GrassSectorSystem){
     this.overlay=document.createElement('div');
     this.overlay.style.cssText='position:fixed;left:12px;top:170px;z-index:20;'+
       'padding:10px 12px;background:#10241be8;color:#e9ffdb;font:12px monospace;'+

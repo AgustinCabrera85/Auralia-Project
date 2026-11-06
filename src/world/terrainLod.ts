@@ -42,6 +42,21 @@ export function nearTerrainHeightAt(x:number,z:number,heightAtGrid:(x:number,z:n
     d+(1-tz)*(b-d)+(1-tx)*(c-d);
 }
 
+/** Height and exact slopes of the visible near-tile triangle under a point. */
+export function nearTerrainSurfaceAt(x:number,z:number,
+  heightAtGrid:(x:number,z:number)=>number):
+  {height:number;slopeX:number;slopeZ:number}{
+  const step=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
+  const x0=Math.floor(x/step)*step,z0=Math.floor(z/step)*step;
+  const tx=(x-x0)/step,tz=(z-z0)/step;
+  const a=heightAtGrid(x0,z0),b=heightAtGrid(x0+step,z0);
+  const c=heightAtGrid(x0,z0+step),d=heightAtGrid(x0+step,z0+step);
+  return tx+tz<=1
+    ?{height:a+tx*(b-a)+tz*(c-a),slopeX:(b-a)/step,slopeZ:(c-a)/step}
+    :{height:d+(1-tz)*(b-d)+(1-tx)*(c-d),
+      slopeX:(d-c)/step,slopeZ:(d-b)/step};
+}
+
 /** Distance to the closest point of a tile, so edge tiles retain coverage. */
 export function tileDistance(cell:TerrainCell,size:number,x:number,z:number):number{
   const dx=Math.max(0,Math.abs((cell.cx+.5)*size-x)-size*.5);

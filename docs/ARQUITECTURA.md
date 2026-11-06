@@ -7,7 +7,7 @@
 - `terrainData.ts` proporciona la altura canónica y los biomas. Las funciones son deterministas para que carga, mapa, colisiones y colocación consulten el mismo terreno.
 - `geographicFeatures.ts` y `geologyData.ts` describen agua interior y formaciones geológicas. `GeographyStream.ts` genera las superficies de agua próximas.
 - `TerrainStream.ts` carga y descarga niveles de detalle del relieve. `TerrainMaterial.ts` aplica el material compartido. Los parámetros de distancia están en `terrainLod.ts`.
-- `VegetationSystem.ts`, `GrassFieldSystem.ts` y `WorldPropSystem.ts` gestionan vegetación, césped y decoración. `assetCatalog.ts` contiene las rutas y propiedades de los GLB.
+- `VegetationSystem.ts`, `grass/GrassSectorSystem.ts` y `WorldPropSystem.ts` gestionan vegetación, pastizales GLB por sectores y decoración. `assetCatalog.ts` contiene las rutas y propiedades de los demás GLB.
 - `pointsOfInterest.ts` conserva IDs y coordenadas de los lugares descubribles. `mapProjection.ts` convierte coordenadas del mundo para el mapa regional.
 
 ## Decisiones de compatibilidad

@@ -10,13 +10,16 @@ import { anchorFor, buildingBlocksMove, buildingFloorAt, buildingHeadroom,
   footprint, nearestEdgeSide, type BuildObstacle, type BuildPlan } from '../domain/buildingRules';
 import { BUILD_CATALOG, costAsText } from '../domain/recipes';
 import { BuildVisuals } from '../world/building/BuildVisuals';
+import { AuthoredWater } from '../world/editor/AuthoredWater';
+import { AuthoredAssets } from '../world/editor/AuthoredAssets';
+import { authoredAssetExclusions, blocksAuthoredMovement } from '../world/editor/WorldEditState';
 import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
 import { LandscapeDebug } from '../world/LandscapeDebug';
 import { GeographyStream } from '../world/GeographyStream';
 import { OceanWater } from '../world/water/OceanWater';
 import { VegetationSystem } from '../world/VegetationSystem';
-import { GrassFieldSystem } from '../world/grass/GrassFieldSystem';
+import { GrassSectorSystem } from '../world/grass/GrassSectorSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
 import { propsForChunk } from '../world/worldPropsData';
 import { GEOLOGY_FORMATIONS, geologyLocal, geologyPoint, sameGeologyFormation } from '../world/geologyData';
@@ -97,8 +100,10 @@ export class WorldView {
   private readonly mainland: TerrainStream;
   private readonly geography: GeographyStream;
   private readonly vegetation: VegetationSystem;
-  private readonly grass: GrassFieldSystem;
+  private readonly grass: GrassSectorSystem;
   private readonly props: WorldPropSystem;
+  private readonly authoredWater:AuthoredWater;
+  private readonly authoredAssets:AuthoredAssets;
   private readonly traversal=new CharacterTraversalController();
   private jumpRequested=false;
   private lastSafePosition={x:1,z:10};
@@ -170,17 +175,24 @@ export class WorldView {
     for (const s of store.state.structures) this.drawStructure(s,false);
     this.vegetation=new VegetationSystem(this.scene,continentRoot,()=>[
       ...this.vegetationExclusions,
-      ...this.store.state.structures.map(footprint)
+      ...this.store.state.structures.map(footprint),
+      ...authoredAssetExclusions()
     ]);
-    this.grass=new GrassFieldSystem(this.scene,continentRoot,()=>[
+    this.grass=new GrassSectorSystem(this.scene,continentRoot,()=>[
       ...this.vegetationExclusions.filter(e=>
         !(e.x===this.plot.x&&e.z===this.plot.z&&e.radius===24)),
-      ...this.store.state.structures.map(footprint)
+      ...this.store.state.structures.map(footprint),
+      ...authoredAssetExclusions()
     ]);
     this.props=new WorldPropSystem(this.scene,continentRoot,this.store,()=>[
       ...this.vegetationExclusions,
-      ...this.store.state.structures.map(footprint)
+      ...this.store.state.structures.map(footprint),
+      ...authoredAssetExclusions()
     ]);
+    this.authoredWater=new AuthoredWater(this.scene,continentRoot);
+    this.authoredWater.sync();
+    this.authoredAssets=new AuthoredAssets(this.scene,continentRoot);
+    void this.authoredAssets.sync();
     if(new URLSearchParams(window.location.search).has('landscapeDebug'))
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
         this.props,this.vegetation,this.grass);
@@ -702,7 +714,7 @@ export class WorldView {
     else {
       this.props.setColliderFocus(start.x,start.z,null);
       this.props.setActiveChunks([],start.x,start.z);
-      this.grass.setActiveChunks([],start.x,start.z);
+      this.grass.deactivate();
       this.vegetationCenter='';
     }
     if(id==='brisalia')this.streamMainland(start.x,start.z);
@@ -840,7 +852,7 @@ export class WorldView {
           {x:-8,z:-32,r:6},{x:9,z:-33,r:5.5},{x:24,z:-22,r:5},
           {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
         ].some(ob=>Math.hypot(ob.x-nextX,ob.z-nextZ)<ob.r);
-        return canWalk&&!houses&&
+        return canWalk&&!houses&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
           (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
           (!isMainland||!buildingBlocksMove(fromX,fromZ,nextX,nextZ,feetY,
             this.store.state.structures));
@@ -850,6 +862,7 @@ export class WorldView {
   }
 
   private streamMainland(x:number,z:number):void {
+    this.grass.setFocus(x,z);
     const view=this.camera.getTarget().subtract(this.camera.position);
     const changed=this.mainland.update(x,z,view.x,view.z);
     const cell=chunkOf(x,z);
@@ -858,7 +871,6 @@ export class WorldView {
       this.vegetationCenter=center;
       const cells=this.mainland.activeCells;
       this.vegetation.setActiveChunks(cells,x,z);
-      this.grass.setActiveChunks(cells,x,z);
       this.props.setActiveChunks(cells,x,z);
       this.geography.setActiveChunks(cells,x,z);
     }
@@ -941,8 +953,10 @@ export class WorldView {
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
       this.vegetation.update();
-      this.grass.update(localX,localZ);
+      this.grass.update();
       this.props.update(dt);
+      this.authoredAssets.update(localX,localZ);
+      this.authoredWater.update(dt);
       this.geography.update(dt);
       this.landscapeDebug?.update(dt,localX,localZ);
     }
@@ -1222,7 +1236,7 @@ export class WorldView {
     this.grassStatsOverlay.textContent=
       `FPS ${this.engine.getFps().toFixed(0)}  Draw calls ${this.grassInstrumentation?.drawCallsCounter.current??0}\n`+
       `Césped ${this.grass.instanceCount} matas  ~${this.grass.triangleCount} triángulos\n`+
-      `Terreno ${this.mainland.activeCount} chunks  Césped ${this.grass.activePatchCount} parches`;
+      `Terreno ${this.mainland.activeCount} chunks  Césped ${this.grass.activeSectorCount} sectores`;
   }
 
   dispose(): void {
@@ -1232,6 +1246,8 @@ export class WorldView {
     window.removeEventListener('blur', this.onBlur);
     window.removeEventListener('resize', this.resize);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+    this.authoredAssets.dispose();
+    this.authoredWater.dispose();
     this.vegetation.dispose();
     this.grass.dispose();
     this.buildVisuals.dispose();

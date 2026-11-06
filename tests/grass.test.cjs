@@ -1,84 +1,106 @@
 const assert=require('node:assert/strict');
-const {FreeCamera,NullEngine,Scene,TransformNode,Vector3}=require('@babylonjs/core');
-const {GrassFieldSystem}=require('../.test-build/world/grass/GrassFieldSystem.js');
-const {grassForPatch,grassRegionHasPotential,GRASS_CONFIG}=
-  require('../.test-build/world/grass/grassData.js');
+const {Mesh,NullEngine,PBRMaterial,Scene,TransformNode,VertexData,Vector3}=
+  require('@babylonjs/core');
+const {GrassSectorSystem,GRASS_GLB}=
+  require('../.test-build/world/grass/GrassSectorSystem.js');
+const {bakeGrassSectorPatch}=require('../.test-build/world/grass/GrassSectorBake.js');
+const {emptyWorldDocument,setWorldDocument,saveGrassBake,getWorldDocument,appendGrassStroke}=
+  require('../.test-build/world/editor/WorldEditState.js');
 const {sampleMainlandHeight}=require('../.test-build/world/terrainData.js');
+const {nearTerrainHeightAt}=require('../.test-build/world/terrainLod.js');
 
-const meadow=grassForPatch(-6,-2,'near');
-assert.ok(meadow.length>25,'Brisalia has a dense nearby meadow');
-assert.ok(grassRegionHasPotential(-6,-2),
-  'the fixed terrain-region mask includes the Brisalia meadow');
-assert.deepEqual(meadow,grassForPatch(-6,-2,'near'),'patch positions are deterministic');
-assert.ok(meadow.every(p=>Math.abs(p.y-sampleMainlandHeight(p.x,p.z)-.025)<1e-7),
-  'each clump touches the canonical terrain height');
-assert.equal(grassForPatch(-6,-2,'near',[{x:-66,z:-18,radius:20}]).length,0,
-  'occupied building areas clear the grass');
-assert.ok(grassForPatch(-6,-2,'medium').length<meadow.length,
-  'the middle-distance representation is sparser');
-const nearPositions=new Set(meadow.map(p=>`${p.x}:${p.z}`));
-assert.ok(grassForPatch(-6,-2,'medium').every(p=>nearPositions.has(`${p.x}:${p.z}`)),
-  'middle-distance clumps retain their world positions when LOD changes');
-
-const engine=new NullEngine(),scene=new Scene(engine),root=new TransformNode('mainland',scene);
-scene.activeCamera=new FreeCamera('grass-test-camera',new Vector3(-55,10,-20),scene);
-const system=new GrassFieldSystem(scene,root,()=>[]);
-const center={cx:-1,cz:-1},cells=[];
-for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)
-  cells.push({cx:center.cx+dx,cz:center.cz+dz});
-system.setActiveChunks(cells,-55,-20);
-system.update(-55,-20);
-assert.ok(system.activePatchCount>0&&system.activePatchCount<=GRASS_CONFIG.patchesPerFrame,
-  'patch generation respects the per-frame budget');
-for(let i=0;i<100;i++)system.update(-55,-20);
-assert.ok(system.activePatchCount>10,'near and middle-distance patches are streamed');
-assert.ok(system.instanceCount>500&&system.instanceCount<=GRASS_CONFIG.maxVisibleInstances);
-assert.ok(system.triangleCount>system.instanceCount*5);
-assert.equal(system.drawCallsEstimate,system.activePatchCount);
-assert.equal(scene.materials.length,1,'one shared material covers both LODs');
-for(const variant of ['short','medium','tall']){
-  const mesh=scene.getMeshByName(`grass-prototype-near-${variant}`);
-  assert.ok(mesh&&mesh.getTotalVertices()>20,'each height variant has several curved leaves');
-  const flex=mesh.getVerticesData('bendWeight');
-  assert.ok(flex.includes(0)&&flex.includes(1),'leaf bases are fixed and tips can bend');
+function source(name,scene){
+  const mesh=new Mesh(`grass_${name}`,scene);
+  const data=new VertexData();
+  data.positions=[-.1,0,0,.1,0,0,0,1,0];
+  data.indices=[0,1,2];
+  data.normals=[0,0,1,0,0,1,0,0,1];
+  data.applyToMesh(mesh);
+  return mesh;
 }
-const patches=scene.meshes.filter(mesh=>mesh.metadata?.grassPatch);
-assert.equal(patches.filter(mesh=>mesh.isVisible).length,system.activePatchCount);
-assert.ok(patches.every(mesh=>mesh.thinInstanceCount>0&&!mesh.isPickable&&!mesh.checkCollisions));
-scene.render();
-assert.ok(patches.every(mesh=>mesh.material.isReady(mesh,true)),
-  'instanced grass materials bind and render with an active camera');
-const first=patches[0],before=first.thinInstanceCount;
-for(let i=0;i<10;i++)system.update(-55,-20);
-assert.equal(first.thinInstanceCount,before,'idle frames do not rebuild instance matrices');
-for(let i=0;i<300&&system.pendingPatchCount;i++)system.update(-55,-20);
-assert.equal(system.pendingPatchCount,0,'the active chunks prepare their grass regions');
-const anchored=new Map(scene.meshes.filter(mesh=>mesh.metadata?.grassPatch)
-  .map(mesh=>[mesh.name,mesh]));
-const firstMatrices=first.thinInstanceGetWorldMatrices().map(matrix=>matrix.asArray());
-for(const [x,z] of [[-53,-20],[-51,-19],[-49,-18],[-47,-17]])system.update(x,z);
-assert.equal(system.pendingPatchCount,0,'walking within a chunk does not request new patches');
-for(const [name,mesh] of anchored)assert.equal(scene.getMeshByName(name),mesh,
-  'walking within a chunk keeps each patch mesh and its thin-instance matrices');
-assert.deepEqual(first.thinInstanceGetWorldMatrices().map(matrix=>matrix.asArray()),firstMatrices,
-  'walking leaves the clump transforms unchanged');
-const shared=[...anchored].filter(([,mesh])=>
-  Math.floor(mesh.metadata.px/(72/GRASS_CONFIG.patchSize))<0);
-system.setActiveChunks(cells,-73,-20);
-system.update(-73,-20);
-for(const [name,mesh] of shared)assert.equal(scene.getMeshByName(name),mesh,
-  'crossing a chunk border retains grass in shared terrain chunks');
-system.setActiveChunks([],1000,1000);
-assert.equal(system.activePatchCount,0,'distant patches and buffers are released');
-assert.equal(system.instanceCount,0);
-system.setActiveChunks(cells,-55,-20);
-for(let i=0;i<100;i++)system.update(-55,-20);
-assert.ok(system.instanceCount>500,'the field regenerates after returning');
-system.setEnabled(false);
-assert.equal(system.activePatchCount,0,'grass can be disabled independently');
-system.setEnabled(true);
-for(let i=0;i<100;i++)system.update(-55,-20);
-assert.ok(system.activePatchCount>0);
-console.log(`✓ Césped: ${system.instanceCount} matas, ~${system.triangleCount} triángulos, `+
-  `${system.activePatchCount} parches, ${system.drawCallsEstimate} draw calls de césped`);
-system.dispose();scene.dispose();engine.dispose();
+const loader=async scene=>{
+  const material=new PBRMaterial('grass-glb-material',scene);
+  return ['short','medium','tall','flower'].map(name=>{
+    const mesh=source(name,scene);mesh.material=material;return mesh;
+  });
+};
+const packed=(x,z,flower=0)=>[x,500,z,.4,1,1,1,1,1,flower];
+const positions=scene=>scene.meshes.filter(mesh=>mesh.metadata?.grassSource&&mesh.isVisible)
+  .flatMap(mesh=>mesh.thinInstanceGetWorldMatrices().map(matrix=>
+    [matrix.m[12],matrix.m[13],matrix.m[14]]))
+  .sort((a,b)=>a[0]-b[0]||a[2]-b[2]);
+
+async function main(){
+  assert.equal(GRASS_GLB,'/assets/grass/grass_tufts.glb');
+  setWorldDocument({...emptyWorldDocument(),grassMode:'painted'});
+  saveGrassBake(-6,-2,packed(-66,-18));
+  saveGrassBake(6,-2,packed(78,-18,1));
+  saveGrassBake(21,-2,packed(258,-18));
+
+  const engine=new NullEngine(),scene=new Scene(engine);
+  const root=new TransformNode('mainland',scene);
+  root.position=new Vector3(10,2,20);
+  let exclusions=[];
+  const system=new GrassSectorSystem(scene,root,()=>exclusions,loader);
+  await system.whenReady;
+  const wind=scene.getMaterialByName('grass-glb-material').pluginManager
+    .getPlugin('AuraliaGrassWind');
+  assert.ok(wind,'GLB material receives the wind plugin');
+  assert.ok(scene.getMaterialByName('grass-glb-material').pluginManager
+    ._activePluginsForExtraEvents.includes(wind),
+    'the per-draw wind time callback is active');
+  assert.match(wind.getCustomCode('vertex').CUSTOM_VERTEX_UPDATE_WORLDPOS,
+    /grassBend \*= grassBend/,'wind flexes upper vertices while bases stay fixed');
+  system.setFocus(-55,-20);
+  system.update();
+  assert.equal(system.instanceCount,2,'only nearby saved sectors are loaded');
+  assert.ok(system.drawCallsEstimate<=4,'GLB variants are batched into thin instances');
+  for(const mesh of scene.meshes.filter(mesh=>mesh.metadata?.grassSource))
+    assert.ok(mesh.position.lengthSquared()<1e-12&&mesh.parent===root,
+      'source GLB meshes remain at the mainland origin like authored assets');
+  const initial=positions(scene);
+  assert.deepEqual(initial.map(p=>[p[0],p[2]]),[[-66,-18],[78,-18]],
+    'instance matrices contain absolute mainland coordinates');
+  for(const [x,y,z] of initial)
+    assert.ok(Math.abs(y-nearTerrainHeightAt(x,z,sampleMainlandHeight))<.05,
+      'saved bake heights are replaced by the visible terrain height');
+
+  system.setFocus(-1,-20);system.update();
+  assert.deepEqual(positions(scene),initial,
+    'walking within a chunk never moves or redistributes grass');
+  system.setFocus(0,-20);system.update();
+  assert.deepEqual(positions(scene),initial,
+    'crossing a chunk boundary keeps shared grass in world coordinates');
+  system.setFocus(360,-20);system.update();
+  assert.equal(system.instanceCount,1,'distant sectors unload');
+  system.setFocus(-55,-20);system.update();
+  assert.deepEqual(positions(scene),initial,
+    'returning to a sector restores the identical saved matrices');
+
+  exclusions=[{x:-66,z:-18,radius:3}];
+  system.refreshExclusions();system.update();
+  assert.equal(system.instanceCount,1,'new structures exclude nearby grass');
+  exclusions=[];
+  system.refreshExclusions();system.update();
+  assert.deepEqual(positions(scene),initial);
+  system.deactivate();
+  assert.equal(system.instanceCount,0,'leaving the mainland clears grass buffers');
+  system.setFocus(-55,-20);system.update();
+  assert.deepEqual(positions(scene),initial);
+  system.dispose();scene.dispose();engine.dispose();
+  setWorldDocument(emptyWorldDocument());
+  bakeGrassSectorPatch(0,0);
+  assert.equal(getWorldDocument().grassBakes[0].placements.length,0,
+    'unpainted sectors stay empty');
+  appendGrassStroke({x:6,z:6,radius:12,strength:1,density:2});
+  bakeGrassSectorPatch(0,0);
+  const firstBake=[...getWorldDocument().grassBakes[0].placements];
+  assert.ok(firstBake.length>0&&firstBake.length%10===0,
+    'painting creates saved GLB placements');
+  bakeGrassSectorPatch(0,0);
+  assert.deepEqual(getWorldDocument().grassBakes[0].placements,firstBake,
+    'editor bakes the same sector at identical positions');
+  console.log('✓ GLB grass sectors retain immutable world positions across streaming');
+}
+
+main().catch(error=>{console.error(error);process.exitCode=1;});

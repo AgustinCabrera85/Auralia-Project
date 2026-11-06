@@ -1,27 +1,34 @@
-# Césped volumétrico continental
+# Pastizales por sectores
 
-El césped de `src/world/grass/` añade geometría opaca cerca del jugador sin alterar el relieve, el material del terreno, las colisiones ni la vegetación GLB. `GrassFieldSystem` recibe los chunks activos de `TerrainStream`, prepara una ventana fija de 3 × 3 chunks alrededor del chunk del jugador, divide cada chunk de 72 m en parches de 12 × 12 m y crea thin instances de prototipos compartidos. Una caminata dentro del chunk sólo cambia la visibilidad y el desvanecimiento: no crea, mueve ni redistribuye matas. Cada mata usa la altura de `sampleMainlandHeight()`; sus hojas no tienen colisionador ni proyectan sombras individuales.
+El juego carga cuatro matas estáticas del archivo `public/assets/grass/grass_tufts.glb`:
+`short`, `medium`, `tall` y `flower`. El GLB se regenera con Blender 5.2 mediante
+`scripts/generate-grass-glb.py`. No se crean hojas ni materiales de pasto durante
+el juego; las mallas y sus materiales llegan del GLB.
 
-`grassData.ts` clasifica previamente los parches de cada chunk de terreno usando altura, pendiente, agua y material del suelo. Esa clasificación permanece fija mientras el chunk está activo, independientemente de los movimientos del jugador. Las posiciones se generan de manera determinista y respetan biomas, caminos, agua, formaciones geológicas, casas, parcela y construcciones. Brisalia conserva césped en el espacio libre alrededor de las casas. Los obstáculos rocosos se obtienen de las composiciones y colocaciones de roca existentes. Los parches se construyen por turnos; sus buffers permanecen fijos en la ventana de chunks y se liberan al descargar el chunk o desactivar el sistema.
+Los colores verdes oscuros están guardados como colores de vértice en el GLB.
+`GrassWindPlugin` agrega una oscilación suave al material importado: desplaza
+las puntas según la altura de cada vértice y deja las raíces inmóviles. No
+modifica las matrices de las thin instances ni la ubicación de los sectores.
 
-`GrassGeometry.ts` construye con `VertexData` tres alturas (corta, media y alta) y un prototipo simplificado para distancia media. Cada mata tiene varias hojas triangulares curvas, no planos rectangulares cruzados. Algunas matas altas incluyen flores blancas o amarillas. `GrassMaterial.ts` deforma sólo la parte flexible de cada hoja en el vertex shader; una actualización de uniformes por frame usa tiempo real para que el viento no dependa de los FPS. El nivel medio conserva una selección fija de las posiciones del nivel cercano, de modo que las matas no cambian de lugar al moverse el jugador. El desvanecimiento se calcula por parche desde el jugador y usa una semilla fija por mata, sin parpadeo al mover la cámara; ambos niveles comparten un solo material.
+`GrassSectorSystem` lee las posiciones ya guardadas en `grassBakes` dentro de
+`public/world/auralia-world.json`. Cada registro contiene X, Z, giro y escala de
+una mata. El sistema calcula la altura con los mismos triángulos cercanos que
+usa `TerrainStream`, inclina las bases según la pendiente y guarda una matriz
+absoluta e inmutable para cada mata. Los valores Y antiguos del archivo no
+desplazan el pasto.
 
-## Configuración
+Las matrices se agrupan por sectores de 72 m y variante GLB. Al entrar o salir
+de un sector, se actualizan como máximo cuatro buffers de thin instances. La
+ventana de 5 × 5 sectores depende sólo de la posición del jugador y cubre el
+sector adicional visible antes de cruzar un borde. La llegada de una malla de
+terreno, el movimiento de la cámara y cada frame de render no generan otra
+distribución. Los buffers se vacían al salir de la isla o desactivar el pasto.
 
-`GRASS_CONFIG` es el perfil predeterminado. `GRASS_QUALITY.low`, `.medium` y `.high` ofrecen presupuestos listos para pasar al constructor de `GrassFieldSystem`. Un objeto parcial también puede modificar cualquier campo. `setEnabled(false)` libera los parches sin afectar a los árboles GLB; `dispose()` libera todo el sistema.
+Los assets colocados después excluyen las matas dentro de su radio. Una edición
+del documento del mundo puede llamar `refreshBakedGrass()` para volver a leer
+los registros guardados. La URL `?grassStats=1` muestra cantidad de matas,
+triángulos y sectores activos.
 
-| Campo | Predeterminado | Función |
-| --- | ---: | --- |
-| `patchSize` | 12 m | Tamaño del parche; debe dividir 72 m. |
-| `nearDistance`, `farDistance` | 40, 74 m | Alcance de geometría detallada y simplificada. |
-| `transitionDistance` | 10 m | Franja de transición con dithering. |
-| `nearCandidates`, `mediumCandidates` | 140, 24 | Máximo de matas candidatas por parche. |
-| `maxVisibleInstances` | 12000 | Presupuesto global; los parches cercanos tienen prioridad. |
-| `patchesPerFrame` | 3 | Máximo de parches generados por frame. |
-| `density`, `height`, `width` | 1, 1, 1 | Densidad y escala de las matas. |
-| `colorVariation` | 0.17 | Diferencias de color entre matas. |
-| `windStrength`, `windSpeed` | 0.24, 1 | Desplazamiento máximo y velocidad del viento. |
-| `maxSlope`, `minGrassWeight` | 0.58, 0.34 | Límites de pendiente y presencia mínima de pasto en el suelo. |
-| `roadClearance`, `waterClearance` | 1.25, 0.45 m | Separación de caminos y agua. |
-
-Para ver métricas en el juego, abrir la URL local con `?grassStats=1`. La esquina inferior derecha muestra FPS, draw calls totales de la escena, matas, triángulos aproximados, chunks de terreno y parches de césped activos. El número de draw calls del césped es aproximadamente uno por parche activo; el conteo real de la escena viene de `SceneInstrumentation`.
+En World Editor, el pincel pinta zonas y `GrassSectorBake` hornea sus posiciones
+de forma determinista en parches de 12 m. El archivo exportado conserva esos
+registros. El juego sólo lee los registros; nunca ejecuta el horneado.
