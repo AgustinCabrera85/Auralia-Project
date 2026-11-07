@@ -1,0 +1,300 @@
+{
+  "schema": "auralia-cloud-formations-v1",
+  "maxRecommendedPieces": 96,
+  "units": "relative to a formation center and reference width; y increases upward",
+  "weatherBehavior": {
+    "clear": {
+      "formationCount": 2,
+      "scale": 0.78,
+      "speed": 0.3,
+      "density": 0.1,
+      "stormBlend": 0
+    },
+    "partlyCloudy": {
+      "formationCount": 5,
+      "scale": 1,
+      "speed": 0.5,
+      "density": 0.4,
+      "stormBlend": 0
+    },
+    "overcast": {
+      "formationCount": 7,
+      "scale": 1.2,
+      "speed": 0.55,
+      "density": 0.85,
+      "stormBlend": 0.15
+    },
+    "rain": {
+      "formationCount": 6,
+      "scale": 1.4,
+      "speed": 0.8,
+      "density": 0.93,
+      "stormBlend": 0.65
+    },
+    "storm": {
+      "formationCount": 5,
+      "scale": 1.85,
+      "speed": 1,
+      "density": 1,
+      "stormBlend": 1
+    },
+    "snow": {
+      "formationCount": 6,
+      "scale": 1.2,
+      "speed": 0.4,
+      "density": 0.9,
+      "stormBlend": 0.3
+    }
+  },
+  "presets": [
+    {
+      "id": "cumulus_small",
+      "climate": "fair",
+      "parts": [
+        {
+          "id": "flat_base",
+          "src": "painted",
+          "offset": [
+            0,
+            -0.1
+          ],
+          "size": [
+            1,
+            0.53
+          ],
+          "layer": 0,
+          "birth": 0
+        },
+        {
+          "id": "small_puff",
+          "src": "modular",
+          "offset": [
+            -0.21,
+            0.14
+          ],
+          "size": [
+            0.5,
+            0.55
+          ],
+          "layer": 1,
+          "birth": 0.12
+        },
+        {
+          "id": "crown_tall",
+          "src": "painted",
+          "offset": [
+            0.08,
+            0.26
+          ],
+          "size": [
+            0.62,
+            0.72
+          ],
+          "layer": 2,
+          "birth": 0.19
+        },
+        {
+          "id": "twin_puff",
+          "src": "painted",
+          "offset": [
+            0.25,
+            0.02
+          ],
+          "size": [
+            0.52,
+            0.39
+          ],
+          "layer": 3,
+          "birth": 0.29
+        },
+        {
+          "id": "trail",
+          "src": "modular",
+          "offset": [
+            0.33,
+            -0.11
+          ],
+          "size": [
+            0.44,
+            0.18
+          ],
+          "layer": 4,
+          "birth": 0.45
+        }
+      ]
+    },
+    {
+      "id": "cumulus_towering",
+      "climate": "fair",
+      "parts": [
+        {
+          "id": "wide_base",
+          "src": "painted",
+          "offset": [
+            0,
+            -0.28
+          ],
+          "size": [
+            1.25,
+            0.5
+          ],
+          "layer": 0,
+          "birth": 0
+        },
+        {
+          "id": "tower",
+          "src": "modular",
+          "offset": [
+            -0.25,
+            0.11
+          ],
+          "size": [
+            0.67,
+            1.05
+          ],
+          "layer": 1,
+          "birth": 0.1
+        },
+        {
+          "id": "triple_puff",
+          "src": "painted",
+          "offset": [
+            0.12,
+            0.33
+          ],
+          "size": [
+            0.84,
+            0.65
+          ],
+          "layer": 2,
+          "birth": 0.24
+        },
+        {
+          "id": "crown_round",
+          "src": "painted",
+          "offset": [
+            -0.12,
+            0.5
+          ],
+          "size": [
+            0.65,
+            0.58
+          ],
+          "layer": 3,
+          "birth": 0.35
+        },
+        {
+          "id": "thin_wisp",
+          "src": "modular",
+          "offset": [
+            0.42,
+            0.42
+          ],
+          "size": [
+            0.7,
+            0.22
+          ],
+          "layer": 4,
+          "birth": 0.51
+        }
+      ]
+    },
+    {
+      "id": "storm_front",
+      "climate": "storm",
+      "parts": [
+        {
+          "id": "storm_base",
+          "src": "painted",
+          "offset": [
+            0,
+            -0.32
+          ],
+          "size": [
+            1.55,
+            0.53
+          ],
+          "layer": 0,
+          "birth": 0
+        },
+        {
+          "id": "storm_shelf",
+          "src": "painted",
+          "offset": [
+            -0.3,
+            -0.1
+          ],
+          "size": [
+            1.35,
+            0.53
+          ],
+          "layer": 1,
+          "birth": 0.08
+        },
+        {
+          "id": "storm_tower",
+          "src": "painted",
+          "offset": [
+            0.1,
+            0.28
+          ],
+          "size": [
+            0.88,
+            1.02
+          ],
+          "layer": 2,
+          "birth": 0.18
+        },
+        {
+          "id": "storm_column",
+          "src": "painted",
+          "offset": [
+            0.43,
+            0.3
+          ],
+          "size": [
+            0.78,
+            0.98
+          ],
+          "layer": 3,
+          "birth": 0.29
+        },
+        {
+          "id": "storm_anvil",
+          "src": "modular",
+          "offset": [
+            0.16,
+            0.62
+          ],
+          "size": [
+            1.1,
+            0.43
+          ],
+          "layer": 4,
+          "birth": 0.4
+        },
+        {
+          "id": "storm_ragged",
+          "src": "modular",
+          "offset": [
+            -0.49,
+            -0.17
+          ],
+          "size": [
+            0.9,
+            0.27
+          ],
+          "layer": 5,
+          "birth": 0.52
+        }
+      ]
+    }
+  ],
+  "animation": {
+    "growth": "growth_i=smoothstep(birth_i,birth_i+0.30,age), scale_i=(0.42+0.58*growth_i)*baseScale",
+    "dissolve": "erosion threshold controlled by age, gusts and weather; alpha=smoothstep(threshold-0.09,threshold+0.09,R_coverage-(B_detail-0.5)*erosion)",
+    "wind": "drift per stratum; world-position stable within cloud lifespan; use deterministic seed",
+    "billow": "low-frequency per-piece local scale and UV warp, amplitude 0.01..0.05",
+    "storm": "mix toward storm family as darken/rain increases; enlarge pieces; strengthen underside shading using thickness"
+  }
+}

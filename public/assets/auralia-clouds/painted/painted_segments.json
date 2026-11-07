@@ -1,0 +1,350 @@
+{
+  "schema": "auralia-painted-cloud-pieces-v1",
+  "source": "Generated original Auralia cloud illustrations, extracted and alpha-cleaned",
+  "channels": {
+    "color": "RGBA; alpha=piece coverage",
+    "data": "R=coverage, G=estimated thickness, B=painterly detail seed, A=unused"
+  },
+  "atlases": {
+    "fair": {
+      "color": "cloud_fair_painted.webp",
+      "data": "cloud_fair_painted_data.png",
+      "grid": [
+        4,
+        2
+      ],
+      "cellPx": 256,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "storm": {
+      "color": "cloud_storm_painted.webp",
+      "data": "cloud_storm_painted_data.png",
+      "grid": [
+        4,
+        1
+      ],
+      "cellPx": 256,
+      "size": [
+        1024,
+        256
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "crown_round",
+      "atlas": "fair",
+      "label": "Cúmulo núcleo",
+      "role": "core",
+      "rectPx": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.0,
+        0.0,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        0.98,
+        0.63
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "crown_tall",
+      "atlas": "fair",
+      "label": "Cúmulo torre",
+      "role": "core",
+      "rectPx": [
+        256,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.25,
+        0.0,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        0.85,
+        0.8
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "twin_puff",
+      "atlas": "fair",
+      "label": "Cúmulo medio",
+      "role": "core",
+      "rectPx": [
+        512,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.5,
+        0.0,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        0.94,
+        0.7
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "triple_puff",
+      "atlas": "fair",
+      "label": "Cúmulo oblicuo",
+      "role": "core",
+      "rectPx": [
+        768,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.75,
+        0.0,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        1.06,
+        0.8
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "small_puff",
+      "atlas": "fair",
+      "label": "Cúmulo bajo",
+      "role": "puff",
+      "rectPx": [
+        0,
+        256,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.0,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        0.68,
+        0.43
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "flat_base",
+      "atlas": "fair",
+      "label": "Banco pequeño",
+      "role": "base",
+      "rectPx": [
+        256,
+        256,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.25,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        1.12,
+        0.44
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "wide_base",
+      "atlas": "fair",
+      "label": "Banco mediano",
+      "role": "base",
+      "rectPx": [
+        512,
+        256,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.5,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        1.31,
+        0.48
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "bridge",
+      "atlas": "fair",
+      "label": "Banco ascendente",
+      "role": "bridge",
+      "rectPx": [
+        768,
+        256,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.75,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "defaultSize": [
+        1.12,
+        0.56
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "storm_tower",
+      "atlas": "storm",
+      "label": "Gran cumulonimbo",
+      "role": "storm-tower",
+      "rectPx": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.0,
+        0.0,
+        0.25,
+        1.0
+      ],
+      "defaultSize": [
+        1.8,
+        1.1
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "storm_column",
+      "atlas": "storm",
+      "label": "Frente vertical",
+      "role": "storm-tower",
+      "rectPx": [
+        256,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.25,
+        0.0,
+        0.25,
+        1.0
+      ],
+      "defaultSize": [
+        1.75,
+        1.12
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "storm_shelf",
+      "atlas": "storm",
+      "label": "Frente de tormenta",
+      "role": "storm-shelf",
+      "rectPx": [
+        512,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.5,
+        0.0,
+        0.25,
+        1.0
+      ],
+      "defaultSize": [
+        2.25,
+        0.82
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    },
+    {
+      "id": "storm_base",
+      "atlas": "storm",
+      "label": "Base de tormenta",
+      "role": "storm-base",
+      "rectPx": [
+        768,
+        0,
+        256,
+        256
+      ],
+      "uvTopLeft": [
+        0.75,
+        0.0,
+        0.25,
+        1.0
+      ],
+      "defaultSize": [
+        2.0,
+        0.77
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ]
+    }
+  ]
+}
