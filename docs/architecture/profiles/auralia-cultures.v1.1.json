@@ -1,0 +1,255 @@
+{
+  "schema": "auralia.region-style-proposal",
+  "version": "1.1.0",
+  "source_repo": "AgustinCabrera85/Auralia-Project",
+  "source_commit": "804fe332d20b",
+  "status": "proposal_not_integrated",
+  "biome_ids": [
+    "valle",
+    "ecos",
+    "sierras",
+    "nacar",
+    "costa",
+    "cumbres"
+  ],
+  "regions": [
+    {
+      "biome": "valle",
+      "name": "Valle de los Faroles",
+      "canonical_settlement": "Brisalia",
+      "settlement_id": "brisalia",
+      "priority": 1,
+      "culture": "meadow_craftspeople",
+      "building_archetypes": [
+        "cottage",
+        "workshop",
+        "tavern",
+        "granary",
+        "mill",
+        "market_stall"
+      ],
+      "materials": [
+        "warm_plaster",
+        "ochre_stone",
+        "toasted_wood",
+        "terracotta_tiles"
+      ],
+      "shapes": [
+        "wide_gable",
+        "front_porch",
+        "timber_frame",
+        "open_courtyard"
+      ],
+      "settlement_pattern": "village_square_radiating_paths",
+      "quest_examples": [
+        "repair_lanterns",
+        "restore_mill",
+        "reopen_old_path"
+      ],
+      "enemies_proposed": [
+        "small_wild_creatures",
+        "minor_raiders"
+      ]
+    },
+    {
+      "biome": "ecos",
+      "name": "Bosque de los Ecos",
+      "canonical_settlement": "Lindebrumas",
+      "settlement_id": "lindebrumas",
+      "priority": 2,
+      "culture": "forest_pathkeepers",
+      "building_archetypes": [
+        "forest_cottage",
+        "herbalist",
+        "watch_refuge",
+        "tree_platform",
+        "wooden_bridge",
+        "shrine"
+      ],
+      "materials": [
+        "curved_wood",
+        "mossy_stone",
+        "bark_shingles",
+        "damp_plaster"
+      ],
+      "shapes": [
+        "organic_roof",
+        "raised_walkway",
+        "narrow_eaves",
+        "root_integration"
+      ],
+      "settlement_pattern": "forest_clearings_linked_paths",
+      "quest_examples": [
+        "track_changed_path",
+        "recover_lost_guides",
+        "restore_warding_bell"
+      ],
+      "enemies_proposed": [
+        "hostile_forest_creatures",
+        "nocturnal_variants"
+      ],
+      "subculture_overlays": [
+        {
+          "id": "marcas_bruma",
+          "provisional_name": "Marcas de la Bruma",
+          "role": "gloomy_enclave",
+          "mapped_to_biome": "ecos",
+          "location": "undecided",
+          "architectural_changes": [
+            "slate_roof",
+            "defensive_shutters",
+            "warning_bells",
+            "amber_lanterns",
+            "dense_streets"
+          ],
+          "quest_examples": [
+            "escort_after_dark",
+            "repair_watchtower",
+            "clear_corrupted_ruins"
+          ]
+        }
+      ]
+    },
+    {
+      "biome": "sierras",
+      "name": "Sierras de los Engranajes",
+      "canonical_settlement": "Altapiedra",
+      "settlement_id": "altapiedra",
+      "priority": 3,
+      "culture": "highland_engineers",
+      "building_archetypes": [
+        "stone_house",
+        "forge",
+        "mine_storehouse",
+        "watchtower",
+        "terraced_workshop",
+        "bridge"
+      ],
+      "materials": [
+        "gray_warm_stone",
+        "dark_wood",
+        "iron",
+        "slate"
+      ],
+      "shapes": [
+        "retaining_wall",
+        "stepped_foundation",
+        "steep_roof",
+        "crane_frames"
+      ],
+      "settlement_pattern": "terraces_on_access_route",
+      "quest_examples": [
+        "repair_lift",
+        "collect_ore",
+        "rebuild_pass_bridge"
+      ],
+      "enemies_proposed": [
+        "cave_dwellers",
+        "rock_creatures"
+      ]
+    },
+    {
+      "biome": "nacar",
+      "name": "Lago de las Dos Orillas",
+      "canonical_settlement": "Nácar",
+      "settlement_id": "nacar",
+      "priority": 4,
+      "status": "future",
+      "culture": "lake_traders",
+      "building_archetypes": [
+        "stilt_house",
+        "market",
+        "fishing_hut",
+        "dock",
+        "boathouse"
+      ],
+      "materials": [
+        "pale_stone",
+        "weathered_wood",
+        "reed_roof"
+      ],
+      "shapes": [
+        "stilts",
+        "pier",
+        "open_deck"
+      ],
+      "settlement_pattern": "shoreline_route"
+    },
+    {
+      "biome": "costa",
+      "name": "Costa de Auralia",
+      "canonical_settlement": null,
+      "settlement_id": null,
+      "priority": 5,
+      "status": "future",
+      "culture": "coastal_navigators",
+      "building_archetypes": [
+        "warehouse",
+        "fishing_hut",
+        "lighthouse",
+        "dock"
+      ],
+      "materials": [
+        "washed_wood",
+        "rope",
+        "sea_stone"
+      ],
+      "shapes": [
+        "pilings",
+        "covered_deck"
+      ],
+      "settlement_pattern": "harbor"
+    },
+    {
+      "biome": "cumbres",
+      "name": "Cumbres del Primer Amanecer",
+      "canonical_settlement": "Altaluz",
+      "settlement_id": "altaluz",
+      "priority": 6,
+      "status": "future",
+      "culture": "peak_guardians",
+      "building_archetypes": [
+        "citadel",
+        "watchtower",
+        "lighthouse",
+        "stone_stairs",
+        "large_arch"
+      ],
+      "materials": [
+        "pale_stone",
+        "slate",
+        "brushed_metal"
+      ],
+      "shapes": [
+        "tall_tower",
+        "terrace",
+        "great_arch"
+      ],
+      "settlement_pattern": "mountain_citadel"
+    }
+  ],
+  "global_settlement_states": [
+    "prosperous",
+    "threatened",
+    "abandoned",
+    "restored"
+  ],
+  "integration": {
+    "metadata_only": true,
+    "format": "glb",
+    "texture_size": 1024,
+    "paths": [
+      "src/world/assetCatalog.ts",
+      "src/world/terrainData.ts",
+      "src/world/worldPropsData.ts"
+    ],
+    "placement": "seeded_with_terrain_and_path_exclusions",
+    "collision": "separate_walkable_geometry",
+    "instantiation": "interactive_buildings_individual"
+  },
+  "warnings": [
+    "Do not modify canonical coordinates or saved IDs.",
+    "The src/world/editor tree was not present in the reviewed main snapshot.",
+    "Enemies and quests listed are concepts, not implemented content."
+  ]
+}
