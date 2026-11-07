@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { Matrix, Mesh, MeshBuilder, NullEngine, PBRMaterial, Scene } from '@babylonjs/core';
-import { AuraliaFoliageWind } from '../src/world/AuraliaFoliageWind.ts';
+import { AuraliaFoliageWind, getAuraliaTreeColors } from '../src/world/AuraliaFoliageWind.ts';
 import { getAuraliaWind } from '../src/world/AuraliaWindSystem.ts';
 import { GrassWindPlugin } from '../src/world/grass/GrassWindPlugin.ts';
 
@@ -51,6 +51,35 @@ const bark = wood.material.pluginManager.getPlugin('AuraliaLivingFoliageV5');
 assert.ok(bark.getCustomCode('fragment').CUSTOM_FRAGMENT_BEFORE_LIGHTS.includes('surfaceAlbedo'),
   'V5 bark tint is injected before PBR lighting');
 assert.ok(leaves.material.pluginManager.getPlugin('AuraliaLivingFoliageV5'));
+const colors=getAuraliaTreeColors(scene);
+const autumn=leaves.material.pluginManager.getPlugin('AuraliaAutumnCanopy');
+assert.ok(autumn,'tree leaf materials receive the seasonal palette');
+const seasonalDefines={};autumn.collectDefines(seasonalDefines);
+assert.equal(seasonalDefines.AURALIA_TREE_AUTUMN.default,true,
+  'tree shaders have a distinct cache key from bushes sharing the same leaf shader');
+assert.equal(wood.material.pluginManager.getPlugin('AuraliaAutumnCanopy'),null,'bark keeps its colours');
+assert.equal(grass.material.pluginManager.getPlugin('AuraliaAutumnCanopy'),null,'grass keeps its colours');
+assert.equal(flower.material.pluginManager.getPlugin('AuraliaAutumnCanopy'),null,'ground flowers keep their colours');
+colors.update('summer',0);assert.equal(colors.autumnAmount,0);
+colors.update('autumn',.1);
+assert.ok(colors.autumnAmount>0&&colors.autumnAmount<1,'autumn enters smoothly');
+for(let i=0;i<40;i++)colors.update('autumn',.1);
+assert.equal(colors.autumnAmount,1);
+const uniforms={};
+autumn.hardBindForSubMesh(null,scene,engine,{effect:{setFloat:(key,value)=>uniforms[key]=value}});
+assert.equal(uniforms.aurTreeAutumn,1);
+assert.equal(uniforms.aurTreeGreenOnly,0);
+const lateLeaves=mesh('Auralia_V4_Leaves_late_lod');
+wind.register([lateLeaves],'v3TreeWillowWeeping');
+lateLeaves.material.pluginManager.getPlugin('AuraliaAutumnCanopy')
+  .hardBindForSubMesh(null,scene,engine,{effect:{setFloat:(key,value)=>uniforms[key]=value}});
+assert.equal(uniforms.aurTreeAutumn,1,'late GLB/LOD imports immediately share the autumn state');
+const oldTree=mesh('original-shared-atlas');wind.register([oldTree],'arbolito1');
+oldTree.material.pluginManager.getPlugin('AuraliaAutumnCanopy')
+  .hardBindForSubMesh(null,scene,engine,{effect:{setFloat:(key,value)=>uniforms[key]=value}});
+assert.equal(uniforms.aurTreeGreenOnly,1,'original harvestable trees protect the brown pixels in their atlas');
+for(let i=0;i<40;i++)colors.update('spring',.1);
+assert.equal(colors.autumnAmount,0,'spring restores the original unmodified material colour');
 assert.ok(grass.material.pluginManager.getPlugin('AuraliaGroundWind')
   .getCustomCode('vertex').CUSTOM_VERTEX_UPDATE_WORLDPOS.includes('1.1'),
   'the separate ground plugin keeps grass motion');

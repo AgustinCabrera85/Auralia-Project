@@ -19,6 +19,7 @@ import { EnvironmentSystem } from '../world/climate/EnvironmentSystem';
 import type { ClimateFrame } from '../world/climate/ClimateModel';
 import { LandscapeDebug } from '../world/LandscapeDebug';
 import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
+import { installExpansionBiomeAssets } from '../world/expansionBiomeData';
 import { GeographyStream } from '../world/GeographyStream';
 import { OceanWater } from '../world/water/OceanWater';
 import { VegetationSystem } from '../world/VegetationSystem';
@@ -37,6 +38,7 @@ import { CharacterTraversalController, type TraversalWorld } from './CharacterTr
 import { TRAVERSAL } from './traversalRules';
 import { CAMERA_TERRAIN, cameraTerrainView } from './cameraTerrain';
 import { nearTerrainHeightAt } from '../world/terrainLod';
+import { GameTelemetry } from './GameTelemetry';
 
 export type Interactable = {
   id: string;
@@ -118,6 +120,7 @@ export class WorldView {
   private lastSafePosition={x:1,z:10};
   private readonly vegetationExclusions: VegetationExclusion[] = [];
   private readonly rockVisualRequests:{root:TransformNode;partIndex:number;diameter:number;copper:boolean}[]=[];
+  private readonly treeVisualRequests:{root:TransformNode;variant:number;height:number;harvestable:boolean}[]=[];
   private exploreTimer = 0;
   private saveTimer = 0;
   private lastBiome = "";
@@ -125,6 +128,7 @@ export class WorldView {
   private grassStatsOverlay:HTMLDivElement|null=null;
   private grassInstrumentation:SceneInstrumentation|null=null;
   private landscapeDebug:LandscapeDebug|null=null;
+  private telemetry:GameTelemetry|null=null;
   private grassStatsTimer=0;
   private cameraPreferredRadius=29;
   private cameraAppliedRadius=29;
@@ -138,6 +142,7 @@ export class WorldView {
     private readonly callbacks: WorldCallbacks,
     private readonly blocked: () => boolean
   ) {
+    installExpansionBiomeAssets();
     this.engine = new Engine(canvas, true, { antialias: true, adaptToDeviceRatio: true });
     this.engine.setHardwareScalingLevel(Math.min(1.35, Math.max(1, window.devicePixelRatio / 1.7)));
     this.scene = new Scene(this.engine);
@@ -210,7 +215,11 @@ export class WorldView {
     if(new URLSearchParams(window.location.search).has('landscapeDebug'))
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
         this.props,this.vegetation,this.grass,this.authoredAssets);
-    void this.vegetation.load();
+    void this.vegetation.load().then(()=>{
+      for(const request of this.treeVisualRequests)
+        this.vegetation.attachTreeVisual(request.root,request.variant,request.height,request.harvestable);
+      this.treeVisualRequests.length=0;
+    });
     void this.props.load().then(()=>{
       for(const request of this.rockVisualRequests){
         this.props.attachRockVisual(request.root,request.partIndex,request.diameter,request.copper);
@@ -228,27 +237,37 @@ export class WorldView {
       document.body.appendChild(this.grassStatsOverlay);
     }
 
+    if(new URLSearchParams(window.location.search).has('telemetry'))this.toggleTelemetry();
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
     window.addEventListener('resize', this.resize);
     canvas.addEventListener('pointerdown', this.onPointerDown);
-    this.scene.onBeforeRenderObservable.add(()=>this.updateCameraOcclusion(
-      this.cameraFrameDt,this.zones.get(this.store.state.zone)!));
+    this.scene.onBeforeRenderObservable.add(()=>{
+      const start=this.telemetry?.recording?performance.now():0;
+      this.updateCameraOcclusion(this.cameraFrameDt,this.zones.get(this.store.state.zone)!);
+      if(start)this.telemetry?.recordCamera(performance.now()-start);
+    });
     this.engine.runRenderLoop(() => {
+      this.telemetry?.beginFrame();
       const dt = Math.min(this.engine.getDeltaTime() / 1000, 0.045);
       this.cameraFrameDt=dt;
       this.update(dt);
+      this.telemetry?.endUpdate();
       this.scene.render();
+      this.telemetry?.endRender();
       this.updateGrassStats(dt);
+      this.telemetry?.endFrame(this.mainland.pendingCount,this.player.position.x,this.player.position.z);
     });
   }
 
   private readonly resize = () => this.engine.resize();
   private readonly onBlur = () => this.pressed.clear();
   private readonly onKeyDown = (e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const key = e.key.toLowerCase();
+    if(key==='f8'){e.preventDefault();if(!e.repeat)this.toggleTelemetry();return;}
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
+      e.target instanceof HTMLSelectElement) return;
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'e', 'r',' '].includes(key)) e.preventDefault();
     this.pressed.add(key);
     if (e.repeat || this.blocked()) return;
@@ -376,15 +395,12 @@ export class WorldView {
     return mesh;
   }
 
-  private tree(zone: IslandInfo, x: number, z: number, scale = 1, purple = false): TransformNode {
+  private tree(zone: IslandInfo, x: number, z: number, scale = 1, special = false,
+    harvestable=false): TransformNode {
     if(zone.id==='brisalia')this.vegetationExclusions.push({x,z,radius:3.2*scale+2});
     const root = this.host(zone, 'arbol', x, z);
-    const bark = this.mat('corteza', '#805a3c');
-    const leaf = this.mat(purple ? 'hojas-lilas' : 'hojas-verdes', purple ? '#8d8fd4' : '#2e8158');
-    const lightLeaf = this.mat(purple ? 'hojas-lavanda' : 'hojas-claras', purple ? '#b9a5e9' : '#52a76e');
-    this.cyl('tronco', root, 0.9 * scale, 4.4 * scale, 0, 2.2 * scale, 0, bark);
-    this.ball('copa-principal', root, 5.2 * scale, 0, 5.7 * scale, 0, leaf);
-    this.ball('copa-secundaria', root, 3.9 * scale, -1.4 * scale, 5.1 * scale, 0.9 * scale, lightLeaf);
+    const variant=Math.abs(Math.round(x*31+z*17))+(special?2:0);
+    this.treeVisualRequests.push({root,variant,height:(harvestable?10:9)*scale,harvestable});
     return root;
   }
 
@@ -468,7 +484,8 @@ export class WorldView {
       radius:node.type==='dock'?16:node.type==='lore'?9:node.type==='resource'?5:6
     });
     // Marca flotante que destaca interacciones para niños sin sobrecargar la escena.
-    const markerHeight = node.resource === 'wood' ? 8.6 : node.resource === 'spark' ? 5.2 :
+    if(node.resource==='wood')return;
+    const markerHeight = node.resource === 'spark' ? 5.2 :
       node.type === 'npc' ? 4.3 : node.type === 'dock' ? 4.8 : 3.5;
     const mark = this.ball(`marcador-${node.id}`, node.visual, 0.57, 0, markerHeight, 0,
       this.mat(node.type === 'dock' ? 'marca-navegacion' : 'marca-interactiva', node.type === 'dock' ? '#81e7ff' : '#f8de75', 0.6));
@@ -476,10 +493,10 @@ export class WorldView {
   }
 
   private resource(zone: IslandInfo, id: string, label: string, resource: MaterialId, amount: number, x: number, z: number): void {
-    const visual = resource === 'wood' ? this.tree(zone, x, z, 0.8) :
+    const visual = resource === 'wood' ? this.tree(zone, x, z, 0.8,false,true) :
       resource === 'spark' ? this.crystal(zone, x, z) : this.rock(zone, x, z, resource === 'copper');
     this.markInteraction(zone, {
-      id, label, verb: `Recolectar ${label.toLowerCase()}`, type: 'resource',
+      id, label, verb: resource==='wood'?'Talar árbol':`Recolectar ${label.toLowerCase()}`, type: 'resource',
       localPosition: new Vector3(x, 0, z), visual, resource, amount, enabled: true
     });
   }
@@ -926,6 +943,7 @@ export class WorldView {
 
   private update(dt: number): void {
     const climateFrame=this.climate.update(dt);
+    this.telemetry?.mark('clima');
     this.climateSaveTimer+=dt;
     this.climateHudTimer+=dt;
     if(this.climateHudTimer>=.5){
@@ -936,6 +954,7 @@ export class WorldView {
       this.store.setEnvironmentTime(this.climate.elapsedHours);
       this.climateSaveTimer=0;
     }
+    this.telemetry?.mark('ui');
     const zone=this.zones.get(this.store.state.zone)!;
     const controls=!this.blocked()&&!this.placement;
     const horizontal=controls?Number(this.pressed.has('d')||this.pressed.has('arrowright'))-
@@ -985,14 +1004,21 @@ export class WorldView {
       this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt));
     target.y=Math.max(target.y,this.player.position.y+1.85);
     this.camera.setTarget(target,false,false,true);
+    this.telemetry?.mark('movimiento');
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
+      this.telemetry?.mark('terreno');
       this.vegetation.update();
+      this.telemetry?.mark('vegetacion');
       this.grass.update();
+      this.telemetry?.mark('pasto');
       this.props.update(dt);
+      this.telemetry?.mark('props');
       this.authoredAssets.update(localX,localZ);
+      this.telemetry?.mark('assets');
       this.authoredWater.update(dt);
       this.geography.update(dt);
+      this.telemetry?.mark('agua');
       this.landscapeDebug?.update(dt,localX,localZ);
     }
     this.exploreTimer+=dt;
@@ -1003,6 +1029,7 @@ export class WorldView {
     }
     this.findNearest();
     if(this.placement)this.refreshPreview();
+    this.telemetry?.mark('ui');
   }
 
   private updateCameraOcclusion(dt:number,zone:IslandInfo):void{
@@ -1286,6 +1313,16 @@ export class WorldView {
     this.activateZone(this.store.state.zone);
   }
 
+  private toggleTelemetry():void{
+    if(this.telemetry){this.telemetry.toggleVisibility();return;}
+    this.telemetry=new GameTelemetry(this.scene,this.engine,()=>({
+      zone:this.store.state.zone,near:this.mainland.activeCount,mid:this.mainland.activeMidCount,
+      far:this.mainland.activeFarCount,vegetation:this.vegetation.instanceCount,
+      vegetationLod:this.vegetation.farInstanceCount,grass:this.grass.instanceCount,
+      grassSectors:this.grass.activeSectorCount
+    }));
+  }
+
   private updateGrassStats(dt:number):void{
     if(!this.grassStatsOverlay)return;
     this.grassStatsTimer+=dt;
@@ -1299,6 +1336,7 @@ export class WorldView {
 
   dispose(): void {
     this.engine.stopRenderLoop();
+    this.telemetry?.dispose();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('blur', this.onBlur);

@@ -9,7 +9,12 @@ const parsed=ts.createSourceFile(file,source,ts.ScriptTarget.ES2022,true,ts.Scri
 assert.equal(parsed.parseDiagnostics.length,0,'TypeScript syntax');
 const out=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},reportDiagnostics:true});
 assert.equal(out.diagnostics?.length??0,0,'TypeScript transpilation');
-const fragment=/const FRAGMENT_SHADER=`([\s\S]*?)`;/m.exec(source)?.[1];
+const noiseSource=fs.readFileSync(path.resolve(__dirname,
+  '../src/world/climate/NoiseCloudShader.ts'),'utf8');
+const noiseFunctions=/NOISE_CLOUD_FUNCTIONS\s*=\s*`([\s\S]*?)`;/m.exec(noiseSource)?.[1];
+assert.ok(noiseFunctions,'noise cloud shader module present');
+const fragment=/const FRAGMENT_SHADER=`([\s\S]*?)`;/m.exec(source)?.[1]
+  .replace('${NOISE_CLOUD_FUNCTIONS}',noiseFunctions);
 assert.ok(fragment,'fragment shader present');
 assert.equal((fragment.match(/\{/g)||[]).length,(fragment.match(/\}/g)||[]).length,'balanced GLSL braces');
 const shaderExports=[...source.matchAll(/uniform (?:float|vec3|sampler2D) (\w+);/g)].map(m=>m[1]);
@@ -17,8 +22,10 @@ for(const s of ['uSkyTop','uSkyHorizon','uCloudColor','uCloud','uNight'])
   assert.ok(shaderExports.includes(s),`${s} available`);
 const instructions=['weatherHaze','sunDisc','moonDisc','sparkle'];
 for(const str of instructions) assert.ok(fragment.includes(str),`shader has ${str}`);
-assert.ok(!source.includes('makeCloudNoise')&&!fragment.includes('texture2D'),
-  'no procedural clouds appear while painted formations load');
+assert.ok(source.includes("this.pieces=this.renderer==='pieces'?new CloudPieces(scene,camera):null"),
+  'painted formations are created only when explicitly selected');
+assert.ok(source.includes("this.renderer==='noise'&&this.noiseReady?1:0"),
+  'the density field is enabled only for the noise renderer');
 console.log('Sky dome TS syntax, stars, sun, moon and atmospheric weather:', 'OK');
 
 const root=path.resolve(__dirname,'../public/assets/auralia-clouds');
@@ -96,9 +103,10 @@ vm.runInNewContext(fs.readFileSync(glslangFile,'utf8'),{
   fetch:async()=>new Response(fs.readFileSync(wasmFile),{
     headers:{'Content-Type':'application/wasm'}})
 });
-function shaderForValidation(name,stage){
+function shaderForValidation(name,stage,input=pieceSource){
   const tick=String.fromCharCode(96);
-  let code=pieceSource.split(`const ${name}=${tick}`)[1].split(`${tick};`)[0].trimStart();
+  let code=input.split(`const ${name}=${tick}`)[1].split(`${tick};`)[0].trimStart()
+    .replace('${NOISE_CLOUD_FUNCTIONS}',noiseFunctions);
   const uniforms=[...code.matchAll(/uniform (mat4|float|vec2|vec3) (\w+);/g)]
     .map(match=>`${match[1]} ${match[2]};`).join('\n');
   code=code.replace(/uniform (mat4|float|vec2|vec3) \w+;/g,'');
@@ -119,8 +127,9 @@ function shaderForValidation(name,stage){
   return `#version 310 es\n${code}`;
 }
 glslangModule.exports(wasmFile).then(validator=>{
-  for(const [name,stage] of [['VERTEX_SHADER','vertex'],['FRAGMENT_SHADER','fragment']])
-    assert.ok(validator.compileGLSL(shaderForValidation(name,stage),stage).length>0,
-      `${name} compiles`);
-  console.log('Cloud piece vertex and fragment GLSL:', 'OK');
+  for(const input of [pieceSource,source])
+    for(const [name,stage] of [['VERTEX_SHADER','vertex'],['FRAGMENT_SHADER','fragment']])
+      assert.ok(validator.compileGLSL(shaderForValidation(name,stage,input),stage).length>0,
+        `${name} compiles`);
+  console.log('Painted clouds and noise sky vertex/fragment GLSL:', 'OK');
 }).catch(error=>{console.error(error);process.exitCode=1;});

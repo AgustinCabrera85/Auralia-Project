@@ -43,6 +43,15 @@ export function configureFoliageV4Material(material:Material|null):void{
     material.albedoColor=material.albedoColor.multiply(new Color3(.75,.86,.98));
 }
 
+/** Expansion flowers keep their authored pink, white and violet vertex colours. */
+export function configureExpansionV3Material(material:Material|null):void{
+  if(!(material instanceof PBRMaterial))return;
+  material.fogEnabled=true;
+  material.directIntensity=.88;
+  material.metallic=0;
+  material.roughness=Math.max(.88,material.roughness??1);
+}
+
 /** The cliff GLB omits metallic/roughness factors, so glTF defaults to metal=1. */
 export function configureGeologyMaterial(material:Material|null,kind:string,adjusted=true):void{
   if(!material)return;

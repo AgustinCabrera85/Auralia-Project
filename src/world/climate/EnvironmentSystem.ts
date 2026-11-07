@@ -8,6 +8,7 @@ import { SkyDome } from './SkyDome';
 import { Precipitation } from './Precipitation';
 import { LANDSCAPE_ATMOSPHERE_CONFIG } from '../LandscapeAtmosphere';
 import { getAuraliaWind, type AuraliaWindState } from '../AuraliaWindSystem';
+import { getAuraliaTreeColors, type AuraliaTreeColors } from '../AuraliaFoliageWind';
 
 /** One shared environmental clock for every playable zone of Auralia. */
 export class EnvironmentSystem {
@@ -15,6 +16,7 @@ export class EnvironmentSystem {
   private readonly moon:DirectionalLight;
   private readonly precipitation:Precipitation;
   private readonly wind:AuraliaWindState;
+  private readonly treeColors:AuraliaTreeColors;
   private elapsed:number;
   private animationSeconds=0;
   private clockScale=1;
@@ -41,6 +43,7 @@ export class EnvironmentSystem {
     this.originalSunIntensity=sun.intensity;
     this.originalHemiIntensity=hemi.intensity;
     this.wind=getAuraliaWind(scene);
+    this.treeColors=getAuraliaTreeColors(scene);
     this.sky=new SkyDome(scene,camera);
     // One cool directional fill follows the moon; it needs no shadow map.
     this.moon=new DirectionalLight('luz-lunar',new Vector3(0,-1,0),scene);
@@ -67,6 +70,7 @@ export class EnvironmentSystem {
     this.elapsed+=step*this.clockScale*24/REAL_SECONDS_PER_GAME_DAY;
     this.current=sampleClimate(this.elapsed,this.forcedWeather);
     const frame=this.current,weather=frame.weatherMix;
+    this.treeColors.update(frame.season,step);
     // Clear weather preserves the existing breeze; storms raise its baseline.
     // The scene wind controller layers its short gusts on top in one update.
     this.wind.setStrength(.45+weather.wind*.9);

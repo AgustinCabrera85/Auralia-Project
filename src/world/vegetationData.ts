@@ -1,6 +1,6 @@
 import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isStarterArea, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { waterSurfaceAt } from './geographicFeatures';
-import { ASSET_CATALOG } from './assetCatalog';
+import { ASSET_CATALOG, DECORATIVE_TREE_ASSETS } from './assetCatalog';
 import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geologyData';
 import { insideFoliageForest } from './foliageForestConfig';
 
@@ -10,12 +10,15 @@ export const VEGETATION_CONFIG = {
   candidatesPerChunk: { arbolito1: 8, arbolito2: 12, arbolito3: 2, plantitas1: 16, arbolitoSeco: 3, tronco1: 4 },
   // The player is roughly 4 m tall; these sizes keep the trees visually dominant.
   baseScale: {
-    arbolito1:ASSET_CATALOG.arbolito1.referenceScale, arbolito2:ASSET_CATALOG.arbolito2.referenceScale,
-    arbolito3:ASSET_CATALOG.arbolito3.referenceScale, plantitas1:ASSET_CATALOG.plantitas1.referenceScale,
-    arbolitoSeco:ASSET_CATALOG.arbolitoSeco.referenceScale, tronco1:ASSET_CATALOG.tronco1.referenceScale
+    arbolito1:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito1].referenceScale*1.2,
+    arbolito2:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito2].referenceScale*1.2,
+    arbolito3:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito3].referenceScale*1.2,
+    plantitas1:ASSET_CATALOG.plantitas1.referenceScale,
+    arbolitoSeco:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolitoSeco].referenceScale,
+    tronco1:ASSET_CATALOG.tronco1.referenceScale
   },
   scaleVariation: 0.16,
-  crownRadius: { arbolito1: 0.43, arbolito2: 0.38, arbolito3: 0.5, plantitas1: 0.5, arbolitoSeco: .4, tronco1: .5 },
+  crownRadius: { arbolito1: 2.7, arbolito2: 4, arbolito3: 2.4, plantitas1: 0.5, arbolitoSeco: 3.7, tronco1: .5 },
   clusterCellSize: 135,
   minHeightAboveWater: { trees: 1.5, plants: 0.55 },
   maxSlope: { trees: 0.45, plants: 0.62 },

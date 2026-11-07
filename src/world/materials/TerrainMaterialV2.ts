@@ -5,8 +5,9 @@
  *   color RGBA = grass, soil, rock, sand; uv XY = snow, lava.
  * Does not alter original TerrainMaterial.ts (whose biome weights grass uses).
  */
-import { Color3, DirectionalLight, Effect, Scene, ShaderMaterial, Texture, Vector3 } from '@babylonjs/core';
+import { Color3, DirectionalLight, Effect, Scene, ShaderMaterial, Texture, Vector2, Vector3 } from '@babylonjs/core';
 import type { TerrainMaterialConfig } from './TerrainMaterial';
+import { FOLIAGE_FOREST } from '../foliageForestConfig';
 
 const SHADER = 'auraliaTerrainDistinctLayersV2';
 
@@ -47,6 +48,8 @@ uniform float fogDensity;
 uniform float macroStrength;
 uniform float macroScale;
 uniform float layerScale;
+uniform vec2 forestCenter;
+uniform vec2 forestRadii;
 uniform sampler2D texGrass;
 uniform sampler2D texSoil;
 uniform sampler2D texRock;
@@ -105,6 +108,19 @@ void main(void) {
   vec2 lUV=rotate2(p,.18)*(.115*layerScale)+warp*.20+vec2(7.9,1.8);
 
   vec4 grass=texture2D(texGrass,gUV);
+  // Match the illustrated meadow's root tones, with a broad transition at
+  // the forest boundary. Compress dark texture detail instead of flattening it.
+  float forestDistance=length((p-forestCenter)/forestRadii);
+  float forestMask=1.0-smoothstep(.82,1.15,forestDistance);
+  if(forestMask>.001){
+    vec4 grassDetail=texture2D(texGrass,rotate2(gUV,1.17)*.79+vec2(4.3,8.7));
+    grass=mix(grass,grassDetail,forestMask*.32);
+    float value=dot(grass.rgb,vec3(.30,.59,.11));
+    float tone=clamp((value-.13)*2.1+broad*.055,0.0,1.0);
+    vec3 meadow=mix(vec3(.24,.36,.16),vec3(.46,.59,.30),tone);
+    grass.rgb=mix(grass.rgb,meadow,forestMask*.88);
+    grass.a=mix(grass.a,.96,forestMask*.65);
+  }
   vec4 soil=texture2D(texSoil,dUV);
   vec4 sand=texture2D(texSand,aUV);
   vec4 snow=texture2D(texSnow,sUV);
@@ -123,7 +139,8 @@ void main(void) {
   vec3 sN=unpackNormal(texture2D(normAtlas1,atlasUV(sUV,vec2(0.0,0.0))));
   vec3 lN=unpackNormal(texture2D(normAtlas1,atlasUV(lUV,vec2(0.5,0.0))));
   vec3 bump=vec3(0.0);
-  bump+=w0.x*vec3(gN.x,0.0,gN.y)*.32;
+  // The floor remains softer than the separate grass blades above it.
+  bump+=w0.x*vec3(gN.x,0.0,gN.y)*mix(.32,.16,forestMask);
   bump+=w0.y*vec3(dN.x,0.0,dN.y)*.46;
   bump+=w0.z*rN*.54;
   bump+=w0.w*vec3(aN.x,0.0,aN.y)*.42;
@@ -139,7 +156,8 @@ void main(void) {
   vec3 H=normalize(V+L);
   float highlight=pow(max(dot(N,H),0.0),mix(100.0,6.0,roughness));
   lit+=sunColor*highlight*(1.0-roughness)*.20;
-  lit*=1.0+macroStrength*broad+.023*sin(p.x*.137)*cos(p.y*.119);
+  lit*=1.0+macroStrength*broad*mix(1.0,.5,forestMask*w0.x)+
+    .023*sin(p.x*.137)*cos(p.y*.119);
   // Emission follows the lava texture's molten fissures, not an orange tint.
   float molten=clamp((lava.r-lava.g)*2.2,0.0,1.0);
   lit+=lava.rgb*w1.y*(.25+1.1*molten);
@@ -157,7 +175,8 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
     {vertex:SHADER,fragment:SHADER},
     {attributes:['position','normal','color','uv'],
      uniforms:['world','worldViewProjection','cameraPosition','sunDirection','sunColor',
-       'fogColor','fogDensity','macroStrength','macroScale','layerScale'],
+       'fogColor','fogDensity','macroStrength','macroScale','layerScale',
+       'forestCenter','forestRadii'],
      samplers:[...SURFACES.map(s=>`tex${s[0].toUpperCase()}${s.slice(1)}`),
        'normAtlas0','normAtlas1']});
   material.backFaceCulling=false;
@@ -167,6 +186,8 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   material.setFloat('macroStrength',config.macroStrength);
   material.setFloat('macroScale',config.macroScale);
   material.setFloat('layerScale',1.0);
+  material.setVector2('forestCenter',new Vector2(FOLIAGE_FOREST.x,FOLIAGE_FOREST.z));
+  material.setVector2('forestRadii',new Vector2(FOLIAGE_FOREST.radiusX,FOLIAGE_FOREST.radiusZ));
   const textures:Texture[]=[];
   for(const surface of SURFACES){
     const name=surface[0].toUpperCase()+surface.slice(1);
@@ -186,7 +207,16 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
     material.setTexture(`normAtlas${i}`,texture);
     textures.push(texture);
   }
+  const lightDirection=new Vector3(),lightColor=new Color3();
   const observer=scene.onBeforeRenderObservable.add(()=>{
+    // Vegetation already follows the live climate lights; keep the floor in
+    // the same daylight rather than the light captured when the map loaded.
+    if(light){
+      lightDirection.copyFrom(light.direction).scaleInPlace(-1).normalize();
+      lightColor.copyFrom(light.diffuse).scaleInPlace(light.intensity*.65);
+      material.setVector3('sunDirection',lightDirection);
+      material.setColor3('sunColor',lightColor);
+    }
     if(scene.activeCamera) material.setVector3('cameraPosition',scene.activeCamera.globalPosition);
     material.setColor3('fogColor',scene.fogColor);
     material.setFloat('fogDensity',scene.fogMode===Scene.FOGMODE_EXP2?scene.fogDensity:0);

@@ -1,5 +1,6 @@
 import type { Biome } from './terrainData';
 import { FOLIAGE_V4_ASSETS } from './foliageV4Catalog';
+import { EXPANSION_V3_ASSETS } from './expansionV3Catalog';
 
 export type AssetCategory='vegetation'|'rocks'|'cliffs'|'crystals'|'structures'|'landmarks';
 export type AssetInteraction='decorative'|'resource'|'landmark';
@@ -9,6 +10,7 @@ export type AssetDefinition={
   referenceScale:number;interaction:AssetInteraction;instantiation:AssetInstantiation;
   collisionRadius?:number;renderDistance?:number;lodPath?:string;lodDistance?:number;
   horizontalScale?:number;
+  surface?:'terrain'|'water';
 };
 
 /** One URL per GLB. Existing trees keep their original project paths. */
@@ -30,14 +32,22 @@ export const ASSET_CATALOG={
   cristalFuego:{path:'/assets/world/crystals/Cristal_de_Fuego.glb',category:'crystals',biomes:['sierras','cumbres'],referenceScale:5,interaction:'resource',instantiation:'individual'},
   crisolHerrero:{path:'/assets/world/structures/Crisol_Herrero.glb',category:'structures',biomes:['valle'],referenceScale:5,interaction:'decorative',instantiation:'individual'},
   islaFlotante:{path:'/assets/world/landmarks/Isla_flotante_2.glb',category:'landmarks',biomes:['cumbres'],referenceScale:90,interaction:'landmark',instantiation:'individual'},
-  ...FOLIAGE_V4_ASSETS
+  ...FOLIAGE_V4_ASSETS,
+  ...EXPANSION_V3_ASSETS
 } as const satisfies Record<string,AssetDefinition>;
 
 export type AssetId=keyof typeof ASSET_CATALOG;
 export const CLIFF_LOD_PATH='/assets/world/cliffs/Acantilado_2_lod.glb';
+/** Logical forest species retain their seeded placements; their visuals use V4. */
+export const DECORATIVE_TREE_ASSETS={
+  arbolito1:'v4TreeSoftEmerald',arbolito2:'v4TreeBroadMeadow',
+  arbolito3:'v4TreeTallClouds',arbolitoSeco:'v4TreeLeaningSunlit'
+} as const;
+/** The first three supplied GLBs are the visual language for harvestable wood. */
+export const HARVESTABLE_TREE_ASSETS=['arbolito1','arbolito2','arbolito3'] as const;
 export const TREE_LOD_PATHS={
-  arbolito1:'/assets/vegetation/Arbolito_1_lod.glb',
-  arbolito2:'/assets/vegetation/Arbolito_2_lod.glb',
-  arbolito3:'/assets/vegetation/Arbolito_3_lod.glb',
-  arbolitoSeco:'/assets/world/vegetation/Arbolito_sin_hojas_lod.glb'
+  arbolito1:ASSET_CATALOG.v4TreeSoftEmerald.lodPath,
+  arbolito2:ASSET_CATALOG.v4TreeBroadMeadow.lodPath,
+  arbolito3:ASSET_CATALOG.v4TreeTallClouds.lodPath,
+  arbolitoSeco:ASSET_CATALOG.v4TreeLeaningSunlit.lodPath
 } as const;

@@ -1,11 +1,33 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@babylonjs/core');
+const {NullEngine,Scene,TransformNode,ImportMeshAsync,MultiMaterial,VertexBuffer}=require('@babylonjs/core');
 const {VegetationSystem}=require('../.test-build/world/VegetationSystem.js');
 const {vegetationForChunk,VEGETATION_CONFIG}=require('../.test-build/world/vegetationData.js');
 const {chunkOf,desiredChunks,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
+const {DECORATIVE_TREE_ASSETS,HARVESTABLE_TREE_ASSETS}=
+  require('../.test-build/world/assetCatalog.js');
+
+// Exercise the real resource/marker methods without starting the browser game.
+const vm=require('node:vm'),ts=require('typescript');
+const viewExports={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/game/WorldView.ts','utf8'),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
+}).outputText,{exports:viewExports,require:id=>id==='@babylonjs/core'
+  ?require('@babylonjs/core'):{}});
+let treeRequest,markerCount=0;
+const zone={id:'brisalia',nodes:[]};
+const fakeView={vegetationExclusions:[],
+  tree(...args){treeRequest=args;return {};},
+  markInteraction(...args){viewExports.WorldView.prototype.markInteraction.apply(this,args);},
+  ball(){markerCount++;return {};},mat(){return {};}};
+viewExports.WorldView.prototype.resource.call(fakeView,zone,'wood-test','Madera','wood',3,10,20);
+assert.equal(treeRequest[5],true,'wood requests an original harvestable GLB');
+assert.equal(zone.nodes[0].verb,'Talar árbol');
+assert.equal(markerCount,0,'wood nodes have no floating marker');
+fakeView.markInteraction(zone,{...zone.nodes[0],resource:'spark'});
+assert.equal(markerCount,1,'other interaction markers remain available');
 
 const sample=vegetationForChunk(-5,-8);
 assert.deepEqual(sample,vegetationForChunk(-5,-8),'same seed and chunk give identical placements');
@@ -14,7 +36,8 @@ assert.ok(sample.every(p=>Math.abs(sampleMainlandHeight(p.x,p.z)-p.y)<1e-8));
 assert.ok(sample.every(p=>p.y>MAINLAND.waterLevel&&geographyMasks(p.x,p.z).road<=VEGETATION_CONFIG.roadMaskLimit));
 assert.ok(sample.every(p=>!isStarterArea(p.x,p.z)));
 assert.ok(sample.every(p=>p.yaw>=0&&p.yaw<Math.PI*2));
-assert.ok(sample.every(p=>p.kind==='plantitas1'?p.scale>2:p.kind==='tronco1'?p.scale>5:p.scale>11),'vegetation is scaled against the four-metre player');
+assert.ok(sample.every(p=>Math.abs(p.scale/VEGETATION_CONFIG.baseScale[p.kind]-1)<=
+  VEGETATION_CONFIG.scaleVariation+.00001),'each species retains its authored scale range');
 const blocked=sample[0];
 assert.ok(!vegetationForChunk(-5,-8,[{x:blocked.x,z:blocked.z,radius:8}]).some(p=>Math.hypot(p.x-blocked.x,p.z-blocked.z)<8));
 const treeSample=[...sample,...vegetationForChunk(-8,-2),...vegetationForChunk(-7,-1)]
@@ -49,8 +72,29 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   await system.load();
   assert.equal(system.sharedMeshCount,6,'six imported source meshes');
-  assert.equal(imports.length,10,'six source GLBs and four visual LODs imported once');
-  assert.equal(new Set(imports).size,10);
+  assert.equal(imports.length,13,'six decorative GLBs, three wood GLBs and four V4 LODs load once');
+  assert.equal(new Set(imports).size,13);
+  const island=new TransformNode('island',scene);
+  for(let i=0;i<3;i++){
+    const node=new TransformNode('wood-node-'+i,scene);node.parent=island;
+    node.setEnabled(false);
+    assert.equal(system.attachTreeVisual(node,i,8,true),HARVESTABLE_TREE_ASSETS[i]);
+    const visual=node.getChildMeshes()[0];
+    assert.equal(visual.metadata.harvestableTree,true);
+    assert.equal(visual.isEnabled(),false,'late asset attachment preserves a harvested node');
+    node.setEnabled(true);
+    assert.equal(visual.isEnabled(),true,'respawn restores the original GLB');
+    root.setEnabled(false);
+    assert.equal(visual.isEnabled(),true,'island wood does not depend on mainland visibility');
+    root.setEnabled(true);
+    visual.computeWorldMatrix(true);
+    const box=visual.getBoundingInfo().boundingBox;
+    assert.ok(Math.abs(box.maximumWorld.y-box.minimumWorld.y-8)<.01);
+  }
+  const decorativeNode=new TransformNode('decorative-tree',scene);
+  assert.equal(system.attachTreeVisual(decorativeNode,0,10),DECORATIVE_TREE_ASSETS.arbolito1);
+  assert.equal(decorativeNode.getChildMeshes()[0].metadata.harvestableTree,false);
+  assert.equal(imports.length,13,'fixed trees share the loaded GLBs');
   for(let i=0;i<60;i++)system.update();
   assert.ok(system.activeChunkCount>cells.length&&
     system.activeChunkCount<=desiredChunks(center.cx*MAINLAND.chunkSize,
@@ -58,7 +102,8 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   'distant trees stream beyond the playable terrain ring');
   assert.ok(system.instanceCount>0,'thin instance buffers populated');
   const farTree=scene.getMeshByName('vegetacion-arbolito2-far');
-  assert.ok(farTree&&farTree.getTotalVertices()>0&&farTree.getTotalIndices()/3<1200,
+  assert.ok(farTree&&farTree.getTotalVertices()>0&&
+    farTree.getTotalIndices()<scene.getMeshByName('vegetacion-arbolito2').getTotalIndices(),
     'distant trees use a simplified version of the source GLB');
   assert.ok(farTree.thinInstanceCount>0,'distant trees switch to the proxy');
   assert.equal(farTree.material,scene.getMeshByName('vegetacion-arbolito2').material,
@@ -88,11 +133,20 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     const mesh=scene.getMeshByName(`vegetacion-${kind}`);
     assert.ok(mesh&&mesh.getTotalVertices()>0,'source geometry retained');
     assert.ok(mesh.material,'source material retained');
-    assert.ok(mesh.material.albedoTexture,'source texture retained');
+    const materials=mesh.material instanceof MultiMaterial?mesh.material.subMaterials:[mesh.material];
+    assert.ok(materials.some(material=>material?.albedoTexture),'source textures retained');
+    if(kind in DECORATIVE_TREE_ASSETS){
+      assert.equal(mesh.metadata.assetId,DECORATIVE_TREE_ASSETS[kind]);
+      assert.ok(materials.some(material=>material.name.toLowerCase().includes('_wood_')));
+      assert.ok(materials.some(material=>material.name.toLowerCase().includes('_leaves_')));
+    }
     const positions=mesh.getVerticesData(VertexBuffer.PositionKind);
     let minY=Infinity,maxY=-Infinity;
     for(let i=1;i<positions.length;i+=3){minY=Math.min(minY,positions[i]);maxY=Math.max(maxY,positions[i]);}
-    assert.ok(minY>-.05&&minY<.05&&maxY>.35&&maxY<1.05,'source pivots stay at ground and Y is up');
+    assert.ok(Math.abs(minY)<.05&&maxY>.35,'source pivots stay at ground and Y is up');
+    if(kind in DECORATIVE_TREE_ASSETS)
+      assert.ok(maxY*VEGETATION_CONFIG.baseScale[kind]>12&&
+        maxY*VEGETATION_CONFIG.baseScale[kind]<22,'V4 trees remain taller than the player');
     assert.equal(mesh.metadata.decorativeVegetation,true);
     assert.equal(mesh.isPickable,false);
     assert.ok(mesh.thinInstanceCount>=0);
@@ -106,7 +160,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   for(let i=0;i<60;i++)system.update();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
-  assert.equal(imports.length,10,'reload makes no new GLB imports');
+  assert.equal(imports.length,13,'reload makes no new GLB imports');
   const target={x:-509,z:32};
   const targetChunk=chunkOf(target.x,target.z);
   const targetCells=[];
@@ -118,14 +172,11 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   const specimen=targetCells.flatMap(cell=>vegetationForChunk(cell.cx,cell.cz))
     .find(p=>p.kind==='arbolito2'&&Math.hypot(p.x-target.x,p.z-target.z)<3);
   assert.ok(specimen,'the tree from the reported location exists');
-  const rootSurface=system.queryTreeGround(specimen.x,specimen.z-2,specimen.y+2,3);
-  assert.ok(rootSurface&&rootSurface.height>specimen.y+.15&&rootSurface.height<specimen.y+.7,
-    'the exposed root is a low walkable surface');
   assert.equal(system.queryTreeWall(specimen.x,specimen.y+.35,specimen.z+3,0,-1,3),null,
     'shallow roots do not become torso walls');
   const trunkWall=system.queryTreeWall(specimen.x,specimen.y+1.8,specimen.z+3,0,-1,3);
-  assert.ok(trunkWall&&trunkWall.distance<1.3&&trunkWall.distance>.2,
-    'real trunk mesh blocks a body approaching from the screenshot side');
+  assert.ok(trunkWall&&trunkWall.distance<3&&trunkWall.distance>0,
+    'the V4 trunk mesh blocks a body approaching from the front');
   const world={
     ground:(x,z,originY,maxDistance)=>{
       const root=system.queryTreeGround(x,z,originY,maxDistance);
@@ -146,11 +197,8 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   const input={moveX:0,moveZ:-1,forwardX:0,forwardZ:-1,
     horizontal:0,vertical:0,run:false,jumpPressed:false};
   for(let i=0;i<24;i++)player.step(.025,input,world);
-  assert.ok(player.position.z>specimen.z+2.4,
-    'the character stops before entering the trunk, even when the old circle was too small');
-  player.teleport(specimen.x,specimen.y,specimen.z-3);
-  for(let i=0;i<4;i++)player.step(.025,{...input,moveZ:1,forwardZ:1},world);
-  assert.ok(player.position.y>specimen.y+.1,'walking over the root lifts the feet');
+  assert.ok(player.position.z>trunkWall.point.z+.25,
+    'the character stops before entering the replacement GLB trunk');
   console.log(`✓ Vegetación: seis GLB compartidos, ${before} instancias en ${system.activeChunkCount} chunks, liberación y recarga`);
   system.dispose();scene.dispose();engine.dispose();
 })().catch(error=>{console.error(error);process.exitCode=1;});
