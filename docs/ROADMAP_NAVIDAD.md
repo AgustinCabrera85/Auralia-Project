@@ -2,9 +2,15 @@
 
 **Inicio:** 28/10/2026. **Fecha objetivo de entrega:** 25/12/2026. **Congelamiento de mecánicas:** 16/12/2026.
 
+## Rediseño geográfico del 8 de noviembre
+
+El [mapa maestro geográfico](MAPA_MAESTRO_GEOGRAFICO.md) amplía el diseño a doce regiones y archipiélagos. El tamaño total queda abierto hasta completar y medir una región piloto en Brisalia y el Valle de los Faroles. Primero se define el relieve y el agua; después, biomas, asentamientos y caminos, conservando el núcleo existente y las partidas.
+
+La entrega navideña sigue centrada en una primera aventura terminada. Las doce regiones no pasan a ser un requisito de diciembre; el piloto y su acabado visual se coordinan con los hitos siguientes, posponiendo la expansión que comprometa la estabilidad de la entrega.
+
 ## Hito 0: POC funcional (este paquete)
 
-- Atlas maestro de una isla central y cinco regiones + archipiélagos.
+- Atlas inicial de una isla central y cinco regiones + archipiélagos, anterior al nuevo mapa maestro.
 - Mapa interactivo offline e integrado en el POC.
 - Reglas de inventario / recetas / construcción / guardado probadas con tests.
 - Escena Babylon.js procedural, personaje, dos zonas, HUD, crafting, estructuras.

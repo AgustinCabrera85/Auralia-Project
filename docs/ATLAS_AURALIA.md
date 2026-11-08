@@ -1,5 +1,7 @@
 # Atlas geográfico de Auralia · v0.1
 
+**Referencia anterior:** esta distribución corresponde al atlas existente. Desde el 08/11/2026, el [mapa maestro geográfico](MAPA_MAESTRO_GEOGRAFICO.md) guía la ampliación a doce regiones, con escala abierta hasta probar Brisalia. Las posiciones narrativas de este atlas se revisarán junto con su ilustración; los IDs, accesos y coordenadas jugables existentes se conservan durante la transición.
+
 ## Decisión fundacional
 
 **Auralia es una gran isla principal, rodeada por archipiélagos y pequeños islotes.** Los caminos y ríos articulan las regiones continentales; los faros y puertos conectan las islas. Cada nueva ciudad se ubica dentro de una zona definida sin alterar las coordenadas narrativas de los asentamientos anteriores.

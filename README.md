@@ -39,6 +39,8 @@ La [guía de construcción](docs/BUILDING_SYSTEM.md) explica la colocación y lo
 
 ## Mapas y datos del mundo
 
+El [mapa maestro geográfico](docs/MAPA_MAESTRO_GEOGRAFICO.md) define el rediseño hacia doce regiones con relieve y cuencas propios. El tamaño total queda abierto hasta completar y medir el piloto de Brisalia; las coordenadas actuales siguen vigentes durante esa preparación.
+
 `src/world/terrainData.ts` define la altura, costa, biomas e hitos de la isla principal. `src/world/geographicFeatures.ts` define ríos, lagos y accidentes. El mapa técnico `docs/Mapa_geografico_auralia_v0.2.svg` y el asset `public/assets/mapa-geografico-v0.2.svg` se derivan de esos datos. Su nombre conserva `v0.2` por compatibilidad. El atlas ilustrado es una referencia narrativa, no un mapa métrico.
 
 El terreno usa tres niveles de detalle y se carga alrededor del personaje. La vegetación, las rocas y otros objetos decorativos se distribuyen por sectores. Los puntos de interés descubiertos y los recursos recolectados conservan su estado en el guardado.
@@ -51,6 +53,6 @@ El terreno usa tres niveles de detalle y se carga alrededor del personaje. La ve
 - [Santi, personaje jugable](docs/SANTI_CHARACTER.md): modelo, acciones NLA y expresiones faciales.
 - [Follaje ilustrado V4](docs/FOLIAGE_V4.md): modelos, shader de viento y acceso al bosque de prueba.
 - [Terreno distante y atmósfera](docs/LANDSCAPE_LOD.md), [material del terreno](docs/TERRAIN_MATERIAL.md), [vegetación](docs/VEGETACION_PROCEDURAL.md) y [césped](docs/GRASS_FIELD.md): sistemas de render.
-- [Atlas conceptual](docs/ATLAS_AURALIA.md), [GDD preliminar](docs/GDD_v0.2_previo.md), [roadmap navideño](docs/ROADMAP_NAVIDAD.md) y [roadmap visual](docs/ROADMAP_VISUAL.md): visión y planificación. El GDD está marcado como propuesta, no como canon definitivo.
+- [Mapa maestro geográfico](docs/MAPA_MAESTRO_GEOGRAFICO.md), [atlas anterior](docs/ATLAS_AURALIA.md), [GDD preliminar](docs/GDD_v0.2_previo.md), [roadmap navideño](docs/ROADMAP_NAVIDAD.md) y [roadmap visual](docs/ROADMAP_VISUAL.md): visión y planificación. El GDD está marcado como propuesta, no como canon definitivo.
 
 El código y sus constantes son la referencia para valores de configuración. El mapa y los GLB generados o procesados se mantienen como assets del proyecto.

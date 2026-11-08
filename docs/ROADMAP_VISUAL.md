@@ -1,11 +1,14 @@
 # Roadmap de dirección visual de Auralia
 
-**Estado:** propuesta de producción · **Fecha:** 06/11/2026  
-**Relación:** complementa el [roadmap navideño](ROADMAP_NAVIDAD.md) y la [arquitectura del POC](ARQUITECTURA.md), y sigue sus fechas de entrega y reglas de compatibilidad.
+**Estado:** propuesta de producción · **Fecha:** 06/11/2026 · **Actualización geográfica:** 08/11/2026
+
+**Relación:** complementa el [roadmap navideño](ROADMAP_NAVIDAD.md), la [arquitectura del POC](ARQUITECTURA.md) y el [mapa maestro geográfico](MAPA_MAESTRO_GEOGRAFICO.md), y sigue sus fechas de entrega y reglas de compatibilidad.
 
 ## Objetivo
 
 Convertir el mundo actual en una fantasía 3D luminosa y acogedora, con formas claras, vegetación de volumen suave y lugares reconocibles desde la cámara normal de juego. La primera muestra completa será **Brisalia y su entorno de pradera**; la segunda, **la Cascada del Valle** como lugar emblemático. Ambas establecerán un patrón reutilizable para las otras regiones.
+
+Ambas muestras forman parte del piloto del Valle de los Faroles. La pradera se integra en una cuenca con lomas, garganta y miradores; el relieve se define antes de distribuir biomas, asentamientos y caminos. La escala total del mundo se decidirá después de jugar y medir una región completa.
 
 Las tres referencias visuales aportadas definen funciones distintas:
 
@@ -28,7 +31,7 @@ Las tres referencias visuales aportadas definen funciones distintas:
 
 **Imprescindible:** guía visual, captura de línea base, muestra de pradera en Brisalia, composición de la Cascada del Valle y validación en el equipo objetivo.  
 **Si hay margen antes del 16/12:** variantes de color y densidad para Lindebrumas, Nácar y las sierras; mejora de nubes y sombras; animación de árboles.  
-**Después de la entrega:** tratamiento completo de las cinco regiones, más especies, clima, ciclos de luz y lugares emblemáticos adicionales.
+**Después de la entrega:** desarrollo progresivo de las doce regiones del mapa maestro, más especies y lugares emblemáticos, y ampliación de los sistemas de clima y luz según lo aprendido en el piloto.
 
 La prioridad sigue siendo una primera aventura estable y legible. Las mejoras visuales opcionales se cierran o se posponen al llegar al congelamiento del 16/12; del 17 al 23/12 sólo entran correcciones y optimización para la entrega.
 
@@ -64,7 +67,7 @@ Las ventanas son objetivos de planificación desde el 06/11/2026; se revisan tra
 | Pasto, flores y viento | `src/world/grass/GrassSectorSystem.ts`, `src/world/grass/GrassWindPlugin.ts`, World Editor y `public/world/auralia-world.json` |
 | Agua y cascada | `src/world/GeographyStream.ts`, `src/world/water/WaterfallGeometry.ts` y materiales de agua existentes |
 
-El relieve canónico, las coordenadas de Brisalia, los IDs de lugares y recursos y el formato de guardado se conservan. Si una composición requiere mover un hito, se trata como un cambio de datos con revisión de accesos, colisiones, mapa y guardados. Las distribuciones por sectores deben seguir siendo deterministas; los elementos singulares se ubican de forma explícita.
+Se conservan el relieve de apoyo y las coordenadas del núcleo construido de Brisalia, los IDs de lugares y recursos y el formato de guardado. El nuevo relieve se integra alrededor mediante transiciones controladas, según el mapa maestro. Si una composición requiere mover un hito, se trata como un cambio de datos con revisión de accesos, colisiones, mapa y guardados. Las distribuciones por sectores deben seguir siendo deterministas; los elementos singulares se ubican de forma explícita.
 
 ## Revisión y aceptación
 
@@ -85,4 +88,4 @@ Cada hito se revisa con las mismas capturas y un recorrido en juego, no sólo co
 | La cascada demanda demasiada producción | Entregar una entrada y un mirador completos con assets reutilizables; diferir ornamentos secundarios. |
 | El trabajo visual compite con la edición navideña | Congelar incorporaciones el 16/12. Priorizar V1 y una V2 acotada antes de expandir regiones. |
 
-**Siguiente paso de ejecución:** completar V0 y aprobar dos capturas objetivo —pradera de Brisalia y Cascada del Valle— antes de producir variantes adicionales.
+**Siguiente paso de ejecución:** completar V0 y la maqueta de relieve del piloto de Brisalia, verificar el recorrido y fijar dos capturas objetivo —valle inicial y Cascada del Valle— antes de producir variantes adicionales.
