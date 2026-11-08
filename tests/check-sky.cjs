@@ -34,6 +34,15 @@ const catalogs={painted:loadJson('painted/painted_segments.json'),
   modular:loadJson('modular/cloud_segments.json')};
 const pieceSource=fs.readFileSync(path.resolve(__dirname,
   '../src/world/climate/CloudPieces.ts'),'utf8');
+const pieceVertex=/const VERTEX_SHADER=`([\s\S]*?)`;/m.exec(pieceSource)?.[1];
+assert.ok(pieceVertex?.includes('vec3 center=cloudCenter*c+cross(axis,cloudCenter)*s'),
+  'wind rotates cloud centers');
+assert.ok(pieceVertex?.includes('vec3 p=normalize(center+(right*cloudOffset.x+up*cloudOffset.y)*scale)'),
+  'cloud vertices follow the sky sphere');
+assert.ok(!pieceVertex.includes('uCameraRight')&&!pieceVertex.includes('uCameraUp'),
+  'cloud orientation must not follow camera rotation');
+assert.ok(!pieceVertex.includes('cross(axis,p)*s'),
+  'wind must not rotate the painted quad itself');
 const pieceShader=/const FRAGMENT_SHADER=`([\s\S]*?)`;/m.exec(pieceSource)?.[1];
 for(const name of ['uColor0','uColor1','uColor2','uMask0','uMask1','uMask2'])
   assert.ok(pieceShader?.includes(name),`${name} participates in formation`);
@@ -79,8 +88,18 @@ for(const [quality,expected] of [['low',[12,8]],['standard',[20,12]],['high',[28
   for(const [index,family] of ['fair','storm'].entries()){
     const geometry=makeGeometry.call({quality},family);
     assert.equal(geometry.count,expected[index]);
-    assert.equal(geometry.indices.length,geometry.count*6);
-    assert.equal(geometry.positions.length/3,geometry.count*4);
+    const verticesPerCloud=7*5,indicesPerCloud=6*4*6;
+    assert.equal(geometry.indices.length,geometry.count*indicesPerCloud);
+    assert.equal(geometry.positions.length/3,geometry.count*verticesPerCloud);
+    assert.equal(geometry.offsets.length,geometry.count*verticesPerCloud*2);
+    for(let i=0;i<geometry.count;i++){
+      const offsets=geometry.offsets.slice(i*verticesPerCloud*2,
+        (i+1)*verticesPerCloud*2);
+      assert.ok(offsets[0]<0&&offsets[12]>0&&offsets[1]<0&&offsets.at(-1)>0,
+        'each formation spans both sky axes');
+      assert.equal(offsets[0],offsets[56]);
+      assert.equal(offsets[1],offsets[13]);
+    }
     assert.ok(geometry.indices.every(i=>i<geometry.positions.length/3));
     assert.ok(geometry.uvs.every(v=>v>=0&&v<=1),'composed atlas UVs stay inside');
     assert.ok(geometry.positions.every(Number.isFinite),'formation vertices are finite');
@@ -88,7 +107,7 @@ for(const [quality,expected] of [['low',[12,8]],['standard',[20,12]],['high',[28
   }
   assert.ok(total<=44,'quality budget stays bounded');
 }
-console.log('Curated source parts, composed cells and 20/32/44 quad budgets:', 'OK');
+console.log('Curated source parts, curved sky patches and 20/32/44 cloud budgets:', 'OK');
 
 // Compile the new GLSL with Babylon's bundled validator. Adapt ES 1 syntax to
 // ES 3 only for SPIR-V validation; the game's shader strings stay unchanged.

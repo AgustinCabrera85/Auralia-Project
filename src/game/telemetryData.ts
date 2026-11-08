@@ -1,13 +1,44 @@
-export const TELEMETRY_PHASES=['clima','movimiento','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
+export const TELEMETRY_PHASES=['clima','movimiento','oceano','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
 export type TelemetryPhase=typeof TELEMETRY_PHASES[number];
 export const PHASE_LABELS:Record<TelemetryPhase,string>={clima:'Clima',movimiento:'Movimiento/colisiones',
   terreno:'Terreno/streaming',vegetacion:'Vegetación',pasto:'Pasto',props:'Rocas/recursos',
-  assets:'Assets GLB/LOD',agua:'Agua',ui:'UI/guardado'};
+  assets:'Assets GLB/LOD',agua:'Agua',oceano:'Océano',ui:'UI/guardado'};
 export const TELEMETRY_COLUMNS=['timeMs','frameMs','updateMs','renderMs','cameraMs','activeMeshesMs','gpuMs',
   'shaderMs','drawCalls','triangles','pendingTerrain','pendingLoads','x','z',...TELEMETRY_PHASES] as const;
 export const T=Object.fromEntries(TELEMETRY_COLUMNS.map((name,i)=>[name,i])) as
   Record<typeof TELEMETRY_COLUMNS[number],number>;
 const STRIDE=TELEMETRY_COLUMNS.length;
+
+export type TelemetryMemorySample={
+  timeMs:number;jsUsedBytes:number|null;jsAllocatedBytes:number|null;jsLimitBytes:number|null;
+  meshes:number;geometries:number;textures:number;materials:number;skeletons:number;
+  morphManagers:number;animationGroups:number;animatables:number;x:number;z:number;
+};
+
+/** One sample per second, independent of FPS; at most ten minutes of storage. */
+export class TelemetryMemoryHistory {
+  private readonly samples:TelemetryMemorySample[]=[];
+  private cursor=0;
+  private lastTime=-Infinity;
+  constructor(readonly capacity=600,readonly intervalMs=1000){}
+  get count():number{return this.samples.length;}
+  due(timeMs:number):boolean{
+    return Number.isFinite(timeMs)&&timeMs>=0&&timeMs-this.lastTime>=this.intervalMs;
+  }
+  push(sample:TelemetryMemorySample):boolean{
+    if(!this.due(sample.timeMs))return false;
+    this.samples[this.cursor]={...sample};
+    this.cursor=(this.cursor+1)%this.capacity;
+    this.lastTime=sample.timeMs;
+    return true;
+  }
+  clear():void{this.samples.length=0;this.cursor=0;this.lastTime=-Infinity;}
+  exportRows():TelemetryMemorySample[]{
+    const start=this.samples.length===this.capacity?this.cursor:0;
+    return Array.from({length:this.samples.length},(_,i)=>
+      ({...this.samples[(start+i)%this.samples.length]}));
+  }
+}
 
 /** Fixed storage: recording never allocates a new frame object or grows indefinitely. */
 export class TelemetryHistory {

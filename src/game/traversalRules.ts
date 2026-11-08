@@ -4,6 +4,12 @@
 export const TRAVERSAL = {
   gravity: 24,                 // m/s², downward
   initialJumpSpeed: 10.5,     // m/s, about 2.3 m max rise
+  runningJumpSpeed: 12.5,     // longer, higher leap when Shift is held
+  sprintJumpSpeed: 13.2,
+  doubleJumpSpeed: 9.2,       // second impulse while still airborne
+  doubleJumpDashSpeed: 31,
+  doubleJumpDashSeconds: 0.27,
+  airKickSeconds: 0.56,        // Q's airborne kick holds horizontal position
   playerRadius: 0.6,          // meters
   playerHeight: 3.8,         // match the visual character
   stepHeight: 0.4,

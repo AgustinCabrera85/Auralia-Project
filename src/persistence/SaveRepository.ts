@@ -1,5 +1,5 @@
 import { newGame, type SaveGameV1 } from '../domain/types';
-import { type ItemId, emptyInventory } from '../domain/types';
+import { EQUIPMENT_IDS, type ItemId, emptyInventory } from '../domain/types';
 import { START_HOUR } from '../world/climate/ClimateModel';
 
 /** Se puede reemplazar por IndexedDB o una API remota sin cambiar la lógica del juego. */
@@ -18,9 +18,13 @@ export class LocalStorageSaveRepository implements SaveRepository {
       if (!raw) return newGame();
       const parsed: unknown = JSON.parse(raw);
       if (!this.isValidSave(parsed)) return newGame();
+      const inventory={...emptyInventory(),...parsed.inventory};
+      const selected=parsed.equippedItem;
+      const equippedItem=selected&&EQUIPMENT_IDS.some(item=>item===selected)&&
+        (selected==='unarmed'||inventory[selected]>0)?selected:'unarmed';
       return {
         ...parsed,
-        inventory: { ...emptyInventory(), ...parsed.inventory },
+        inventory,equippedItem,
         environment: parsed.environment && Number.isFinite(parsed.environment.elapsedHours) &&
           parsed.environment.elapsedHours>=0 && parsed.environment.elapsedHours<=24*365*100
           ?{elapsedHours:parsed.environment.elapsedHours}:{elapsedHours:START_HOUR},

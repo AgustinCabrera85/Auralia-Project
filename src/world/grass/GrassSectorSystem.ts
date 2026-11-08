@@ -175,20 +175,38 @@ export class GrassSectorSystem {
   private refreshBuffers():void{
     this.dirty=false;this.drawn=0;this.triangles=0;this.draws=0;
     const exclusions=this.exclusions();
+    // Test each obstacle against a sector once, rather than testing every
+    // blade against all obstacles across the entire mainland.
+    const localExclusions=new Map<string,readonly VegetationExclusion[]>();
+    if(this.enabled)for(const key of this.activeKeys){
+      const [cx,cz]=key.split(':').map(Number);
+      const minX=cx*SECTOR_SIZE,minZ=cz*SECTOR_SIZE;
+      localExclusions.set(key,exclusions.filter(area=>{
+        const dx=Math.max(minX-area.x,0,area.x-minX-SECTOR_SIZE);
+        const dz=Math.max(minZ-area.z,0,area.z-minZ-SECTOR_SIZE);
+        return dx*dx+dz*dz<(area.radius+.25)**2;
+      }));
+    }
     for(const variant of VARIANTS){
       const source=this.sources.get(variant);
       if(!source)continue;
-      const matrices:number[]=[];
+      let capacity=0;
       if(this.enabled)for(const key of this.activeKeys)
+        capacity+=this.sectors.get(key)?.get(variant)?.length??0;
+      const matrices=new Float32Array(capacity*16);
+      let count=0;
+      if(this.enabled)for(const key of this.activeKeys){
+        const nearby=localExclusions.get(key)!;
         for(const instance of this.sectors.get(key)?.get(variant)??[]){
-          if(exclusions.some(area=>Math.hypot(instance.x-area.x,instance.z-area.z)<
-            area.radius+.25))continue;
-          matrices.push(...instance.matrix);
+          if(nearby.some(area=>(instance.x-area.x)**2+(instance.z-area.z)**2<
+            (area.radius+.25)**2))continue;
+          matrices.set(instance.matrix,count++*16);
         }
-      const count=matrices.length/16;
-      source.thinInstanceSetBuffer('matrix',count?new Float32Array(matrices):null,16,true);
+      }
+      source.thinInstanceSetBuffer('matrix',count?matrices.subarray(0,count*16):null,16,true);
       source.isVisible=count>0;
-      if(count){source.thinInstanceRefreshBoundingInfo();this.draws++;}
+      // thinInstanceSetBuffer already refreshes the instance bounds.
+      if(count)this.draws++;
       this.drawn+=count;
       this.triangles+=count*source.getTotalIndices()/3;
     }

@@ -84,6 +84,18 @@ async function main(){
   exclusions=[];
   system.refreshExclusions();system.update();
   assert.deepEqual(positions(scene),initial);
+  exclusions=Array.from({length:2000},(_,i)=>({x:10000+i,z:10000,radius:3}));
+  exclusions.push({x:71,z:-18,radius:7});
+  system.refreshExclusions();system.update();
+  assert.deepEqual(positions(scene).map(p=>p[0]),[-66],
+    'an obstacle across the sector boundary still excludes grass within its radius');
+  exclusions=[{x:250,z:-18,radius:174}];
+  system.refreshExclusions();system.update();
+  assert.deepEqual(positions(scene).map(p=>p[0]),[-66],
+    'large exclusions reach sectors beyond the obstacle center');
+  exclusions=[];
+  system.refreshExclusions();system.update();
+  assert.deepEqual(positions(scene),initial);
   system.setFocus(-730,-420);system.update();
   assert.equal(system.instanceCount,0,'legacy baked grass is hidden inside the V4 forest');
   system.deactivate();

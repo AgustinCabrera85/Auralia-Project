@@ -1,12 +1,14 @@
 import { MAP_LOCATIONS, ZONES, type ZoneId } from '../data/world';
 import { GameStore, type Milestone } from '../domain/GameStore';
 import { BUILD_CATALOG, RECIPES, costAsText, hasCost } from '../domain/recipes';
-import { ITEM_ICON, ITEM_LABEL, MATERIALS, type BuildType, type Structure } from '../domain/types';
+import { EQUIPMENT_IDS, ITEM_ICON, ITEM_LABEL, MATERIALS,
+  type BuildType, type EquipmentId, type Structure } from '../domain/types';
 import { LANDMARKS } from '../world/terrainData';
 import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
 import { mapPercent } from '../world/mapProjection';
 import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
 import { SEASON_LABELS, WEATHER_ICONS, WEATHER_LABELS, type ClimateFrame } from '../world/climate/ClimateModel';
+import { readRenderQuality, RENDER_QUALITIES, type RenderQuality } from '../game/renderResolution';
 
 type HudActions = {
   interact: () => void;
@@ -19,9 +21,10 @@ type HudActions = {
   virtualKey: (key: string, active: boolean) => void;
   gotoLandmark: (id: string) => void;
   canOpenPanel: () => boolean;
+  setRenderQuality: (quality:RenderQuality) => void;
 };
 
-type Panel = 'map' | 'craft' | 'build' | 'help' | null;
+type Panel = 'map' | 'craft' | 'build' | 'equip' | 'graphics' | 'help' | null;
 
 const QUEST: Record<Milestone, { number: string; title: string; detail: string; emoji: string }> = {
   collect: { number: '01', title: 'Primeros materiales', detail: 'Buscá madera en el bosque y piedra en la cantera.', emoji: '🪵' },
@@ -40,6 +43,7 @@ export class Hud {
   private local={x:1,z:10,region:'Valle de los Faroles',chunks:0};
   private toastTimeout = 0;
   private dialogueVisible = false;
+  private renderQuality=readRenderQuality();
 
   constructor(private readonly store: GameStore, private readonly actions: HudActions) {
     document.getElementById('app')!.innerHTML = `
@@ -49,9 +53,11 @@ export class Hud {
           <div class="brand"><div class="brand-icon">✦</div><div><strong>AURALIA</strong><small>EL VALLE DE LOS FAROLES</small></div></div>
             <div class="region-label"><span class="status-dot"></span><span id="zone-name">Brisalia</span><span class="prototype-pill">POC · Update 4</span></div>
           <nav class="main-actions" aria-label="Menú de juego">
+            <button data-panel="equip" aria-label="Equipo (V)" title="Equipo (V)">🗡️ <span>Equipo</span></button>
             <button data-panel="map" aria-label="Mapa (M)" title="Mapa (M)">🗺️ <span>Mapa</span></button>
             <button data-panel="craft" aria-label="Fabricación (C)" title="Fabricación (C)">⚒️ <span>Crafting</span></button>
             <button data-panel="build" aria-label="Construcción (B)" title="Construcción (B)">🏠 <span>Construir</span></button>
+            <button data-panel="graphics" aria-label="Gráficos" title="Gráficos">⚙ <span>Gráficos</span></button>
             <button data-panel="help" aria-label="Ayuda">❔</button>
           </nav>
         </header>
@@ -65,7 +71,7 @@ export class Hud {
         <div class="terrain-status"><strong id="region-explore">Valle de los Faroles</strong><small><span id="position-explore">X 1 · Z 10</span><span> · </span><span id="chunks-explore">sectores…</span></small></div>
         <div class="interaction-pill" id="interaction-hint">WASD para caminar · E para interactuar · M para el mapa</div>
         <aside id="build-selection" class="build-selection" hidden></aside>
-        <div class="footer-hud"><div class="inventory-label">MOCHILA <span>recursos</span></div><div id="inventory" class="inventory-items"></div><div class="key-help">W A S D <span>mover</span> · RATÓN <span>cámara</span> · SHIFT <span>correr</span></div></div>
+        <div class="footer-hud"><div class="inventory-label">MOCHILA <span>recursos</span></div><div id="inventory" class="inventory-items"></div><button data-panel="equip" id="equipment-status" class="equipment-status" title="Cambiar equipo (V)">✊ Mano limpia</button><div class="key-help">W A S D <span>mover</span> · RATÓN <span>cámara</span> · SHIFT <span>correr</span> · DOBLE SHIFT <span>sprint</span></div></div>
         <div id="toast" class="toast" role="status"></div>
         <div id="dialogue" class="dialogue" hidden>
           <div class="dialogue-icon">✦</div><div><strong id="dialogue-name"></strong><p id="dialogue-text"></p></div>
@@ -110,18 +116,30 @@ export class Hud {
   }
 
   private readonly onClick = (event: MouseEvent) => {
-    const element = (event.target as HTMLElement).closest<HTMLElement>('[data-panel], [data-action], [data-recipe], [data-build], [data-replace], [data-marker], [data-map-view], [data-landmark]');
+    const element = (event.target as HTMLElement).closest<HTMLElement>('[data-panel], [data-action], [data-recipe], [data-equip], [data-build], [data-replace], [data-marker], [data-map-view], [data-landmark], [data-render-quality]');
     if (!element) {
       if (event.target === document.getElementById('panel-backdrop')) this.close();
       return;
     }
     if (element.dataset.panel) { this.open(element.dataset.panel as Exclude<Panel, null>); return; }
+    if(element.dataset.renderQuality){
+      const profile=RENDER_QUALITIES.find(p=>p.id===element.dataset.renderQuality);
+      if(profile){
+        this.actions.setRenderQuality(profile.id);this.renderQuality=profile.id;this.renderPanel();
+      }
+      return;
+    }
     if (element.dataset.marker) { this.mapSelection = element.dataset.marker; this.renderPanel(); return; }
     if (element.dataset.mapView) {this.mapView=element.dataset.mapView as 'regional' | 'illustrated';this.renderPanel();return;}
     if (element.dataset.landmark) {this.close();this.actions.gotoLandmark(element.dataset.landmark);return;}
     if (element.dataset.recipe) {
       const result = this.store.craft(element.dataset.recipe);
       this.notify(result.message);
+      return;
+    }
+    if(element.dataset.equip){
+      const item=EQUIPMENT_IDS.find(id=>id===element.dataset.equip);
+      if(item)this.notify(this.store.equip(item).message);
       return;
     }
     if (element.dataset.build) {
@@ -145,7 +163,8 @@ export class Hud {
   };
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
+      e.target instanceof HTMLSelectElement) return;
     const key = e.key.toLowerCase();
     if (key === 'escape') {
       if (this.dialogueVisible) this.closeDialogue();
@@ -156,6 +175,10 @@ export class Hud {
     if (key === 'm') this.toggle('map');
     if (key === 'c') this.toggle('craft');
     if (key === 'b') this.toggle('build');
+    if (key === 'v') this.toggle('equip');
+    const quick=({'1':'unarmed','2':'sword','3':'pickaxe',
+      '4':'hammer','5':'lantern'} as const)[key as '1'|'2'|'3'|'4'|'5'];
+    if(quick)this.notify(this.store.equip(quick).message);
   };
 
   private toggle(panel: Exclude<Panel, null>): void { this.panel === panel ? this.close() : this.open(panel); }
@@ -172,8 +195,12 @@ export class Hud {
     document.getElementById('quest-progress')!.innerHTML = this.getProgress(stage);
     document.getElementById('inventory')!.innerHTML = MATERIALS.map(item => `
       <div class="inventory-item" title="${ITEM_LABEL[item]}"><div class="inventory-icon">${ITEM_ICON[item]}</div><div><small>${ITEM_LABEL[item]}</small><strong>${state.inventory[item]}</strong></div></div>
-    `).join('') + `${state.inventory.hammer > 0 ? `<div class="inventory-item special" title="Martillo">🔨 <strong>✓</strong></div>` : ''}` + `${state.inventory.lantern > 0 ? `<div class="inventory-item special" title="Linterna mágica">🏮 <strong>✓</strong></div>` : ''}`;
-    if (this.panel === 'craft' || this.panel === 'build' || this.panel === 'map') this.renderPanel();
+    `).join('') + `${state.inventory.hammer > 0 ? `<div class="inventory-item special" title="Martillo">🔨 <strong>✓</strong></div>` : ''}` + `${state.inventory.lantern > 0 ? `<div class="inventory-item special" title="Linterna mágica">🏮 <strong>✓</strong></div>` : ''}` + `${state.inventory.sword > 0 ? `<div class="inventory-item special" title="Espada de cobre">🗡️ <strong>✓</strong></div>` : ''}`;
+    const equipped=state.equippedItem??'unarmed';
+    document.getElementById('equipment-status')!.textContent=equipped==='unarmed'
+      ?'✊ Mano limpia':`${ITEM_ICON[equipped]} ${ITEM_LABEL[equipped]}`;
+    if (this.panel === 'craft' || this.panel === 'build' ||
+      this.panel === 'map' || this.panel === 'equip') this.renderPanel();
   }
 
   private getProgress(stage: Milestone): string {
@@ -203,12 +230,23 @@ export class Hud {
   private renderPanel(): void {
     if (!this.panel) return;
     const panel = this.panel;
-    this.text('panel-title', ({ map: 'Mapa de Auralia', craft: 'Taller de fabricación', build: 'Construí tu hogar', help: 'Guía del aventurero' } as const)[panel]);
+    this.text('panel-title', ({ map: 'Mapa de Auralia', craft: 'Taller de fabricación', build: 'Construí tu hogar', equip:'Equipo de Santi', graphics:'Gráficos', help: 'Guía del aventurero' } as const)[panel]);
     const target = document.getElementById('panel-content')!;
     if (panel === 'map') target.innerHTML = this.mapMarkup();
     else if (panel === 'craft') target.innerHTML = this.craftMarkup();
     else if (panel === 'build') target.innerHTML = this.buildMarkup();
+    else if (panel === 'equip') target.innerHTML = this.equipmentMarkup();
+    else if (panel === 'graphics') target.innerHTML = this.graphicsMarkup();
     else target.innerHTML = this.helpMarkup();
+  }
+
+  private graphicsMarkup():string{
+    return `<p class="panel-lead">Elegí la resolución del mundo 3D. Equilibrada es la opción recomendada para jugar con buen detalle y menor consumo. Los textos y menús conservan su nitidez.</p>
+      <div class="catalog-grid">${RENDER_QUALITIES.map(profile=>`<article class="catalog-card">
+        <h3>${profile.label}</h3><p>${profile.detail}</p>
+        <button data-render-quality="${profile.id}" ${this.renderQuality===profile.id?'disabled':''}>${this.renderQuality===profile.id?'En uso':'Elegir'}</button>
+      </article>`).join('')}</div>
+      <p class="map-hint">Se aplica al instante y se guarda en este navegador. La imagen se ajusta a la proporción de tu ventana.</p>`;
   }
 
   private mapMarkup(): string {
@@ -280,6 +318,34 @@ export class Hud {
     if(marker){marker.style.left=`${p.left}%`;marker.style.top=`${p.top}%`;}
   }
 
+  private equipmentMarkup():string{
+    const inventory=this.store.state.inventory;
+    const equipped=this.store.state.equippedItem??'unarmed';
+    const groups:{title:string;items:{id:EquipmentId;description:string;key:string}[]}[]=[
+      {title:'A mano limpia',items:[
+        {id:'unarmed',description:'Q alterna patadas. F ejecuta la barrida.',key:'1'}]},
+      {title:'Armas',items:[
+        {id:'sword',description:'Q alterna los ataques de espada.',key:'2'}]},
+      {title:'Herramientas',items:[
+        {id:'pickaxe',description:'Pico de explorador. Sin ataque de Q asignado.',key:'3'},
+        {id:'hammer',description:'Martillo de construcción. Sin ataque de Q asignado.',key:'4'},
+        {id:'lantern',description:'Linterna mágica. Sin ataque de Q asignado.',key:'5'}]}
+    ];
+    return `<p class="panel-lead">Elegí qué lleva Santi. Fabricar una espada la agrega a la mochila; seleccionarla aquí habilita sus ataques. También podés cambiar con las teclas 1–5. La barrida permanece en F.</p>
+      ${groups.map(group=>`<h3 class="equipment-group-title">${group.title}</h3>
+        <div class="equipment-grid">${group.items.map(item=>{
+          const owned=item.id==='unarmed'||inventory[item.id]>0;
+          const selected=equipped===item.id;
+          const icon=item.id==='unarmed'?'✊':ITEM_ICON[item.id];
+          const label=item.id==='unarmed'?'Mano limpia':ITEM_LABEL[item.id];
+          return `<article class="equipment-card${selected?' selected':''}">
+            <div class="equipment-icon">${icon}</div><div><h4>${label} <small>${item.key}</small></h4>
+            <p>${item.description}</p></div>
+            <button data-equip="${item.id}" aria-pressed="${selected}" ${!owned||selected?'disabled':''}>
+              ${selected?'Seleccionado':owned?'Elegir':'No disponible'}</button></article>`;
+        }).join('')}</div>`).join('')}`;
+  }
+
   private craftMarkup(): string {
     const inv = this.store.state.inventory;
     return `<p class="panel-lead">Recogé materiales en el mundo y transformalos en herramientas y objetos mágicos. Las recetas viven como datos, para agregar cientos sin tocar el render.</p>
@@ -320,7 +386,8 @@ export class Hud {
 
   private helpMarkup(): string {
     return `<p class="panel-lead">Auralia: isla principal de aproximadamente 4 × 3 km, terreno generado por sectores, seis biomas explorables y posiciones persistentes. El mapa (M) permite teletransportarse a los miradores solamente para probar el desarrollo.</p><div class="help-grid">
-      <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr y <strong>Espacio</strong> para saltar. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
+      <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr, dos pulsaciones rápidas de <strong>Shift</strong> y mantener la segunda para sprint, y <strong>Espacio</strong> para saltar o volver a saltar en el aire. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
+      <article><h3>⚔️ Acciones de Santi</h3><p>Abrí <strong>Equipo (V)</strong> o usá <strong>1–5</strong> para elegir mano limpia, espada o herramienta. <strong>Q</strong> alterna las patadas a mano limpia o los ataques de espada si está seleccionada. <strong>F</strong> ejecuta la barrida y <strong>R</strong> el roll. Las patadas no trasladan al personaje; el roll conserva la dirección con la que empezó. Patadas, barrida y rolls deben terminar antes de repetirse. Tras una caída muy alta, Santi hace automáticamente el roll de aterrizaje.</p></article>
       <article><h3>🪵 Recolección</h3><p>Acercate a árboles con marcador, rocas y cristales, y presioná <strong>E</strong>. Los recursos reaparecen después de unos segundos.</p></article>
       <article><h3>⚒️ Fabricación</h3><p>Presioná <strong>C</strong>, elegí una receta y usá los materiales que reuniste. Fabricá primero el martillo.</p></article>
       <article><h3>🏡 Construcción</h3><p>Presioná <strong>B</strong>, elegí una pieza y caminá al Claro del Hogar. Click para colocar; R para girar y Esc para cancelar.</p></article>

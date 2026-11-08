@@ -20,8 +20,10 @@ export type TraversalWorld={
 };
 export type TraversalInput={
   moveX:number;moveZ:number;forwardX:number;forwardZ:number;
-  horizontal:number;vertical:number;run:boolean;jumpPressed:boolean;
+  horizontal:number;vertical:number;run:boolean;sprint:boolean;jumpPressed:boolean;
+  airKickPressed?:boolean;
 };
+export type ActionMotionKind='sweep'|'roll'|'landingRoll'|'landingHold'|'attackHold';
 
 /** A small kinematic capsule controller. All positions are feet in local-zone meters. */
 export class CharacterTraversalController {
@@ -29,6 +31,21 @@ export class CharacterTraversalController {
   mode:LocomotionMode='grounded';
   supportRockId:string|null=null;
   private velocityY=0;
+  private jumpsUsed=0;
+  private airVelocityX=0;
+  private airVelocityZ=0;
+  private airTargetSpeed=11;
+  private airDashRemaining=0;
+  private verticalAirKick=false;
+  private groundVelocityX=0;
+  private groundVelocityZ=0;
+  private rollCarryX=0;
+  private rollCarryZ=0;
+  private actionMotion:{
+    kind:ActionMotionKind;
+    directionX:number;directionZ:number;initialSpeed:number;
+    duration:number;elapsed:number;movementFraction:number
+  }|null=null;
   private climbRockId:string|null=null;
   private climbNormal={x:0,z:0};
   private climbProbeHeight=1.15;
@@ -43,18 +60,77 @@ export class CharacterTraversalController {
   teleport(x:number,y:number,z:number):void{
     Object.assign(this.position,{x,y,z});
     this.mode='grounded';this.velocityY=0;this.supportRockId=null;
+    this.jumpsUsed=0;
+    this.airVelocityX=0;this.airVelocityZ=0;this.airDashRemaining=0;
+    this.verticalAirKick=false;
+    this.groundVelocityX=0;this.groundVelocityZ=0;
+    this.rollCarryX=0;this.rollCarryZ=0;
+    this.actionMotion=null;
     this.climbRockId=null;this.lastClimbWall=null;this.mantle=null;
     this.mantleProbeCooldown=0;
   }
 
   get canInteract():boolean{return this.mode!=='climbing'&&this.mode!=='mantling';}
   get canBuild():boolean{return this.mode==='grounded';}
+  get jumpCount():number{return this.jumpsUsed;}
+  get airKickActive():boolean{return this.verticalAirKick&&this.airDashRemaining>0;}
+  get actionMotionActive():boolean{return this.actionMotion!==null;}
+  get rollCarryActive():boolean{return Math.hypot(this.rollCarryX,this.rollCarryZ)>.05;}
+  get groundTravelVelocity():{x:number;z:number;speed:number}{
+    return {x:this.groundVelocityX,z:this.groundVelocityZ,
+      speed:Math.hypot(this.groundVelocityX,this.groundVelocityZ)};
+  }
+  get airTravelDirection():{x:number;z:number}|null{
+    if(this.mode!=='airborne')return null;
+    const speed=Math.hypot(this.airVelocityX,this.airVelocityZ);
+    return speed>1e-5?{x:this.airVelocityX/speed,z:this.airVelocityZ/speed}:null;
+  }
+
+  /** Match the attack's actual playback clock, including shortened combo recovery. */
+  setAttackHold(remainingSeconds:number):void{
+    if(remainingSeconds>0){
+      if(!this.actionMotion||this.actionMotion.kind==='attackHold')
+        this.beginActionMotion('attackHold',1,0,0,remainingSeconds);
+    }else if(this.actionMotion?.kind==='attackHold')this.actionMotion=null;
+  }
+
+  beginActionMotion(kind:ActionMotionKind,directionX:number,directionZ:number,
+    initialSpeed:number,duration:number):boolean{
+    if(this.mode!=='grounded'||duration<=0)return false;
+    const length=Math.hypot(directionX,directionZ);
+    if(length<1e-5)return false;
+    this.rollCarryX=0;this.rollCarryZ=0;
+    this.actionMotion={kind,directionX:directionX/length,directionZ:directionZ/length,
+      initialSpeed:Math.max(0,initialSpeed),duration,elapsed:0,
+      movementFraction:kind==='landingRoll'?.7:1};
+    return true;
+  }
 
   step(dt:number,input:TraversalInput,world:TraversalWorld):boolean{
+    const startX=this.position.x,startZ=this.position.z;
     const count=Math.max(1,Math.ceil(Math.min(dt,.1)/.025));
     const subDt=Math.min(dt,.1)/count;
     let moved=false;
-    for(let i=0;i<count;i++)moved=this.substep(subDt,{...input,jumpPressed:i===0&&input.jumpPressed},world)||moved;
+    for(let i=0;i<count;i++)moved=this.substep(subDt,{...input,
+      jumpPressed:i===0&&input.jumpPressed,airKickPressed:i===0&&input.airKickPressed},world)||moved;
+    if(this.mode==='grounded'&&!this.actionMotion&&dt>0){
+      const elapsed=Math.min(dt,.1);
+      this.groundVelocityX=(this.position.x-startX)/elapsed;
+      this.groundVelocityZ=(this.position.z-startZ)/elapsed;
+    }else{this.groundVelocityX=0;this.groundVelocityZ=0;}
+    if(this.mode==='grounded'){
+      this.jumpsUsed=0;
+      this.airVelocityX=0;this.airVelocityZ=0;this.airDashRemaining=0;
+      this.verticalAirKick=false;
+    }else{this.actionMotion=null;this.rollCarryX=0;this.rollCarryZ=0;}
+    if(this.actionMotion&&this.actionMotion.elapsed>=this.actionMotion.duration){
+      if(this.actionMotion.kind==='roll'){
+        const exitSpeed=this.actionMotion.initialSpeed*.6;
+        this.rollCarryX=this.actionMotion.directionX*exitSpeed;
+        this.rollCarryZ=this.actionMotion.directionZ*exitSpeed;
+      }
+      this.actionMotion=null;
+    }
     return moved;
   }
 
@@ -74,6 +150,10 @@ export class CharacterTraversalController {
     if(this.mode==='climbing'){
       if(input.jumpPressed){
         this.mode='airborne';this.velocityY=TRAVERSAL.initialJumpSpeed*.48;
+        this.jumpsUsed=1;
+        this.airVelocityX=this.climbNormal.x*5;
+        this.airVelocityZ=this.climbNormal.z*5;
+        this.airTargetSpeed=11;
         p.x+=this.climbNormal.x*.18;p.z+=this.climbNormal.z*.18;
         this.climbRockId=null;this.lastClimbWall=null;this.supportRockId=null;
         return true;
@@ -130,11 +210,30 @@ export class CharacterTraversalController {
       return climbDelta!==0||side!==0;
     }
 
-    if(this.mode==='grounded'&&input.jumpPressed){
-      this.mode='airborne';this.velocityY=TRAVERSAL.initialJumpSpeed;
-      this.supportRockId=null;
+    if(this.mode==='grounded'&&input.jumpPressed&&!this.actionMotion){
+      this.mode='airborne';
+      this.velocityY=input.sprint?TRAVERSAL.sprintJumpSpeed:
+        input.run?TRAVERSAL.runningJumpSpeed:TRAVERSAL.initialJumpSpeed;
+      this.jumpsUsed=1;this.supportRockId=null;
+      this.airTargetSpeed=input.sprint?27:input.run?20:11;
+      this.airVelocityX=input.moveX*this.airTargetSpeed;
+      this.airVelocityZ=input.moveZ*this.airTargetSpeed;
+    }else if(this.mode==='airborne'&&(input.jumpPressed||input.airKickPressed)&&this.jumpsUsed===1){
+      this.velocityY=TRAVERSAL.doubleJumpSpeed;
+      this.jumpsUsed=2;this.supportRockId=null;
+      this.verticalAirKick=input.airKickPressed===true;
+      const directionLength=this.verticalAirKick?0:Math.hypot(input.moveX,input.moveZ);
+      // A second jump without movement input rises in place. Directional input
+      // locks in the dash vector for its brief opening impulse.
+      this.airVelocityX=directionLength>1e-5
+        ?input.moveX/directionLength*TRAVERSAL.doubleJumpDashSpeed:0;
+      this.airVelocityZ=directionLength>1e-5
+        ?input.moveZ/directionLength*TRAVERSAL.doubleJumpDashSpeed:0;
+      // Q spends the same second jump, but holds the kick in place instead of dashing.
+      this.airDashRemaining=this.verticalAirKick?TRAVERSAL.airKickSeconds:
+        directionLength>1e-5?TRAVERSAL.doubleJumpDashSeconds:0;
     }
-    if(input.vertical>0&&this.mode!=='airborne'){
+    if(input.vertical>0&&this.mode!=='airborne'&&!this.actionMotion){
       const forwardLength=Math.hypot(input.forwardX,input.forwardZ);
       if(forwardLength>0){
         let wall:TraversalWall|null=null;
@@ -157,8 +256,44 @@ export class CharacterTraversalController {
       }
     }
 
-    const speed=this.mode==='grounded'&&input.run?19:11;
-    const dx=input.moveX*speed*dt,dz=input.moveZ*speed*dt;
+    let dx:number,dz:number;
+    if(this.mode==='grounded'&&this.actionMotion){
+      const action=this.actionMotion;
+      const progress=Math.min(1,(action.elapsed+dt*.5)/
+        (action.duration*action.movementFraction));
+      const speed=action.kind==='roll'
+        ?action.initialSpeed*(1-.4*progress)
+        :action.initialSpeed*(1-progress)**2;
+      dx=action.directionX*speed*dt;dz=action.directionZ*speed*dt;
+      action.elapsed=Math.min(action.duration,action.elapsed+dt);
+    }else if(this.mode==='airborne'){
+      if(this.airDashRemaining>0)this.airDashRemaining=Math.max(0,this.airDashRemaining-dt);
+      else if(Math.hypot(input.moveX,input.moveZ)>1e-5){
+        const blend=Math.min(1,dt*4);
+        this.airVelocityX+=(input.moveX*this.airTargetSpeed-this.airVelocityX)*blend;
+        this.airVelocityZ+=(input.moveZ*this.airTargetSpeed-this.airVelocityZ)*blend;
+      }else{
+        const drag=Math.max(0,1-dt*1.2);
+        this.airVelocityX*=drag;this.airVelocityZ*=drag;
+      }
+      dx=this.airVelocityX*dt;dz=this.airVelocityZ*dt;
+    }else{
+      const speed=input.sprint?27:input.run?19:11;
+      if(Math.hypot(this.rollCarryX,this.rollCarryZ)>.05){
+        if(Math.hypot(input.moveX,input.moveZ)>1e-5){
+          const blend=Math.min(1,dt*12);
+          this.rollCarryX+=(input.moveX*speed-this.rollCarryX)*blend;
+          this.rollCarryZ+=(input.moveZ*speed-this.rollCarryZ)*blend;
+        }else{
+          const drag=Math.max(0,1-dt*5);
+          this.rollCarryX*=drag;this.rollCarryZ*=drag;
+        }
+        dx=this.rollCarryX*dt;dz=this.rollCarryZ*dt;
+      }else{
+        this.rollCarryX=0;this.rollCarryZ=0;
+        dx=input.moveX*speed*dt;dz=input.moveZ*speed*dt;
+      }
+    }
     let moved=false;
     if(Math.hypot(dx,dz)>1e-7){
       const nextX=p.x+dx,nextZ=p.z+dz;
@@ -189,6 +324,8 @@ export class CharacterTraversalController {
               p.y+TRAVERSAL.playerHeight,TRAVERSAL.playerHeight+1,this.supportRockId):null;
             if(!shell||shell.height<=p.y+.05){
               p.x=nextX;p.z=nextZ;this.mode='airborne';this.velocityY=0;
+              this.airVelocityX=input.moveX*3.5;this.airVelocityZ=input.moveZ*3.5;
+              this.airTargetSpeed=11;
               moved=true;
             }
           }

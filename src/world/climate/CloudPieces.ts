@@ -22,6 +22,8 @@ const CELL=256;
 const VARIANTS=4;
 const ATLAS_WIDTH=CELL*VARIANTS;
 const RADIUS=1460;
+const CLOUD_COLUMNS=6;
+const CLOUD_ROWS=4;
 const QUALITY_SLOTS={low:{fair:12,storm:8},standard:{fair:20,storm:12},
   high:{fair:28,storm:16}} as const;
 
@@ -79,6 +81,7 @@ precision highp float;
 attribute vec3 position;
 attribute vec2 uv;
 attribute vec3 cloudCenter;
+attribute vec2 cloudOffset;
 attribute vec3 cloudMeta;
 uniform mat4 worldViewProjection;
 uniform float uTime;
@@ -95,13 +98,21 @@ void main(void){
   float breath=1.0+.018*sin(uTime*.018+cloudMeta.y);
   vLife=activation;
   vSeed=cloudMeta.y;
-  vec3 p=cloudCenter+(position-cloudCenter)*mix(.88,1.0,activation)*breath;
-  // Rotate around the horizontal wind axis. Both wind components move clouds
-  // across the dome, while depth creates a small parallax difference.
+  // Move the center with the wind, then map the painted formation onto the
+  // sky sphere. Its shape stays fixed in the sky when the camera turns.
   vec3 axis=normalize(vec3(uWindDirection.y,0.0,-uWindDirection.x));
   float angle=uTravel*.0011*cloudMeta.z;
   float c=cos(angle),s=sin(angle);
-  p=p*c+cross(axis,p)*s+axis*dot(axis,p)*(1.0-c);
+  vec3 center=cloudCenter*c+cross(axis,cloudCenter)*s+
+    axis*dot(axis,cloudCenter)*(1.0-c);
+  vec3 radial=normalize(center);
+  float horizontal=length(center.xz);
+  vec3 right=horizontal>.001
+    ?vec3(center.z,0.0,-center.x)/horizontal:vec3(1.0,0.0,0.0);
+  vec3 up=normalize(cross(radial,right));
+  float scale=mix(.88,1.0,activation)*breath;
+  vec3 p=normalize(center+(right*cloudOffset.x+up*cloudOffset.y)*scale)*
+    length(center);
   p.y+=sin(uTime*.010+cloudMeta.y)*3.0*cloudMeta.z*
     (.5+uWindStrength);
   vUV=uv;
@@ -422,7 +433,7 @@ export class CloudPieces {
   }
 
   private makeGeometry(family:Family){
-    const positions:number[]=[],uvs:number[]=[],centers:number[]=[],metas:number[]=[],indices:number[]=[];
+    const positions:number[]=[],uvs:number[]=[],centers:number[]=[],offsets:number[]=[],metas:number[]=[],indices:number[]=[];
     const count=QUALITY_SLOTS[this.quality??'standard'][family];
     for(let i=0;i<count;i++){
       const seed=(i*.61803398875)%1;
@@ -443,23 +454,30 @@ export class CloudPieces {
       const flip=i%3===1;
       const u0=(variant*CELL+4)/ATLAS_WIDTH,u1=((variant+1)*CELL-4)/ATLAS_WIDTH;
       const v0=4/CELL,v1=1-4/CELL;
-      const corners=[[-1,-1,flip?u1:u0,v0],[1,-1,flip?u0:u1,v0],
-        [1,1,flip?u0:u1,v1],[-1,1,flip?u1:u0,v1]];
       const start=positions.length/3;
-      for(const [horizontal,vertical,u,v] of corners){
-        const point=center.add(right.scale(horizontal*halfWidth))
-          .add(up.scale(vertical*halfHeight));
+      for(let row=0;row<=CLOUD_ROWS;row++)for(let column=0;column<=CLOUD_COLUMNS;column++){
+        const horizontal=column/CLOUD_COLUMNS*2-1;
+        const vertical=row/CLOUD_ROWS*2-1;
+        const offsetX=horizontal*halfWidth,offsetY=vertical*halfHeight;
+        const point=center.add(right.scale(offsetX)).add(up.scale(offsetY));
+        const u=flip?u1-(u1-u0)*column/CLOUD_COLUMNS:
+          u0+(u1-u0)*column/CLOUD_COLUMNS;
+        const v=v0+(v1-v0)*row/CLOUD_ROWS;
         positions.push(point.x,point.y,point.z);
         uvs.push(u,v);
         centers.push(center.x,center.y,center.z);
+        offsets.push(offsetX,offsetY);
         const threshold=family==='fair'
           ?i<2?.025:.16+(i-2)*.72/(count-2)
           :.57+i*.40/(count-1);
         metas.push(threshold,i*2.39,depth);
       }
-      indices.push(start,start+1,start+2,start,start+2,start+3);
+      for(let row=0;row<CLOUD_ROWS;row++)for(let column=0;column<CLOUD_COLUMNS;column++){
+        const a=start+row*(CLOUD_COLUMNS+1)+column;
+        indices.push(a,a+1,a+CLOUD_COLUMNS+2,a,a+CLOUD_COLUMNS+2,a+CLOUD_COLUMNS+1);
+      }
     }
-    return {positions,uvs,centers,metas,indices,count};
+    return {positions,uvs,centers,offsets,metas,indices,count};
   }
 
   private async load():Promise<void>{
@@ -489,11 +507,12 @@ export class CloudPieces {
       mesh.setVerticesData(VertexBuffer.PositionKind,geometry.positions,false,3);
       mesh.setVerticesData(VertexBuffer.UVKind,geometry.uvs,false,2);
       mesh.setVerticesData('cloudCenter',geometry.centers,false,3);
+      mesh.setVerticesData('cloudOffset',geometry.offsets,false,2);
       mesh.setVerticesData('cloudMeta',geometry.metas,false,3);
       mesh.setIndices(geometry.indices);
       const material=new ShaderMaterial('auralia-cloud-formation-mat-'+family,
         this.scene,{vertex:'auraliaCloudPieces',fragment:'auraliaCloudPieces'},
-        {attributes:['position','uv','cloudCenter','cloudMeta'],
+        {attributes:['position','uv','cloudCenter','cloudOffset','cloudMeta'],
           uniforms:['worldViewProjection','uTime','uTravel','uCoverage','uWindStrength',
             'uWindDirection','uTexel','uSunDir','uMoonDir','uSunColor',
             'uCloudColor','uDayLight','uNight','uFamilyWeight','uStorm','uStage'],

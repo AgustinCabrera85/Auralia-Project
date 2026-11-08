@@ -48,6 +48,7 @@ El terreno usa tres niveles de detalle y se carga alrededor del personaje. La ve
 - [Arquitectura](docs/ARQUITECTURA.md): sistemas y decisiones de persistencia.
 - [Geografía jugable](docs/GEOGRAFIA.md): fuentes de datos, mapa y descubrimientos.
 - [Assets del mundo](docs/ASSETS.md): catálogo, instanciación y recursos.
+- [Santi, personaje jugable](docs/SANTI_CHARACTER.md): modelo, acciones NLA y expresiones faciales.
 - [Follaje ilustrado V4](docs/FOLIAGE_V4.md): modelos, shader de viento y acceso al bosque de prueba.
 - [Terreno distante y atmósfera](docs/LANDSCAPE_LOD.md), [material del terreno](docs/TERRAIN_MATERIAL.md), [vegetación](docs/VEGETACION_PROCEDURAL.md) y [césped](docs/GRASS_FIELD.md): sistemas de render.
 - [Atlas conceptual](docs/ATLAS_AURALIA.md), [GDD preliminar](docs/GDD_v0.2_previo.md), [roadmap navideño](docs/ROADMAP_NAVIDAD.md) y [roadmap visual](docs/ROADMAP_VISUAL.md): visión y planificación. El GDD está marcado como propuesta, no como canon definitivo.

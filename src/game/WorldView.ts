@@ -34,11 +34,17 @@ import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
 import { createPointOfInterestView } from '../world/PointOfInterestView';
 import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, isLand, sampleMainlandHeight } from '../world/terrainData';
 import { cameraRelativeMovement } from './movement';
-import { CharacterTraversalController, type TraversalWorld } from './CharacterTraversalController';
+import { CharacterTraversalController, type ActionMotionKind,
+  type TraversalWorld } from './CharacterTraversalController';
 import { TRAVERSAL } from './traversalRules';
 import { CAMERA_TERRAIN, cameraTerrainView } from './cameraTerrain';
 import { nearTerrainHeightAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
+import { SantiCharacter } from './SantiCharacter';
+import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCatalog';
+import { DoubleTapSprint } from './DoubleTapSprint';
+import { SpeedMotionBlur } from './SpeedMotionBlur';
+import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQuality } from './renderResolution';
 
 export type Interactable = {
   id: string;
@@ -83,6 +89,8 @@ type WorldCallbacks = {
 
 const TOWN_OFFSET = { x: 0, z: 0 };
 const ISLAND_OFFSET = { x: -210, z: 420 };
+const THIRD_PERSON_CAMERA={distance:11.5,minDistance:5.5,maxDistance:28,
+  targetHeight:2.05,sprintDistance:2.5} as const;
 
 /** Vista del mundo con terreno por chunks y vegetación GLB compartida. */
 export class WorldView {
@@ -100,8 +108,12 @@ export class WorldView {
   private readonly buildObstacles:BuildObstacle[]=[];
   private selectedStructureId:string|null=null;
   private readonly pressed = new Set<string>();
+  private readonly sprintTap=new DoubleTapSprint();
+  private readonly speedMotionBlur:SpeedMotionBlur;
   private player!: TransformNode;
   private playerBody!: TransformNode;
+  private santi:SantiCharacter|null=null;
+  private attackSerial=0;
   private movementTime = 0;
   private interactTarget: Interactable | null = null;
   private previousHint = '';
@@ -117,6 +129,7 @@ export class WorldView {
   private readonly authoredAssets:AuthoredAssets;
   private readonly traversal=new CharacterTraversalController();
   private jumpRequested=false;
+  private airKickRequested=false;
   private lastSafePosition={x:1,z:10};
   private readonly vegetationExclusions: VegetationExclusion[] = [];
   private readonly rockVisualRequests:{root:TransformNode;partIndex:number;diameter:number;copper:boolean}[]=[];
@@ -130,11 +143,13 @@ export class WorldView {
   private landscapeDebug:LandscapeDebug|null=null;
   private telemetry:GameTelemetry|null=null;
   private grassStatsTimer=0;
-  private cameraPreferredRadius=29;
-  private cameraAppliedRadius=29;
+  private cameraPreferredRadius:number=THIRD_PERSON_CAMERA.distance;
+  private cameraAppliedRadius:number=THIRD_PERSON_CAMERA.distance;
+  private sprintCameraOffset=0;
   private cameraOcclusionTimer=0;
   private cameraOcclusionDistance=Infinity;
   private cameraFrameDt=0;
+  private renderQuality=readRenderQuality();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -143,8 +158,10 @@ export class WorldView {
     private readonly blocked: () => boolean
   ) {
     installExpansionBiomeAssets();
-    this.engine = new Engine(canvas, true, { antialias: true, adaptToDeviceRatio: true });
-    this.engine.setHardwareScalingLevel(Math.min(1.35, Math.max(1, window.devicePixelRatio / 1.7)));
+    // Resolution is managed explicitly, including browser zoom / monitor DPR
+    // changes, so Babylon must not apply a second device-ratio adjustment.
+    this.engine = new Engine(canvas, true, { antialias: true, adaptToDeviceRatio: false });
+    this.resize();
     this.scene = new Scene(this.engine);
     applyLandscapeAtmosphere(this.scene);
 
@@ -155,16 +172,18 @@ export class WorldView {
     sun.intensity = 1.35;
     sun.diffuse = new Color3(1, 0.91, 0.76);
 
-    this.camera = new ArcRotateCamera('camara-aventura', -Math.PI / 2.3, 1.05, 29, new Vector3(0, 3, 0), this.scene);
+    this.camera = new ArcRotateCamera('camara-aventura', -Math.PI / 2, 1.22,
+      THIRD_PERSON_CAMERA.distance, new Vector3(0, 3, 0), this.scene);
+    // Occlusion may need to pull the camera closer than the player's zoom limit.
     this.camera.lowerRadiusLimit = CAMERA_TERRAIN.minRadius;
-    this.camera.upperRadiusLimit = 46;
+    this.camera.upperRadiusLimit = THIRD_PERSON_CAMERA.maxDistance;
     this.camera.lowerBetaLimit = 0.4;
     this.camera.upperBetaLimit = 1.95;
     this.camera.wheelPrecision = 32;
     this.camera.minZ = .15;
     this.camera.maxZ = LANDSCAPE_ATMOSPHERE_CONFIG.cameraFar;
     this.camera.panningSensibility = 0;
-    this.camera.inertia = 0.55;
+    this.camera.inertia = 0.42;
     this.camera.attachControl(canvas, true);
     const pointerInput=this.camera.inputs.attached.pointers as ArcRotateCameraPointersInput;
     pointerInput.angularSensibilityY=650;
@@ -172,6 +191,7 @@ export class WorldView {
       store.state.environment?.elapsedHours);
     // Las flechas se reservan para el personaje, no para orbitar la cámara.
     this.camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
+    this.speedMotionBlur=new SpeedMotionBlur(this.camera,this.engine);
 
     this.createSea();
     const continentRoot=new TransformNode('zona-brisalia',this.scene);
@@ -261,23 +281,83 @@ export class WorldView {
     });
   }
 
-  private readonly resize = () => this.engine.resize();
-  private readonly onBlur = () => this.pressed.clear();
+  setRenderQuality(quality:RenderQuality):void{
+    this.renderQuality=quality;
+    saveRenderQuality(quality);
+    this.resize();
+  }
+
+  private readonly resize = ():void => {
+    const {hardwareScalingLevel}=renderResolution(this.canvas.clientWidth||window.innerWidth,
+      this.canvas.clientHeight||window.innerHeight,window.devicePixelRatio,this.renderQuality);
+    if(Math.abs(this.engine.getHardwareScalingLevel()-hardwareScalingLevel)>1e-6)
+      this.engine.setHardwareScalingLevel(hardwareScalingLevel);
+    else this.engine.resize();
+  };
+  private readonly onBlur = () => {
+    this.pressed.clear();this.sprintTap.reset();
+    this.jumpRequested=false;this.airKickRequested=false;
+    this.santi?.prepareCombat(this.store.state.equippedItem??'unarmed',false);
+  };
   private readonly onKeyDown = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     if(key==='f8'){e.preventDefault();if(!e.repeat)this.toggleTelemetry();return;}
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
       e.target instanceof HTMLSelectElement) return;
-    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'e', 'r',' '].includes(key)) e.preventDefault();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright',
+      'shift', 'e', 'r', 'q', 'f', ' '].includes(key)) e.preventDefault();
     this.pressed.add(key);
     if (e.repeat || this.blocked()) return;
+    if(key==='shift')this.sprintTap.press(performance.now());
     if(this.landscapeDebug?.handleKey(key)){e.preventDefault();return;}
     if(key===' '&&!this.placement)this.jumpRequested=true;
+    if(!this.placement){
+      const action=combatInputForKey(key,this.traversal.mode,this.traversal.jumpCount);
+      if(action==='airKick')this.airKickRequested=true;
+      if(action==='attack'){
+        const equipped=this.store.state.equippedItem??'unarmed';
+        this.santi?.requestAttack(equipped);
+      }
+      if(action==='sweep'&&this.santi?.playAction(SANTI_COMBAT.sweep))
+        this.beginSantiActionMotion('sweep',SANTI_COMBAT.sweep);
+      if(action==='roll'&&this.santi?.playAction(SANTI_COMBAT.roll))
+        this.beginSantiActionMotion('roll',SANTI_COMBAT.roll);
+    }
     if (key === 'e') this.interact();
     if (key === 'r' && this.placement) this.rotatePlacement();
     if (key === 'z' && !this.placement) this.undoLastPlacement();
   };
-  private readonly onKeyUp = (e: KeyboardEvent) => this.pressed.delete(e.key.toLowerCase());
+  private beginSantiActionMotion(kind:'sweep'|'roll',action:SantiActionName):void{
+    if(!this.santi)return;
+    const horizontal=Number(this.pressed.has('d')||this.pressed.has('arrowright'))-
+      Number(this.pressed.has('a')||this.pressed.has('arrowleft'));
+    const vertical=Number(this.pressed.has('w')||this.pressed.has('arrowup'))-
+      Number(this.pressed.has('s')||this.pressed.has('arrowdown'));
+    const desired=cameraRelativeMovement({x:-Math.cos(this.camera.alpha),
+      z:-Math.sin(this.camera.alpha)},horizontal,vertical);
+    const travel=this.traversal.groundTravelVelocity;
+    const moving=Math.hypot(desired.x,desired.z)>1e-5||travel.speed>.5;
+    const running=this.pressed.has('shift');
+    const sprinting=running&&this.sprintTap.active;
+    const speed=kind==='sweep'
+      ?!moving?1.5:sprinting?13:running?10:6
+      :travel.speed>.5?travel.speed:!moving?4:sprinting?27:running?19:11;
+    const direction=travel.speed>.5
+      ?{x:travel.x/travel.speed,z:travel.z/travel.speed}
+      :Math.hypot(desired.x,desired.z)>1e-5?desired
+      :{x:Math.sin(this.player.rotation.y),z:Math.cos(this.player.rotation.y)};
+    this.traversal.beginActionMotion(kind,direction.x,direction.z,speed,
+      this.santi.actionDuration(action));
+  }
+  private beginDirectedMotion(kind:ActionMotionKind,speed:number,duration:number):void{
+    this.traversal.beginActionMotion(kind,
+      Math.sin(this.player.rotation.y),Math.cos(this.player.rotation.y),speed,duration);
+  }
+  private readonly onKeyUp = (e: KeyboardEvent) => {
+    const key=e.key.toLowerCase();
+    this.pressed.delete(key);
+    if(key==='shift')this.sprintTap.release();
+  };
   private readonly onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0 || this.blocked() || !this.traversal.canBuild) return;
     if(!this.placement){
@@ -729,6 +809,13 @@ export class WorldView {
     const eye = this.mat('ojos-jugador', '#283c4b');
     this.ball('ojo-izq', this.playerBody, 0.18, -0.24, 3.34, 0.67, eye);
     this.ball('ojo-der', this.playerBody, 0.18, 0.24, 3.34, 0.67, eye);
+    const santi=new SantiCharacter(this.scene,this.player);
+    this.santi=santi;
+    void santi.load().then(ready=>{
+      if(ready&&this.santi===santi)this.playerBody.setEnabled(false);
+    }).catch(error=>{
+      if(this.santi===santi)console.warn('No se pudo cargar Santi; se conserva el personaje provisional.',error);
+    });
   }
 
   activateZone(id: ZoneId): void {
@@ -755,7 +842,8 @@ export class WorldView {
     }
     if(id==='brisalia')this.streamMainland(start.x,start.z);
     this.interactTarget=null;
-    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)),false,false,true);
+    this.camera.setTarget(this.player.position.add(
+      new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
     this.sendLocation();
   }
 
@@ -814,7 +902,8 @@ export class WorldView {
     if((id===FOLIAGE_FOREST.id||id===FOLIAGE_FOREST.flowerMeadow.id)&&!this.landscapeDebug)
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
         this.props,this.vegetation,this.grass,this.authoredAssets);
-    this.camera.setTarget(this.player.position.add(new Vector3(0,1.9,0)),false,false,true);
+    this.camera.setTarget(this.player.position.add(
+      new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
     this.store.setPlayerPosition('brisalia',point.x,point.z);
     this.sendLocation();
     this.callbacks.notify(`Explorando: ${point.name}`);
@@ -963,17 +1052,34 @@ export class WorldView {
       Number(this.pressed.has('s')||this.pressed.has('arrowdown')):0;
     const forwardX=-Math.cos(this.camera.alpha),forwardZ=-Math.sin(this.camera.alpha);
     const direction=cameraRelativeMovement({x:forwardX,z:forwardZ},horizontal,vertical);
+    const running=controls&&this.pressed.has('shift');
+    const sprinting=running&&this.sprintTap.active;
+    this.santi?.prepareCombat(this.store.state.equippedItem??'unarmed',controls);
+    const combat=this.santi?.combatState;
+    this.traversal.setAttackHold(combat?.remainingSeconds??0);
+    if(combat&&combat.serial!==this.attackSerial){
+      this.attackSerial=combat.serial;
+      // Aim each new strike with WASD, then keep its planted feet and heading.
+      if(Math.hypot(direction.x,direction.z)>1e-5)
+        this.player.rotation.y=Math.atan2(direction.x,direction.z);
+    }
     if(zone.id==='brisalia'){
       this.props.setColliderFocus(this.traversal.position.x,
         this.traversal.position.z,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(this.traversal.position.x,this.traversal.position.z);
     }
+    const jumpPressed=controls&&this.jumpRequested;
+    const airKickPressed=controls&&this.airKickRequested;
+    const groundedBeforeStep=this.traversal.mode==='grounded';
+    const actionDriven=this.traversal.actionMotionActive;
+    const jumpsBeforeStep=this.traversal.jumpCount;
+    const feetBeforeStep=this.traversal.position.y;
     const walking=this.traversal.step(dt,{
       moveX:direction.x,moveZ:direction.z,forwardX,forwardZ,
-      horizontal,vertical,run:controls&&this.pressed.has('shift'),
-      jumpPressed:controls&&this.jumpRequested
+      horizontal,vertical,run:running,sprint:sprinting,
+      jumpPressed,airKickPressed
     },this.traversalWorld(zone));
-    this.jumpRequested=false;
+    this.jumpRequested=false;this.airKickRequested=false;
     let {x:localX,y:localY,z:localZ}=this.traversal.position;
     if(zone.id==='brisalia'&&this.traversal.mode==='grounded'&&!this.traversal.supportRockId){
       const exit=this.exitEmbeddedGeology(localX,localY,localZ);
@@ -983,12 +1089,21 @@ export class WorldView {
       }
     }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
-    this.ocean?.update(dt,this.player.position);
     if(zone.id==='brisalia'){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
     }
-    if(walking&&this.traversal.mode!=='climbing')this.player.rotation.y=Math.atan2(direction.x,direction.z);
+    if(!actionDriven&&!this.traversal.airKickActive){
+      const groundTravel=this.traversal.groundTravelVelocity;
+      const movementIntent=Math.hypot(direction.x,direction.z)>1e-5;
+      const groundFacing=groundTravel.speed>1e-5
+        ?{x:groundTravel.x/groundTravel.speed,z:groundTravel.z/groundTravel.speed}:null;
+      const facing=this.traversal.airTravelDirection??
+        (this.traversal.rollCarryActive?groundFacing:
+          movementIntent?direction:walking?groundFacing:null);
+      if(facing&&this.traversal.mode!=='climbing')
+        this.player.rotation.y=Math.atan2(facing.x,facing.z);
+    }
     if(this.traversal.mode==='grounded'&&!this.traversal.supportRockId&&
       (zone.id!=='brisalia'||!GEOLOGY_FORMATIONS.some(formation=>{
         const local=geologyLocal(formation,localX,localZ);
@@ -996,15 +1111,44 @@ export class WorldView {
           local.across>-34&&local.across<30;
       })))
       this.lastSafePosition={x:localX,z:localZ};
-    this.movementTime+=dt*(walking?10:2.3);
-    this.playerBody.position.y=this.traversal.mode==='grounded'
-      ?walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025:0;
-    this.playerBody.rotation.z=this.traversal.mode==='climbing'?.08:0;
+    const doubleJumpStarted=(jumpPressed||airKickPressed)&&jumpsBeforeStep===1&&
+      this.traversal.jumpCount===2;
+    if(doubleJumpStarted)this.speedMotionBlur.triggerDoubleJump();
+    const sprintVisual=sprinting&&walking&&
+      this.traversal.mode==='grounded'&&!actionDriven&&
+      Math.hypot(direction.x,direction.z)>1e-5;
+    this.speedMotionBlur.update(dt,sprintVisual);
+    const sprintDistance=sprintVisual?THIRD_PERSON_CAMERA.sprintDistance:0;
+    this.sprintCameraOffset+=(sprintDistance-this.sprintCameraOffset)*
+      Math.min(1,dt*(sprintVisual?4:5));
+    const landing=this.santi?.update(dt,{
+      mode:this.traversal.mode,moving:walking,
+      movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
+      run:running,sprint:sprinting,
+      backward:vertical<0&&horizontal===0,
+      feetY:localY,
+      takeoffY:feetBeforeStep,
+      jumpStarted:groundedBeforeStep&&jumpPressed&&this.traversal.mode==='airborne',
+      doubleJumpStarted,airKickStarted:doubleJumpStarted&&airKickPressed
+    });
+    if(landing?.kind==='standing')
+      this.beginDirectedMotion('landingHold',0,landing.duration-dt);
+    else if(landing?.kind==='highFallRoll')
+      this.beginDirectedMotion('landingRoll',8,landing.duration-dt);
+    if(!this.santi?.isReady){
+      this.movementTime+=dt*(walking?10:2.3);
+      this.playerBody.position.y=this.traversal.mode==='grounded'
+        ?walking?Math.sin(this.movementTime)*.11:Math.sin(this.movementTime)*.025:0;
+      this.playerBody.rotation.z=this.traversal.mode==='climbing'?.08:0;
+    }
     const target=Vector3.Lerp(this.camera.getTarget(),
-      this.player.position.add(new Vector3(0,1.85,0)),Math.min(1,7.5*dt));
-    target.y=Math.max(target.y,this.player.position.y+1.85);
+      this.player.position.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),
+      Math.min(1,7.5*dt));
+    target.y=Math.max(target.y,this.player.position.y+THIRD_PERSON_CAMERA.targetHeight);
     this.camera.setTarget(target,false,false,true);
     this.telemetry?.mark('movimiento');
+    this.ocean?.update(dt,this.player.position);
+    this.telemetry?.mark('oceano');
     if(zone.id==='brisalia'){
       this.streamMainland(localX,localZ);
       this.telemetry?.mark('terreno');
@@ -1034,9 +1178,11 @@ export class WorldView {
 
   private updateCameraOcclusion(dt:number,zone:IslandInfo):void{
     const changed=this.camera.radius-this.cameraAppliedRadius;
-    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(CAMERA_TERRAIN.minRadius,
-      Math.min(46,this.cameraPreferredRadius+changed));
-    const {alpha,beta}=this.camera,radius=this.cameraPreferredRadius;
+    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(THIRD_PERSON_CAMERA.minDistance,
+      Math.min(THIRD_PERSON_CAMERA.maxDistance,this.cameraPreferredRadius+changed));
+    const {alpha,beta}=this.camera;
+    const radius=Math.min(THIRD_PERSON_CAMERA.maxDistance,
+      this.cameraPreferredRadius+this.sprintCameraOffset);
     const direction=new Vector3(Math.cos(alpha)*Math.sin(beta),Math.cos(beta),
       Math.sin(alpha)*Math.sin(beta));
     const target=this.camera.getTarget();
@@ -1055,7 +1201,7 @@ export class WorldView {
         ?bridgeDeckAt(localX,localZ)??-Infinity:-Infinity);
     };
     const terrainView=cameraTerrainView(target,direction,radius,groundAt,
-      this.player.position.y+1.85);
+      this.player.position.y+THIRD_PERSON_CAMERA.targetHeight);
     if(terrainView.targetY>target.y){
       target.y=terrainView.targetY;
       this.camera.setTarget(target,false,false,true);
@@ -1095,7 +1241,7 @@ export class WorldView {
     }
     this.interactTarget = this.traversal.canInteract?nearest:null;
     let label=nearest&&this.traversal.canInteract?`E  ·  ${nearest.verb}`:
-      'WASD caminar · Espacio saltar · E interactuar · M mapa';
+      'WASD mover · Espacio salto ×2 · Q combo / patada aérea · F barrida · R roll · V equipo · E usar';
     if(this.traversal.mode==='climbing')label='W/S trepar · A/D moverse · Espacio soltarse';
     else if(this.traversal.mode==='mantling')label='Subiendo al borde...';
     else if(zone.id==='brisalia'&&this.traversal.mode==='grounded'){
@@ -1336,6 +1482,9 @@ export class WorldView {
 
   dispose(): void {
     this.engine.stopRenderLoop();
+    this.speedMotionBlur.dispose();
+    this.santi?.dispose();
+    this.santi=null;
     this.telemetry?.dispose();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);

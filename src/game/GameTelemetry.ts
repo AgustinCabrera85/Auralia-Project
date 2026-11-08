@@ -1,5 +1,5 @@
 import { Engine, EngineInstrumentation, Scene, SceneInstrumentation } from '@babylonjs/core';
-import { PHASE_LABELS, T, TELEMETRY_COLUMNS, TELEMETRY_PHASES, TelemetryHistory,
+import { PHASE_LABELS, T, TELEMETRY_COLUMNS, TELEMETRY_PHASES, TelemetryHistory, TelemetryMemoryHistory,
   type TelemetryPhase } from './telemetryData';
 
 export type TelemetryWorldStats={zone:string;near:number;mid:number;far:number;
@@ -10,6 +10,7 @@ const ms=(value:number):string=>value.toFixed(1)+' ms';
 /** Optional local profiler: F8 or ?telemetry=1. No instrumentation runs while hidden. */
 export class GameTelemetry {
   readonly history=new TelemetryHistory();
+  private readonly memoryHistory=new TelemetryMemoryHistory();
   private readonly panel:HTMLDivElement;
   private readonly fields=new Map<string,HTMLElement>();
   private readonly canvas:HTMLCanvasElement;
@@ -159,7 +160,25 @@ export class GameTelemetry {
     this.frame[T.pendingLoads]=this.scene.getWaitingItemsCount();
     this.frame[T.x]=x;this.frame[T.z]=z;this.pendingFrame=true;
     const now=performance.now();
+    this.sampleMemory(now-this.started,x,z);
     if(now-this.lastRefresh>=250){this.lastRefresh=now;this.refresh(now);}
+  }
+  private sampleMemory(timeMs:number,x:number,z:number):void{
+    if(!this.memoryHistory.due(timeMs))return;
+    const memory=(performance as Performance&{memory?:{
+      usedJSHeapSize:number;totalJSHeapSize:number;jsHeapSizeLimit:number;
+    }}).memory;
+    const bytes=(value:number|undefined):number|null=>
+      value!==undefined&&Number.isFinite(value)&&value>=0?value:null;
+    this.memoryHistory.push({timeMs,
+      jsUsedBytes:bytes(memory?.usedJSHeapSize),
+      jsAllocatedBytes:bytes(memory?.totalJSHeapSize),
+      jsLimitBytes:bytes(memory?.jsHeapSizeLimit),
+      meshes:this.scene.meshes.length,geometries:this.scene.geometries.length,
+      textures:this.engine.getLoadedTexturesCache().length,materials:this.scene.materials.length,
+      skeletons:this.scene.skeletons.length,morphManagers:this.scene.morphTargetManagers.length,
+      animationGroups:this.scene.animationGroups.length,animatables:this.scene.animatables.length,x,z
+    });
   }
   private refresh(now:number):void{
     const stats=this.history.summary(now-this.started),a=stats.averages,p=stats.peaks;
@@ -177,6 +196,7 @@ export class GameTelemetry {
       `\nGPU                 ${stats.gpuMs===null?(this.gpuSupported?'esperando muestra':'no disponible'):ms(stats.gpuMs)}`+
       `\nShaders CPU (suma)  ${ms(a[T.shaderMs]*stats.count)}`;
     const world=this.worldStats();
+    const viewport=this.engine.getRenderingCanvas();
     const memory=(performance as Performance&{memory?:{usedJSHeapSize:number}}).memory;
     f.get('scene')!.textContent=`Draw calls ${Math.round(this.frame[T.drawCalls])} · triángulos ${Math.round(this.frame[T.triangles]).toLocaleString()}\n`+
       `Mallas activas ${this.scene.getActiveMeshes().length}/${this.scene.meshes.length} · materiales ${this.scene.materials.length}\n`+
@@ -185,7 +205,10 @@ export class GameTelemetry {
       `Pasto ${world.grass} · sectores ${world.grassSectors}\n`+
       `Cargas Babylon pendientes ${pending(this.frame[T.pendingLoads])}`+
       (memory?` · JS ${(memory.usedJSHeapSize/1048576).toFixed(0)} MiB`:'')+
+      `\nHistorial de memoria: ${this.memoryHistory.count} muestras (1/s, hasta 10 min)`+
+      `\nMemoria JS: no incluye toda la RAM de Chrome ni la memoria GPU`+
       `\nRender ${this.engine.getRenderWidth()}×${this.engine.getRenderHeight()} · ${world.zone}`+
+      `\nVentana ${viewport?.clientWidth??0}×${viewport?.clientHeight??0} · escala 3D ${(100/this.engine.getHardwareScalingLevel()).toFixed(0)} %`+
       `\nX ${Math.round(this.frame[T.x])} · Z ${Math.round(this.frame[T.z])}`;
     const slow=this.history.slowFrames(now-this.started);
     f.get('hitches')!.textContent=slow.length?slow.map(row=>
@@ -223,15 +246,21 @@ export class GameTelemetry {
       this.paused=!this.paused;(event.target as HTMLElement).textContent=this.paused?'Continuar':'Pausar';this.syncCapture();
     }
     if(action==='reset'){
-      this.history.clear();this.events.length=0;this.started=performance.now();
+      this.history.clear();this.memoryHistory.clear();this.events.length=0;this.started=performance.now();
       this.previousBegin=null;this.pendingFrame=false;this.refresh(this.started);
     }
     if(action==='export'){
-      const report={version:1,exportedAt:new Date().toISOString(),windowMs:10000,
+      const report={version:2,exportedAt:new Date().toISOString(),windowMs:10000,
         capacityFrames:this.history.capacity,gpuTimerSupported:this.gpuSupported,
         notes:'frameMs es el intervalo real; bloques CPU pertenecen al frame anterior. GPU asíncrona; null si no está disponible.',
         world:this.worldStats(),resolution:[this.engine.getRenderWidth(),this.engine.getRenderHeight()],
-        phases:PHASE_LABELS,frames:this.history.exportRows(),events:this.events};
+        viewportCss:[this.engine.getRenderingCanvas()?.clientWidth??null,
+          this.engine.getRenderingCanvas()?.clientHeight??null],
+        devicePixelRatio:window.devicePixelRatio,hardwareScalingLevel:this.engine.getHardwareScalingLevel(),
+        phases:PHASE_LABELS,frames:this.history.exportRows(),events:this.events,
+        memory:{intervalMs:this.memoryHistory.intervalMs,capacitySamples:this.memoryHistory.capacity,
+          notes:'Bytes del heap JavaScript, no RAM total de Chrome ni memoria GPU. Lectura aproximada; null si no está disponible. Contadores de recursos de Babylon. Solo se muestrea mientras la telemetría está grabando.',
+          samples:this.memoryHistory.exportRows()}};
       const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));
       const a=document.createElement('a');a.href=url;a.download='auralia-telemetria.json';a.click();
       window.setTimeout(()=>URL.revokeObjectURL(url),1000);

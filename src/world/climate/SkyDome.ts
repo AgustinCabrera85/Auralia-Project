@@ -1,5 +1,5 @@
 import {
-  Color3, Effect, Mesh, MeshBuilder, Scene, ShaderMaterial, Texture,
+  Color3, Effect, Mesh, MeshBuilder, RawTexture, Scene, ShaderMaterial, Texture,
   Vector2, Vector3, type ArcRotateCamera
 } from '@babylonjs/core';
 import type { ClimateFrame, RGB } from './ClimateModel';
@@ -150,7 +150,16 @@ export class SkyDome {
       this.noise.anisotropicFilteringLevel=1;
       this.noise.gammaSpace=false;
       this.material.setTexture('uCloudField',this.noise);
-    } else this.noise=null;
+    } else {
+      // The sampler remains active in GLSL even when uCloudEnabled is zero.
+      // Leaving it unset can reuse the postprocess input on texture unit 0,
+      // causing a framebuffer feedback loop that drops the entire sky draw.
+      this.noise=RawTexture.CreateRGBATexture(new Uint8Array([0,0,0,0]),
+        1,1,scene,false,false,Texture.NEAREST_SAMPLINGMODE);
+      this.noise.name='auralia-sky-empty-cloud-field';
+      this.noise.gammaSpace=false;
+      this.material.setTexture('uCloudField',this.noise);
+    }
 
     if(params.has('cloudDebug'))this.createDebugPanel();
   }

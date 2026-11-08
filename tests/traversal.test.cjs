@@ -1,17 +1,36 @@
 const assert=require('node:assert/strict');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
+const {DoubleTapSprint}=require('../.test-build/game/DoubleTapSprint.js');
 const {slopeAllowed,TRAVERSAL}=require('../.test-build/game/traversalRules.js');
 const {cameraRelativeMovement}=require('../.test-build/game/movement.js');
 
 const input=(overrides={})=>({
   moveX:0,moveZ:0,forwardX:1,forwardZ:0,horizontal:0,vertical:0,
-  run:false,jumpPressed:false,...overrides
+  run:false,sprint:false,jumpPressed:false,...overrides
 });
 const flat={
   ground:(x,z,origin,max)=>origin>=0&&origin-max<=0?{height:0,normalY:1}:null,
   solidTop:()=>null,
   wall:()=>null,headroom:()=>true,canMove:()=>true,fallbackHeight:()=>0
 };
+
+const shift=new DoubleTapSprint();
+shift.press(1000);assert.equal(shift.active,false);
+shift.release();shift.press(1240);assert.equal(shift.active,true,'double Shift enables sprint');
+shift.press(1250);assert.equal(shift.active,true,'key repeat does not cancel sprint');
+shift.release();assert.equal(shift.active,false,'release ends sprint');
+shift.press(2000);shift.release();shift.press(2400);
+assert.equal(shift.active,false,'slow second press stays at normal run');
+shift.reset();shift.press(2500);
+assert.equal(shift.active,false,'focus loss clears the double-tap window');
+const distanceFor=(run,sprint)=>{
+  const avatar=new CharacterTraversalController();avatar.teleport(0,0,0);
+  avatar.step(.1,input({moveX:1,vertical:1,run,sprint}),flat);
+  return avatar.position.x;
+};
+assert.ok(distanceFor(false,false)<distanceFor(true,false));
+assert.ok(distanceFor(true,false)<distanceFor(true,true),
+  'double Shift increases traversal speed');
 
 const jumper=new CharacterTraversalController();
 jumper.teleport(0,0,0);
@@ -22,6 +41,121 @@ for(let i=0;i<100;i++){jumper.step(.02,input(),flat);apex=Math.max(apex,jumper.p
 assert.ok(apex>2&&apex<2.6,'jump reaches roughly 2.3 meters');
 assert.equal(jumper.mode,'grounded');
 assert.ok(Math.abs(jumper.position.y)<1e-6,'lands without sinking or jitter');
+
+const doubleJumper=new CharacterTraversalController();
+doubleJumper.teleport(0,0,0);
+doubleJumper.step(.02,input({jumpPressed:true}),flat);
+assert.equal(doubleJumper.jumpCount,1);
+for(let i=0;i<10;i++)doubleJumper.step(.02,input(),flat);
+const beforeSecondJump=doubleJumper.position.y;
+doubleJumper.step(.02,input({jumpPressed:true}),flat);
+assert.equal(doubleJumper.jumpCount,2,'second Space press spends the air jump');
+assert.ok(doubleJumper.position.y>beforeSecondJump,'second impulse lifts the player');
+doubleJumper.step(.02,input({jumpPressed:true}),flat);
+assert.equal(doubleJumper.jumpCount,2,'a third jump is rejected');
+for(let i=0;i<200&&doubleJumper.mode!=='grounded';i++)
+  doubleJumper.step(.02,input(),flat);
+assert.equal(doubleJumper.mode,'grounded');
+assert.equal(doubleJumper.jumpCount,0,'landing restores both jumps');
+
+const leap=(run,sprint)=>{
+  const avatar=new CharacterTraversalController();avatar.teleport(0,0,0);
+  let apex=0;
+  for(let i=0;i<160;i++){
+    avatar.step(.02,input({moveX:1,vertical:1,run,sprint,jumpPressed:i===0}),flat);
+    apex=Math.max(apex,avatar.position.y);
+    if(i>0&&avatar.mode==='grounded')break;
+  }
+  return {distance:avatar.position.x,apex};
+};
+const walkingLeap=leap(false,false),runningLeap=leap(true,false);
+assert.ok(runningLeap.apex>walkingLeap.apex+.7,'running jump rises higher');
+assert.ok(runningLeap.distance>walkingLeap.distance*1.4,'running jump travels farther');
+
+const directedDouble=new CharacterTraversalController();
+directedDouble.teleport(0,0,0);
+directedDouble.step(.02,input({jumpPressed:true}),flat);
+for(let i=0;i<8;i++)directedDouble.step(.02,input(),flat);
+directedDouble.step(.02,input({moveZ:1,forwardX:1,jumpPressed:true}),flat);
+const dashStart=directedDouble.position.z;
+for(let i=0;i<8;i++)directedDouble.step(.02,input({moveX:-1}),flat);
+assert.ok(directedDouble.position.z>dashStart+3,'double jump launches strongly in chosen direction');
+assert.ok(directedDouble.position.x>-.1,'initial dash resists immediate side steering');
+assert.ok(directedDouble.airTravelDirection.z>.99,'facing can follow real air velocity');
+
+const verticalDouble=new CharacterTraversalController();verticalDouble.teleport(0,0,0);
+verticalDouble.step(.02,input({jumpPressed:true}),flat);
+for(let i=0;i<8;i++)verticalDouble.step(.02,input(),flat);
+verticalDouble.step(.02,input({jumpPressed:true}),flat);
+for(let i=0;i<8;i++)verticalDouble.step(.02,input(),flat);
+assert.ok(Math.abs(verticalDouble.position.x)<1e-6&&
+  Math.abs(verticalDouble.position.z)<1e-6,
+  'double jump without movement input stays vertical');
+
+const sweep=new CharacterTraversalController();sweep.teleport(0,0,0);
+assert.equal(sweep.beginActionMotion('sweep',1,0,1.5,.9),true);
+for(let i=0;i<45;i++)sweep.step(.02,input({moveZ:1,vertical:1}),flat);
+assert.ok(sweep.position.x>.1&&sweep.position.x<1,
+  'standing sweep advances a little with inertia');
+assert.ok(Math.abs(sweep.position.z)<1e-6,'sweep does not follow free steering');
+assert.equal(sweep.actionMotionActive,false);
+sweep.step(.02,input({moveZ:1,vertical:1}),flat);
+assert.ok(sweep.position.z>0,'steering resumes after the sweep');
+
+const landingRoll=new CharacterTraversalController();landingRoll.teleport(0,0,0);
+landingRoll.beginActionMotion('landingRoll',1,0,8,1);
+for(let i=0;i<38;i++)landingRoll.step(.02,input({moveZ:1,vertical:1,run:true}),flat);
+const standingX=landingRoll.position.x;
+assert.equal(landingRoll.actionMotionActive,true);
+for(let i=0;i<11;i++)landingRoll.step(.02,input({moveZ:1,vertical:1,run:true}),flat);
+assert.ok(Math.abs(landingRoll.position.x-standingX)<1e-6,
+  'landing roll stops translating when Santi stands up');
+assert.ok(Math.abs(landingRoll.position.z)<1e-6,
+  'running remains blocked until the roll finishes');
+landingRoll.step(.02,input({moveZ:1,vertical:1,run:true}),flat);
+landingRoll.step(.02,input({moveZ:1,vertical:1,run:true}),flat);
+assert.ok(landingRoll.position.z>0,'running resumes after the complete roll');
+
+const landingHold=new CharacterTraversalController();landingHold.teleport(0,0,0);
+landingHold.beginActionMotion('landingHold',1,0,0,.55);
+for(let i=0;i<27;i++)landingHold.step(.02,input({moveX:1,vertical:1}),flat);
+assert.ok(Math.abs(landingHold.position.x)<1e-6,
+  'double jump landing recovery cannot slide on a static pose');
+landingHold.step(.02,input({moveX:1,vertical:1}),flat);
+landingHold.step(.02,input({moveX:1,vertical:1}),flat);
+assert.ok(landingHold.position.x>0,'movement returns when landing recovery ends');
+
+const kick=new CharacterTraversalController();kick.teleport(0,0,0);
+kick.beginActionMotion('attackHold',1,0,0,.6);
+for(let i=0;i<30;i++)kick.step(.02,input({moveX:1,vertical:1,run:true}),flat);
+assert.ok(Math.abs(kick.position.x)<1e-6,
+  'kick animation prevents physical translation despite movement input');
+kick.step(.02,input({moveX:1,vertical:1}),flat);
+assert.ok(kick.position.x>0,'movement resumes after the kick');
+
+const rolling=new CharacterTraversalController();rolling.teleport(0,0,0);
+rolling.step(.02,input({moveX:1,vertical:1,run:true}),flat);
+const travel=rolling.groundTravelVelocity;
+assert.ok(Math.abs(travel.speed-19)<.1,'roll can read the actual pre-action run speed');
+const rollStart=rolling.position.x;
+rolling.beginActionMotion('roll',travel.x,travel.z,travel.speed,.9);
+for(let i=0;i<20;i++)rolling.step(.02,input({moveZ:1,vertical:1}),flat);
+assert.ok(rolling.position.x>rollStart+1,
+  'moving roll retains substantial forward inertia');
+assert.ok(Math.abs(rolling.position.z)<1e-6,
+  'moving roll ignores direction changes during its animation');
+for(let i=20;i<45;i++)rolling.step(.02,input({moveZ:1,vertical:1}),flat);
+const rollEndX=rolling.position.x;
+assert.equal(rolling.actionMotionActive,false);
+assert.ok(Math.abs(rolling.position.z)<1e-6,
+  'the roll direction stays locked through its final frame');
+rolling.step(.02,input(),flat);
+assert.ok(rolling.position.x>rollEndX,
+  'roll momentum continues briefly instead of stopping instantly');
+const carryX=rolling.position.x;
+rolling.step(.02,input({moveZ:1,vertical:1}),flat);
+assert.ok(rolling.position.x>carryX&&rolling.position.z>0,
+  'new steering blends in after the roll ends');
 
 const platform={
   ...flat,

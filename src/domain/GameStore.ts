@@ -1,6 +1,7 @@
 import type { ZoneId } from '../data/world';
 import { BUILD_CATALOG, RECIPES, hasCost } from './recipes';
-import { newGame, type BuildType, type ItemId, type MaterialId, type SaveGameV1, type Structure } from './types';
+import { newGame, type BuildType, type EquipmentId, type ItemId, type MaterialId,
+  type SaveGameV1, type Structure } from './types';
 import { canReplaceWall, planBuild, removalProblem, wallReplacementProblem, type BuildEnvironment } from './buildingRules';
 import { sampleMainlandHeight } from '../world/terrainData';
 import type { SaveRepository } from '../persistence/SaveRepository';
@@ -21,6 +22,16 @@ export class GameStore {
   }
 
   get state(): Readonly<SaveGameV1> { return this.data; }
+  equip(item:EquipmentId):{ok:boolean;message:string}{
+    if(item!=='unarmed'&&(this.data.inventory[item]??0)<1)
+      return {ok:false,message:'Todavía no tenés ese objeto.'};
+    this.data.equippedItem=item;
+    this.commit();
+    const label=item==='unarmed'?'Mano limpia':
+      item==='sword'?'Espada de cobre':item==='pickaxe'?'Pico':
+      item==='hammer'?'Martillo':'Linterna mágica';
+    return {ok:true,message:`Equipo seleccionado: ${label}.`};
+  }
   setBuildEnvironment(provider:()=>BuildEnvironment):void{this.buildEnvironment=provider;}
 
   subscribe(listener: StoreListener): () => void {

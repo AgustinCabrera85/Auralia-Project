@@ -1,0 +1,529 @@
+import {
+  AnimationGroup, ImportMeshAsync, Mesh, MorphTarget, Scene, TransformNode, Vector3,
+  type MorphTargetManager
+} from '@babylonjs/core';
+import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
+import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
+import { TRAVERSAL, type LocomotionMode } from './traversalRules';
+import type { EquipmentId } from '../domain/types';
+import {
+  SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_LOCOMOTION, SANTI_NLA_ACTIONS,
+  combatCombo, type SantiActionName, type SantiExpressionName
+} from './SantiCatalog';
+
+const MODEL_PATH='/assets/characters/santi/Santi_NLA_SK_Opt.glb';
+const BLEND_SECONDS=.18;
+const COMBAT_BLEND_SECONDS=.09;
+const LEVEL_DROP_FOR_FALL=1.5;
+const LEVEL_JUMP_APEX_SECONDS=TRAVERSAL.initialJumpSpeed/TRAVERSAL.gravity;
+const LANDING_RECOVERY_SECONDS=.55;
+// The source Jumping clip crouches for frames 1-12; frame 25 is airborne.
+const STANDING_JUMP_TAKEOFF=13/54;
+const STANDING_JUMP_HOVER=25/54;
+const STANDING_JUMP_CONTACT=35/54;
+// Only the airborne kick: omit its ground wind-up and its ground recovery.
+const SPIN_JUMP_FROM=.4;
+const SPIN_JUMP_TO=.65;
+const SPIN_JUMP_IMPACT=.54;
+// At the raised kick's impact the source foot points 66 degrees left. Continue
+// the source's negative yaw by 294 degrees, then complete that same full turn.
+const SPIN_IMPACT_TURN=(66-360)*Math.PI/180;
+const SPIN_FULL_TURN=-Math.PI*2;
+const HIGH_FALL_ROLL_DROP=8;
+const FALL_ROLL_CONTACT=9/55;
+const IN_PLACE_ACTIONS=new Set<SantiActionName>([
+  SANTI_LOCOMOTION.jump,SANTI_LOCOMOTION.runningJump,
+  ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,
+  SANTI_COMBAT.highFallRoll
+]);
+const LOCKED_ACTIONS=new Set<SantiActionName>([
+  ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,SANTI_COMBAT.highFallRoll
+]);
+
+export type SantiMotion={
+  mode:LocomotionMode;
+  moving:boolean;
+  movementIntent?:boolean;
+  run:boolean;
+  sprint:boolean;
+  backward:boolean;
+  feetY:number;
+  takeoffY?:number;
+  jumpStarted:boolean;
+  doubleJumpStarted:boolean;
+  airKickStarted?:boolean;
+};
+export type SantiLanding={kind:'standing'|'highFallRoll';duration:number};
+
+/** Visual character only. WorldView keeps ownership of movement and collisions. */
+export class SantiCharacter {
+  readonly actions=new Map<SantiActionName,AnimationGroup>();
+  readonly shapeKeys=new Map<string,MorphTarget[]>();
+  private readonly morphBudgets=new Map<MorphTargetManager,number>();
+  private loaded:Awaited<ReturnType<typeof ImportMeshAsync>>|null=null;
+  private active:AnimationGroup|null=null;
+  private fading:AnimationGroup|null=null;
+  private blend=1;
+  private blendSeconds=BLEND_SECONDS;
+  private combat:{equipment:EquipmentId;step:number;elapsed:number;
+    duration:number;queued:boolean;serial:number}|null=null;
+  private combatSerial=0;
+  private airborneStartY=0;
+  private airbornePeakY=0;
+  private jumpInProgress=false;
+  private jumpWasRunning=false;
+  private jumpWasSprinting=false;
+  private jumpElapsed=0;
+  private airKickInProgress=false;
+  private airKickAnimation:AnimationGroup|null=null;
+  private visualOrientation:TransformNode|null=null;
+  private samplingSpin=false;
+  private previousMode:LocomotionMode='grounded';
+  private landingRecoverySeconds=0;
+  private overrideSeconds=0;
+  private actionLockSeconds=0;
+  private debugPanel:HTMLDivElement|null=null;
+  private disposed=false;
+  isReady=false;
+
+  constructor(private readonly scene:Scene,private readonly parent:TransformNode,
+    private readonly modelPath=MODEL_PATH){}
+
+  async load():Promise<boolean>{
+    const result=await ImportMeshAsync(this.modelPath,this.scene,{
+      pluginOptions:{gltf:{
+        // Keep every facial target available, but only process nonzero weights.
+        // The loader default pins all 52 targets into every character shader.
+        useMaxMorphTargetInfluencers:false,
+        animationStartMode:GLTFLoaderAnimationStartMode.NONE,
+        onMeshLoaded:mesh=>{
+          // Configure before the loader fills/unfreezes the targets, avoiding
+          // a full atlas allocation even temporarily during initial loading.
+          if(mesh.morphTargetManager)mesh.morphTargetManager.useTextureToStoreTargets=false;
+        }
+      }}
+    });
+    if(this.disposed){this.disposeResult(result);return false;}
+    const root=result.meshes.find(mesh=>mesh.name==='__root__');
+    const body=result.meshes.find(mesh=>mesh.name==='Santi_Mesh_primitive0');
+    if(!root||!body){this.disposeResult(result);throw new Error('Santi GLB: root or body mesh missing');}
+    body.computeWorldMatrix(true);
+    const bounds=body.getBoundingInfo().boundingBox;
+    const height=bounds.maximumWorld.y-bounds.minimumWorld.y;
+    if(!Number.isFinite(height)||height<=0){
+      this.disposeResult(result);throw new Error('Santi GLB: invalid visual height');
+    }
+    root.parent=this.parent;
+    // Keep Babylon's handedness conversion (negative Z on __root__).
+    root.scaling.scaleInPlace(TRAVERSAL.playerHeight/height);
+    for(const mesh of result.meshes){
+      mesh.isPickable=false;
+      mesh.checkCollisions=false;
+      const manager=mesh.morphTargetManager;
+      if(!manager||!(mesh instanceof Mesh))continue;
+      const channels=Number(manager.hasPositions)+Number(manager.hasNormals)+
+        Number(manager.hasTangents)+Number(manager.hasUVs)+Number(manager.hasUV2s)+Number(manager.hasColors);
+      const available=this.scene.getEngine().getCaps().maxVertexAttribs-mesh.getVerticesDataKinds().length;
+      const budget=Math.max(0,Math.min(4,Math.floor(available/Math.max(1,channels))));
+      this.morphBudgets.set(manager,Math.min(this.morphBudgets.get(manager)??budget,budget));
+      for(let i=0;i<manager.numTargets;i++){
+        const target=manager.getTarget(i);
+        const list=this.shapeKeys.get(target.name)??[];
+        list.push(target);this.shapeKeys.set(target.name,list);
+      }
+    }
+    this.syncMorphStorage();
+    const groups=new Map(result.animationGroups.map(group=>[group.name,group]));
+    // The glTF loader may auto-start its first group before returning it.
+    for(const group of result.animationGroups)group.stop();
+    for(const name of SANTI_NLA_ACTIONS){
+      const group=groups.get(name);
+      if(!group){this.disposeResult(result);throw new Error(`Santi GLB: missing NLA action ${name}`);}
+      // Keep facial expressions independent of skeletal actions if a future
+      // export includes morph-weight tracks.
+      for(const track of [...group.targetedAnimations])
+        if(track.target instanceof MorphTarget)
+          group.removeTargetedAnimation(track.animation);
+      if(IN_PLACE_ACTIONS.has(name)){
+        // Physics owns jump displacement. Attacks and rolls keep their vertical
+        // crouch, but cannot move the mesh away from the player collider.
+        const isJump=name===SANTI_LOCOMOTION.jump||
+          name===SANTI_LOCOMOTION.runningJump;
+        for(const track of group.targetedAnimations){
+          if(track.target.name!=='mixamorig:Hips'||
+            track.animation.targetProperty!=='position')continue;
+          const keys=track.animation.getKeys();
+          if(!keys.length)continue;
+          const origin=keys[0].value as Vector3;
+          track.animation.setKeys(keys.map(key=>{
+            const value=key.value as Vector3;
+            return {...key,value:isJump?origin.clone():
+              new Vector3(origin.x,origin.y,value.z)};
+          }));
+        }
+      }
+      this.actions.set(name,group);
+    }
+    // A separate clip keeps the ground attack's vertical crouch intact while
+    // the airborne version leaves all displacement to the traversal physics.
+    this.airKickAnimation=this.actions.get(SANTI_COMBAT.airKick)!
+      .clone('Santi Air Kick',undefined,true,true);
+    for(const track of this.airKickAnimation.targetedAnimations){
+      if(track.target.name!=='mixamorig:Hips'||
+        track.animation.targetProperty!=='position')continue;
+      const keys=track.animation.getKeys();
+      if(keys.length){
+        const origin=keys[0].value as Vector3;
+        track.animation.setKeys(keys.map(key=>({...key,value:origin.clone()})));
+      }
+    }
+    this.visualOrientation=new TransformNode('santi-spin-orientation',this.scene);
+    this.visualOrientation.parent=this.parent;
+    root.parent=this.visualOrientation;
+    this.loaded=result;
+    this.isReady=true;
+    this.setExpression('SF_01_FELIZ_SonrisaNatural',.22);
+    this.transition(SANTI_LOCOMOTION.idle,true);
+    if(new URLSearchParams(window.location.search).has('santiDebug'))this.createDebugPanel();
+    return true;
+  }
+
+  get actionNames():readonly SantiActionName[]{return SANTI_NLA_ACTIONS;}
+  get expressionNames():readonly SantiExpressionName[]{return SANTI_EXPRESSIONS;}
+
+  setShapeKey(name:string,influence:number):boolean{
+    const targets=this.shapeKeys.get(name);
+    if(!targets)return false;
+    const value=Math.max(0,Math.min(1,influence));
+    for(const target of targets)target.influence=value;
+    this.syncMorphStorage();
+    return true;
+  }
+
+  private syncMorphStorage():void{
+    for(const [manager,budget] of this.morphBudgets){
+      let active=0;
+      for(let i=0;i<manager.numTargets;i++)
+        if(manager.getTarget(i).influence!==0)active++;
+      // Normal expressions need only one or two vertex-attribute buffers.
+      // Allocate the full floating-point target atlas only for complex blends
+      // that exceed the available attributes; all authored shapes stay usable.
+      manager.useTextureToStoreTargets=active>budget;
+    }
+  }
+
+  setExpression(name:SantiExpressionName|null,influence=1):boolean{
+    if(name&&!this.shapeKeys.has(name))return false;
+    for(const expression of SANTI_EXPRESSIONS)this.setShapeKey(expression,0);
+    if(name)this.setShapeKey(name,influence);
+    return true;
+  }
+
+  /** Play any registered NLA action once; locomotion resumes when it ends. */
+  playAction(name:SantiActionName,startFraction=0,force=false):boolean{
+    if(this.actionLockSeconds>0&&!force)return false;
+    if(!this.actions.has(name))return false;
+    this.combat=null;
+    return this.startAction(name,startFraction);
+  }
+
+  private startAction(name:SantiActionName,startFraction=0,endFraction=1,
+    speed=1,blendSeconds=BLEND_SECONDS):boolean{
+    const group=this.actions.get(name);
+    if(!group)return false;
+    const from=group.from+(group.to-group.from)*Math.max(0,Math.min(1,startFraction));
+    const to=group.from+(group.to-group.from)*endFraction;
+    this.overrideSeconds=group.getLength(from,to)/speed;
+    this.actionLockSeconds=LOCKED_ACTIONS.has(name)?this.overrideSeconds:0;
+    this.landingRecoverySeconds=0;
+    if(this.active===group){group.stop();this.active=null;}
+    this.transition(name,false,speed,from,to,blendSeconds);
+    return true;
+  }
+
+  /** One deliberate press queues at most one following strike, never a whole chain. */
+  requestAttack(equipment:EquipmentId):boolean{
+    this.prepareCombat(equipment,true);
+    if(this.combat){
+      if(this.combat.queued)return false;
+      this.combat.queued=true;
+      return true;
+    }
+    if(this.actionLockSeconds>0||this.overrideSeconds>0||!this.isReady)return false;
+    return this.startComboStep(equipment,0);
+  }
+
+  get combatState():{serial:number;remainingSeconds:number}|null{
+    return this.combat?{serial:this.combat.serial,
+      remainingSeconds:Math.max(0,this.combat.duration-this.combat.elapsed)}:null;
+  }
+
+  /** Equipment changes invalidate both the current weapon action and its queued hit. */
+  prepareCombat(equipment:EquipmentId,enabled:boolean):void{
+    if(this.combat&&this.combat.equipment!==equipment)this.cancelCombat();
+    if(this.combat&&!enabled)this.combat.queued=false;
+  }
+
+  private cancelCombat():void{
+    if(!this.combat)return;
+    this.combat=null;
+    this.overrideSeconds=0;
+    this.actionLockSeconds=0;
+  }
+
+  private startComboStep(equipment:EquipmentId,step:number):boolean{
+    const profile=combatCombo(equipment)[step];
+    if(!profile||!this.startAction(profile.action,profile.from,profile.to,
+      profile.speed,COMBAT_BLEND_SECONDS))return false;
+    this.combat={equipment,step,elapsed:0,duration:this.overrideSeconds,
+      queued:false,serial:++this.combatSerial};
+    return true;
+  }
+
+  private advanceCombat(dt:number):void{
+    const combat=this.combat;
+    if(!combat)return;
+    combat.elapsed+=dt;
+    const steps=combatCombo(combat.equipment);
+    const profile=steps[combat.step];
+    if(combat.queued&&combat.elapsed>=combat.duration*profile.linkAt){
+      // The last hit keeps its full recovery before a new combo can begin.
+      this.startComboStep(combat.equipment,(combat.step+1)%steps.length);
+    }else if(combat.elapsed>=combat.duration)this.cancelCombat();
+  }
+
+  actionDuration(name:SantiActionName,startFraction=0):number{
+    const group=this.actions.get(name);
+    if(!group)return 0;
+    const from=group.from+(group.to-group.from)*Math.max(0,Math.min(1,startFraction));
+    return group.getLength(from,group.to);
+  }
+
+  update(dt:number,motion:SantiMotion):SantiLanding|null{
+    if(!this.isReady)return null;
+    this.samplingSpin=false;
+    if(motion.mode!=='grounded')this.cancelCombat();
+    let landing:SantiLanding|null=null;
+    const landed=this.previousMode==='airborne'&&motion.mode==='grounded';
+    const highFallLanding=landed&&
+      this.airbornePeakY-motion.feetY>=HIGH_FALL_ROLL_DROP;
+    const landedStandingJump=this.previousMode==='airborne'&&
+      motion.mode==='grounded'&&this.jumpInProgress&&!this.jumpWasRunning&&
+      (this.active?.name===SANTI_LOCOMOTION.jump||this.active===this.airKickAnimation);
+    if(motion.mode==='airborne'){
+      if(this.previousMode!=='airborne'){
+        this.airborneStartY=motion.takeoffY??motion.feetY;
+        this.airbornePeakY=Math.max(this.airborneStartY,motion.feetY);
+        this.jumpInProgress=motion.jumpStarted;
+        this.jumpWasRunning=motion.run;
+        this.jumpWasSprinting=motion.sprint;
+        this.jumpElapsed=0;
+        this.airKickInProgress=false;
+        this.landingRecoverySeconds=0;
+      }
+      if(motion.doubleJumpStarted){
+        this.jumpInProgress=true;
+        this.jumpWasRunning=false;
+        this.jumpElapsed=0;
+        // Only airborne Q selects the kick. A second Space uses Jumping even
+        // without directional input; physics independently controls its impulse.
+        this.airKickInProgress=motion.airKickStarted===true;
+        this.airborneStartY=Math.min(this.airborneStartY,motion.feetY);
+      }
+      this.airbornePeakY=Math.max(this.airbornePeakY,motion.feetY);
+      if(this.jumpInProgress&&!this.jumpWasRunning)this.jumpElapsed+=dt;
+    }else{
+      this.jumpInProgress=false;
+      this.airKickInProgress=false;
+      if(motion.mode!=='grounded')this.landingRecoverySeconds=0;
+    }
+    this.previousMode=motion.mode;
+    if(highFallLanding){
+      if(this.playAction(SANTI_COMBAT.highFallRoll,FALL_ROLL_CONTACT,true))
+        landing={kind:'highFallRoll',duration:this.actionDuration(SANTI_COMBAT.highFallRoll,FALL_ROLL_CONTACT)};
+    }else if(landedStandingJump){
+      if(!motion.movementIntent){
+        this.startStandingLanding();
+        landing={kind:'standing',duration:LANDING_RECOVERY_SECONDS};
+      }
+    }
+    this.landingRecoverySeconds=Math.max(0,this.landingRecoverySeconds-dt);
+    this.overrideSeconds=Math.max(0,this.overrideSeconds-dt);
+    this.actionLockSeconds=Math.max(0,this.actionLockSeconds-dt);
+    this.advanceCombat(dt);
+    if(this.overrideSeconds===0&&this.landingRecoverySeconds===0){
+      if(motion.mode==='airborne'&&this.jumpInProgress&&!this.jumpWasRunning&&
+        motion.feetY>=this.airborneStartY-LEVEL_DROP_FOR_FALL){
+        if(!this.airKickInProgress||!this.seekAirKick())this.seekStandingJump();
+      }else{
+        let name:SantiActionName;
+        let loop=true;
+        let speed=1;
+        if(motion.mode==='mantling'){
+          name=SANTI_LOCOMOTION.mantle;loop=false;speed=3;
+        }else if(motion.mode==='climbing'){
+          name=motion.moving?SANTI_LOCOMOTION.climb:SANTI_LOCOMOTION.hanging;
+        }else if(motion.mode==='airborne'){
+          if(motion.feetY<this.airborneStartY-LEVEL_DROP_FOR_FALL){
+            name=SANTI_LOCOMOTION.fall;
+          }else if(this.jumpInProgress){
+            name=SANTI_LOCOMOTION.runningJump;loop=false;
+            const launchSpeed=this.jumpWasSprinting?TRAVERSAL.sprintJumpSpeed:
+              this.jumpWasRunning?TRAVERSAL.runningJumpSpeed:TRAVERSAL.initialJumpSpeed;
+            speed=this.actions.get(name)!.getLength()/
+              (2*launchSpeed/TRAVERSAL.gravity);
+          }else{
+            // A shallow step off an edge should retain locomotion until landing.
+            name=this.active?this.active.name as SantiActionName:SANTI_LOCOMOTION.idle;
+          }
+        }else if(motion.moving||landedStandingJump&&motion.movementIntent){
+          name=motion.backward?SANTI_LOCOMOTION.backward:
+            motion.run?SANTI_LOCOMOTION.run:SANTI_LOCOMOTION.walk;
+          if(name===SANTI_LOCOMOTION.run&&motion.sprint)speed=2;
+        }else name=SANTI_LOCOMOTION.idle;
+        this.transition(name,loop,speed);
+      }
+    }
+    if(this.fading&&this.active){
+      this.blend=Math.min(1,this.blend+dt/this.blendSeconds);
+      this.active.setWeightForAllAnimatables(this.blend);
+      this.fading.setWeightForAllAnimatables(1-this.blend);
+      if(this.blend===1){this.fading.stop();this.fading=null;}
+    }
+    if(!this.samplingSpin&&this.visualOrientation){
+      // An early touchdown also finishes in the authored turn direction. Zero
+      // and -2π are the same orientation; never interpolate backward to zero.
+      const yaw=this.visualOrientation.rotation.y;
+      if(yaw!==0){
+        const next=Math.max(SPIN_FULL_TURN,yaw-dt*Math.PI*2/.12);
+        this.visualOrientation.rotation.y=next<=SPIN_FULL_TURN?0:next;
+      }
+    }
+    return landing;
+  }
+
+  private seekStandingJump():void{
+    const group=this.actions.get(SANTI_LOCOMOTION.jump)!;
+    const from=group.from+(group.to-group.from)*STANDING_JUMP_TAKEOFF;
+    const hover=group.from+(group.to-group.from)*STANDING_JUMP_HOVER;
+    if(this.active!==group)this.transition(SANTI_LOCOMOTION.jump,false,1,from,hover);
+    else if(!group.isStarted)group.start(false,1,from,hover);
+    const progress=Math.min(1,this.jumpElapsed/LEVEL_JUMP_APEX_SECONDS);
+    group.goToFrame(from+(hover-from)*progress,true);
+    group.pause();
+  }
+
+  private seekAirKick():boolean{
+    const group=this.airKickAnimation!;
+    const from=group.from+(group.to-group.from)*SPIN_JUMP_FROM;
+    const to=group.from+(group.to-group.from)*SPIN_JUMP_TO;
+    const duration=TRAVERSAL.airKickSeconds;
+    if(this.jumpElapsed>=duration)return false;
+    this.samplingSpin=true;
+    const progress=this.jumpElapsed/duration;
+    const impact=(SPIN_JUMP_IMPACT-SPIN_JUMP_FROM)/(SPIN_JUMP_TO-SPIN_JUMP_FROM);
+    const beforeImpact=progress<=impact;
+    const t=beforeImpact?progress/impact:(progress-impact)/(1-impact);
+    const eased=t*t*(3-2*t);
+    this.visualOrientation!.rotation.y=beforeImpact?SPIN_IMPACT_TURN*eased:
+      SPIN_IMPACT_TURN+(SPIN_FULL_TURN-SPIN_IMPACT_TURN)*eased;
+    if(this.active!==group)this.transitionGroup(group,false,1,from,to,COMBAT_BLEND_SECONDS);
+    else if(!group.isStarted)group.start(false,1,from,to);
+    group.goToFrame(from+(to-from)*this.jumpElapsed/duration,true);
+    group.pause();
+    return true;
+  }
+
+  private startStandingLanding():void{
+    const group=this.actions.get(SANTI_LOCOMOTION.jump)!;
+    const from=group.from+(group.to-group.from)*STANDING_JUMP_CONTACT;
+    this.fading?.stop();this.fading=null;
+    if(this.active!==group)this.active?.stop();
+    group.stop();this.active=null;
+    this.transition(SANTI_LOCOMOTION.jump,false,
+      group.getLength(from,group.to)/LANDING_RECOVERY_SECONDS,from,group.to);
+    group.goToFrame(from,true);
+    this.landingRecoverySeconds=LANDING_RECOVERY_SECONDS;
+    this.actionLockSeconds=LANDING_RECOVERY_SECONDS;
+  }
+
+  private transition(name:SantiActionName,loop:boolean,speed=1,
+    from?:number,to?:number,blendSeconds=BLEND_SECONDS):void{
+    const next=this.actions.get(name);
+    if(!next)return;
+    this.transitionGroup(next,loop,speed,from,to,blendSeconds);
+  }
+
+  private transitionGroup(next:AnimationGroup,loop:boolean,speed=1,
+    from?:number,to?:number,blendSeconds=BLEND_SECONDS):void{
+    if(this.active===next){
+      next.speedRatio=speed;
+      if(loop&&!next.isPlaying)next.start(true,speed);
+      return;
+    }
+    this.fading?.stop();
+    this.fading=this.active;
+    this.active=next;
+    this.blendSeconds=blendSeconds;
+    next.start(loop,speed,from,to);
+    if(this.fading){
+      this.blend=0;
+      next.setWeightForAllAnimatables(0);
+      this.fading.setWeightForAllAnimatables(1);
+    }else{
+      this.blend=1;
+      next.setWeightForAllAnimatables(1);
+    }
+  }
+
+  private createDebugPanel():void{
+    const panel=document.createElement('div');
+    panel.style.cssText='position:fixed;right:12px;bottom:70px;z-index:1200;'+
+      'background:#102334ed;color:#eef4ff;padding:10px;border-radius:8px;'+
+      'font:12px system-ui;max-width:260px';
+    const title=document.createElement('strong');
+    title.textContent=`Santi · ${this.actions.size} NLA · ${this.shapeKeys.size} shape keys`;
+    panel.append(title);
+    const action=document.createElement('select');
+    for(const name of SANTI_NLA_ACTIONS)action.add(new Option(name,name));
+    action.style.cssText='display:block;width:100%;margin:8px 0 4px';
+    panel.append(action);
+    const play=document.createElement('button');
+    play.textContent='Reproducir acción';
+    play.onclick=()=>this.playAction(action.value as SantiActionName);
+    panel.append(play);
+    const expression=document.createElement('select');
+    expression.add(new Option('Neutral',''));
+    for(const name of SANTI_EXPRESSIONS)expression.add(new Option(name,name));
+    expression.style.cssText='display:block;width:100%;margin:8px 0 4px';
+    expression.value='SF_01_FELIZ_SonrisaNatural';
+    expression.onchange=()=>this.setExpression(
+      expression.value?expression.value as SantiExpressionName:null);
+    panel.append(expression);
+    document.body.append(panel);
+    this.debugPanel=panel;
+  }
+
+  private disposeResult(result:Awaited<ReturnType<typeof ImportMeshAsync>>):void{
+    const morphManagers=new Set(result.meshes.flatMap(mesh=>
+      mesh.morphTargetManager?[mesh.morphTargetManager]:[]));
+    for(const group of result.animationGroups)group.dispose();
+    for(const skeleton of result.skeletons)skeleton.dispose();
+    result.meshes.find(mesh=>mesh.name==='__root__')?.dispose(false,true);
+    // Mesh disposal does not own these managers or their floating-point textures.
+    for(const manager of morphManagers)manager.dispose();
+  }
+
+  dispose():void{
+    this.disposed=true;
+    this.combat=null;
+    this.debugPanel?.remove();
+    this.airKickAnimation?.dispose();this.airKickAnimation=null;
+    if(this.loaded)this.disposeResult(this.loaded);
+    this.visualOrientation?.dispose();this.visualOrientation=null;
+    this.loaded=null;
+    this.actions.clear();this.shapeKeys.clear();
+    this.morphBudgets.clear();
+    this.isReady=false;
+  }
+}

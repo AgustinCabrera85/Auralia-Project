@@ -1,7 +1,7 @@
 import type { BuildType, ItemId, Inventory } from './types';
 
 export type Recipe = {
-  id: 'hammer' | 'pickaxe' | 'lantern';
+  id: 'hammer' | 'pickaxe' | 'lantern' | 'sword';
   title: string;
   description: string;
   output: ItemId;
@@ -20,6 +20,11 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: 'lantern', title: 'Linterna de las Chispas', description: 'Recuerdo luminoso de la primera isla.',
     output: 'lantern', requires: { wood: 1, spark: 2 }
+  },
+  {
+    id:'sword',title:'Espada de cobre',
+    description:'Elegila en Equipo para usar los ataques de espada de Santi.',
+    output:'sword',requires:{wood:2,copper:5,stone:1}
   }
 ];
 

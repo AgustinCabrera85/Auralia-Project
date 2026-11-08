@@ -29,7 +29,7 @@ export class LandscapeDebug {
   }
 
   handleKey(key:string):boolean{
-    if(key==='f'){
+    if(key==='f6'){
       this.fogOn=!this.fogOn;
       this.scene.fogMode=this.fogOn?LANDSCAPE_ATMOSPHERE_CONFIG.fogMode:Scene.FOGMODE_NONE;
     }else if(key==='g'){
@@ -70,7 +70,7 @@ export class LandscapeDebug {
       ` · triángulos ${Math.round(this.scene.getActiveIndices()/3)}\n`+
       `Fog ${this.fogOn?'sí':'no'} ${this.scene.fogDensity.toFixed(5)}`+
       ` ${this.colors[this.colorIndex]} · geología ${this.geologyAdjusted?'ajustada':'GLB original'}\n`+
-      `F fog · G geología · [ ] densidad · V color · 0-3 LOD`;
+      `F6 fog · G geología · [ ] densidad · V color · 0-3 LOD`;
   }
 
   dispose():void{

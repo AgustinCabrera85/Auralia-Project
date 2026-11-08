@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {TelemetryHistory,TELEMETRY_COLUMNS,T}=require('../.test-build/game/telemetryData.js');
+const {TelemetryHistory,TelemetryMemoryHistory,TELEMETRY_COLUMNS,T}=require('../.test-build/game/telemetryData.js');
 const frame=(time,interval,phases={})=>{
   const values=new Float64Array(TELEMETRY_COLUMNS.length);
   values[T.timeMs]=time;values[T.frameMs]=interval;values[T.gpuMs]=NaN;
@@ -32,3 +32,27 @@ history.push(frame(1000,140,{updateMs:4,renderMs:3}));
 assert.equal(history.slowFrames(1000)[0].label,'Sin pico CPU claro',
   'an inter-frame stall is not incorrectly blamed on a tiny CPU phase');
 console.log('Telemetry: real frame intervals, bounded history, percentiles, GPU availability and hitch attribution OK');
+
+history.clear();history.push(frame(2000,75,{oceano:60,movimiento:2,renderMs:8}));
+assert.equal(history.slowFrames(2000)[0].label,'Océano','ocean hitches are separated from player movement');
+assert.equal(history.exportRows()[0].oceano,60);
+
+const memory=new TelemetryMemoryHistory(3);
+const memorySample=timeMs=>({timeMs,jsUsedBytes:null,jsAllocatedBytes:null,jsLimitBytes:null,
+  meshes:10,geometries:8,textures:4,materials:3,skeletons:1,morphManagers:1,
+  animationGroups:35,animatables:195,x:1,z:10});
+for(let time=0;time<=4000;time+=5)memory.push(memorySample(time));
+assert.equal(memory.count,3,'high-FPS sessions cannot grow the memory history');
+assert.deepEqual(memory.exportRows().map(row=>row.timeMs),[2000,3000,4000],
+  'memory samples retain chronological seconds independently of frame rate');
+assert.equal(memory.push(memorySample(3990)),false,'out-of-order samples are ignored');
+assert.equal(memory.due(NaN),false);
+assert.equal(memory.exportRows()[0].jsUsedBytes,null,'unsupported heap readings are not reported as zero');
+const exported=memory.exportRows();exported[0].meshes=999;
+assert.equal(memory.exportRows()[0].meshes,10,'exported data cannot alter stored resource counts');
+memory.clear();assert.equal(memory.count,0);
+const sample=memorySample(0);sample.jsUsedBytes=128*1024*1024;
+assert.equal(memory.push(sample),true,'reset allows a new relative clock');
+sample.jsUsedBytes=0;
+assert.equal(memory.exportRows()[0].jsUsedBytes,128*1024*1024,'samples own their historical values');
+console.log('Telemetry memory: bounded history, one-second sampling, missing readings and reset OK');
