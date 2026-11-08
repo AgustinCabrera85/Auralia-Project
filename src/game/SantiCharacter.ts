@@ -1,6 +1,6 @@
 import {
-  AnimationGroup, ImportMeshAsync, Mesh, MorphTarget, Scene, TransformNode, Vector3,
-  type MorphTargetManager
+  AnimationGroup, ImportMeshAsync, Mesh, MorphTarget, Quaternion, Scene, TransformNode, Vector3,
+  type MorphTargetManager, type Observer
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
@@ -39,6 +39,17 @@ const IN_PLACE_ACTIONS=new Set<SantiActionName>([
 const LOCKED_ACTIONS=new Set<SantiActionName>([
   ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,SANTI_COMBAT.highFallRoll
 ]);
+const TRAVERSAL_LOOPS=new Set<SantiActionName>([
+  SANTI_LOCOMOTION.uphillWalk,SANTI_LOCOMOTION.uphillRun,SANTI_LOCOMOTION.climb,
+  SANTI_LOCOMOTION.hanging,SANTI_LOCOMOTION.shimmyLeft,SANTI_LOCOMOTION.shimmyRight,
+  SANTI_LOCOMOTION.mantle,'Climbing','Climbing To Top'
+]);
+const WALL_ACTIONS=new Set<SantiActionName>([
+  SANTI_LOCOMOTION.climb,SANTI_LOCOMOTION.hanging,SANTI_LOCOMOTION.shimmyLeft,
+  SANTI_LOCOMOTION.shimmyRight,SANTI_LOCOMOTION.mantle,'Climbing','Climbing To Top'
+]);
+type ClimbContact={pointX:number;pointY:number;pointZ:number;
+  normalX:number;normalY:number;normalZ:number};
 
 export type SantiMotion={
   mode:LocomotionMode;
@@ -47,6 +58,11 @@ export type SantiMotion={
   run:boolean;
   sprint:boolean;
   backward:boolean;
+  groundGrade?:number;
+  climbVertical?:number;
+  climbSide?:number;
+  mantleProgress?:number;
+  climbContact?:ClimbContact|null;
   feetY:number;
   takeoffY?:number;
   jumpStarted:boolean;
@@ -77,6 +93,12 @@ export class SantiCharacter {
   private airKickInProgress=false;
   private airKickAnimation:AnimationGroup|null=null;
   private visualOrientation:TransformNode|null=null;
+  private slopeOrientation:TransformNode|null=null;
+  private groundIncline=0;
+  private ascendingSlope=false;
+  private climbContact:ClimbContact|null=null;
+  private contactObserver:Observer<Scene>|null=null;
+  private contactHands:TransformNode[]=[];
   private samplingSpin=false;
   private previousMode:LocomotionMode='grounded';
   private landingRecoverySeconds=0;
@@ -134,6 +156,9 @@ export class SantiCharacter {
     }
     this.syncMorphStorage();
     const groups=new Map(result.animationGroups.map(group=>[group.name,group]));
+    const restHips=groups.get(SANTI_LOCOMOTION.idle)?.targetedAnimations.find(track=>
+      track.target.name==='mixamorig:Hips'&&track.animation.targetProperty==='position')
+      ?.animation.getKeys()[0]?.value as Vector3|undefined;
     // The glTF loader may auto-start its first group before returning it.
     for(const group of result.animationGroups)group.stop();
     for(const name of SANTI_NLA_ACTIONS){
@@ -162,6 +187,36 @@ export class SantiCharacter {
           }));
         }
       }
+      if(TRAVERSAL_LOOPS.has(name)){
+        for(const track of group.targetedAnimations){
+          if(track.target.name!=='mixamorig:Hips'||track.animation.targetProperty!=='position')continue;
+          const keys=track.animation.getKeys();
+          if(keys.length<2)continue;
+          const first=keys[0],last=keys[keys.length-1];
+          const start=first.value as Vector3,end=last.value as Vector3;
+          // Remove authored travel, retaining cyclic weight shifts. Physics
+          // supplies ascent and shimmy, so NLA loops cannot drift or climb twice.
+          track.animation.setKeys(keys.map(key=>{
+            // These clips have non-linear root travel as well as net travel.
+            // Lock the pelvis to one shared anchor: physics supplies the ascent,
+            // while the skeletal poses supply all hand/leg movement.
+            if(WALL_ACTIONS.has(name))return {...key,value:(restHips??start).clone()};
+            const t=(key.frame-first.frame)/Math.max(.001,last.frame-first.frame);
+            const value=(key.value as Vector3).subtract(end.subtract(start).scale(t));
+            return {...key,value};
+          }));
+        }
+      }
+      if(name===SANTI_LOCOMOTION.climb){
+        // This NLA was authored facing the opposite way. Correct its pelvis
+        // yaw in source Z-up space so blends to hanging/shimmy face the wall.
+        const turn=Quaternion.RotationAxis(new Vector3(0,0,1),Math.PI);
+        for(const track of group.targetedAnimations){
+          if(track.target.name==='mixamorig:Hips'&&track.animation.targetProperty==='rotationQuaternion')
+            track.animation.setKeys(track.animation.getKeys().map(key=>
+              ({...key,value:turn.multiply(key.value as Quaternion)})));
+        }
+      }
       this.actions.set(name,group);
     }
     // A separate clip keeps the ground attack's vertical crouch intact while
@@ -178,8 +233,13 @@ export class SantiCharacter {
       }
     }
     this.visualOrientation=new TransformNode('santi-spin-orientation',this.scene);
-    this.visualOrientation.parent=this.parent;
+    this.slopeOrientation=new TransformNode('santi-slope-orientation',this.scene);
+    this.slopeOrientation.parent=this.parent;
+    this.visualOrientation.parent=this.slopeOrientation;
     root.parent=this.visualOrientation;
+    this.contactHands=result.transformNodes.filter(node=>
+      node.name==='mixamorig:LeftHand'||node.name==='mixamorig:RightHand');
+    this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>this.alignClimbContact());
     this.loaded=result;
     this.isReady=true;
     this.setExpression('SF_01_FELIZ_SonrisaNatural',.22);
@@ -190,6 +250,24 @@ export class SantiCharacter {
 
   get actionNames():readonly SantiActionName[]{return SANTI_NLA_ACTIONS;}
   get expressionNames():readonly SantiExpressionName[]{return SANTI_EXPRESSIONS;}
+
+  /** Align the supporting hand after animation sampling, without moving the
+   * collider or allocating another skeleton/IK solver. The inward hand stays
+   * just outside the wall while the other hand is free to reach. */
+  private alignClimbContact():void{
+    const node=this.slopeOrientation,wall=this.climbContact;
+    if(!node||!wall||this.contactHands.length!==2)return;
+    let distance=Infinity;
+    for(const hand of this.contactHands){
+      hand.computeWorldMatrix(true);
+      const p=hand.getAbsolutePosition();
+      distance=Math.min(distance,(p.x-wall.pointX)*wall.normalX+
+        (p.y-wall.pointY)*wall.normalY+(p.z-wall.pointZ)*wall.normalZ);
+    }
+    const horizontal=Math.hypot(wall.normalX,wall.normalZ);
+    if(horizontal>.5&&Number.isFinite(distance))
+      node.position.z=Math.max(-1.3,Math.min(1.3,node.position.z+(distance-.12)/horizontal));
+  }
 
   setShapeKey(name:string,influence:number):boolean{
     const targets=this.shapeKeys.get(name);
@@ -302,6 +380,18 @@ export class SantiCharacter {
   update(dt:number,motion:SantiMotion):SantiLanding|null{
     if(!this.isReady)return null;
     this.samplingSpin=false;
+    const grade=motion.mode==='grounded'&&motion.moving?Math.max(0,motion.groundGrade??0):0;
+    this.groundIncline+=(Math.atan(grade)-this.groundIncline)*(1-Math.exp(-dt*12));
+    this.ascendingSlope=motion.mode==='grounded'&&motion.moving&&
+      this.groundIncline>(this.ascendingSlope?5:9)*Math.PI/180;
+    this.climbContact=motion.mode==='climbing'?motion.climbContact??null:null;
+    const lean=this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
+      motion.mode==='grounded'&&motion.moving&&motion.sprint&&
+      this.overrideSeconds===0?Math.min(.36,.07+this.groundIncline*.28):0;
+    if(this.slopeOrientation)this.slopeOrientation.rotation.x+=
+      (lean-this.slopeOrientation.rotation.x)*(1-Math.exp(-dt*14));
+    if(this.slopeOrientation&&!this.climbContact)
+      this.slopeOrientation.position.z*=Math.exp(-dt*18);
     if(motion.mode!=='grounded')this.cancelCombat();
     let landing:SantiLanding|null=null;
     const landed=this.previousMode==='airborne'&&motion.mode==='grounded';
@@ -352,17 +442,24 @@ export class SantiCharacter {
     this.actionLockSeconds=Math.max(0,this.actionLockSeconds-dt);
     this.advanceCombat(dt);
     if(this.overrideSeconds===0&&this.landingRecoverySeconds===0){
-      if(motion.mode==='airborne'&&this.jumpInProgress&&!this.jumpWasRunning&&
+      if(motion.mode==='mantling'){
+        const group=this.actions.get(SANTI_LOCOMOTION.mantle)!;
+        if(this.active!==group)this.transition(SANTI_LOCOMOTION.mantle,false);
+        group.goToFrame(group.from+(group.to-group.from)*Math.max(0,Math.min(1,motion.mantleProgress??0)),true);
+        group.pause();
+      }else if(motion.mode==='airborne'&&this.jumpInProgress&&!this.jumpWasRunning&&
         motion.feetY>=this.airborneStartY-LEVEL_DROP_FOR_FALL){
         if(!this.airKickInProgress||!this.seekAirKick())this.seekStandingJump();
       }else{
         let name:SantiActionName;
         let loop=true;
         let speed=1;
-        if(motion.mode==='mantling'){
-          name=SANTI_LOCOMOTION.mantle;loop=false;speed=3;
-        }else if(motion.mode==='climbing'){
-          name=motion.moving?SANTI_LOCOMOTION.climb:SANTI_LOCOMOTION.hanging;
+        if(motion.mode==='climbing'){
+          const up=motion.climbVertical??(motion.moving?1:0),side=motion.climbSide??0;
+          name=Math.abs(up)>.08?SANTI_LOCOMOTION.climb:
+            side<-.08?SANTI_LOCOMOTION.shimmyLeft:
+            side>.08?SANTI_LOCOMOTION.shimmyRight:SANTI_LOCOMOTION.hanging;
+          if(name===SANTI_LOCOMOTION.climb)speed=up<0?-1:1;
         }else if(motion.mode==='airborne'){
           if(motion.feetY<this.airborneStartY-LEVEL_DROP_FOR_FALL){
             name=SANTI_LOCOMOTION.fall;
@@ -377,9 +474,10 @@ export class SantiCharacter {
             name=this.active?this.active.name as SantiActionName:SANTI_LOCOMOTION.idle;
           }
         }else if(motion.moving||landedStandingJump&&motion.movementIntent){
-          name=motion.backward?SANTI_LOCOMOTION.backward:
-            motion.run?SANTI_LOCOMOTION.run:SANTI_LOCOMOTION.walk;
-          if(name===SANTI_LOCOMOTION.run&&motion.sprint)speed=2;
+          name=this.ascendingSlope?(motion.run?SANTI_LOCOMOTION.uphillRun:SANTI_LOCOMOTION.uphillWalk):
+            motion.backward?SANTI_LOCOMOTION.backward:
+              motion.run?SANTI_LOCOMOTION.run:SANTI_LOCOMOTION.walk;
+          if(motion.run&&motion.sprint)speed=2;
         }else name=SANTI_LOCOMOTION.idle;
         this.transition(name,loop,speed);
       }
@@ -519,8 +617,11 @@ export class SantiCharacter {
     this.combat=null;
     this.debugPanel?.remove();
     this.airKickAnimation?.dispose();this.airKickAnimation=null;
+    this.scene.onAfterAnimationsObservable.remove(this.contactObserver);
+    this.contactObserver=null;this.contactHands=[];this.climbContact=null;
     if(this.loaded)this.disposeResult(this.loaded);
     this.visualOrientation?.dispose();this.visualOrientation=null;
+    this.slopeOrientation?.dispose();this.slopeOrientation=null;
     this.loaded=null;
     this.actions.clear();this.shapeKeys.clear();
     this.morphBudgets.clear();

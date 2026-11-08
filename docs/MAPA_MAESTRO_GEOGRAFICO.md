@@ -65,6 +65,8 @@ Las transiciones seguirán esos campos: al ascender cambiarán el suelo, la dens
 
 ## Primer piloto en Brisalia
 
+El atlas operativo `AURALIA_ATLAS.md` aportado el 08/11/2026 desarrolla seis sectores: Corazón de Brisalia, Valle de los Cerezos, Colinas de los Molinos, Bosque de los Faroles, Garganta del Arroyo y Meseta de la Fortaleza. Aldea de los Cerezos y Fortaleza de Valderroca son propuestas de contenido. La [primera implementación del relieve](PILOTO_VALLE_FAROLES.md) registra P0/P1, sus pruebas y sus límites; la región completa sigue pendiente.
+
 La primera región completa debe comprobar el recorrido y el coste de habitar un paisaje terminado. Un terreno vacío con montañas sólo valida la forma; el piloto incluirá vegetación, edificios, interacciones y una muestra representativa de NPC, fauna y efectos antes de decidir la escala total.
 
 El alcance propuesto enlaza **hogar y Brisalia → valle de cerezos y cultivos → arroyo y garganta de la Cascada del Valle → mirador de la fortaleza → regreso por un recorrido alternativo**. La forma y longitud se ajustarán al jugar. Los accesos actuales a recursos, bosque, cueva y embarcadero deben seguir funcionando.
@@ -73,8 +75,10 @@ El alcance propuesto enlaza **hogar y Brisalia → valle de cerezos y cultivos �
 | --- | --- | --- |
 | P0 · Base y compatibilidad | Plano de anclas existentes, construcciones, accesos y áreas editadas; capturas y telemetría del recorrido actual | Identificar qué posiciones y alturas deben conservarse y contar con una comparación reproducible |
 | P1 · Relieve jugable | Maqueta con volúmenes simples de cuenca, lomas, garganta, meseta y límites visuales, integrada con el núcleo existente | Recorrer a pie y en sprint; probar saltos, cámara, pendientes, atajos, agua y vistas; eliminar tramos largos sin propósito |
-| P2 · Región completa | Biomas locales, agua, Brisalia, fortaleza, caminos, contenido jugable y carga representativa de assets | Cada tramo tiene identidad, orientación y motivo de exploración; las conexiones son legibles sin depender siempre del mapa |
-| P3 · Medición y escala | Comparación de tiempos de recorrido, densidad de encuentros, coste de producción, memoria y tiempos de frame | Elegir la extensión del mundo y la siguiente región con estos resultados; reducir o ampliar el piloto si la experiencia lo pide |
+| P2 · Agua y suelos | Cauces descendentes, taludes y materiales según pendiente | Agua y terreno coherentes, sin atravesar caminos ni mallas |
+| P3 · Distribución ecológica | Cerezos, praderas, bosque, ribera, claros y acabado de recorridos | Ambientes distintos por estructura y densidad, con accesos legibles y assets bien apoyados |
+| P4 · Arquitectura y cueva inicial | Aldea, fortaleza y una primera cueva pequeña | Entradas/salidas, colisiones, navegación e interiores persistentes; otras mazmorras reservadas |
+| P5 · Medición y escala | Región completa y comparación de recorridos, descubrimientos, coste de producción, memoria y tiempos de frame | Elegir la extensión del mundo y la siguiente región con estos resultados; reducir o ampliar el piloto si la experiencia lo pide |
 
 La región no necesita agotar todas sus misiones futuras. Sí necesita suficiente contenido y detalle final para que la prueba de escala represente el juego que se quiere construir.
 

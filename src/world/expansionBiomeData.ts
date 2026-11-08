@@ -38,7 +38,7 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
     sampleMainlandHeight(x+2,z)-sampleMainlandHeight(x-2,z),
     sampleMainlandHeight(x,z+2)-sampleMainlandHeight(x,z-2))/4;
   const add=(id:ExpansionV3Id,x:number,z:number,seed:number,tree=false):boolean=>{
-    const scale=.87+hash01(seed,172,27)*.26;
+    const scale=(.87+hash01(seed,172,27)*.26)*(tree?1.4:1);
     const spread=tree?7.5*scale:1.8*scale;
     if(!clear(x,z,spread))return false;
     const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);

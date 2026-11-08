@@ -9,6 +9,7 @@ const {GEOLOGY_COMPOSITIONS,composeGeology}=require('../.test-build/world/geolog
 const {MAINLAND,chunkOf,geographyMasks,sampleMainlandHeight,LANDMARKS}=require('../.test-build/world/terrainData.js');
 const {vegetationForChunk}=require('../.test-build/world/vegetationData.js');
 const {insideFoliageForest}=require('../.test-build/world/foliageForestConfig.js');
+const {terrainFootprintAt}=require('../.test-build/world/terrainLod.js');
 const {WorldPropSystem}=require('../.test-build/world/WorldPropSystem.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 
@@ -74,8 +75,10 @@ for(const f of GEOLOGY_FORMATIONS){
     const at=geologyPoint(f,i*22,across);
     const planted=vegetation.some(p=>p.kind==='plantitas1'&&
       Math.hypot(p.x-at.x,p.z-at.z)<.01);
-    assert.equal(planted,!insideFoliageForest(at.x,at.z),
-      'geological terrace uses procedural plants only outside the V4 biome');
+    const base=terrainFootprintAt(at.x,at.z,.35,sampleMainlandHeight);
+    const supported=base.maxSlope<=.62&&base.maxHeight-base.minHeight<=.4;
+    assert.equal(planted,!insideFoliageForest(at.x,at.z)&&supported,
+      'geological plants require a supported base outside the V4 biome');
   }
 }
 

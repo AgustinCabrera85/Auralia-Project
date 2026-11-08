@@ -46,14 +46,18 @@ export const SANTI_LOCOMOTION = {
   idle: 'Idle (1)',
   walk: 'Walking (6)',
   run: 'Run',
+  uphillWalk: 'Ascending Stairs',
+  uphillRun: 'Running Up Stairs',
   backward: 'Running Backward',
   jump: 'Jumping',
   doubleJump: 'Jumping',
   runningJump: 'Running Jump',
   fall: 'Falling Idle',
-  climb: 'Climbing',
+  climb: 'Climbing Ladder',
   hanging: 'Hanging Idle',
-  mantle: 'Climbing To Top'
+  shimmyLeft: 'Left Shimmy',
+  shimmyRight: 'Right Shimmy',
+  mantle: 'Braced Hang To Crouch'
 } as const satisfies Record<string, SantiActionName>;
 
 export const SANTI_COMBAT = {

@@ -48,8 +48,10 @@ assert.ok(GEOLOGY_COMPOSITIONS.every(c=>c.pieces.some(p=>
   'each rock formation uses low solid outcrops instead of monumental columns');
 assert.equal(new Set(rectangularRocks.map(p=>p.id)).size,rectangularRocks.length,
   'global pieces keep unique stable IDs');
+const {nearTerrainHeightAt}=require('../.test-build/world/terrainLod.js');
 for(const p of sample){
-  assert.ok(Math.abs(p.y-sampleMainlandHeight(p.x,p.z))<1e-7,'prop follows terrain');
+  const visible=nearTerrainHeightAt(p.x,p.z,sampleMainlandHeight);
+  assert.ok(p.y<=visible+.00001&&visible-p.y<2.64,'prop base is embedded in visible terrain, not suspended over a crease');
   if(p.id.startsWith('prop:'))assert.ok(geographyMasks(p.x,p.z).road<=PROP_CONFIG.roadMaskLimit,'generated props avoid paths');
 }
 for(const p of FIXED_CRYSTALS){

@@ -1,0 +1,213 @@
+{
+  "pack": "Auralia_Biomes_1K_Completo",
+  "version": "2.0",
+  "resolution_px": 1024,
+  "normal_convention": "OpenGL tangent-space (+Y green); normals estimated from albedo luminance, not measured height",
+  "biomes": [
+    {
+      "id": "alpino_roca_nieve",
+      "label": "Roca, hierba y nieve alpina",
+      "albedo": "textures/albedo/biome_alpino_roca_nieve_albedo_1k.webp",
+      "normal": "textures/normal/biome_alpino_roca_nieve_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "badlands_arcilla_roja",
+      "label": "Arcilla roja",
+      "albedo": "textures/albedo/biome_badlands_arcilla_roja_albedo_1k.webp",
+      "normal": "textures/normal/biome_badlands_arcilla_roja_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "bosque_templado_suelo",
+      "label": "Suelo de bosque templado",
+      "albedo": "textures/albedo/biome_bosque_templado_suelo_albedo_1k.webp",
+      "normal": "textures/normal/biome_bosque_templado_suelo_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "costa_playa",
+      "label": "Arena y conchas de playa",
+      "albedo": "textures/albedo/biome_costa_playa_albedo_1k.webp",
+      "normal": "textures/normal/biome_costa_playa_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "desierto_arena",
+      "label": "Arena desértica",
+      "albedo": "textures/albedo/biome_desierto_arena_albedo_1k.webp",
+      "normal": "textures/normal/biome_desierto_arena_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "estepa_seca",
+      "label": "Estepa seca",
+      "albedo": "textures/albedo/biome_estepa_seca_albedo_1k.webp",
+      "normal": "textures/normal/biome_estepa_seca_normal_gl_1k.png",
+      "normal_strength_hint": 0.42,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "orilla_rio_fangosa",
+      "label": "Orilla fangosa",
+      "albedo": "textures/albedo/biome_orilla_rio_fangosa_albedo_1k.webp",
+      "normal": "textures/normal/biome_orilla_rio_fangosa_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "pantano_humedo",
+      "label": "Pantano húmedo",
+      "albedo": "textures/albedo/biome_pantano_humedo_albedo_1k.webp",
+      "normal": "textures/normal/biome_pantano_humedo_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "pradera_templada",
+      "label": "Pradera silvestre",
+      "albedo": "textures/albedo/biome_pradera_templada_albedo_1k.webp",
+      "normal": "textures/normal/biome_pradera_templada_normal_gl_1k.png",
+      "normal_strength_hint": 0.42,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "selva_humeda",
+      "label": "Suelo de selva",
+      "albedo": "textures/albedo/biome_selva_humeda_albedo_1k.webp",
+      "normal": "textures/normal/biome_selva_humeda_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "sierra_grava_pasto",
+      "label": "Grava de sierra",
+      "albedo": "textures/albedo/biome_sierra_grava_pasto_albedo_1k.webp",
+      "normal": "textures/normal/biome_sierra_grava_pasto_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "tierra_maldita",
+      "label": "Tierra maldita",
+      "albedo": "textures/albedo/biome_tierra_maldita_albedo_1k.webp",
+      "normal": "textures/normal/biome_tierra_maldita_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "valle_cultivo_tierra_fertil",
+      "label": "Tierra fértil",
+      "albedo": "textures/albedo/biome_valle_cultivo_tierra_fertil_albedo_1k.webp",
+      "normal": "textures/normal/biome_valle_cultivo_tierra_fertil_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    },
+    {
+      "id": "volcanico_basalto",
+      "label": "Basalto volcánico",
+      "albedo": "textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+      "normal": "textures/normal/biome_volcanico_basalto_normal_gl_1k.png",
+      "normal_strength_hint": 0.65,
+      "source": "original generated albedo artwork, made seamless and resized to 1K",
+      "resolution": 1024
+    }
+  ],
+  "regions": {
+    "valle_faroles": [
+      "pradera_templada",
+      "valle_cultivo_tierra_fertil",
+      "bosque_templado_suelo",
+      "orilla_rio_fangosa"
+    ],
+    "valles_occidentales": [
+      "pradera_templada",
+      "estepa_seca",
+      "valle_cultivo_tierra_fertil",
+      "sierra_grava_pasto"
+    ],
+    "bosque_ecos": [
+      "bosque_templado_suelo",
+      "selva_humeda",
+      "orilla_rio_fangosa",
+      "pradera_templada"
+    ],
+    "sierras_engranajes": [
+      "sierra_grava_pasto",
+      "alpino_roca_nieve",
+      "volcanico_basalto",
+      "bosque_templado_suelo"
+    ],
+    "cordillera_crisol": [
+      "volcanico_basalto",
+      "alpino_roca_nieve",
+      "sierra_grava_pasto",
+      "tierra_maldita"
+    ],
+    "desierto_ocaso": [
+      "desierto_arena",
+      "badlands_arcilla_roja",
+      "estepa_seca",
+      "costa_playa"
+    ],
+    "cumbres_amanecer": [
+      "alpino_roca_nieve",
+      "sierra_grava_pasto",
+      "volcanico_basalto",
+      "pradera_templada"
+    ],
+    "tierras_malditas": [
+      "tierra_maldita",
+      "volcanico_basalto",
+      "bosque_templado_suelo",
+      "orilla_rio_fangosa"
+    ],
+    "lago_nacar": [
+      "orilla_rio_fangosa",
+      "pantano_humedo",
+      "pradera_templada",
+      "costa_playa"
+    ],
+    "selva_mil_cascadas": [
+      "selva_humeda",
+      "pantano_humedo",
+      "orilla_rio_fangosa",
+      "bosque_templado_suelo"
+    ],
+    "llanuras_sur": [
+      "pradera_templada",
+      "estepa_seca",
+      "valle_cultivo_tierra_fertil",
+      "bosque_templado_suelo"
+    ],
+    "costas_faros": [
+      "costa_playa",
+      "orilla_rio_fangosa",
+      "sierra_grava_pasto",
+      "pradera_templada"
+    ]
+  },
+  "limitations": [
+    "Albedo art is AI-generated; seamless edges have been processed, but visual tiling can remain at large scale.",
+    "Normal maps are approximated from tonal relief, not a calibrated physical height map.",
+    "The texture selection and terrain architecture are NOT modified by this package."
+  ]
+}

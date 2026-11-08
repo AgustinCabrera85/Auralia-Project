@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
 const {DoubleTapSprint}=require('../.test-build/game/DoubleTapSprint.js');
 const {slopeAllowed,TRAVERSAL}=require('../.test-build/game/traversalRules.js');
+const {terrainWallAt}=require('../.test-build/game/TerrainTraversal.js');
 const {cameraRelativeMovement}=require('../.test-build/game/movement.js');
 
 const input=(overrides={})=>({
@@ -215,6 +216,87 @@ steep.teleport(0,0,0);
 steep.step(.02,input({moveX:1,vertical:1}),slope(60));
 assert.equal(steep.mode,'grounded','a 60-degree rise blocks horizontal movement');
 assert.equal(steep.position.x,0,'the capsule does not enter the steep terrain');
+
+for(const fps of [30,60,144])for(const angle of [35,55,60]){
+  const runner=new CharacterTraversalController();runner.teleport(0,0,0);
+  for(let i=0;i<fps;i++)runner.step(1/fps,input({moveX:1,vertical:1,run:true,sprint:true}),slope(angle));
+  assert.equal(runner.mode,'grounded',`${fps} FPS: sprint stays on the ${angle}-degree hill`);
+  assert.ok(Math.abs(Math.hypot(runner.position.x,runner.position.y)-27)<.02,
+    'surface speed and ascent do not depend on frame rate');
+  assert.ok(Math.abs(runner.groundGrade-Math.tan(angle*Math.PI/180))<.001);
+}
+const tooSteep=new CharacterTraversalController();tooSteep.teleport(0,0,0);
+for(let i=0;i<60;i++)tooSteep.step(1/60,input({moveX:1,vertical:1,run:true,sprint:true}),slope(70));
+assert.equal(tooSteep.position.x,0,'2X sprint cannot run through a nearly vertical face');
+const restingOnSlope=new CharacterTraversalController();restingOnSlope.teleport(0,0,0);
+restingOnSlope.step(.02,input(),slope(55));
+assert.equal(restingOnSlope.mode,'airborne','stopping a sprint on a steep slope starts a slide');
+assert.ok(restingOnSlope.position.x<0,'the character slides downhill instead of standing across the slope');
+
+// The new large landscape is a height field, not a tagged GLB rock.
+const cliffHeight=(x,z)=>Math.abs(z)>2?0:Math.max(0,Math.min(x,8))*Math.tan(75*Math.PI/180);
+const terrainCliff={...flat,fallbackHeight:cliffHeight,
+  ground:(x,z,origin,max)=>{
+    const h=cliffHeight(x,z),d=.05;
+    const nx=(cliffHeight(x+d,z)-cliffHeight(x-d,z))/(2*d);
+    const nz=(cliffHeight(x,z+d)-cliffHeight(x,z-d))/(2*d);
+    return h<=origin&&h>=origin-max?{height:h,normalY:1/Math.hypot(nx,1,nz)}:null;
+  },
+  wall:(...args)=>terrainWallAt(cliffHeight,...args),
+  headroom:(x,y,z)=>cliffHeight(x,z)<=y+.08
+};
+const terrainClimber=new CharacterTraversalController();terrainClimber.teleport(-.8,0,0);
+terrainClimber.step(.02,input({moveX:1,vertical:1}),terrainCliff);
+assert.equal(terrainClimber.mode,'climbing','W catches the landscape itself');
+for(let i=0;i<80;i++)terrainClimber.step(.02,input({vertical:1}),terrainCliff);
+assert.ok(terrainClimber.position.y>4);
+assert.ok(terrainClimber.climbMotion.vertical>.9);
+assert.ok(terrainClimber.climbFacing.x>.99,'the avatar faces into the wall');
+const hangY=terrainClimber.position.y;
+terrainClimber.step(.02,input(),terrainCliff);
+assert.equal(terrainClimber.position.y,hangY,'no input hangs without climbing');
+assert.equal(terrainClimber.climbMotion.vertical,0);
+for(let i=0;i<15;i++)terrainClimber.step(.02,input({horizontal:1}),terrainCliff);
+assert.ok(terrainClimber.position.z<-.5,'D traverses the wall to camera right');
+assert.ok(terrainClimber.climbMotion.side>.9,'motion reports the character-right shimmy');
+for(let i=0;i<15;i++)terrainClimber.step(.02,input({horizontal:-1}),terrainCliff);
+assert.ok(Math.abs(terrainClimber.position.z)<.02);
+assert.ok(terrainClimber.climbMotion.side<-.9);
+for(let i=0;i<500&&terrainClimber.mode!=='grounded';i++)
+  terrainClimber.step(.02,input({vertical:1}),terrainCliff);
+assert.equal(terrainClimber.mode,'grounded','the terrain cliff can be climbed and mantled');
+assert.ok(Math.abs(terrainClimber.position.y-cliffHeight(9,0))<.01);
+assert.equal(terrainClimber.supportRockId,null,'terrain mantle restores ordinary terrain support');
+terrainClimber.teleport(.4,5,0);terrainClimber.mode='airborne';
+terrainClimber.step(.02,input({vertical:1}),terrainCliff);
+assert.equal(terrainClimber.mode,'climbing','an airborne approach can catch a reachable face');
+terrainClimber.step(.02,input({jumpPressed:true,vertical:1}),terrainCliff);
+terrainClimber.step(.02,input({vertical:1}),terrainCliff);
+assert.equal(terrainClimber.mode,'airborne','detaching does not instantly regrab the same wall');
+
+// A mountain shoulder changes from a climbable face to a rising, walkable
+// surface. It must not fall/regrab or require a perfectly horizontal plateau.
+for(const faceAngle of [50,75])for(const shoulderAngle of [35,41.8]){
+  const rise=Math.tan(faceAngle*Math.PI/180),shoulder=Math.tan(shoulderAngle*Math.PI/180);
+  const height=(x)=>x<0?0:x<8?x*rise:8*rise+(x-8)*shoulder;
+  const shoulderWorld={...flat,fallbackHeight:height,
+    wall:(...args)=>terrainWallAt(height,...args),
+    headroom:(x,y)=>height(x)<=y+.08,
+    ground:(x,z,origin,max)=>{
+      const y=height(x),normalY=1/Math.hypot(1,x<0?0:x<8?rise:shoulder);
+      return y<=origin&&y>=origin-max?{height:y,normalY}:null;
+    }
+  };
+  const avatar=new CharacterTraversalController();avatar.teleport(-.8,0,0);
+  const modes=new Set();
+  for(let i=0;i<1100&&avatar.position.x<11;i++){
+    avatar.step(.02,input({moveX:1,vertical:1}),shoulderWorld);modes.add(avatar.mode);
+  }
+  assert.ok(modes.has('climbing'));
+  assert.equal(modes.has('airborne'),false,'a shoulder does not drop and immediately regrab');
+  assert.equal(avatar.mode,'grounded');
+  assert.ok(avatar.position.x>=11,'walking continues beyond the crest');
+}
 
 const wallWorld=(top,climbable)=>({
   ...flat,

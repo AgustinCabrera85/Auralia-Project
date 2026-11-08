@@ -32,7 +32,11 @@ assert.equal(markerCount,1,'other interaction markers remain available');
 const sample=vegetationForChunk(-5,-8);
 assert.deepEqual(sample,vegetationForChunk(-5,-8),'same seed and chunk give identical placements');
 assert.ok(sample.length>0,'sample chunk has vegetation');
-assert.ok(sample.every(p=>Math.abs(sampleMainlandHeight(p.x,p.z)-p.y)<1e-8));
+const {nearTerrainHeightAt}=require('../.test-build/world/terrainLod.js');
+assert.ok(sample.every(p=>{
+  const visible=nearTerrainHeightAt(p.x,p.z,sampleMainlandHeight);
+  return p.y<=visible&&visible-p.y<1.05;
+}),'vegetation bases embed slightly into the rendered triangles instead of floating above them');
 assert.ok(sample.every(p=>p.y>MAINLAND.waterLevel&&geographyMasks(p.x,p.z).road<=VEGETATION_CONFIG.roadMaskLimit));
 assert.ok(sample.every(p=>!isStarterArea(p.x,p.z)));
 assert.ok(sample.every(p=>p.yaw>=0&&p.yaw<Math.PI*2));
@@ -145,8 +149,8 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     for(let i=1;i<positions.length;i+=3){minY=Math.min(minY,positions[i]);maxY=Math.max(maxY,positions[i]);}
     assert.ok(Math.abs(minY)<.05&&maxY>.35,'source pivots stay at ground and Y is up');
     if(kind in DECORATIVE_TREE_ASSETS)
-      assert.ok(maxY*VEGETATION_CONFIG.baseScale[kind]>12&&
-        maxY*VEGETATION_CONFIG.baseScale[kind]<22,'V4 trees remain taller than the player');
+      assert.ok(maxY*VEGETATION_CONFIG.baseScale[kind]>19&&
+        maxY*VEGETATION_CONFIG.baseScale[kind]<36,'enlarged V4 trees frame the landscape');
     assert.equal(mesh.metadata.decorativeVegetation,true);
     assert.equal(mesh.isPickable,false);
     assert.ok(mesh.thinInstanceCount>=0);
@@ -170,8 +174,10 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setColliderFocus(target.x,target.z);
   for(let i=0;i<60;i++)system.update();
   const specimen=targetCells.flatMap(cell=>vegetationForChunk(cell.cx,cell.cz))
-    .find(p=>p.kind==='arbolito2'&&Math.hypot(p.x-target.x,p.z-target.z)<3);
-  assert.ok(specimen,'the tree from the reported location exists');
+    .filter(p=>p.kind==='arbolito2')
+    .sort((a,b)=>Math.hypot(a.x-target.x,a.z-target.z)-Math.hypot(b.x-target.x,b.z-target.z))[0];
+  assert.ok(specimen,'the reduced forest retains a trunk collision specimen');
+  system.setColliderFocus(specimen.x,specimen.z);
   assert.equal(system.queryTreeWall(specimen.x,specimen.y+.35,specimen.z+3,0,-1,3),null,
     'shallow roots do not become torso walls');
   const trunkWall=system.queryTreeWall(specimen.x,specimen.y+1.8,specimen.z+3,0,-1,3);

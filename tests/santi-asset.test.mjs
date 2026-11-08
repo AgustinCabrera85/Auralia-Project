@@ -170,6 +170,63 @@ try{
     feetY:0,jumpStarted:false});
   assert.equal(santi.actions.get('Run').speedRatio,1,
     'releasing Shift restores normal animation speed');
+  const uphill={mode:'grounded',moving:true,run:false,sprint:false,backward:false,
+    groundGrade:.6,feetY:2,jumpStarted:false};
+  for(let i=0;i<15;i++)santi.update(.02,uphill);
+  assert.ok(santi.actions.get('Ascending Stairs').isPlaying,'walking uphill uses the stair NLA');
+  santi.update(.2,{...uphill,run:true});
+  assert.ok(santi.actions.get('Running Up Stairs').isPlaying,'running uphill uses its stair NLA');
+  santi.update(.2,{...uphill,run:true,sprint:true});
+  assert.equal(santi.actions.get('Running Up Stairs').speedRatio,2);
+  const lean=scene.getTransformNodeByName('santi-slope-orientation');
+  assert.ok(lean.rotation.x>.1&&lean.rotation.x<.4,'2X sprint leans forward into the slope');
+  for(const name of ['Ascending Stairs','Running Up Stairs','Climbing Ladder','Left Shimmy','Right Shimmy']){
+    const keys=rootTrack(santi.actions.get(name)).animation.getKeys();
+    assert.ok(keys[0].value.subtract(keys.at(-1).value).length()<.0001,
+      `${name} has no accumulating root travel when looping`);
+  }
+  const hanging={...uphill,mode:'climbing',moving:false,climbVertical:0,climbSide:0};
+  santi.update(.2,hanging);
+  assert.ok(santi.actions.get('Hanging Idle').isPlaying);
+  santi.update(.2,{...hanging,moving:true,climbSide:-1});
+  assert.ok(santi.actions.get('Left Shimmy').isPlaying);
+  santi.update(.2,{...hanging,moving:true,climbSide:1});
+  assert.ok(santi.actions.get('Right Shimmy').isPlaying);
+  santi.update(.2,{...hanging,moving:true,climbVertical:1});
+  assert.ok(santi.actions.get('Climbing Ladder').isPlaying);
+  santi.update(.2,{...hanging,moving:true,climbVertical:-1});
+  assert.equal(santi.actions.get('Climbing Ladder').speedRatio,-1,'descending reverses the climbing cycle');
+  const handNodes=['mixamorig:LeftHand','mixamorig:RightHand'].map(name=>scene.getTransformNodeByName(name));
+  for(const normalY of [0,.1,.5])for(const [action,vertical,side] of [
+    ['Hanging Idle',0,0],['Climbing Ladder',1,0],['Left Shimmy',0,-1],['Right Shimmy',0,1]
+  ]){
+    const wall={pointX:0,pointY:1.15,pointZ:.8,normalX:0,normalY,
+      normalZ:-Math.sqrt(1-normalY*normalY)};
+    const motion={...hanging,moving:vertical!==0||side!==0,climbVertical:vertical,
+      climbSide:side,climbContact:wall};
+    for(let i=0;i<30;i++)santi.update(1/60,motion);
+    const group=santi.actions.get(action);
+    const keys=rootTrack(group).animation.getKeys();
+    assert.ok(keys.every(key=>key.value.subtract(keys[0].value).length()<.0001),
+      `${action} cannot push the body into the wall within its cycle`);
+    for(let sample=0;sample<=12;sample++){
+      group.goToFrame(group.from+(group.to-group.from)*sample/12,true);group.pause();
+      scene.render();
+      const distances=handNodes.map(node=>{
+        node.computeWorldMatrix(true);const p=node.getAbsolutePosition();
+        return (p.y-wall.pointY)*wall.normalY+(p.z-wall.pointZ)*wall.normalZ;
+      });
+      assert.ok(Math.abs(Math.min(...distances)-.12)<.015,
+        `${action} maintains hand contact at slope normal ${normalY}, frame ${sample}: ${distances}`);
+    }
+  }
+  santi.update(.2,{...hanging,mode:'mantling',mantleProgress:.5});
+  const mantle=santi.actions.get('Braced Hang To Crouch');
+  assert.ok(Math.abs(mantle.getCurrentFrame()-(mantle.from+mantle.to)*.5)<.001,
+    'ledge animation follows physical mantle progress');
+  for(let i=0;i<20;i++)santi.update(.02,{...uphill,groundGrade:0,run:true});
+  assert.ok(santi.actions.get('Run').isPlaying,'level travel resumes normal locomotion');
+  assert.ok(lean.rotation.x<.01,'the visual tilt returns to upright');
   const runningJump=santi.actions.get('Running Jump');
   const fall=santi.actions.get('Falling Idle');
   const hipsTrack=runningJump.targetedAnimations.find(track=>

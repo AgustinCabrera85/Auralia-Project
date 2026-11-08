@@ -36,6 +36,7 @@ async function main(){
   saveGrassBake(-6,-2,packed(-66,-18));
   saveGrassBake(6,-2,packed(78,-18,1));
   saveGrassBake(21,-2,packed(258,-18));
+  saveGrassBake(26,-7,packed(312,-84));
   saveGrassBake(-61,-35,packed(-730,-420));
 
   const engine=new NullEngine(),scene=new Scene(engine);
@@ -74,6 +75,8 @@ async function main(){
     'crossing a chunk boundary keeps shared grass in world coordinates');
   system.setFocus(360,-20);system.update();
   assert.equal(system.instanceCount,1,'distant sectors unload');
+  assert.deepEqual(positions(scene).map(p=>[p[0],p[2]]),[[312,-84]],
+    'baked grass reanchors on gentle ground and skips the steep bank at 258,-18');
   system.setFocus(-55,-20);system.update();
   assert.deepEqual(positions(scene),initial,
     'returning to a sector restores the identical saved matrices');

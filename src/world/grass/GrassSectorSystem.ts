@@ -2,7 +2,8 @@ import { AbstractMesh, ImportMeshAsync, Matrix, Mesh, Quaternion, Scene, Transfo
   Vector3 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { getWorldDocument } from '../editor/WorldEditState';
-import { MAINLAND, sampleMainlandHeight } from '../terrainData';
+import { hash01, MAINLAND, sampleMainlandHeight } from '../terrainData';
+import { landscapeVegetation } from '../landscapeRegions';
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../terrainLod';
 import type { VegetationExclusion } from '../vegetationData';
 import { GrassWindPlugin } from './GrassWindPlugin';
@@ -118,8 +119,10 @@ export class GrassSectorSystem {
         const width=packed[offset+4],height=packed[offset+5];
         if(!Number.isFinite(x+z+yaw+width+height)||width<=0||height<=0||
           insideFoliageForest(x,z))continue;
+        if(hash01(Math.floor(x*10),Math.floor(z*10),558)>=landscapeVegetation(x,z).grass)continue;
         const variant=grassVariant(bake.px,bake.pz,offset/PACKED_STRIDE,packed[offset+9]);
         const surface=nearTerrainSurfaceAt(x,z,heightAtGrid);
+        if(Math.hypot(surface.slopeX,surface.slopeZ)>.7)continue;
         const matrix=Matrix.Compose(new Vector3(width,height,width),
           Quaternion.RotationAxis(Vector3.Up(),yaw),new Vector3(x,surface.height,z));
         const transform=Float32Array.from(matrix.m);

@@ -57,6 +57,24 @@ export function nearTerrainSurfaceAt(x:number,z:number,
       slopeX:(d-c)/step,slopeZ:(d-b)/step};
 }
 
+/** Support for upright props. A flat center alone is not enough: the base may
+ * straddle a triangle crease or cliff edge. Callers can cache grid samples for
+ * their chunk, then discard that cache after placement generation. */
+export function terrainFootprintAt(x:number,z:number,radius:number,
+  heightAtGrid:(x:number,z:number)=>number):
+  {height:number;minHeight:number;maxHeight:number;maxSlope:number}{
+  const center=nearTerrainSurfaceAt(x,z,heightAtGrid);
+  let minHeight=center.height,maxHeight=center.height;
+  let maxSlope=Math.hypot(center.slopeX,center.slopeZ);
+  for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4;
+    const surface=nearTerrainSurfaceAt(x+Math.cos(angle)*radius,z+Math.sin(angle)*radius,heightAtGrid);
+    minHeight=Math.min(minHeight,surface.height);maxHeight=Math.max(maxHeight,surface.height);
+    maxSlope=Math.max(maxSlope,Math.hypot(surface.slopeX,surface.slopeZ));
+  }
+  return {height:center.height,minHeight,maxHeight,maxSlope};
+}
+
 /** Distance to the closest point of a tile, so edge tiles retain coverage. */
 export function tileDistance(cell:TerrainCell,size:number,x:number,z:number):number{
   const dx=Math.max(0,Math.abs((cell.cx+.5)*size-x)-size*.5);

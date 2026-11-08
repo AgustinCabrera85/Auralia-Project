@@ -26,6 +26,8 @@ type HudActions = {
 
 type Panel = 'map' | 'craft' | 'build' | 'equip' | 'graphics' | 'help' | null;
 
+const COMPASS_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'] as const;
+
 const QUEST: Record<Milestone, { number: string; title: string; detail: string; emoji: string }> = {
   collect: { number: '01', title: 'Primeros materiales', detail: 'Buscá madera en el bosque y piedra en la cantera.', emoji: '🪵' },
   craft: { number: '02', title: 'Fabricá un martillo', detail: 'Abrí el taller con C o visitá el banco de trabajo.', emoji: '🔨' },
@@ -44,6 +46,10 @@ export class Hud {
   private toastTimeout = 0;
   private dialogueVisible = false;
   private renderQuality=readRenderQuality();
+  private readonly compass: HTMLElement;
+  private readonly compassRotor: HTMLElement;
+  private readonly compassHeading: HTMLElement;
+  private compassDegrees = NaN;
 
   constructor(private readonly store: GameStore, private readonly actions: HudActions) {
     document.getElementById('app')!.innerHTML = `
@@ -66,7 +72,18 @@ export class Hud {
           <div class="quest-heading"><span id="quest-icon">🪵</span><div><strong id="quest-title">Primeros materiales</strong><p id="quest-detail"></p></div></div>
           <div id="quest-progress" class="quest-progress"></div>
         </section>
-        <div class="compass"><div class="compass-n">N</div><span>✧</span><small id="biome-short">BRISALIA</small></div>
+        <div class="compass" id="compass" role="img" aria-label="Brújula" title="Orientación de la cámara">
+          <div class="compass-dial" aria-hidden="true">
+            <div class="compass-forward">▾</div>
+            <div class="compass-rotor" id="compass-rotor">
+              <span class="compass-cardinal compass-n">N</span><span class="compass-cardinal compass-e">E</span>
+              <span class="compass-cardinal compass-s">S</span><span class="compass-cardinal compass-o">O</span>
+              <svg viewBox="0 0 64 64" class="compass-needle"><path d="M32 17 38 35 32 31 26 35Z" fill="#f3cd77"/><path d="M32 47 26 29 32 33 38 29Z" fill="#b6cecc"/></svg>
+            </div>
+          </div>
+          <div class="compass-heading" id="compass-heading" aria-hidden="true">—</div>
+          <small id="biome-short" aria-hidden="true">BRISALIA</small>
+        </div>
         <div class="climate-status" id="climate-status">🌤️ 09:00 · Primavera</div>
         <div class="terrain-status"><strong id="region-explore">Valle de los Faroles</strong><small><span id="position-explore">X 1 · Z 10</span><span> · </span><span id="chunks-explore">sectores…</span></small></div>
         <div class="interaction-pill" id="interaction-hint">WASD para caminar · E para interactuar · M para el mapa</div>
@@ -91,6 +108,9 @@ export class Hud {
       </div>
     `;
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+    this.compass = document.getElementById('compass')!;
+    this.compassRotor = document.getElementById('compass-rotor')!;
+    this.compassHeading = document.getElementById('compass-heading')!;
     document.addEventListener('click', this.onClick);
     document.addEventListener('keydown', this.onKeyDown);
     document.querySelectorAll<HTMLButtonElement>('[data-direction]').forEach(button => {
@@ -105,6 +125,23 @@ export class Hud {
   }
 
   get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible; }
+
+  /** Clockwise camera heading from map north (-Z), in radians. */
+  setCameraHeading(radians: number): void {
+    if (!Number.isFinite(radians)) return;
+    const degrees = Math.round(radians * 180 / Math.PI * 10) / 10;
+    if (degrees === this.compassDegrees) return;
+    this.compassDegrees = degrees;
+    // Keep rotation continuous across north; only the displayed bearing wraps.
+    this.compassRotor.style.setProperty('--compass-rotation', `${-degrees}deg`);
+    const bearing = ((Math.round(degrees) % 360) + 360) % 360;
+    const direction = COMPASS_DIRECTIONS[Math.round(bearing / 45) % 8];
+    const label = `${direction} · ${bearing}°`;
+    if (this.compassHeading.textContent !== label) {
+      this.compassHeading.textContent = label;
+      this.compass.setAttribute('aria-label', `Brújula: cámara hacia ${direction}, ${bearing} grados`);
+    }
+  }
 
   setClimate(frame:ClimateFrame):void {
     const el=document.getElementById('climate-status');

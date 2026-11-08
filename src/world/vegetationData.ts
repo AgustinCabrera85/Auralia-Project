@@ -3,18 +3,20 @@ import { waterSurfaceAt } from './geographicFeatures';
 import { ASSET_CATALOG, DECORATIVE_TREE_ASSETS } from './assetCatalog';
 import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geologyData';
 import { insideFoliageForest } from './foliageForestConfig';
+import { landscapeVegetation } from './landscapeRegions';
+import { nearTerrainSurfaceAt, terrainFootprintAt } from './terrainLod';
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
   renderRadiusChunks: { trees: 12, plants: 2 },
-  candidatesPerChunk: { arbolito1: 8, arbolito2: 12, arbolito3: 2, plantitas1: 16, arbolitoSeco: 3, tronco1: 4 },
+  candidatesPerChunk: { arbolito1: 5, arbolito2: 6, arbolito3: 1, plantitas1: 16, arbolitoSeco: 2, tronco1: 4 },
   // The player is roughly 4 m tall; these sizes keep the trees visually dominant.
   baseScale: {
-    arbolito1:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito1].referenceScale*1.2,
-    arbolito2:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito2].referenceScale*1.2,
-    arbolito3:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito3].referenceScale*1.2,
+    arbolito1:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito1].referenceScale*1.95,
+    arbolito2:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito2].referenceScale*1.95,
+    arbolito3:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito3].referenceScale*1.95,
     plantitas1:ASSET_CATALOG.plantitas1.referenceScale,
-    arbolitoSeco:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolitoSeco].referenceScale,
+    arbolitoSeco:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolitoSeco].referenceScale*1.5,
     tronco1:ASSET_CATALOG.tronco1.referenceScale
   },
   scaleVariation: 0.16,
@@ -23,7 +25,7 @@ export const VEGETATION_CONFIG = {
   minHeightAboveWater: { trees: 1.5, plants: 0.55 },
   maxSlope: { trees: 0.45, plants: 0.62 },
   roadMaskLimit: 0.55,
-  obstacleRadius: { arbolito1: 1.2, arbolito2: 1.4, arbolito3: 1.7, arbolitoSeco: 1.2 }
+  obstacleRadius: { arbolito1: 1.95, arbolito2: 2.275, arbolito3: 2.7625, arbolitoSeco: 1.8 }
 } as const;
 
 export type VegetationKind = keyof typeof VEGETATION_CONFIG.candidatesPerChunk;
@@ -78,12 +80,20 @@ function densityAt(kind:VegetationKind,x:number,z:number,wetness:number,cluster:
   }
   const grouping=kind==='plantitas1'||kind==='tronco1' ? .42+.58*cluster : .12+.88*cluster;
   const moisture=kind==='plantitas1'||kind==='tronco1' ? .72+.65*wetness : 1-.48*wetness;
-  return clamp01(probability*grouping*moisture);
+  const landscape=landscapeVegetation(x,z);
+  return clamp01(probability*grouping*moisture*(kind==='plantitas1'?landscape.grass:landscape.trees));
 }
 
 /** Pure per-chunk distribution. Never reads the current player or load order. */
 export function vegetationForChunk(cx:number,cz:number,exclusions:readonly VegetationExclusion[]=[]):VegetationPlacement[]{
   const size=MAINLAND.chunkSize,placements:VegetationPlacement[]=[];
+  const grid=new Map<string,number>();
+  const gridHeight=(x:number,z:number):number=>{
+    const key=`${x}:${z}`;
+    let h=grid.get(key);
+    if(h===undefined){h=sampleMainlandHeight(x,z);grid.set(key,h);}
+    return h;
+  };
   for(const kind of kinds){
     const count=VEGETATION_CONFIG.candidatesPerChunk[kind];
     for(let i=0;i<count;i++){
@@ -92,7 +102,7 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const z=(cz+hash01(cx,cz,seed+2))*size;
       if(isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z))continue;
       const water=MAINLAND.waterLevel;
-      const h=sampleMainlandHeight(x,z);
+      const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height;
       const tree=kind!=='plantitas1'&&kind!=='tronco1';
       const variation=1+VEGETATION_CONFIG.scaleVariation*(2*hash01(cx,cz,seed+4)-1);
       const scale=VEGETATION_CONFIG.baseScale[kind]*variation;
@@ -107,17 +117,14 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const w=biomeWeightsAt(x,z);
       const wetness=clamp01(masks.lake*.7+masks.river*.55+w.nacar*.65);
       if(hash01(cx,cz,seed+3)>=densityAt(kind,x,z,wetness,cluster))continue;
-      const step=2.5;
-      const slope=Math.hypot(
-        sampleMainlandHeight(x+step,z)-sampleMainlandHeight(x-step,z),
-        sampleMainlandHeight(x,z+step)-sampleMainlandHeight(x,z-step)
-      )/(2*step);
-      if(slope>(tree?VEGETATION_CONFIG.maxSlope.trees:VEGETATION_CONFIG.maxSlope.plants))continue;
+      const radius=tree?VEGETATION_CONFIG.obstacleRadius[kind as keyof typeof VEGETATION_CONFIG.obstacleRadius]*variation:kind==='tronco1'?.7*variation:0;
+      const support=terrainFootprintAt(x,z,tree?Math.max(.6,radius*.65):kind==='tronco1'?1.5:.35,gridHeight);
+      if(support.maxSlope>(tree?VEGETATION_CONFIG.maxSlope.trees:VEGETATION_CONFIG.maxSlope.plants)||
+        support.maxHeight-support.minHeight>(tree?1:kind==='tronco1'?.65:.4))continue;
       const clearance=Math.max(tree?5:2.5,crownRadius);
       if([[-clearance,0],[clearance,0],[0,-clearance],[0,clearance]].some(([dx,dz])=>sampleMainlandHeight(x+dx,z+dz)<=water+.2))continue;
-      const radius=tree?VEGETATION_CONFIG.obstacleRadius[kind as keyof typeof VEGETATION_CONFIG.obstacleRadius]*variation:kind==='tronco1'?.7*variation:0;
       if(tree&&placements.some(p=>p.obstacleRadius>0&&Math.hypot(p.x-x,p.z-z)<.6*(VEGETATION_CONFIG.crownRadius[p.kind]*p.scale+crownRadius)))continue;
-      placements.push({kind,x,y:h,z,scale,yaw:hash01(cx,cz,seed+5)*Math.PI*2,obstacleRadius:radius});
+      placements.push({kind,x,y:support.minHeight-.03,z,scale,yaw:hash01(cx,cz,seed+5)*Math.PI*2,obstacleRadius:radius});
     }
   }
   for(const formation of GEOLOGY_FORMATIONS)for(let i=-1;i<=1;i++){
@@ -125,9 +132,10 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
     const point=geologyPoint(formation,i*22,across);
     const cell=chunkOf(point.x,point.z);
     if(cell.cx!==cx||cell.cz!==cz)continue;
-    const y=sampleMainlandHeight(point.x,point.z);
+    const support=terrainFootprintAt(point.x,point.z,.35,gridHeight),y=support.minHeight-.03;
     const scale=VEGETATION_CONFIG.baseScale.plantitas1;
-    if(y<=MAINLAND.waterLevel+1||geologyFaceExcludes(point.x,point.z)||insideFoliageForest(point.x,point.z)||
+    if(support.maxSlope>VEGETATION_CONFIG.maxSlope.plants||support.maxHeight-support.minHeight>.4||
+      y<=MAINLAND.waterLevel+1||geologyFaceExcludes(point.x,point.z)||insideFoliageForest(point.x,point.z)||
       exclusions.some(e=>Math.hypot(point.x-e.x,point.z-e.z)<e.radius+2)||
       placements.some(p=>p.obstacleRadius>0&&Math.hypot(point.x-p.x,point.z-p.z)<3))continue;
     placements.push({kind:'plantitas1',x:point.x,y,z:point.z,scale,

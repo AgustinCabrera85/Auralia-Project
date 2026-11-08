@@ -6,6 +6,7 @@ import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isLand, isStarterArea,
   MAINLAND, sampleMainlandHeight, type Biome } from './terrainData';
 import type { VegetationExclusion } from './vegetationData';
 import { insideFoliageForest } from './foliageForestConfig';
+import { nearTerrainSurfaceAt, nearTerrainHeightAt, terrainFootprintAt } from './terrainLod';
 
 export const PROP_CONFIG={
   seed:43179,renderRadiusChunks:3,scaleVariation:.2,roadMaskLimit:.38,
@@ -43,15 +44,17 @@ const DENSITY:Record<DecorativeKind,Partial<Record<Biome,number>>>= {
   cristalAzul:{ecos:.16,nacar:.04},cristalCeleste:{ecos:.04,nacar:.16,cumbres:.025},
   cristalFuego:{sierras:.13,cumbres:.08}
 };
-const sampleSlope=(x:number,z:number):number=>{
-  const d=3;
-  return Math.hypot(sampleMainlandHeight(x+d,z)-sampleMainlandHeight(x-d,z),
-    sampleMainlandHeight(x,z+d)-sampleMainlandHeight(x,z-d))/(2*d);
-};
 
 /** Only loose stones and deposits use per-chunk candidates. */
 export function propsForChunk(cx:number,cz:number,exclusions:readonly VegetationExclusion[]=[]):PropPlacement[]{
   const result:PropPlacement[]=[];
+  const grid=new Map<string,number>();
+  const gridHeight=(x:number,z:number):number=>{
+    const key=`${x}:${z}`;
+    let h=grid.get(key);
+    if(h===undefined){h=sampleMainlandHeight(x,z);grid.set(key,h);}
+    return h;
+  };
   for(const [kindIndex,kind] of PROP_KINDS.entries()){
     for(let i=0;i<PROP_CONFIG.candidatesPerChunk[kind];i++){
       const seed=PROP_CONFIG.seed+kindIndex*1009+i*29;
@@ -68,7 +71,7 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
         ?clamp(anchorZ+Math.sin(angle)*distance,cz*MAINLAND.chunkSize+2,(cz+1)*MAINLAND.chunkSize-2)
         :(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
       if(!isLand(x,z)||isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z))continue;
-      const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);
+      const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height,water=waterSurfaceAt(x,z);
       if(h<MAINLAND.waterLevel+.7||(water&&h<water.level+.8))continue;
       if(geographyMasks(x,z).road>PROP_CONFIG.roadMaskLimit)continue;
       const partIndex=kind==='packRocas'?selectRockPart(hash01(cx,cz,seed+7)):undefined;
@@ -78,20 +81,16 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
         :rockScaleForDiameter(partIndex,rockDiameter!);
       const radius=partIndex===undefined?4:rockDiameter!*.55;
       if(exclusions.some(e=>Math.hypot(x-e.x,z-e.z)<e.radius+radius))continue;
-      if(sampleSlope(x,z)>(kind==='packRocas'?.9:.62))continue;
-      if(partIndex!==undefined){
-        const foot=rockDiameter!*.5;
-        const heights=[h,sampleMainlandHeight(x-foot,z),sampleMainlandHeight(x+foot,z),
-          sampleMainlandHeight(x,z-foot),sampleMainlandHeight(x,z+foot)];
-        if(Math.max(...heights)-Math.min(...heights)>2.6)continue;
-      }
+      const support=terrainFootprintAt(x,z,partIndex===undefined?.6:rockDiameter!*.5,gridHeight);
+      if(support.maxSlope>(kind==='packRocas'?.9:.62)||
+        support.maxHeight-support.minHeight>(kind==='packRocas'?2.6:.7))continue;
       const weights=biomeWeightsAt(x,z),density=DENSITY[kind];
       let chance=0;
       for(const biome of ASSET_CATALOG[kind].biomes)chance+=weights[biome]*(density[biome]??0);
       if(hash01(cx,cz,seed+3)>chance)continue;
       if(partIndex!==undefined&&result.some(p=>p.kind==='packRocas'&&
         Math.hypot(p.x-x,p.z-z)<(p.rockDiameter!+rockDiameter!)*.38))continue;
-      result.push({id:`prop:${kind}:${cx}:${cz}:${i}`,kind,x,y:h,z,scale,
+      result.push({id:`prop:${kind}:${cx}:${cz}:${i}`,kind,x,y:support.minHeight-.03,z,scale,
         yaw:hash01(cx,cz,seed+4)*Math.PI*2,
         ...(partIndex===undefined?{}:{partIndex,rockDiameter})});
     }
@@ -99,7 +98,7 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
   for(const fixed of FIXED_CRYSTALS){
     const cell=chunkOf(fixed.x,fixed.z);
     if(cell.cx!==cx||cell.cz!==cz)continue;
-    result.push({id:fixed.id,kind:fixed.kind,x:fixed.x,y:sampleMainlandHeight(fixed.x,fixed.z),z:fixed.z,
+    result.push({id:fixed.id,kind:fixed.kind,x:fixed.x,y:nearTerrainHeightAt(fixed.x,fixed.z,gridHeight),z:fixed.z,
       scale:ASSET_CATALOG[fixed.kind].referenceScale,yaw:0});
   }
   return result;

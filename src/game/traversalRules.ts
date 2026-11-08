@@ -15,6 +15,7 @@ export const TRAVERSAL = {
   stepHeight: 0.4,
   groundSnap: 0.35,
   maxWalkSlopeDeg: 42,
+  maxSprintSlopeDeg: 60,     // 2X sprint can power up a hill; walls still require climbing
   mantleMaxHeight: 1.65,      // separate from long rock climbing
   climbUpSpeed: 3.1,
   climbSideSpeed: 2.2,
@@ -25,15 +26,17 @@ export const TRAVERSAL = {
 } as const;
 export type LocomotionMode='grounded'|'airborne'|'climbing'|'mantling';
 export type GroundHit={height:number;normalY:number;rockId?:string};
-export function slopeAllowed(normalY:number):boolean {
-  return Number.isFinite(normalY)&&normalY>=Math.cos(TRAVERSAL.maxWalkSlopeDeg*Math.PI/180);
+export function slopeAllowed(normalY:number,sprint=false):boolean {
+  return Number.isFinite(normalY)&&normalY>=Math.cos(
+    (sprint?TRAVERSAL.maxSprintSlopeDeg:TRAVERSAL.maxWalkSlopeDeg)*Math.PI/180)-1e-6;
 }
 export function canMantleRise(rise:number,spaceClear:boolean):boolean {
   return spaceClear&&Number.isFinite(rise)&&rise>0&&rise<=TRAVERSAL.mantleMaxHeight;
 }
-export function canBeginClimb(faceNormalY:number,taggedClimbable:boolean,withinReach:boolean):boolean {
+export function canBeginClimb(faceNormalY:number,taggedClimbable:boolean,withinReach:boolean,terrain=false):boolean {
   return taggedClimbable&&withinReach&&Number.isFinite(faceNormalY)&&
-    faceNormalY>=TRAVERSAL.climbWallMinNormalY&&faceNormalY<=TRAVERSAL.climbWallMaxNormalY;
+    faceNormalY>=TRAVERSAL.climbWallMinNormalY&&faceNormalY<=(terrain
+      ?Math.cos(TRAVERSAL.maxWalkSlopeDeg*Math.PI/180):TRAVERSAL.climbWallMaxNormalY);
 }
 export function integrateAirborneVertical(velocityY:number,dt:number):{deltaY:number;velocityY:number}{
   const step=Math.max(0,Math.min(dt,.05));

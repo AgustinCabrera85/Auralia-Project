@@ -36,16 +36,24 @@ button:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
 .quest-heading p { margin: 7px 0 0; color: #d5e1db; line-height: 1.5; font-size: 12.5px; }
 .quest-progress { display: flex; flex-wrap: wrap; gap: 9px; padding-top: 12px; border-top: 1px solid #f0d59b40; }
 .quest-progress span { color: #e8f9ee; background: #e8e0ba20; border-radius: 6px; padding: 5px 8px; font-size: 12px; font-weight: 700; }
-.compass { position: absolute; right: 28px; top: 100px; width: 78px; text-align: center; color: #f7e3b7; text-shadow: 0 2px 6px #122e45b8; }
-.compass .compass-n { font: 16px Georgia, serif; }
+.compass { position: absolute; right: 28px; top: 91px; width: 78px; text-align: center; color: #f7e3b7; text-shadow: 0 2px 6px #122e45b8; }
+.compass-dial { position: relative; width: 64px; height: 64px; margin: 0 auto; border: 1px solid #ead6ac66; border-radius: 50%; background: #112f4066; }
+.compass-forward { position: absolute; top: -11px; left: 0; width: 100%; font-size: 14px; color: #fff3cb; }
+.compass-rotor { position: absolute; inset: 0; transform: rotate(var(--compass-rotation, 0deg)); }
+.compass-cardinal { position: absolute; font: 11px Georgia, serif; transform: translate(-50%, -50%) rotate(calc(-1 * var(--compass-rotation, 0deg))); }
+.compass-n { left: 50%; top: 13%; color: #ffda82; font-weight: bold; }
+.compass-s { left: 50%; top: 87%; }
+.compass-e { left: 87%; top: 50%; }
+.compass-o { left: 13%; top: 50%; }
+.compass-needle { position: absolute; inset: 0; width: 100%; height: 100%; }
+.compass-heading { margin-top: 3px; font-size: 10px; font-weight: 700; line-height: 12px; font-variant-numeric: tabular-nums; }
 .climate-status { position:absolute;right:19px;top:265px;padding:7px 11px;
   border:1px solid #e9ddae77;border-radius:13px;background:#163344bb;
   color:#f8e9c5;font-size:11px;letter-spacing:.3px;white-space:nowrap;
   text-shadow:0 1px 3px #16212b;pointer-events:none; }
 @media(max-width:900px) { .climate-status{top:71px;right:9px;font-size:10px;
   max-width:54vw;overflow:hidden;text-overflow:ellipsis;} }
-.compass > span { display: block; font-size: 57px; line-height: 44px; }
-.compass small { font-size: 9px; letter-spacing: 1.3px; }
+.compass small { display: block; font-size: 8px; line-height: 11px; letter-spacing: 1.3px; }
 .interaction-pill { position: absolute; bottom: 113px; left: 50%; transform: translateX(-50%); padding: 13px 20px; max-width: 85vw; text-align: center; color: #fffcdf; font-size: 13px; font-weight: 800; white-space: normal; border: 1px solid #eadbb088; border-radius: 25px; background: #172e3cdb; backdrop-filter: blur(7px); box-shadow: 0 7px 25px #10233960; }
 .build-selection { position:absolute;right:18px;bottom:106px;width:min(350px,calc(100vw - 36px));padding:14px;border:1px solid #e9d4a4;border-radius:13px;background:#173b43f2;box-shadow:0 10px 28px #071c30a8;pointer-events:auto; }
 .build-selection strong,.build-selection small {display:block;}

@@ -15,6 +15,7 @@ import { AuthoredAssets } from '../world/editor/AuthoredAssets';
 import { authoredAssetExclusions, blocksAuthoredMovement } from '../world/editor/WorldEditState';
 import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
+import { landscapeNameAt } from '../world/landscapeRegions';
 import { EnvironmentSystem } from '../world/climate/EnvironmentSystem';
 import type { ClimateFrame } from '../world/climate/ClimateModel';
 import { LandscapeDebug } from '../world/LandscapeDebug';
@@ -37,8 +38,9 @@ import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type ActionMotionKind,
   type TraversalWorld } from './CharacterTraversalController';
 import { TRAVERSAL } from './traversalRules';
+import { terrainWallAt } from './TerrainTraversal';
 import { CAMERA_TERRAIN, cameraTerrainView } from './cameraTerrain';
-import { nearTerrainHeightAt } from '../world/terrainLod';
+import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
 import { SantiCharacter } from './SantiCharacter';
 import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCatalog';
@@ -85,6 +87,7 @@ type WorldCallbacks = {
   onStructureSelected:(structure:Structure|null)=>void;
   onExplore: (x: number, z: number, name: string, chunks: number) => void;
   onClimate: (frame: ClimateFrame) => void;
+  onCameraHeading?: (radians: number) => void;
 };
 
 const TOWN_OFFSET = { x: 0, z: 0 };
@@ -276,6 +279,9 @@ export class WorldView {
       this.telemetry?.endUpdate();
       this.scene.render();
       this.telemetry?.endRender();
+      // ArcRotate alpha points from target to camera; map north is -Z.
+      // Read after rendering so pointer input and camera inertia are included.
+      this.callbacks.onCameraHeading?.(this.camera.alpha - Math.PI / 2);
       this.updateGrassStats(dt);
       this.telemetry?.endFrame(this.mainland.pendingCount,this.player.position.x,this.player.position.z);
     });
@@ -912,7 +918,7 @@ export class WorldView {
   private sendLocation():void {
     const zone=this.zones.get(this.store.state.zone)!;
     const x=this.player.position.x-zone.offset.x,z=this.player.position.z-zone.offset.z;
-    const name=zone.id==='brisalia'?BIOME_NAMES[biomeAt(x,z)]:'Isla de las Luciérnagas';
+    const name=zone.id==='brisalia'?landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)]):'Isla de las Luciérnagas';
     if(this.lastBiome!==name){this.lastBiome=name;}
     this.callbacks.onExplore(x,z,name,zone.id==='brisalia'?this.mainland.activeCount:1);
     if(zone.id==='brisalia')for(const place of POINTS_OF_INTEREST){
@@ -921,19 +927,34 @@ export class WorldView {
   }
 
   private walkHeightAt(x:number,z:number):number {
-    return bridgeDeckAt(x,z)??sampleMainlandHeight(x,z);
+    return bridgeDeckAt(x,z)??nearTerrainHeightAt(x,z,sampleMainlandHeight);
   }
 
   private traversalWorld(zone:IslandInfo):TraversalWorld{
     const isMainland=zone.id==='brisalia';
-    const height=(x:number,z:number)=>isMainland?this.walkHeightAt(x,z):this.y(zone,x,z);
+    // Walk and climb against the same visible near-LOD triangles. Sampling the
+    // smooth generator between vertices can disagree about a crest's slope.
+    // The cache lives for one controller step, so edits cannot leave stale
+    // colliders and repeated probes reuse the same few grid corners.
+    const wallGrid=new Map<string,number>();
+    const gridHeight=(gx:number,gz:number)=>{
+      const key=`${gx}:${gz}`;
+      let value=wallGrid.get(key);
+      if(value===undefined){value=sampleMainlandHeight(gx,gz);wallGrid.set(key,value);}
+      return value;
+    };
+    const wallHeight=(x:number,z:number)=>nearTerrainHeightAt(x,z,gridHeight);
+    const height=(x:number,z:number)=>isMainland?
+      bridgeDeckAt(x,z)??wallHeight(x,z):this.y(zone,x,z);
     return {
       ground:(x,z,originY,maxDistance,footRadius)=>{
         const terrainY=height(x,z);
         const deck=isMainland?bridgeDeckAt(x,z):null;
         const d=.55;
-        const slope=deck!==null?1:1/Math.hypot(1,
-          (height(x+d,z)-height(x-d,z))/(2*d),(height(x,z+d)-height(x,z-d))/(2*d));
+        const surface=isMainland&&deck===null?nearTerrainSurfaceAt(x,z,gridHeight):null;
+        const slope=deck!==null?1:surface?1/Math.hypot(1,surface.slopeX,surface.slopeZ):
+          1/Math.hypot(1,(height(x+d,z)-height(x-d,z))/(2*d),
+            (height(x,z+d)-height(x,z-d))/(2*d));
         const terrain=terrainY<=originY+.001&&terrainY>=originY-maxDistance-.001
           ?{height:terrainY,normalY:slope}:null;
         const rock=isMainland?this.props.queryRockGround(x,z,originY,maxDistance,footRadius):null;
@@ -956,17 +977,21 @@ export class WorldView {
         if(!isMainland)return null;
         const hit=this.props.queryRockWall(x,y,z,dx,dz,reach);
         const tree=this.vegetation.queryTreeWall(x,y,z,dx,dz,reach);
-        if(tree&&(!hit||tree.distance<hit.distance))return {
+        const terrain=terrainWallAt(wallHeight,x,y,z,dx,dz,reach);
+        const rock=hit?{pointX:hit.point.x,pointY:hit.point.y,pointZ:hit.point.z,
+          distance:hit.distance,normalX:hit.normal.x,normalY:hit.normal.y,
+          normalZ:hit.normal.z,rockId:hit.rockId,climbable:hit.climbable}:null;
+        const trunk=tree?{
           pointX:tree.point.x,pointY:tree.point.y,pointZ:tree.point.z,
           distance:tree.distance,normalX:tree.normal.x,normalY:tree.normal.y,
           normalZ:tree.normal.z,rockId:tree.id,climbable:false
-        };
-        return hit?{pointX:hit.point.x,pointY:hit.point.y,pointZ:hit.point.z,
-          distance:hit.distance,normalX:hit.normal.x,normalY:hit.normal.y,
-          normalZ:hit.normal.z,rockId:hit.rockId,climbable:hit.climbable}:null;
+        }:null;
+        let nearest=terrain;
+        for(const wall of [rock,trunk])if(wall&&(!nearest||wall.distance<nearest.distance))nearest=wall;
+        return nearest;
       },
       headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
-        this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
+        height(x,z)<=y+.08&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
         buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
       canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
@@ -1098,10 +1123,10 @@ export class WorldView {
       const movementIntent=Math.hypot(direction.x,direction.z)>1e-5;
       const groundFacing=groundTravel.speed>1e-5
         ?{x:groundTravel.x/groundTravel.speed,z:groundTravel.z/groundTravel.speed}:null;
-      const facing=this.traversal.airTravelDirection??
+      const facing=this.traversal.climbFacing??this.traversal.airTravelDirection??
         (this.traversal.rollCarryActive?groundFacing:
           movementIntent?direction:walking?groundFacing:null);
-      if(facing&&this.traversal.mode!=='climbing')
+      if(facing)
         this.player.rotation.y=Math.atan2(facing.x,facing.z);
     }
     if(this.traversal.mode==='grounded'&&!this.traversal.supportRockId&&
@@ -1125,6 +1150,11 @@ export class WorldView {
       mode:this.traversal.mode,moving:walking,
       movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
       run:running,sprint:sprinting,
+      groundGrade:this.traversal.groundGrade,
+      climbVertical:this.traversal.climbMotion.vertical,
+      climbSide:this.traversal.climbMotion.side,
+      climbContact:this.traversal.climbContact,
+      mantleProgress:this.traversal.mantleProgress,
       backward:vertical<0&&horizontal===0,
       feetY:localY,
       takeoffY:feetBeforeStep,
