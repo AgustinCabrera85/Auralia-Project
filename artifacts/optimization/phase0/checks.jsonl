@@ -1,0 +1,10 @@
+﻿{"command":"npm run test:stream","exitCode":1,"log":"artifacts\\optimization\\phase0\\test-stream.log"}
+{"command":"npm run test:grass","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-grass.log"}
+{"command":"npm run test:vegetation","exitCode":1,"log":"artifacts\\optimization\\phase0\\test-vegetation.log"}
+{"command":"npm run test:props","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-props.log"}
+{"command":"npm run test:routes","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-routes.log"}
+{"command":"npm run test:lagoon","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-lagoon.log"}
+{"command":"npm run test:physics","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-physics.log"}
+{"command":"npm run test:traversal","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-traversal.log"}
+{"command":"npm run test:biomes","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-biomes.log"}
+{"command":"npm run test:telemetry","exitCode":0,"log":"artifacts\\optimization\\phase0\\test-telemetry.log"}

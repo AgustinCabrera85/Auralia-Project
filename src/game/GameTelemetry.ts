@@ -241,6 +241,24 @@ export class GameTelemetry {
       if(values[i]>range)ctx.fillRect(x,0,2,3);
     }
   }
+  /** Same bounded data used by the F8 download; no second profiler for benchmarks. */
+  snapshot(){
+    return {version:2,exportedAt:new Date().toISOString(),windowMs:10000,
+      capacityFrames:this.history.capacity,gpuTimerSupported:this.gpuSupported,
+      notes:'frameMs es el intervalo real; bloques CPU pertenecen al frame anterior. GPU asíncrona; null si no está disponible.',
+      world:this.worldStats(),resolution:[this.engine.getRenderWidth(),this.engine.getRenderHeight()],
+      viewportCss:[this.engine.getRenderingCanvas()?.clientWidth??null,
+        this.engine.getRenderingCanvas()?.clientHeight??null],
+      devicePixelRatio:window.devicePixelRatio,hardwareScalingLevel:this.engine.getHardwareScalingLevel(),
+      phases:PHASE_LABELS,frames:this.history.exportRows(),events:this.events.map(event=>({...event})),
+      memory:{intervalMs:this.memoryHistory.intervalMs,capacitySamples:this.memoryHistory.capacity,
+        notes:'Bytes del heap JavaScript, no RAM total de Chrome ni memoria GPU. Lectura aproximada; null si no está disponible. Contadores de recursos de Babylon. Solo se muestrea mientras la telemetría está grabando.',
+        samples:this.memoryHistory.exportRows()}};
+  }
+  reset():void{
+    this.history.clear();this.memoryHistory.clear();this.events.length=0;this.started=performance.now();
+    this.previousBegin=null;this.pendingFrame=false;this.refresh(this.started);
+  }
   private readonly handleClick=(event:MouseEvent):void=>{
     const action=(event.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset.action;
     if(!action)return;event.stopPropagation();
@@ -248,22 +266,9 @@ export class GameTelemetry {
     if(action==='pause'){
       this.paused=!this.paused;(event.target as HTMLElement).textContent=this.paused?'Continuar':'Pausar';this.syncCapture();
     }
-    if(action==='reset'){
-      this.history.clear();this.memoryHistory.clear();this.events.length=0;this.started=performance.now();
-      this.previousBegin=null;this.pendingFrame=false;this.refresh(this.started);
-    }
+    if(action==='reset')this.reset();
     if(action==='export'){
-      const report={version:2,exportedAt:new Date().toISOString(),windowMs:10000,
-        capacityFrames:this.history.capacity,gpuTimerSupported:this.gpuSupported,
-        notes:'frameMs es el intervalo real; bloques CPU pertenecen al frame anterior. GPU asíncrona; null si no está disponible.',
-        world:this.worldStats(),resolution:[this.engine.getRenderWidth(),this.engine.getRenderHeight()],
-        viewportCss:[this.engine.getRenderingCanvas()?.clientWidth??null,
-          this.engine.getRenderingCanvas()?.clientHeight??null],
-        devicePixelRatio:window.devicePixelRatio,hardwareScalingLevel:this.engine.getHardwareScalingLevel(),
-        phases:PHASE_LABELS,frames:this.history.exportRows(),events:this.events,
-        memory:{intervalMs:this.memoryHistory.intervalMs,capacitySamples:this.memoryHistory.capacity,
-          notes:'Bytes del heap JavaScript, no RAM total de Chrome ni memoria GPU. Lectura aproximada; null si no está disponible. Contadores de recursos de Babylon. Solo se muestrea mientras la telemetría está grabando.',
-          samples:this.memoryHistory.exportRows()}};
+      const report=this.snapshot();
       const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));
       const a=document.createElement('a');a.href=url;a.download='auralia-telemetria.json';a.click();
       window.setTimeout(()=>URL.revokeObjectURL(url),1000);

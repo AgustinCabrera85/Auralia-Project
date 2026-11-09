@@ -1,0 +1,2110 @@
+{
+  "base": "b511d35e96a4d500deeadc8bb61b6e6f27b7864e",
+  "files": [
+    {
+      "path": "public/assets/terrain/lava_albedo_rough.webp",
+      "bytes": 1299718,
+      "sha256": "e4106f2ccc920be2a8e519a4cdb1054f8fa71e0fcd7101322e6a4a3fac9dfcbc"
+    },
+    {
+      "path": "public/assets/terrain/snow_albedo_rough.webp",
+      "bytes": 48916,
+      "sha256": "c5d53c8d35e8fa6c1f846f65d50c397a8abfc13095449236a33a6e6e61efd703"
+    },
+    {
+      "path": "public/assets/water/caustics-refractive-1k.png",
+      "bytes": 218545,
+      "sha256": "79227d03e19a09f85a8224ec8490a838ef001feac397d0e8cbb76f66df2e245a"
+    },
+    {
+      "path": "public/assets/water/waterfall-foam-plates-1k.png",
+      "bytes": 1269690,
+      "sha256": "9cb50845812a091f7eaed975136f583dc3d13d24f0e337b285b737f491f77135"
+    },
+    {
+      "path": "public/water-lab-v4.html",
+      "bytes": 2067739,
+      "sha256": "5e324dd853b3cded746e51cd06c0c4d2d6685e5c0fc07e1b16a9e4a2c6a6adbb"
+    },
+    {
+      "path": "public/world/auralia-world.json",
+      "bytes": 2157407,
+      "sha256": "ef07884156a4345ef20a730c6cb38ee6bc80ce68f1afa0af97404d07e1457c29"
+    },
+    {
+      "path": "scripts/bake-watershed.cjs",
+      "bytes": 5404,
+      "sha256": "420b590a3a22be16ed0cd63604ceefcc35a209174c075a43a442cd039ed6ca85"
+    },
+    {
+      "path": "src/world-editor/AxisTranslationGizmo.ts",
+      "bytes": 5148,
+      "sha256": "d4e03c6d5175e15c253e1b7d0ac8c612d03b61b6cd7c96ae7a129ca69f344737"
+    },
+    {
+      "path": "src/world-editor/index.ts",
+      "bytes": 65557,
+      "sha256": "7515a962a28309e6da33161bb18ebd3e32a47ddca18e18e31a4b7e4f57d674a7"
+    },
+    {
+      "path": "src/world-editor/style.css",
+      "bytes": 11444,
+      "sha256": "c069d158cbffa31c6450d564c1820bcdab8ea5e5ac79689e455a4e42f2c285a3"
+    },
+    {
+      "path": "src/world/WatershedHydrology.ts",
+      "bytes": 6048,
+      "sha256": "5d88777c0fdbe77606d835757794e3d1fb666f5122d4a23bf65f7dcfb93f301b"
+    },
+    {
+      "path": "src/world/editor/AuraliaWaterProfiles.ts",
+      "bytes": 81662,
+      "sha256": "6569a4f7090280ac561ae81093c05d7f765de52e949dbf422999896f6f7a08e0"
+    },
+    {
+      "path": "src/world/editor/AuthoredAssets.ts",
+      "bytes": 12058,
+      "sha256": "1c29e071c9eb26572e3afb2cb39adeba33e86883a50b3bece4e7bc6cfca7b2d0"
+    },
+    {
+      "path": "src/world/editor/AuthoredWater.ts",
+      "bytes": 10603,
+      "sha256": "1280516e66a59150090003f5bbe162346a3f3706b1c8d883c7ce73bc69e170f0"
+    },
+    {
+      "path": "src/world/editor/LiveWaterProfiles.ts",
+      "bytes": 11622,
+      "sha256": "4aeea38c330cc32b67d14461b6c2096161740d9b9d05c419ed9a347d111abf1b"
+    },
+    {
+      "path": "src/world/editor/WaterJoin.ts",
+      "bytes": 7469,
+      "sha256": "e6754b2132f95fef46ac7907102e7c5a0c98383f71ecce979742287f320dc249"
+    },
+    {
+      "path": "src/world/editor/WaterfallSpline.ts",
+      "bytes": 4333,
+      "sha256": "cb88a6fc81d7b261af469d7502e0f95dcee1cf8817770f6e3844ba4bdaa79a6e"
+    },
+    {
+      "path": "src/world/editor/WorldEditState.ts",
+      "bytes": 18195,
+      "sha256": "1c5649b512b70dd3c964cf1c57f64f78ffbdb558430a882727b87f9df47796c5"
+    },
+    {
+      "path": "src/world/water/CascadeGeometry.ts",
+      "bytes": 4979,
+      "sha256": "36441010d927ac8bca9ed78e8b6b1506af3c248527f88874e36ff36eee6730b0"
+    },
+    {
+      "path": "src/world/water/WaterOptics.ts",
+      "bytes": 7791,
+      "sha256": "d01310e5bebdca1c786de8fe5bc38397e8325976b5712c4b28276a9018911256"
+    },
+    {
+      "path": "src/world/watershedHeadwaters.ts",
+      "bytes": 3035,
+      "sha256": "087aa42a1e7e89c7e0e74436a57d3973342726c7e0e8d2aa9fa0ceb1fb12b5e5"
+    },
+    {
+      "path": "tests/underwater-color.browser.mjs",
+      "bytes": 2881,
+      "sha256": "bc5aa19d1ed95df5e80fadcac53271111c6dd894687aa7f6c025041bde808b4e"
+    },
+    {
+      "path": "tests/water-optics.browser.mjs",
+      "bytes": 6536,
+      "sha256": "4c5799a22e60bbe52c67e04a91ab3d8a3fc011b7ceaf51ae1f3e651235e91f8c"
+    },
+    {
+      "path": "tests/watershed.browser.mjs",
+      "bytes": 2723,
+      "sha256": "7028f588751209f61a4a9384e2d567c1bb58881d68bbea26d794d8a010e8de27"
+    },
+    {
+      "path": "tests/watershed.test.cjs",
+      "bytes": 3612,
+      "sha256": "d4226500573715926348559a5f41b628ee82f66b278efea5d532b8a6aeabe046"
+    },
+    {
+      "path": "world-editor.html",
+      "bytes": 5158,
+      "sha256": "718cf9bfb9e118767b9b6ab5901591324ed47a020c64bb378e3c8bd4d21237e9"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 587,
+      "sha256": "822725ffa9636a6be0e71accf70bb94b9a0303ca8764d31d964bf73500c4d810"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3435,
+      "sha256": "a57b4a9d30551ce1232afe95e7b85ca9113215246903827732ffc2ff533dfcbe"
+    },
+    {
+      "path": "assets-source/foliage-v4/AuraliaFoliageWind.js",
+      "bytes": 11691,
+      "sha256": "033001b655313695ead568de4cb2bcbcbcfe71067052de7a2d9c0c1f30c34826"
+    },
+    {
+      "path": "assets-source/foliage-v4/AuraliaFoliageWind_V4.js",
+      "bytes": 4136,
+      "sha256": "165789e59badbf9fc8a37ec193ef0fd94841006ac6ad5689b399829febd3a9b1"
+    },
+    {
+      "path": "assets-source/foliage-v4/Auralia_Foliage_Illustrated_V4.blend",
+      "bytes": 3705307,
+      "sha256": "0d8651dc59eaa74348418691c9bf9d5a3471e187d269b8c88754ed3a0d0965e0"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_butter_light_512.png",
+      "bytes": 40308,
+      "sha256": "d56dc773393e72070f1642f08c71f2b12168664a847e91832607a5175bf14f7c"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_butter_mid_512.png",
+      "bytes": 40317,
+      "sha256": "8065e7c03ca8a8f5844f4d3d14f6678a7fdbbd77205cd08e1e66b933647d704e"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_butter_shadow_512.png",
+      "bytes": 40328,
+      "sha256": "e3b0fc5e9ca94d875835ff1621c00677d29be80f048f3606ad23d6b9f12124df"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_butter_sun_512.png",
+      "bytes": 40304,
+      "sha256": "4e34efec28c4b2bdb067b579e9919e4449782eae60231c4a7dc2e1b6bcff6bfe"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_cool_512.png",
+      "bytes": 40322,
+      "sha256": "40560f85a98324d76bdab72569550d27d97148a520150700f7aa8c83fbcd6015"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_dark_512.png",
+      "bytes": 40330,
+      "sha256": "e8d862d6ece04fbcdaa7f966775b5a175083e9e57a53c8b961e9b66d1f48bc72"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_deep_512.png",
+      "bytes": 40315,
+      "sha256": "83e182c4545c138264831142a6ff61ab48c4a04a194df1352f0224d6b0529f38"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_leaf_512.png",
+      "bytes": 40316,
+      "sha256": "d45a2dfe57cf4309c227d36b592fbcc99df6108406859296e3fe421b1eb8f4ed"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_lime_512.png",
+      "bytes": 40309,
+      "sha256": "9a473df413f3ded01ff509b70e0ad5b87a5737d8250ef2e6431c60c4c2528a53"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_mid_512.png",
+      "bytes": 40326,
+      "sha256": "1ebeaee64caf20b6b990c74a24401c997816b0323b88f9afa47bd43f108988bf"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_mint_512.png",
+      "bytes": 40312,
+      "sha256": "8248bbc413a5ef2e81be5e5c618ac481db7c3fffa870f7da07dc7d828d4bf9a4"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_green_sun_512.png",
+      "bytes": 40309,
+      "sha256": "8ab8ad26ef179dcb04cdbeac9e5a68431c66203df19e9a8f26315164110e0d5b"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_deep_512.png",
+      "bytes": 40328,
+      "sha256": "df003e72373d597818160db9916d5f9977b21c8408c25d2c7c0b47cf50348263"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_gold_512.png",
+      "bytes": 40301,
+      "sha256": "0d3e10560711b698048ce366fafed808349ed6157ad95b3977caa7bd3f5f6b6d"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_light_512.png",
+      "bytes": 40311,
+      "sha256": "efba16184068628b747404f44c7b1db7f1fb750d00f82c2de9458c704ce75d44"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_mid_512.png",
+      "bytes": 40318,
+      "sha256": "1a960b4e7bc8279530ea9471e3de33576eef8fb77f555aea33bf240eb6fece5d"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_shadow_512.png",
+      "bytes": 40325,
+      "sha256": "0e1cfb9a614d15a5ae978fbbd2ea4ae5eccacf60d3e352a5661cbe5ae5f92e1b"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_meadow_sun_512.png",
+      "bytes": 40301,
+      "sha256": "6bcc5d9689aa6e0c62fb4cc22eb9854252aa9f0d6cb971f3f78096f3f6421c80"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_spring_light_512.png",
+      "bytes": 40308,
+      "sha256": "64ad2ed1a5f524c54d295926bff779c5e27e29a627f57c0cba407acbe90f8ddc"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_spring_mid_512.png",
+      "bytes": 40323,
+      "sha256": "3ee2cb28f2f56825f3cb6853f6322cba2c30024794c33d9f8ac2b658160607bc"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_spring_shadow_512.png",
+      "bytes": 40330,
+      "sha256": "59a027db95a39af209f665f0a1f1b4956cb0d2e16b26345ad65cb44342aae5ea"
+    },
+    {
+      "path": "assets-source/foliage-v4/Textures/Auralia_Leaf_spring_sun_512.png",
+      "bytes": 40308,
+      "sha256": "d2b43e0b2be65349f5aecd132692ba4b51f6afc8ef2dc8c48c2a1aa29639ba48"
+    },
+    {
+      "path": "assets-source/foliage-v4/generation.log",
+      "bytes": 2155,
+      "sha256": "b46eb47c0b7ec3b04cbd8801fb48cd5b3b24178223f2d53f5baf1bd33b9ff07b"
+    },
+    {
+      "path": "assets-source/foliage-v4/manifest.json",
+      "bytes": 9660,
+      "sha256": "325ba5fd9d08204b3226a268ebca3a8c2ba1e1e25e4b6cf718404be01bee5d4a"
+    },
+    {
+      "path": "index.html",
+      "bytes": 492,
+      "sha256": "e013647f4a77534e04202c5e5dbd662374fbd4ee8a57278a0ad1d0a5bfedf226"
+    },
+    {
+      "path": "mapa-interactivo.html",
+      "bytes": 9902,
+      "sha256": "fada81bf52f35efe17b2516688c759750ed16119cf9217de8b78bbb250a30bdd"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 37088,
+      "sha256": "492f89f5b28cda11c1d708de6beecf4d226c7ccb56147286e9bd24aa95f3eab9"
+    },
+    {
+      "path": "package.json",
+      "bytes": 7801,
+      "sha256": "ce1ac4115b31d21740ce814d6cd2817385c89b37ca18c9d4522d094067a2cd61"
+    },
+    {
+      "path": "public/assets/auralia-clouds/cloud_formations.json",
+      "bytes": 6071,
+      "sha256": "08e20209650dc4bb3d4c842253e9927d34238fefbd16a2944fa6da68d7d0ad1c"
+    },
+    {
+      "path": "public/assets/auralia-clouds/modular/cloud_fair_color.webp",
+      "bytes": 64218,
+      "sha256": "c8a6ef8acd0622c3d893da3046942b4d3c9d67c86da2e1421307b7ba5902f6c5"
+    },
+    {
+      "path": "public/assets/auralia-clouds/modular/cloud_fair_data.png",
+      "bytes": 684343,
+      "sha256": "584d3afe598558f7b18600d9c8f25ab613fb3fe58b935d2a937f9f6e74bf83f6"
+    },
+    {
+      "path": "public/assets/auralia-clouds/modular/cloud_segments.json",
+      "bytes": 12682,
+      "sha256": "701c6242aa99ccc52b1ef8fa6d21e64021515caf2584ea8ce8580f808ee17742"
+    },
+    {
+      "path": "public/assets/auralia-clouds/modular/cloud_storm_color.webp",
+      "bytes": 40734,
+      "sha256": "135a72738738e498f8cf73009fcc00c2db5556cc34853528f0c69236346e8a7d"
+    },
+    {
+      "path": "public/assets/auralia-clouds/modular/cloud_storm_data.png",
+      "bytes": 369439,
+      "sha256": "5313e88e5d606d6907449751dfcf372bd7139913d3dd1750b42557fe48441bd4"
+    },
+    {
+      "path": "public/assets/auralia-clouds/noise/cloud_field_rgba_512.png",
+      "bytes": 407890,
+      "sha256": "a752d77a43426bc4b37e4de0305679c148d5f5c313fff98a683c1556228fee26"
+    },
+    {
+      "path": "public/assets/auralia-clouds/painted/cloud_fair_painted.webp",
+      "bytes": 73548,
+      "sha256": "08a640a5bb5e0e528b8a98adfe79406ebb25510913d8851e6f85813f6fd3d8ab"
+    },
+    {
+      "path": "public/assets/auralia-clouds/painted/cloud_fair_painted_data.png",
+      "bytes": 190340,
+      "sha256": "bb1a7a8e94148c06bb8b071b4717ca1292fa1764c9fb70b377b6db33c8561061"
+    },
+    {
+      "path": "public/assets/auralia-clouds/painted/cloud_storm_painted.webp",
+      "bytes": 53292,
+      "sha256": "415040a4f77c45e783a2bebc21c70a59dcb5ccc49a94c46314269a659cb37506"
+    },
+    {
+      "path": "public/assets/auralia-clouds/painted/cloud_storm_painted_data.png",
+      "bytes": 114746,
+      "sha256": "fb911f03764e4bde3dde17c449e1cd44cd2c928127b6d034c5875ac5b7b03aa5"
+    },
+    {
+      "path": "public/assets/auralia-clouds/painted/painted_segments.json",
+      "bytes": 5438,
+      "sha256": "4e06d98499a18fa844d2d744a864213c6618a8e690ea48622e465cfc43981b67"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/bridge.webp",
+      "bytes": 3760,
+      "sha256": "a0efc15bf7816338560a13e763060a3035e5698010653660e1eb17e439d6034d"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/bridge_painted.webp",
+      "bytes": 9224,
+      "sha256": "a9d9306118e882a72c585c22fc313f6912185a5d30eade276d6e475c1e5d210f"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/cap_long.webp",
+      "bytes": 3876,
+      "sha256": "0a4587941887e8781430b4b09c0ae0f866cbf28239b0ddbe88395769e0d433de"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/crown_round.webp",
+      "bytes": 4444,
+      "sha256": "956956ef17fa02900754e459e67008f7d6daa19b23abda4ef7a9975ec7af4371"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/crown_round_painted.webp",
+      "bytes": 8878,
+      "sha256": "af1472c490bc07ac210b1171e12d1eb1b89b0b9384877e9cf35e20fc9a1bd158"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/crown_tall.webp",
+      "bytes": 4830,
+      "sha256": "ddb3aa80dd597754f8c8336a33a55e92c72a08122140f90ce024ddc6baa39609"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/crown_tall_painted.webp",
+      "bytes": 9328,
+      "sha256": "83c6af4e0e81976681d381e076a934dc362a0d8669fc26ce3b071057b0a5d436"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/curved_wisp.webp",
+      "bytes": 3636,
+      "sha256": "b1480e0fc632a12ef0e33fb90d1a8510d182b061f63df1988d4a27744d901449"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/drift_piece.webp",
+      "bytes": 3004,
+      "sha256": "e234b5c90bbf30308db187c02e08f2f069aa006cdc742da00f413285df871950"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/flat_base.webp",
+      "bytes": 3970,
+      "sha256": "ac8a88d93689983b810f49d8482f273fbd7552c360d9e0c8d924886f51204429"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/flat_base_painted.webp",
+      "bytes": 7908,
+      "sha256": "f7e087b2670d7fb38e3d9c1bee95f0ad7a4342a5b3772688e41e9aa0f6084b0a"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/small_puff.webp",
+      "bytes": 3296,
+      "sha256": "08c70773aa8e83ce246bfddc93267518f6e985cfdeb4c0b69775fec5e05a3dbe"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/small_puff_painted.webp",
+      "bytes": 8906,
+      "sha256": "e55b6d39255ff38c764fe50a60f979f8ab5f0bb032dca420e226104f3ae65da7"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/soft_veil.webp",
+      "bytes": 3714,
+      "sha256": "f7366396d3791cbc8bda47158cc2f2696f76398e6c780cd915e047ed96b1745b"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/stack.webp",
+      "bytes": 4946,
+      "sha256": "2138bf234aefa9fd5f44196747304d5a90ae7f4c49c8f23f55e83654a0083201"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_anvil.webp",
+      "bytes": 4966,
+      "sha256": "98225aaf348a1840ea92910ef365b954dbdb8499b55f128029256894df2492c3"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_base.webp",
+      "bytes": 4798,
+      "sha256": "e00058d80f52eda452f35014852faec221776a3ad2809a3a579be98e7d5a8819"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_base_painted.webp",
+      "bytes": 15770,
+      "sha256": "df56609b8a07acd3e8392de854e8abbf861d7fa57883add1c5a8be77db32473e"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_column.webp",
+      "bytes": 5440,
+      "sha256": "07f0ad9a369d9743b3a87a536f085783505ede83426fc080e707734b5136b74d"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_column_painted.webp",
+      "bytes": 12782,
+      "sha256": "8f9521797e8ce8926a8f60208c459ac01b721bf56c3747b9f1aa5a47feca82ad"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_ragged.webp",
+      "bytes": 3688,
+      "sha256": "9b49eede4ac21e0d2b04724289a1dad93a280011158d0fa35c7dfd034f1e287a"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_rolling.webp",
+      "bytes": 4810,
+      "sha256": "ce4e6747142358735e4da0867f29cd5662a1ae7a7bcea99f02fa8c493ee00df4"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_shelf.webp",
+      "bytes": 5038,
+      "sha256": "56d95e0363d7bc3a489a587093fc259c1f5a8ad0c5825ae49d14e499a30b2524"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_shelf_painted.webp",
+      "bytes": 14196,
+      "sha256": "94a3754f4646bad9219be073be20db2eb89f9a2f859fa8a452c9328b01855729"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_surge.webp",
+      "bytes": 4814,
+      "sha256": "7b571e6e890eaa980331d37a6b6d9a02fef0ee72b981566b8f299c6da17f8789"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_tower.webp",
+      "bytes": 5670,
+      "sha256": "e39c9b47ddcfdb81654c304e5bcf8cfb2fe0bc41643c795a5c8416f253ebe467"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/storm_tower_painted.webp",
+      "bytes": 10472,
+      "sha256": "60185892c5cdd34d92708ce8efc61cfb91045cf442f8094bc1aa1b8b4af85977"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/thin_wisp.webp",
+      "bytes": 3292,
+      "sha256": "ca34597351f1cc4f77825859178c6d3736f039f1bbe756b6d3d8a4714d602b52"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/tower.webp",
+      "bytes": 4764,
+      "sha256": "f69fbac3684d032ab8f311a6f2b203c817a37843d224788b465b484cc3695703"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/trail.webp",
+      "bytes": 3870,
+      "sha256": "b22f7f927c1a354c4886b767eb2b37b90cc54471f6ee4a111e9e151501636c34"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/triple_puff.webp",
+      "bytes": 4336,
+      "sha256": "f8bf9ba65f57df194ea4da54d66a3e38a2c07c48952b3ec12647b50a94ff2e42"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/triple_puff_painted.webp",
+      "bytes": 9726,
+      "sha256": "769be580be02206ed35aae265762a0a1607e080a2e11b6b02058f0eeb38d783d"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/twin_puff.webp",
+      "bytes": 4292,
+      "sha256": "9b04556d567d7b887025111f690602e94f368d9c08c1df91428ac0f7e7973981"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/twin_puff_painted.webp",
+      "bytes": 9836,
+      "sha256": "9842f73078199d20f0edbb176148cebc3c08992733309ea6971e14cb10ed6d35"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/wide_base.webp",
+      "bytes": 4954,
+      "sha256": "23a1881cccad63dc2c380bd59d6d2e5b3ff900640b981420adea80f018e7dfb4"
+    },
+    {
+      "path": "public/assets/auralia-clouds/pieces/wide_base_painted.webp",
+      "bytes": 9500,
+      "sha256": "01d43d6c42717285f00878468de3025f91c8ec489572a839047cc3d98f58ba4d"
+    },
+    {
+      "path": "public/assets/characters/santi/Santi_NLA_SK_Opt.glb",
+      "bytes": 15514512,
+      "sha256": "5f275321917cfaab21420926510ce43fc07d70cd927eac8d69cf2a78b929d40f"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_01_PinkBloom.glb",
+      "bytes": 615964,
+      "sha256": "f64ca21ed5e76fa2679e451f43331773fdec6d6cc6fdc043a295e37ffbba9290"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_01_PinkBloom_LOD1.glb",
+      "bytes": 295324,
+      "sha256": "6d5f90a70d7d5c01974a907198d47c27d08a9450b860a23ec2203377238f1312"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_02_WhiteBloom.glb",
+      "bytes": 613804,
+      "sha256": "fd9f2c1f41b54def9f16f53eef0dbf776ee5910af2e61ad64ec04199539f1bb5"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_02_WhiteBloom_LOD1.glb",
+      "bytes": 289084,
+      "sha256": "17a391a2b7408b78abb8a596f70feaedf8d38b29767c3d7f613bb3d71622aff3"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_03_TwistedTwin.glb",
+      "bytes": 536976,
+      "sha256": "a0fe007ca37e7cbc2ee82c36564a484eaa5a79d5941f3eeb3ed2c2b9df925118"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Cherry_03_TwistedTwin_LOD1.glb",
+      "bytes": 262176,
+      "sha256": "fe7c2eacc8ca90c258e0f45f81fda7a964a9bba8cafa9707eb8cf1a83039e6a6"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Jacaranda_01_Violet.glb",
+      "bytes": 485900,
+      "sha256": "f085466e0db0342fea977633729500a540297f8b88c8464ea0300699b6808694"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Jacaranda_01_Violet_LOD1.glb",
+      "bytes": 264868,
+      "sha256": "61843aa829608ffba8871997dd951a83f797537978088d17ebff986badf07ddc"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Jacaranda_02_Wide_Canopy.glb",
+      "bytes": 531456,
+      "sha256": "468f6ffe225ac6ada738192eb6e222fb39f0060671a0416bdc938659ea9a587e"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Jacaranda_02_Wide_Canopy_LOD1.glb",
+      "bytes": 286176,
+      "sha256": "a57be962919b6f57c82013a77c7de010be4d5a6406a3fde74b5b7fcc147b0aab"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_River_01_Sarandi.glb",
+      "bytes": 389672,
+      "sha256": "57c7359173df76e8bdfff92c68608c35c3c9e84eeee9b0a7bb4f44349d53e75a"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_River_01_Sarandi_LOD1.glb",
+      "bytes": 221200,
+      "sha256": "72a28be8c0042cfa3b0fe4132513a7d4394fc8e3ce111adaf0f4485349087cd3"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_River_02_Broad_Fork.glb",
+      "bytes": 438816,
+      "sha256": "8f2d824f0cbf908de22b43ab33edec2d4eda02be25f6759d97aed9900d50e29e"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_River_02_Broad_Fork_LOD1.glb",
+      "bytes": 240584,
+      "sha256": "0f3e6d13a21684de0561764661c5c57f30a18bdfaf603b3dcf62d45fb0f11ffc"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_01_Weeping.glb",
+      "bytes": 573944,
+      "sha256": "57f3af52726ab10095af18182e8314c441592e1ff1ec062c3fe68993f637226d"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_01_Weeping_LOD1.glb",
+      "bytes": 327224,
+      "sha256": "b2bd6d551f5d36cbc35c2d271293f5e32235014b4cbb903e9dddcf8bcd7b6cea"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_02_Old_Spreading.glb",
+      "bytes": 628684,
+      "sha256": "8ef141e5cd32d8b2446ba9ab9922dacf80752f55bf71fcc1c5c24ee62f0ac014"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_02_Old_Spreading_LOD1.glb",
+      "bytes": 351964,
+      "sha256": "e937e801102be112322f168c56b7cd793af395b8a30c025e59a7d369f0aa641a"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_03_Leaning_Bank.glb",
+      "bytes": 573472,
+      "sha256": "5fb593e72e3f71b601c10db302d30ccee391fdc7ed20f4c56b329e7c4a087ea9"
+    },
+    {
+      "path": "public/assets/expansion-v3/Tree_Willow_03_Leaning_Bank_LOD1.glb",
+      "bytes": 328676,
+      "sha256": "756d8923720d6334ec356e5c012082236a1a655d15fe16f50d634d576fba8099"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_01_Totora_Tall.glb",
+      "bytes": 143752,
+      "sha256": "57583667839535df33f20d1a2ed95d0a92b325a01a0537e0eb84c3620a3f0341"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_01_Totora_Tall_LOD1.glb",
+      "bytes": 76304,
+      "sha256": "b335a08d30dff0580150b469d63b2040d61c2149b6f2dde25b92da43ba131bd6"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_02_Totora_Low.glb",
+      "bytes": 111448,
+      "sha256": "6939702bde90849023efd8cf001ab10221848d6b58d07fc1f75da0b227a8ef65"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_03_Juncos_Dense.glb",
+      "bytes": 128572,
+      "sha256": "b24776cfeed760bb87ee9b4c7721b6c2fd9040054fd0ee7819b8d539d482cc56"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_03_Juncos_Dense_LOD1.glb",
+      "bytes": 53204,
+      "sha256": "c80ab65ad96cfde2ccf0029ad291200cdcf6f5af8c7dcf80be877319815a2a2f"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_04_Juncos_Sparse.glb",
+      "bytes": 58888,
+      "sha256": "c8930d5f7fb51762b6f77d16470f5092b71dfc3a0d02bf42fc40ed4e7d54b789"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_05_Cyperus.glb",
+      "bytes": 95428,
+      "sha256": "e0c34135a611c354c4c3e976320c6d8b12f54f0e7bafc265449b98233ed55bed"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_06_Iris_Yellow.glb",
+      "bytes": 49476,
+      "sha256": "96c3a2e3ae3df4d4a0de5e0c7e2735a305f24c1881eab8d4ab56e67942b45d8a"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_07_Nenufar_White.glb",
+      "bytes": 27344,
+      "sha256": "3871ce8aa0af6e5c5c961192784baa675107865efb0b5848e349c1e4633bf3a6"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_08_Nenufar_Pink.glb",
+      "bytes": 38668,
+      "sha256": "bed96fefe80f4d6422172d1fcce50da8bd65f4e72d6642593670122e5693f15b"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_09_Camalote_Violet.glb",
+      "bytes": 74188,
+      "sha256": "ab2883556b507b7633efe4db9edbd5613fac333e5c51294a153f1369d98613c6"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_10_Lenteja_Agua.glb",
+      "bytes": 166468,
+      "sha256": "89ad40707f82cfa9e05d48918d7122e11f553eb37c63d7552e1c9c30dc8d3dd1"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_11_Helecho_Humedo.glb",
+      "bytes": 105120,
+      "sha256": "ac07dd0ac183c37ed2ac0b7b1d40cd175104d6e5d8aa7ea521db2c9f36afa112"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_12_Flores_Ribera.glb",
+      "bytes": 132164,
+      "sha256": "07059feb17e555493149557af72a5884d432350d208377828ea7671fca1157f6"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_13_Orilla_Mixta.glb",
+      "bytes": 185904,
+      "sha256": "89ad4c4797cd687918c8d236291879a4e2a1beeb04dabe8f4a09793a660f21da"
+    },
+    {
+      "path": "public/assets/expansion-v3/Wetland_13_Orilla_Mixta_LOD1.glb",
+      "bytes": 115712,
+      "sha256": "9f73d47218560abc04a2792b5ff1817c7362eb299408f5542666112b19f434f9"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_01_Round_Lime.glb",
+      "bytes": 468156,
+      "sha256": "80a065c7fe0ecb2dc1f1175fb431371c5ca05259941b1f2faa5f406de0b5ba3c"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_01_Round_Lime_LOD1.glb",
+      "bytes": 339656,
+      "sha256": "233af899da4b4d723cdeb1431dc9d9ed5a560aec34ca214b31c0bf36ae8bd7c4"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_02_Round_Flower_White.glb",
+      "bytes": 507416,
+      "sha256": "0e7e4e5bdc31b5bd4f20ab395b311bfc1966d9842ef27194deb43cd15da93581"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_02_Round_Flower_White_LOD1.glb",
+      "bytes": 349584,
+      "sha256": "3b7e26c91a6d53b482bd4b7f7f4d64ce845715c96a84c2889b142b8a4fcfbbd5"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_03_Round_Flower_Pink.glb",
+      "bytes": 455120,
+      "sha256": "ec5f2d082d8c1bd5e7a4f5d6c0918c3570899f35768a66ba54c166e42977ac95"
+    },
+    {
+      "path": "public/assets/foliage-v4/Bush_03_Round_Flower_Pink_LOD1.glb",
+      "bytes": 325512,
+      "sha256": "776ec19fc2b726b547494dd86f64651af2fc1a59c3dce726604032aa71c6e98e"
+    },
+    {
+      "path": "public/assets/foliage-v4/Flower_01_Pink.glb",
+      "bytes": 75232,
+      "sha256": "b822c3563b891dae3e2138181d2bc1331de514332918d56bfc79d7e3579cf0c1"
+    },
+    {
+      "path": "public/assets/foliage-v4/Flower_02_White.glb",
+      "bytes": 73400,
+      "sha256": "e6a548afa1e35fd1454ab9c147fd31a08298e4f4c72abb984cb94d9a1becbb86"
+    },
+    {
+      "path": "public/assets/foliage-v4/Flower_03_Blue.glb",
+      "bytes": 75000,
+      "sha256": "b76aceb3c87f1f3963e4b78136725e469ab64b4c19ebc34e22b861c0617b39d3"
+    },
+    {
+      "path": "public/assets/foliage-v4/Flower_04_Yellow.glb",
+      "bytes": 75572,
+      "sha256": "38774c9642d84fea0bf5de6dbdfc4e888e65248ed8bee0ffcab0b6df03c9ecd5"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_01_Short.glb",
+      "bytes": 205148,
+      "sha256": "8ca6ff1df42060b5417684511432c752679183c61d29c69869886d7705187dc0"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_01_Short_LOD1.glb",
+      "bytes": 44728,
+      "sha256": "dbbb5fcc25adbfc79cc94682257dbe55bf92cb3d18f2900efbb96f9a8897040d"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_02_Tall.glb",
+      "bytes": 105660,
+      "sha256": "47b82026ccc873ccd81b1786e03a89096d44f6349cf86ab5370b409097281653"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_02_Tall_LOD1.glb",
+      "bytes": 28104,
+      "sha256": "fb738a7b0996f9e2a32125e097afae55eaa31c603e36763e005d69ff1777db9b"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_03_Golden.glb",
+      "bytes": 134508,
+      "sha256": "a3608af1e054d028b732b95b4bec1db4f899f45176ea4485c0c38b12ece1023b"
+    },
+    {
+      "path": "public/assets/foliage-v4/Grass_03_Golden_LOD1.glb",
+      "bytes": 31712,
+      "sha256": "484918bb02fd477da9b43db72fad939f7ced9bdbe31e5e53dbb4c8969bbfe014"
+    },
+    {
+      "path": "public/assets/foliage-v4/Ground_01_Clover.glb",
+      "bytes": 234752,
+      "sha256": "8b386fd1596b6b51e510df403ef9bc11464253280b485df0da859b53f77023f2"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_01_Soft_Rectangle.glb",
+      "bytes": 505780,
+      "sha256": "0d0745a74aea181ef19661f0f23de7f62853fae6429f2c2dd7b0bea855addec5"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_01_Soft_Rectangle_LOD1.glb",
+      "bytes": 341500,
+      "sha256": "ed0b34e256218bb373a37f4ee70e6a2822720034500b53b9e4596d5df0ffd04c"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_02_Flower_White.glb",
+      "bytes": 556572,
+      "sha256": "35aad1f6ad2eea64b05cfb3b8a3cc017c7592779cda3ee48d36f49b86a7ffda1"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_02_Flower_White_LOD1.glb",
+      "bytes": 366120,
+      "sha256": "2c3c22489956bfa205644f89fed5a43e02b348db8b76a427637c62441537d98c"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_03_Flower_Blue.glb",
+      "bytes": 550700,
+      "sha256": "e295ca4a0e80995762ddba41989ab7cb8a16092a2a1670951d86bf96780d94a3"
+    },
+    {
+      "path": "public/assets/foliage-v4/Hedge_03_Flower_Blue_LOD1.glb",
+      "bytes": 365716,
+      "sha256": "ed8bf1af7b66bc7f336caa38afec6e29e099a887f669233734118d5dc5cb9d87"
+    },
+    {
+      "path": "public/assets/foliage-v4/Ivy_01_Horizontal.glb",
+      "bytes": 54808,
+      "sha256": "b8a5402b9ea966beba068f781a662b0a35fe0c842344e8acd0369ca84b9b0c0e"
+    },
+    {
+      "path": "public/assets/foliage-v4/Ivy_02_Hanging.glb",
+      "bytes": 132320,
+      "sha256": "a8dbe7cec8c4bf1eac68f868b3e34f9c4c01abcb07e1b9c28f25b0b91df10e74"
+    },
+    {
+      "path": "public/assets/foliage-v4/Ivy_03_Corner.glb",
+      "bytes": 52416,
+      "sha256": "c3e422b0ed81dd0686b5ac2d5472e71b2f18ad1cc5c2775ed99e44f766a018c2"
+    },
+    {
+      "path": "public/assets/foliage-v4/Ivy_04_Ground.glb",
+      "bytes": 108244,
+      "sha256": "099d66a3f00b367d7fce50d0669026b4414daafc6564e6760367a48a74837356"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_01_Pink.glb",
+      "bytes": 461592,
+      "sha256": "1c687d73163d8aa1bc5b5b8dfc02e480b2ff1a349beb59a5c884c0ad9e7af44a"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_01_Pink_LOD1.glb",
+      "bytes": 107784,
+      "sha256": "bdd4d5d13226d216788f0a398c4f83f6dc5041522a03c147012598dd1c179e3a"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_02_Blue.glb",
+      "bytes": 384824,
+      "sha256": "74d10fc5483235c20a208977c8f0b888c6a418f90d6f6394d942b69af0a11b00"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_02_Blue_LOD1.glb",
+      "bytes": 93024,
+      "sha256": "13871df823cc1c78ff48855754e999a83b6308d6752bfb263c374babe12b6988"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_03_Mixed.glb",
+      "bytes": 636488,
+      "sha256": "b0703d0086e0ec1205442664f24ffd25c2d82beb361a08b0815312cb002bc585"
+    },
+    {
+      "path": "public/assets/foliage-v4/Meadow_03_Mixed_LOD1.glb",
+      "bytes": 146068,
+      "sha256": "2f7bf7534b1fb53bc1fe4a00845773ee8a416c89c92a82e007d710ed80eb7c68"
+    },
+    {
+      "path": "public/assets/foliage-v4/Nature_Island_01_Tree.glb",
+      "bytes": 874908,
+      "sha256": "ecaeeb56ff185321dfd65864721f7257ae7b1d8511d098780cd9abd0f7cf90a2"
+    },
+    {
+      "path": "public/assets/foliage-v4/Nature_Island_01_Tree_LOD1.glb",
+      "bytes": 623012,
+      "sha256": "5d336632bb046914a75a767cc85c6307a2f6cd0d37dfdf483b585bb9e0d167db"
+    },
+    {
+      "path": "public/assets/foliage-v4/Nature_Island_02_Bush.glb",
+      "bytes": 788004,
+      "sha256": "94add9f0bda9e49c22d56bde102fea105bfd24b94826f5686814f508ad960e33"
+    },
+    {
+      "path": "public/assets/foliage-v4/Nature_Island_02_Bush_LOD1.glb",
+      "bytes": 473804,
+      "sha256": "fbc3a4f87e55a1e04c90650daf610a29f2335a25c7009c1785dc945d3c75a70f"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_01_Soft_Emerald.glb",
+      "bytes": 620932,
+      "sha256": "8370786b8db544a90a1e98363567d6c9cb55fabb3dafe73258af230ba344df22"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb",
+      "bytes": 514520,
+      "sha256": "977d5c3f0007e1421ce6495f30e56bb849a29b0a2e401d5c27d3a27c9fe5b944"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_02_Broad_Meadow.glb",
+      "bytes": 624716,
+      "sha256": "f9a8089ab0018f00081fe71f7f7e58a4ad4560c9507d3b130797aa7aea5dfbea"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb",
+      "bytes": 477736,
+      "sha256": "2f6a30992935ba1af6fae296249a694c087f5f5930dab1af5a67f3ebfe260ae2"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_03_Tall_Clouds.glb",
+      "bytes": 572620,
+      "sha256": "b2269d2c9d3679e58e69141948615ece22f785acbc820d3ea50975041e96d267"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb",
+      "bytes": 550580,
+      "sha256": "02f00a9202a851cf8669ce0470e0b703cdc89b70a0eca16a23f663f3bb3f3d1b"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb",
+      "bytes": 577080,
+      "sha256": "80e23dfb83478a10c040111ab24dbf6ac0016fff47817f61474146a94d99ff54"
+    },
+    {
+      "path": "public/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb",
+      "bytes": 478272,
+      "sha256": "3ca2b59a08346aa7e569dce08695a97b76bfdbfbca8a38bddd5c85d25d99a1cf"
+    },
+    {
+      "path": "public/assets/grass/grass_tufts.glb",
+      "bytes": 10764,
+      "sha256": "e7ec58127f81e23e657d297802a5e64e2c2077192b252360541a77fbd35f9933"
+    },
+    {
+      "path": "public/assets/mapa-geografico-v0.2.svg",
+      "bytes": 167113,
+      "sha256": "6c80077cc6e2ab67b31a95bd13fa4fec65c4a960d04f1ee0e6f4ee1b9308fa47"
+    },
+    {
+      "path": "public/assets/mapa-maestro-auralia.png",
+      "bytes": 3562750,
+      "sha256": "4217aae4905985e47611912ad35886e721dcc5fccb0037efc10790fcfae23ce6"
+    },
+    {
+      "path": "public/assets/terrain/aw_grass_albedo_rough_1k.webp",
+      "bytes": 337328,
+      "sha256": "3a3383a12681acaeac8169c7c83deb1419c4aa7ad761cf21d6c134dc7f37cad4"
+    },
+    {
+      "path": "public/assets/terrain/aw_grass_normal_1k.webp",
+      "bytes": 129094,
+      "sha256": "6e1899b687221ea05f0749100fe04189dcfd089b2542dfba179281cd1f20fd8e"
+    },
+    {
+      "path": "public/assets/terrain/aw_lava_albedo_rough_1k.webp",
+      "bytes": 427940,
+      "sha256": "5da3e3c3d9c657f84aaf53851f30b9873300ef076f1af42f3693e4464889b17a"
+    },
+    {
+      "path": "public/assets/terrain/aw_lava_normal_1k.webp",
+      "bytes": 103208,
+      "sha256": "433a36986d23617b5058540b2c79456de1950c1d4136a8878c4a3d220a159835"
+    },
+    {
+      "path": "public/assets/terrain/aw_normals_0_1k.webp",
+      "bytes": 271308,
+      "sha256": "516750754714ba6e27688aa8744ec4d3a1e33cfe62de850c8620e7161bef30f1"
+    },
+    {
+      "path": "public/assets/terrain/aw_normals_1_1k.webp",
+      "bytes": 80770,
+      "sha256": "b153900ac7cfce8151bf6083890af71ddfc92027c792ad9f0c578e0d10a8db60"
+    },
+    {
+      "path": "public/assets/terrain/aw_rock_albedo_rough_1k.webp",
+      "bytes": 138846,
+      "sha256": "a4f86b9c925de44751b07dc21970be898350623fda3a040a651e0daf21a2ae43"
+    },
+    {
+      "path": "public/assets/terrain/aw_rock_normal_1k.webp",
+      "bytes": 194410,
+      "sha256": "170d7bb1b5f13ea807580c442c908ba6d124e4524156ea642b210a6a7b271242"
+    },
+    {
+      "path": "public/assets/terrain/aw_sand_albedo_rough_1k.webp",
+      "bytes": 155710,
+      "sha256": "0c1c95ecde91ff8ddd2806affcde5b62d0f2d3e0121b9e17b151c4811f6c751b"
+    },
+    {
+      "path": "public/assets/terrain/aw_sand_normal_1k.webp",
+      "bytes": 161948,
+      "sha256": "86d1048c642bfdbcfa1f67511eaa863e0a1e5d93cdb398d99c85f4afedc7ec82"
+    },
+    {
+      "path": "public/assets/terrain/aw_snow_albedo_rough_1k.webp",
+      "bytes": 123730,
+      "sha256": "d7edaf47c7ec7b7e33cc30048d3219ecfed8043da51749b2e135d3b4c5f57a89"
+    },
+    {
+      "path": "public/assets/terrain/aw_snow_normal_1k.webp",
+      "bytes": 60442,
+      "sha256": "9c50908df569be12a78a4b5659957659d12dd1fc5e2f69f5aca1a4f0303c5858"
+    },
+    {
+      "path": "public/assets/terrain/aw_soil_albedo_rough_1k.webp",
+      "bytes": 153518,
+      "sha256": "39bc4889ca20ba4296d7e52480431b725997d4b6a8b25b8dcb73dd85b7ded50c"
+    },
+    {
+      "path": "public/assets/terrain/aw_soil_normal_1k.webp",
+      "bytes": 124868,
+      "sha256": "734557a88e6ff6a6464f72860e1478bdca73d2e69c3a6ea8599a7e1696ec9fc7"
+    },
+    {
+      "path": "public/assets/terrain/biomes/manifest.json",
+      "bytes": 7511,
+      "sha256": "d4e09ca365c3929bed8fb3128031da649d89c01db45c7a3576266cc5e6a993e6"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_alpino_roca_nieve_albedo_1k.webp",
+      "bytes": 516426,
+      "sha256": "499b4bc36655eb4ac36b98d35ce076199d227f44c75dedbb0d1f6c83fb6ba276"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_badlands_arcilla_roja_albedo_1k.webp",
+      "bytes": 475192,
+      "sha256": "0237ddad41ae10408f2ad201ba64d47c058d8c4e2ba8e704bc8f11ddcb0d85ac"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_bosque_templado_suelo_albedo_1k.webp",
+      "bytes": 541068,
+      "sha256": "19ab4acc6ada40c7eecdc026b87b0c1c24a1564f6f2bbd4cfab88a48d988c05b"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_costa_playa_albedo_1k.webp",
+      "bytes": 376660,
+      "sha256": "05892249cd26421cbfc0ab5602faf9972dba1e8528cead722f1ae49c4b8054fa"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_desierto_arena_albedo_1k.webp",
+      "bytes": 385958,
+      "sha256": "122a208d821a90ee6fba4e99dfbd309f2dcac4fc5b25656001a3f96410dc5645"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_estepa_seca_albedo_1k.webp",
+      "bytes": 497754,
+      "sha256": "90ae7789dc14200ee3317bef7bd361413b6aeed333cbbea62eb58898942f1646"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_orilla_rio_fangosa_albedo_1k.webp",
+      "bytes": 438120,
+      "sha256": "a2a27df5c576200f25fa4cd6faef46f8c96fcd914d9b21454104f1f251cd27f5"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_pantano_humedo_albedo_1k.webp",
+      "bytes": 466076,
+      "sha256": "22d4c31ff3d5d0e03176835154b1151d3302af7e04fd3e655aba1af8473f7a67"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_pradera_templada_albedo_1k.webp",
+      "bytes": 559158,
+      "sha256": "71bed22fc555792fab8817f94c7b64d2976eb08a3b93bf237e342aece5486323"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_selva_humeda_albedo_1k.webp",
+      "bytes": 538142,
+      "sha256": "6da25d855fe7202672d0d39324e9bf4c6f949696a34736135c925f404996050a"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_sierra_grava_pasto_albedo_1k.webp",
+      "bytes": 553766,
+      "sha256": "b728a1aef6d9cc6d6b4490a6a164f2786ec5375b73e824ff3bd4378d08e5cd2f"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_tierra_maldita_albedo_1k.webp",
+      "bytes": 424824,
+      "sha256": "4719be0bb96478029b2afa410b1e2af1bcc963a200cca0b44ae4af2317de56b5"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_valle_cultivo_tierra_fertil_albedo_1k.webp",
+      "bytes": 457618,
+      "sha256": "ec1100f933350198e46ce4fe83867275b51330ab565a1e7afe4da9480a6a8ac0"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+      "bytes": 412648,
+      "sha256": "4d22df07634a12574cd028e80e1979c5cada0e9100931e3dd87f8e5e8ff84c7a"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_alpino_roca_nieve_normal_gl_1k.png",
+      "bytes": 1623041,
+      "sha256": "88bd9af58eef6aa331f5a2da1f6d51817f9a72c38a4be8441064bb0be8b1a73b"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_badlands_arcilla_roja_normal_gl_1k.png",
+      "bytes": 1432600,
+      "sha256": "ab67c18ff599855dfa1e9f9c82c5ab0c710c31cf5a781fa7b36d154ea2428756"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_bosque_templado_suelo_normal_gl_1k.png",
+      "bytes": 1454225,
+      "sha256": "dcb1a41b4072217c36e998884c58b525dce4ab18f82fc5c1f90970d26f1d4b08"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_costa_playa_normal_gl_1k.png",
+      "bytes": 1001380,
+      "sha256": "b6651e6b49824f2da363f553e7b21a3bc643fd4160ba6b3230094def68d8a862"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_desierto_arena_normal_gl_1k.png",
+      "bytes": 1008089,
+      "sha256": "a848d2aef6f01c28349163dfc3865af19f8b9dcaa1fc64b0fd2bc91ec2ff912c"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_estepa_seca_normal_gl_1k.png",
+      "bytes": 1255389,
+      "sha256": "d34747c608adaef4f36e61967e195a6b31b51ce99bc3d4951c81ffbb2842536c"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_orilla_rio_fangosa_normal_gl_1k.png",
+      "bytes": 1293524,
+      "sha256": "4dd8b0570791c6f5a89e1d54b94fcc0e970543cb73b3d88d439d24e5958c0477"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_pantano_humedo_normal_gl_1k.png",
+      "bytes": 1346083,
+      "sha256": "9041fbd86e2ee948044e64a692be53dfa3c5f284070ef979d7cba06135ff6e7c"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_pradera_templada_normal_gl_1k.png",
+      "bytes": 1378798,
+      "sha256": "58452d0ee885fe6afad58e61004ad5b215a05a66ce0da911012f15b5facb87bb"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_selva_humeda_normal_gl_1k.png",
+      "bytes": 1473013,
+      "sha256": "f3ce6f1dd3826bd1f4af6965787fbc2edc1a73c8107d3eab785bfaf60d631298"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_sierra_grava_pasto_normal_gl_1k.png",
+      "bytes": 1718081,
+      "sha256": "ce8ddfab5a85ff421012f3ddb351441af8733352689adfea1ef80e45549a3385"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_tierra_maldita_normal_gl_1k.png",
+      "bytes": 1301549,
+      "sha256": "1112b0542552bb9849fe864db0e21e4d298960e1c867467d5bee6c5bf007e5a1"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_valle_cultivo_tierra_fertil_normal_gl_1k.png",
+      "bytes": 1227400,
+      "sha256": "67f8e431adfb1f36c8fd237129f549280703f20a71415ef0559f61b116b796d6"
+    },
+    {
+      "path": "public/assets/terrain/biomes/textures/normal/biome_volcanico_basalto_normal_gl_1k.png",
+      "bytes": 1354537,
+      "sha256": "b263c51ac40fd4ce9626a983ad39ca321564412a03845720860b630324535d33"
+    },
+    {
+      "path": "public/assets/terrain/grass_albedo_rough.webp",
+      "bytes": 263940,
+      "sha256": "adc9517627f287a32cfbf6fc74bd5281b6f3d68c6fc3049483d8781dcbaa55c6"
+    },
+    {
+      "path": "public/assets/terrain/grass_normal.webp",
+      "bytes": 631966,
+      "sha256": "242985826ca0ad6da931187c421068c8386ad642e6b2dea3877171e8165be799"
+    },
+    {
+      "path": "public/assets/terrain/rock_albedo_rough.webp",
+      "bytes": 396504,
+      "sha256": "db400c29a4eed4654f032185f4f29984f77db57728ff85d8e8d4793260c77be6"
+    },
+    {
+      "path": "public/assets/terrain/rock_normal.webp",
+      "bytes": 731460,
+      "sha256": "6e01fb7a4470c1222b933acd4c1e5c11ccaf34b340c1ae18aeccd8ee0161c5a8"
+    },
+    {
+      "path": "public/assets/terrain/sand_albedo_rough.webp",
+      "bytes": 255350,
+      "sha256": "366153cbe48c7428ec465a9c9613fe6f2e9fbea909672b0569fa5f2abcc3fde0"
+    },
+    {
+      "path": "public/assets/terrain/soil_albedo_rough.webp",
+      "bytes": 335666,
+      "sha256": "ea371feaa08a3133823caa06cc75d75d85e59db2b64731741cd18b37785d0bdf"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_1.glb",
+      "bytes": 575016,
+      "sha256": "d8bd893492be784ce29f32fe2935a4e86db4af132d26e6766fa9e563850da678"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_1_lod.glb",
+      "bytes": 65976,
+      "sha256": "98c45c05e94349b62bc7039970d88a950ab1618fad3e7e3c573e393d7d3f428e"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_2.glb",
+      "bytes": 739888,
+      "sha256": "eba67827644772a90c66fc4a538c3d70e8f3b1d478ad9c784cffd634a3aaa614"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_2_lod.glb",
+      "bytes": 66192,
+      "sha256": "8aeb6dca747135bf696b408b4aba7084ca277cb6565ed1f3aeb4410402867850"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_3.glb",
+      "bytes": 1574600,
+      "sha256": "1120ed876a80563eddb61f07790aece09b879106f7161cb17128d816f7212e17"
+    },
+    {
+      "path": "public/assets/vegetation/Arbolito_3_lod.glb",
+      "bytes": 149032,
+      "sha256": "631925a5e100bb1b25364eea0bdf4cd715afed9f0546bb1cc138805dc791ea3f"
+    },
+    {
+      "path": "public/assets/vegetation/plantitas_1.glb",
+      "bytes": 379988,
+      "sha256": "6cd43b1d6074ad173d5b18b9ee190254d3719b62da89c215400f5c7f4bdc2bc7"
+    },
+    {
+      "path": "public/assets/water/foam_noise_1k.png",
+      "bytes": 389967,
+      "sha256": "c108f2f1b3a9b0fb17c277df207976f955145521d630aa904e455c8b81800160"
+    },
+    {
+      "path": "public/assets/water/ocean_normals_1k.png",
+      "bytes": 1651102,
+      "sha256": "e3809eb34df5b137a7193abb55e7bd0079d566f85da00c94ba4b1fbb6635cf2e"
+    },
+    {
+      "path": "public/assets/water/river_normals_1k.png",
+      "bytes": 2161132,
+      "sha256": "dec3a27c82b81d332dce6374806a2d40a0a0d049f6872921cc382ec95c82a98b"
+    },
+    {
+      "path": "public/assets/world/cliffs/Acantilado_2.glb",
+      "bytes": 2062864,
+      "sha256": "497d55c1aead7e0ae28baaca11cc9ef2f1dc83e0f0d393281e9665f6f7ec31a4"
+    },
+    {
+      "path": "public/assets/world/cliffs/Acantilado_2_closed.glb",
+      "bytes": 3450016,
+      "sha256": "971bb6c6968946bb5bc484a14f53f3950088341e2fa9088247c8c133581b5d52"
+    },
+    {
+      "path": "public/assets/world/cliffs/Acantilado_2_lod.glb",
+      "bytes": 315048,
+      "sha256": "7c1b63484faad334fa14eee4a1fe987215a470fa84257924425dbc2824fb6029"
+    },
+    {
+      "path": "public/assets/world/crystals/Cristal_azul_flotante.glb",
+      "bytes": 244700,
+      "sha256": "723cf93169ed8a63e4423b88433bdc87edee9209e0c3a8690dc068b614548950"
+    },
+    {
+      "path": "public/assets/world/crystals/Cristal_celeste_1.glb",
+      "bytes": 2276964,
+      "sha256": "26e9a44858a28a8bf59aec8a91d1f3cf2ee8b4417ba996ab49662c63c2e0393c"
+    },
+    {
+      "path": "public/assets/world/crystals/Cristal_de_Fuego.glb",
+      "bytes": 203476,
+      "sha256": "e69fee395da55f622aa244c7edd2ce1bdc5b87d2be6cf935de567f7feff4c68b"
+    },
+    {
+      "path": "public/assets/world/landmarks/Isla_flotante_2.glb",
+      "bytes": 1190428,
+      "sha256": "54e2ca2b72402b0768e5ee583ceb14132b909393d8ad483225cb1c2bbb046121"
+    },
+    {
+      "path": "public/assets/world/rocks/Escalon_rocoso.glb",
+      "bytes": 264132,
+      "sha256": "d194295bd189b32e00f097f1716d37c37b4cd2b412bf4d80ca1b291093c5897c"
+    },
+    {
+      "path": "public/assets/world/rocks/Escalon_rocoso_closed.glb",
+      "bytes": 251804,
+      "sha256": "9eee4e02a26a322fd9733e0929bb9fbca9c358d65967797fdf6656e778babd6e"
+    },
+    {
+      "path": "public/assets/world/rocks/Formacion_rocosa_1.glb",
+      "bytes": 1208236,
+      "sha256": "047258ba46177dc22d5af93cceb6b2e55137422aa469f44d3988a4f05441809e"
+    },
+    {
+      "path": "public/assets/world/rocks/Formacion_rocosa_1_closed.glb",
+      "bytes": 1164252,
+      "sha256": "152bc5f01d53d12a6ce1afa61aa6b3f61b76395c82594470f22d4770f9d6d376"
+    },
+    {
+      "path": "public/assets/world/rocks/Meseta_rocosa_pasto.glb",
+      "bytes": 235120,
+      "sha256": "a40fe851c01b20bf4a3751fe1f1a54d93a50f394beeffeaf2ef946ecad24eee6"
+    },
+    {
+      "path": "public/assets/world/rocks/Meseta_rocosa_pasto_closed.glb",
+      "bytes": 199936,
+      "sha256": "ff62bd078be3fbc16bfacece9faa2f83c33d3226e333909f091e85fafd27cb74"
+    },
+    {
+      "path": "public/assets/world/rocks/Pack_rocas_1.glb",
+      "bytes": 1311552,
+      "sha256": "ac3d21ce8ad21dea87fff57f1a27fb809c65fa1623afebb8bf19a69ff99b7b6f"
+    },
+    {
+      "path": "public/assets/world/rocks/Pack_rocas_1_closed.glb",
+      "bytes": 900692,
+      "sha256": "d8af388282feb31250f4bc289e2e44b864b9f50955ac1c371e29ee076174a44f"
+    },
+    {
+      "path": "public/assets/world/rocks/Set_Rocas_Rectanculares.glb",
+      "bytes": 769472,
+      "sha256": "320fddaaafa0013fd3236b2042ca9765533a67a53d5eb325c0bda797e5e50deb"
+    },
+    {
+      "path": "public/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K.glb",
+      "bytes": 786068,
+      "sha256": "4d9b1788ac1259ae5a5a2ece71ec9cf0229835e8c699454fc2d39dfbd0e98625"
+    },
+    {
+      "path": "public/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K_closed.glb",
+      "bytes": 679308,
+      "sha256": "bdedb31f23cfd2ca8968c7c44b70c79b70cc5998737e5de9b7fa1bcbf1a43d26"
+    },
+    {
+      "path": "public/assets/world/structures/Crisol_Herrero.glb",
+      "bytes": 554704,
+      "sha256": "902fecbd4a306c91ae50eab14ba3ea9e2470e73adc70b312fdfeb2c8557d2565"
+    },
+    {
+      "path": "public/assets/world/vegetation/Arbolito_sin_hojas.glb",
+      "bytes": 140348,
+      "sha256": "a3e7c84dc82cd7567ed301f5c84be0f66ab88f258e356dbb8f54ca527073f074"
+    },
+    {
+      "path": "public/assets/world/vegetation/Arbolito_sin_hojas_lod.glb",
+      "bytes": 30116,
+      "sha256": "3c3e0f221a186d7a4808a3491decc5ed8784dc77c7fb43e969dd263bcc3bfd58"
+    },
+    {
+      "path": "public/assets/world/vegetation/Tronco_1.glb",
+      "bytes": 119328,
+      "sha256": "ac21b0022cc56e23d558d29d53d7ca0f86dfa71ccb6ca3e940c23fa64a7d727a"
+    },
+    {
+      "path": "public/world/auralia-world2.json",
+      "bytes": 2048693,
+      "sha256": "050398dce9a39e874dcfe6357722ac178162860eac00594a797938a009af9d51"
+    },
+    {
+      "path": "public/world/auralia-world_1.json",
+      "bytes": 93,
+      "sha256": "b2dcc0005f54be7ac35f09db6d9003a07bcf4568505ba0ef31c5881339938697"
+    },
+    {
+      "path": "public/world/foliage-v4-forest.json",
+      "bytes": 2110540,
+      "sha256": "03355c842b50e323ad3f4312e859c340d36476c272990112860d1ea11cfb0eb8"
+    },
+    {
+      "path": "scripts/bench-chain-dynamics.cjs",
+      "bytes": 2856,
+      "sha256": "b799e9eace6f24ac2545af9d6690eb3fe60a150e3084105d80785b6e3ba8456b"
+    },
+    {
+      "path": "scripts/bench-segment-pairs.cjs",
+      "bytes": 2077,
+      "sha256": "42b6e8d248c51a42f8ae243d19460f75d198105221045f16d74963d8170bce04"
+    },
+    {
+      "path": "scripts/bench-tree-collisions.cjs",
+      "bytes": 3456,
+      "sha256": "284a13e4d935450750514194adf8f06bd3ecb983e1c77adb5e32a6f5b306cd08"
+    },
+    {
+      "path": "scripts/create-terrain-map.cjs",
+      "bytes": 9133,
+      "sha256": "3e672ab0cb9e3de46bf6c9c037245b13ea17dc0028778474feebc17c3c939dea"
+    },
+    {
+      "path": "scripts/export-santi.py",
+      "bytes": 1267,
+      "sha256": "0d892402815a9db4ba4c6aaeaf77de141e8253adc450d211e2a13eb5e9ac8485"
+    },
+    {
+      "path": "scripts/generate-cliff-lod.py",
+      "bytes": 1417,
+      "sha256": "f2aa65ec6b11e0aa8bd96b9de8b40a080039629eb4baf52908534a0254ddc7b5"
+    },
+    {
+      "path": "scripts/generate-foliage-forest.cjs",
+      "bytes": 11713,
+      "sha256": "919df0b6f0f5b205b0d39a736547aa6197b1df6f8ba23946a8263d61f5c7f523"
+    },
+    {
+      "path": "scripts/generate-foliage-grass-lods.py",
+      "bytes": 3613,
+      "sha256": "5b260fc97fdf59d8a6bb38ccf2634b6c1995dff8836d9d69e083f4bc5f552255"
+    },
+    {
+      "path": "scripts/generate-grass-glb.py",
+      "bytes": 3958,
+      "sha256": "cf4d7af1b8f6dc4660bc347f03c19e4c7d5a97560102cfc927baddfc1b8e6979"
+    },
+    {
+      "path": "scripts/generate-tree-lods.py",
+      "bytes": 1694,
+      "sha256": "6da79cba2efd7fcc0754f40b87f1e5008170fe2393f264e173efd3b5925d13d0"
+    },
+    {
+      "path": "scripts/make-map.cjs",
+      "bytes": 7420,
+      "sha256": "acf48c54eee45b37f6307518ff29e4d67d4d63a14427be9cbcf7d85705383568"
+    },
+    {
+      "path": "scripts/rebuild-rock-meshes.py",
+      "bytes": 5441,
+      "sha256": "cf8e448cc33952b1dc1e1a75dfb6eeba2d16a9f75a5f6d2be59347fc22d5ab5a"
+    },
+    {
+      "path": "src/data/world.ts",
+      "bytes": 4218,
+      "sha256": "ed5303fa6199bda9b4c94770bdecdb0cb00e859fcb23b93c83a7f3f8d0a0ee60"
+    },
+    {
+      "path": "src/domain/GameStore.ts",
+      "bytes": 9336,
+      "sha256": "b6355b26541de1b70523605631519657d3f0de0c30250cd4f3f2d13df1331c3e"
+    },
+    {
+      "path": "src/domain/buildingRules.ts",
+      "bytes": 10609,
+      "sha256": "a8ccfdc977d19fef9c2ad0f94ee9cd28e6f6a3127660a598227af10e9268c5ba"
+    },
+    {
+      "path": "src/domain/recipes.ts",
+      "bytes": 3201,
+      "sha256": "7ff32aaec5f6f77398bd3f447613fb95706007cf96e5d09013829fc282d6186b"
+    },
+    {
+      "path": "src/domain/types.ts",
+      "bytes": 2929,
+      "sha256": "dd1d56081fad368fef26fc738e3b598f2276e2c34a119056ea157736c37145ae"
+    },
+    {
+      "path": "src/game/CharacterTraversalController.ts",
+      "bytes": 30307,
+      "sha256": "3f07f814ae0850095b9ac8d487b7880d9a4bffc0c118160d1f4fcd10ec885ba2"
+    },
+    {
+      "path": "src/game/DoubleTapSprint.ts",
+      "bytes": 533,
+      "sha256": "3aacafde14473088f7ba524a53aca9d6d7ce62dae1a5a53f073b0c5a0a6b307f"
+    },
+    {
+      "path": "src/game/GameTelemetry.ts",
+      "bytes": 17572,
+      "sha256": "aa313b895baa772a970e973accce74be27da5978c68cc3067cad777e0191ddb2"
+    },
+    {
+      "path": "src/game/SantiCatalog.ts",
+      "bytes": 4422,
+      "sha256": "cd751a17c17b2ba4a32c2c36e54b2c9da0c5de0966e930fc2d2a427a67511f8c"
+    },
+    {
+      "path": "src/game/SantiCharacter.ts",
+      "bytes": 29364,
+      "sha256": "a9f5d336481a81265f3734f508bbfb3de5d0d01efb73cbacb78e8e518f526212"
+    },
+    {
+      "path": "src/game/SpeedMotionBlur.ts",
+      "bytes": 5998,
+      "sha256": "c5d780272306935e1ed8710ef8d100f019b8468fc4a5a6f9d55a309ccd96f54e"
+    },
+    {
+      "path": "src/game/TerrainTraversal.ts",
+      "bytes": 1258,
+      "sha256": "bf9e1e5f3268620ca5db489d6cc25a68660f18908281ea56d6e15122e4e41034"
+    },
+    {
+      "path": "src/game/WorldView.ts",
+      "bytes": 92131,
+      "sha256": "551a4c74b5716139197d1beb51c3768bbc92532a8b79ac6c383971e5968e3490"
+    },
+    {
+      "path": "src/game/cameraTerrain.ts",
+      "bytes": 2009,
+      "sha256": "6eb26f2678312f384732cb2beffa1900d11e7c716b9cd94f8360bf06c09079f4"
+    },
+    {
+      "path": "src/game/movement.ts",
+      "bytes": 597,
+      "sha256": "7d82fdcaf28e5dc90c9a750cecae14b523ff489e49ab7c27d90093db2d2cee0d"
+    },
+    {
+      "path": "src/game/renderResolution.ts",
+      "bytes": 1772,
+      "sha256": "cb046c5c613f0f512b396c7bf04f5feee34988984baf2eb2c6c57509c405bed3"
+    },
+    {
+      "path": "src/game/telemetryData.ts",
+      "bytes": 5345,
+      "sha256": "a9913eb7419a58ac2a4c7663268c18619f0f2e5eff4f81f0bc0b9f672fff1e00"
+    },
+    {
+      "path": "src/game/traversalRules.ts",
+      "bytes": 2296,
+      "sha256": "9b472587cff45f303a58e1380f4375cca1e426413c2c6c2436d21f749b565dc1"
+    },
+    {
+      "path": "src/main.ts",
+      "bytes": 2850,
+      "sha256": "d5ea33332a2814aa5ed4f3d0b02c930a6bc2a7c161319ecfb47677f8409f1190"
+    },
+    {
+      "path": "src/persistence/SaveRepository.ts",
+      "bytes": 4262,
+      "sha256": "6714878c9517120c2fd0682c1d2818e13d9d4e1fe32bdd24ad5d3be0cd8c58ec"
+    },
+    {
+      "path": "src/physics/ChainCurve.ts",
+      "bytes": 3197,
+      "sha256": "015af0e0a382667f64408e5473ce93291a89be118f801b63b3ef33d243c2ca72"
+    },
+    {
+      "path": "src/physics/ChainDynamics.ts",
+      "bytes": 21982,
+      "sha256": "8568e8988b743befbfb83c24429b44915e4e6cb81b5bbd94539d7ede9fc636e9"
+    },
+    {
+      "path": "src/physics/DistanceFields.ts",
+      "bytes": 5671,
+      "sha256": "304f5609a3d77e83894333f94a7ac3df23f4a6002c37156c41284590bb121e74"
+    },
+    {
+      "path": "src/physics/SpatialHash.ts",
+      "bytes": 3488,
+      "sha256": "782efaea2eb642797bbdb59d69aefc96a830cd1afa396a56e0aba582f938860d"
+    },
+    {
+      "path": "src/style.css",
+      "bytes": 18615,
+      "sha256": "309fbd0056c77ad7453f7512175de4d1291b1c22daaf3024405a87770559cc01"
+    },
+    {
+      "path": "src/ui/Hud.ts",
+      "bytes": 36659,
+      "sha256": "7dc011d2f117ea6276a6346fb1db9a3d6608d7e173c487f6673b6b003e191bd1"
+    },
+    {
+      "path": "src/world/AuraliaFoliageWind.ts",
+      "bytes": 8422,
+      "sha256": "a6b8ef977ffa7c6cd2e92e6b5a22b42ef90f495091a2f6c5b1cafb8b02388792"
+    },
+    {
+      "path": "src/world/AuraliaFoliageWindV5.d.ts",
+      "bytes": 952,
+      "sha256": "61e55918aef81ba962c19c7c2aa5418bad04b9cc9a54e1c39fcef92fbea36bff"
+    },
+    {
+      "path": "src/world/AuraliaFoliageWindV5.js",
+      "bytes": 11770,
+      "sha256": "22aa64703e3009b46560578a3b8f839e2810c4cf0b13077b2e2f5857f86f91b4"
+    },
+    {
+      "path": "src/world/AuraliaWindSystem.ts",
+      "bytes": 2527,
+      "sha256": "54b275a764e11508db310d6ca501eab6c3f324c721115f6945b455b8497568db"
+    },
+    {
+      "path": "src/world/ForgeFire.ts",
+      "bytes": 3436,
+      "sha256": "85c0db00057438908a87682e32bea8e696c0e50964935f8021ff6fb7ae70d651"
+    },
+    {
+      "path": "src/world/GeographyStream.ts",
+      "bytes": 14249,
+      "sha256": "9979fcbcbb14923f34c5c9775a5b0fc6e239a414a2a0b395f2091c54e1a831f3"
+    },
+    {
+      "path": "src/world/HangingLanterns.ts",
+      "bytes": 4595,
+      "sha256": "6ef44591e173184469d22e4e86b8b9c18d56999b1b2422be8dcabba543f2e806"
+    },
+    {
+      "path": "src/world/LagoonSystem.ts",
+      "bytes": 29645,
+      "sha256": "9c5b1916fde6ccd711ec87fc490972bc2b760cb4b6cb6f96d259f27530166171"
+    },
+    {
+      "path": "src/world/LandscapeAtmosphere.ts",
+      "bytes": 3365,
+      "sha256": "c35e54d4b03c4378e155f231cf523b966e2c1524345c4a97b25b893140449333"
+    },
+    {
+      "path": "src/world/LandscapeDebug.ts",
+      "bytes": 3991,
+      "sha256": "701e9d6bc7198244461256601187b5735e3ad4cd628f65e69995154f74b14596"
+    },
+    {
+      "path": "src/world/MountainPassSystem.ts",
+      "bytes": 20636,
+      "sha256": "31d4f277a49d1b47f5a779c25d49f1ff98310749e4951f6acb6e20f65ea0f169"
+    },
+    {
+      "path": "src/world/PointOfInterestView.ts",
+      "bytes": 4068,
+      "sha256": "752fc5dca11b7a70333e02feefd848ecb32c925b8c64d0901d6dd13ce6b69f30"
+    },
+    {
+      "path": "src/world/RegionCatalog.ts",
+      "bytes": 6569,
+      "sha256": "33b3ebed9e161fbcf0d3583f50e529154287593615c339d7bb87c54e1cabc012"
+    },
+    {
+      "path": "src/world/RockColliderSystem.ts",
+      "bytes": 17179,
+      "sha256": "12b4995a5974c6fc42bffb3deb16bfc87e5e9cf1c12964f7ff2c80f181414257"
+    },
+    {
+      "path": "src/world/TerrainStream.ts",
+      "bytes": 15027,
+      "sha256": "341988a7bce8f06d9d7eee1f3474e338ea8d0038754beab2167aabf83384768b"
+    },
+    {
+      "path": "src/world/TreeColliderSystem.ts",
+      "bytes": 6983,
+      "sha256": "2e7411e0db7b2955f406b5aca586bad34f9e50d8a25a297c30641dcf98b92421"
+    },
+    {
+      "path": "src/world/VegetationSystem.ts",
+      "bytes": 13776,
+      "sha256": "a917afbb89bb9923c5efa5ecfc5b0c33c463d982d95a2309721ae1ad60c3ae99"
+    },
+    {
+      "path": "src/world/WorldPropSystem.ts",
+      "bytes": 23715,
+      "sha256": "bb92830d0aaff322e65a84850de2de6fb651b73717d8965c7faf05bb5f45a462"
+    },
+    {
+      "path": "src/world/assetCatalog.ts",
+      "bytes": 4866,
+      "sha256": "cfcfa1afb8c78856ca08c23825c27f43bc84ef3ea65993eb7f3d66c550156249"
+    },
+    {
+      "path": "src/world/building/BuildVisuals.ts",
+      "bytes": 7355,
+      "sha256": "bbdfae23666eb3327916e96596a2767bfd5ad379ad39a51454f14efe419c41c8"
+    },
+    {
+      "path": "src/world/climate/ClimateModel.ts",
+      "bytes": 6602,
+      "sha256": "5f40c21f8c2409d42ba3441f5fa5e003ce1fae4087484a8564288fa1d4776ebd"
+    },
+    {
+      "path": "src/world/climate/CloudPieces.ts",
+      "bytes": 28887,
+      "sha256": "b98acd2f0a53ad15656cbb6dc6b2644204fc9ca9822b7918eee8483eabe60a81"
+    },
+    {
+      "path": "src/world/climate/EnvironmentSystem.ts",
+      "bytes": 9464,
+      "sha256": "678db0dc212669cc7159e7d66ff9967677a9c1766b19d13409d19eee1b4105ac"
+    },
+    {
+      "path": "src/world/climate/NoiseCloudShader.ts",
+      "bytes": 11387,
+      "sha256": "064ac518b4131971b9939691b9b4572f3ee323d69acd0c9d2c40b8212eba8f59"
+    },
+    {
+      "path": "src/world/climate/Precipitation.ts",
+      "bytes": 3405,
+      "sha256": "1399abbbbde677b31272373cb786c10ac6df42fc36959f7cfae297d5be2123f5"
+    },
+    {
+      "path": "src/world/climate/SkyDome.ts",
+      "bytes": 10487,
+      "sha256": "4ebdeb765408d41c9d8c6a3c96eea8545930759d0322a0d137b746fc8d499421"
+    },
+    {
+      "path": "src/world/expansionBiomeData.ts",
+      "bytes": 8168,
+      "sha256": "371c5d75b5afd5d1879f172cf5e70066817f027dad8ea15b4072ced1a608cb76"
+    },
+    {
+      "path": "src/world/expansionV3Catalog.ts",
+      "bytes": 2653,
+      "sha256": "da84e6a08d991883c4acaa79f743dbdb96afa6e9f356d5cbaa2c504a7a243560"
+    },
+    {
+      "path": "src/world/foliageForestConfig.ts",
+      "bytes": 822,
+      "sha256": "aa2975f74b4f840c514d0019d6f807357adf89760ac1e9ca5afd7b517f281e4b"
+    },
+    {
+      "path": "src/world/foliageForestData.ts",
+      "bytes": 1105,
+      "sha256": "e8db8a6350d156bfc957d861eb41e67fd965017848443c552c71b23171dbde88"
+    },
+    {
+      "path": "src/world/foliageV4Catalog.ts",
+      "bytes": 3132,
+      "sha256": "062f2a8c6514ca81cda8f3f5c280311857c9724ddc981c62406e30b39c6592a9"
+    },
+    {
+      "path": "src/world/geographicFeatures.ts",
+      "bytes": 9246,
+      "sha256": "3f84eec6bc6f23730c2817afec102144e619f2c89bd2a885580df146351ad358"
+    },
+    {
+      "path": "src/world/geologyData.ts",
+      "bytes": 4668,
+      "sha256": "36822c36e720f68f9fc0ec2d8e95481a45a79a2ec1028d2ce911464b71b04276"
+    },
+    {
+      "path": "src/world/geologyPresets.ts",
+      "bytes": 4986,
+      "sha256": "ed05b11fa6097f0fe33c7ef33992c6555a180b6a42e5f98074b733b7679fff1a"
+    },
+    {
+      "path": "src/world/grass/GrassSectorBake.ts",
+      "bytes": 1707,
+      "sha256": "aa94ff4c1fe3ec2292eea429a74f56cefe1f8c91810d22212780b9e2dced0e99"
+    },
+    {
+      "path": "src/world/grass/GrassSectorSystem.ts",
+      "bytes": 10151,
+      "sha256": "92b573365de1eea4be82f9502a69eb9822e768bdaa6a941563cf88af9b4875d6"
+    },
+    {
+      "path": "src/world/grass/GrassWindPlugin.ts",
+      "bytes": 1729,
+      "sha256": "1da81a09039b09e65f571d5a846819a8c1f7dae4f930ce053d5eceec1d8c95a0"
+    },
+    {
+      "path": "src/world/lagoonData.ts",
+      "bytes": 12100,
+      "sha256": "b4e7883733f2ea422c3465f8141ceb6de50f30c7404b98d954f1c7a7a6d7db5f"
+    },
+    {
+      "path": "src/world/landscapeRegions.ts",
+      "bytes": 1643,
+      "sha256": "68da6a55fb16d7dc095b3870a5da60f5ec5b671e847a50211e7800e61e061ee2"
+    },
+    {
+      "path": "src/world/landscapeRelief.ts",
+      "bytes": 6081,
+      "sha256": "f48bf8030b574a98c8997d2149020a3a759417e94a1a5c0247a7e347c402eb7b"
+    },
+    {
+      "path": "src/world/mapProjection.ts",
+      "bytes": 553,
+      "sha256": "8b071572cdcde969c37275a06ba7a429315cb43acebe24c278a33b568c2bb497"
+    },
+    {
+      "path": "src/world/materials/BiomeMaterialCatalog.ts",
+      "bytes": 7439,
+      "sha256": "9c01cf87f4d997b749ff388e5097e3f32fc544a0cdeeda672bb77da067bf1488"
+    },
+    {
+      "path": "src/world/materials/BiomeTextureArrays.ts",
+      "bytes": 2547,
+      "sha256": "892ad999b0c15d90d0760312c365acd10afd638dcd9ce61525149242696de81b"
+    },
+    {
+      "path": "src/world/materials/LagoonRockMaterial.ts",
+      "bytes": 2825,
+      "sha256": "ffa192b0f7ea444c93bb0e0b909345dbbd372ad4a3598014ca658e15a01f3387"
+    },
+    {
+      "path": "src/world/materials/TerrainBiomeMaterial.ts",
+      "bytes": 12517,
+      "sha256": "683ebfbc654dd6104943934a04cc754211eace90c4901f2509d81143c01abc35"
+    },
+    {
+      "path": "src/world/materials/TerrainMaterial.ts",
+      "bytes": 11572,
+      "sha256": "fc3b0458b150dea2f9b1671a3966c014190cd48398630417e88198c717fa7e57"
+    },
+    {
+      "path": "src/world/materials/TerrainMaterialV2.ts",
+      "bytes": 9906,
+      "sha256": "621a2a7e93e5f610e76c456e7b6f2934fb2c1dc3ad0cdc32a1c6f3794b84862e"
+    },
+    {
+      "path": "src/world/mountainRoutes.ts",
+      "bytes": 6764,
+      "sha256": "06542593c295cb5d25a284f29bb437ae65147a416351e0b4be0713e0fc9b5078"
+    },
+    {
+      "path": "src/world/mountainTrailData.ts",
+      "bytes": 1838,
+      "sha256": "40f2adbd8904bb5e021e81c6a88d2ef50a60a47689a6709dbca65ca1a23448d0"
+    },
+    {
+      "path": "src/world/mountainTrails.ts",
+      "bytes": 5491,
+      "sha256": "63bf02f115de5e29fa04102c8b975b9bd56b156beeb1366d271f3a71724b7951"
+    },
+    {
+      "path": "src/world/pointsOfInterest.ts",
+      "bytes": 4833,
+      "sha256": "91fd68f8a996781585cf5fd9206d622033f85583ef77037f366c298892894a76"
+    },
+    {
+      "path": "src/world/rectRockData.ts",
+      "bytes": 6257,
+      "sha256": "e66d2fad9bbba4c297a09688bceeb31d0232f5e415144daa6aeeb20f4e949888"
+    },
+    {
+      "path": "src/world/regionalRelief.ts",
+      "bytes": 3410,
+      "sha256": "23287b8b3a443824f0dbd887f70f94381b4c717eff7aa02f0dac4dd2c46a331e"
+    },
+    {
+      "path": "src/world/regionalReliefData.ts",
+      "bytes": 2452,
+      "sha256": "1e631eaff16b6c783b0c6e56b0891376e13a971b211846bcd1c84a0ea24ac424"
+    },
+    {
+      "path": "src/world/rockPackData.ts",
+      "bytes": 2017,
+      "sha256": "285e76526686a87f99449cf51f6d4701e0d0e67512fd7760f7f4d5d0345ae8f6"
+    },
+    {
+      "path": "src/world/terrainData.ts",
+      "bytes": 14759,
+      "sha256": "510326eeebf06c86289028c1d142583376584ec24e88dbc031cf21a5e8460b45"
+    },
+    {
+      "path": "src/world/terrainLod.ts",
+      "bytes": 4187,
+      "sha256": "689a5ec9307000db0b94d0429a7f83a1e9a95338749c2f3f8b866098c5a66b89"
+    },
+    {
+      "path": "src/world/terrainTileTopology.ts",
+      "bytes": 2463,
+      "sha256": "7b4adb1683f00952f0ffe4b457bc92200af1c8604cf03902fe46dc0dd8e8bff8"
+    },
+    {
+      "path": "src/world/vegetationData.ts",
+      "bytes": 8038,
+      "sha256": "8f778706a63b18d3ecdb992576f35341dccbc7a661d79d10f93ae5c37718d5dc"
+    },
+    {
+      "path": "src/world/water/OceanWater.ts",
+      "bytes": 9181,
+      "sha256": "2a04ae1fa7570754e4e06de716c37a5d607fc2772bc317a383e0e6127a9ca61f"
+    },
+    {
+      "path": "src/world/water/RiverMaterial.ts",
+      "bytes": 880,
+      "sha256": "00ee9538e6a1db9398f79a350da6a3b2386c9110dac3919fd8e048d7d9ab77d1"
+    },
+    {
+      "path": "src/world/water/WaterContacts.ts",
+      "bytes": 2759,
+      "sha256": "9db650902fcac34b0fdba2d14589794838dee6dfdeec2470204ee081a4c98e27"
+    },
+    {
+      "path": "src/world/water/WaterfallGeometry.ts",
+      "bytes": 5147,
+      "sha256": "32e830d180be01eda7b9c0cb85c67feb26c36f49453864e10cfe7ae5060901a6"
+    },
+    {
+      "path": "src/world/water/WaterfallSurface.ts",
+      "bytes": 1349,
+      "sha256": "3f4ad7dae98d112a3e3740df8d677eff9ebf5c948cc216aa5ab9fedcf38feea5"
+    },
+    {
+      "path": "src/world/water/riverFlow.ts",
+      "bytes": 10218,
+      "sha256": "4bde6ec656ad7530f9436c1da1b42658d128ab823e5cd89c649371ac0302b9e7"
+    },
+    {
+      "path": "src/world/water/waterResources.ts",
+      "bytes": 2702,
+      "sha256": "11c0c4893225c0629a7343b741660bcc0180b86052df460585b552a3a4341858"
+    },
+    {
+      "path": "src/world/water/waterShaders.ts",
+      "bytes": 9261,
+      "sha256": "b21cd4c765649f0f75fd91cfc8c79056e6f7ae6c548d068474823f1f947df090"
+    },
+    {
+      "path": "src/world/water/waterfallShaders.ts",
+      "bytes": 2506,
+      "sha256": "3461b3cfccb048af84afff137319a5032003ab39ca714418317419a211457d0a"
+    },
+    {
+      "path": "src/world/worldPropsData.ts",
+      "bytes": 5943,
+      "sha256": "2d05bd6e2093e727fa0b07bd26f44c75860500f1ff80ae915097343878a8f2a2"
+    },
+    {
+      "path": "tests/atlas.test.cjs",
+      "bytes": 862,
+      "sha256": "fb6a24dfdb16c4d402aa1b5444f1b1d308779249fe1478362d95b337a0bf6154"
+    },
+    {
+      "path": "tests/building.test.cjs",
+      "bytes": 7391,
+      "sha256": "128e28adc2842ffe3ea83aabbb5f929eb72cc2b7c6e55d9b585d6dfc3989ef2c"
+    },
+    {
+      "path": "tests/camera-terrain.test.cjs",
+      "bytes": 1919,
+      "sha256": "5afbbfd53f839613e70eb132a6e7217288ac77b0dd51dce1b7f51e774cf53d57"
+    },
+    {
+      "path": "tests/check-sky.cjs",
+      "bytes": 9108,
+      "sha256": "839d5410635a97444b887611b29b3a16424a9db0c56cdd20a632c1a2a225cf93"
+    },
+    {
+      "path": "tests/climate.test.cjs",
+      "bytes": 1688,
+      "sha256": "1149dfd563e42e3e082b12f24bc8b5cb707d5510680388a503376ffae96253fe"
+    },
+    {
+      "path": "tests/domain.test.cjs",
+      "bytes": 6095,
+      "sha256": "b9070b361e4dbe57572f0a70c0c34cd28c2175a089d9670867f2e7d88525350c"
+    },
+    {
+      "path": "tests/expansion-biomes.test.cjs",
+      "bytes": 4773,
+      "sha256": "06310b32d6012a7b4c41e65b600dc2552e14a0ad74c6d7152614083cf30be036"
+    },
+    {
+      "path": "tests/fixtures/brisalia-relief-baseline.json",
+      "bytes": 68237,
+      "sha256": "cc47d1596405d6bb9bda18c7e3012538171db64d85e573af6440c127b3c5f5a3"
+    },
+    {
+      "path": "tests/foliage-forest.test.cjs",
+      "bytes": 4813,
+      "sha256": "462a701e61f4722cd0c9ca47bf276c33a911b01d2057ca0b68bfe4aaa88c39d4"
+    },
+    {
+      "path": "tests/foliage-shader.test.mjs",
+      "bytes": 5940,
+      "sha256": "726c95835da32b141ea3b6087ef0e7b73628a93907a550b93bba40adb8b941bc"
+    },
+    {
+      "path": "tests/geographic-features.test.cjs",
+      "bytes": 23342,
+      "sha256": "8927cadfccf50b23462ad9a74299c6c12291af52adbbebe8f61f648c19529e34"
+    },
+    {
+      "path": "tests/geography.test.cjs",
+      "bytes": 4757,
+      "sha256": "b9e82b61d0e2f329c092d77be9d4ca3cbac191d1e1347cf0d72da8f753b6e001"
+    },
+    {
+      "path": "tests/geology.test.cjs",
+      "bytes": 18452,
+      "sha256": "6e711c1dd5ed5ad7c1c7bf495358ba3b597dbd2a4ce5d2a574677412e7482f90"
+    },
+    {
+      "path": "tests/grass.test.cjs",
+      "bytes": 6110,
+      "sha256": "bbb4270510c60760399d4762ce87be3b6245277855c5d486d8ff4f0243fa10eb"
+    },
+    {
+      "path": "tests/lagoon.browser.mjs",
+      "bytes": 17409,
+      "sha256": "658ad6faf2c64cd2efd219597c474f75cf39bb568a3bb63d6adba2d86678bce1"
+    },
+    {
+      "path": "tests/lagoon.test.cjs",
+      "bytes": 13753,
+      "sha256": "ba65095fa1ecc611c031a83e52561a14b120e4d11ff5c7f5ac8e7463fe81c5f0"
+    },
+    {
+      "path": "tests/landscape-biomes.test.cjs",
+      "bytes": 5386,
+      "sha256": "636717c63b35ca6881f78bc8d1bba444077bb49fd44446864e70e6eb80b45027"
+    },
+    {
+      "path": "tests/landscape-review.browser.mjs",
+      "bytes": 1980,
+      "sha256": "4fd8e0c56ad5765233bb283e1e7b03d4b5fade0b9476420cfc506b153519b618"
+    },
+    {
+      "path": "tests/landscape-review.html",
+      "bytes": 472,
+      "sha256": "8a48a44ad4cef097bea364c12365ac98ff94a9d49bae09146d3954a15d9912b6"
+    },
+    {
+      "path": "tests/mountain-routes.browser.mjs",
+      "bytes": 4773,
+      "sha256": "f97945a9bd77da1be5f0513d3cb80713e22101bef739d7c4a8e73f56330b5343"
+    },
+    {
+      "path": "tests/mountain-routes.test.cjs",
+      "bytes": 5725,
+      "sha256": "b7bbbfc26cff75a0ac681e9aa4fda4bc1a20baa588bb725299f8c4cc95985ccd"
+    },
+    {
+      "path": "tests/noise-cloud.test.cjs",
+      "bytes": 1781,
+      "sha256": "49469abb884ee4aaa28c640a9c2bfeee5b33f40ba773fd5e7cc0ab57dc70c1b5"
+    },
+    {
+      "path": "tests/ocean.test.cjs",
+      "bytes": 5549,
+      "sha256": "9390603c82dd790e295fba285338a914100f66ad55176ba0faf86c0319352732"
+    },
+    {
+      "path": "tests/physics.browser.mjs",
+      "bytes": 2221,
+      "sha256": "d5df4336a7dd7abe69c77205d9d4af026c35d544cfef7cc9e3e57d2e012ed6af"
+    },
+    {
+      "path": "tests/physics.test.cjs",
+      "bytes": 8617,
+      "sha256": "a1aae3c1e99f85dd3f6d389e83f0530ab6d2038b453e89b8feaf7e5df68c0245"
+    },
+    {
+      "path": "tests/regional-relief.test.cjs",
+      "bytes": 6869,
+      "sha256": "3e3034b2897fc564750bafb571432bec73a97646a7a89a01e8bfded7c5f09d62"
+    },
+    {
+      "path": "tests/render-resolution.test.mjs",
+      "bytes": 2006,
+      "sha256": "ec56fe3e8927ce9746141f817ba00717119c0a263e1a2b0984f1621bf84f57f4"
+    },
+    {
+      "path": "tests/santi-asset.test.mjs",
+      "bytes": 39320,
+      "sha256": "4706b21c3b4dd955598c1f9ea2747929ae8a6380f3d766b4f5223c0e6e25b98d"
+    },
+    {
+      "path": "tests/setup-cjs.cjs",
+      "bytes": 605,
+      "sha256": "80aed7a82cb6bd236158444c766fb0146dbd20f99e002741255eee94c84f5380"
+    },
+    {
+      "path": "tests/sky-postprocess.browser.mjs",
+      "bytes": 3735,
+      "sha256": "3979a6b8b61af705f04c754fd91560380f2e30a3fcc7101030a3b847e59afb50"
+    },
+    {
+      "path": "tests/telemetry.test.cjs",
+      "bytes": 3733,
+      "sha256": "bab66001660513f5637a5d45c54c695bb7632c03616dfc66c3787acc8d69cb09"
+    },
+    {
+      "path": "tests/terrain-stream.test.cjs",
+      "bytes": 11754,
+      "sha256": "310ed69c9ae3b565f036e352b59efcc7257d63ad540dc617f0628afe19b280be"
+    },
+    {
+      "path": "tests/traversal.test.cjs",
+      "bytes": 19237,
+      "sha256": "174b777d03085b0c9c3a295a6cf8a47a83e0f38dca3f74597d8d69258e7f3cc2"
+    },
+    {
+      "path": "tests/vegetation.test.cjs",
+      "bytes": 12472,
+      "sha256": "afbec65fb269ddebd64abc907e412766331528d16304602aecb17fa689f8e15c"
+    },
+    {
+      "path": "tests/water-contacts.test.cjs",
+      "bytes": 2686,
+      "sha256": "f998cf89272516a53f283d241590cb1a621d0e73481b5f30e72a1caf964a79ed"
+    },
+    {
+      "path": "tests/world-props.test.cjs",
+      "bytes": 13774,
+      "sha256": "e16c9a98b800423712f68fc90ccb6dac690b27c1fbb71f7e752a47f41e6de287"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 474,
+      "sha256": "3804cc067e1bb0b9eddef4e19dc06d39e00407326493cf18e3d9e69c59300fd7"
+    },
+    {
+      "path": "vite.config.ts",
+      "bytes": 629,
+      "sha256": "cea43ff14e810b40a704dc35752a1fdbc653eef9d938cc6e8e853d3cb11f44bb"
+    }
+  ]
+}

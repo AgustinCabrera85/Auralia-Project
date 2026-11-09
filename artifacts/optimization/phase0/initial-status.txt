@@ -1,0 +1,24 @@
+﻿ M docs/LAGUNA_Y_VERTIENTES.md
+ M package.json
+ M src/game/SpeedMotionBlur.ts
+ M src/game/WorldView.ts
+ M src/world/LagoonSystem.ts
+ M src/world/MountainPassSystem.ts
+ M src/world/expansionBiomeData.ts
+ M src/world/geographicFeatures.ts
+ M src/world/lagoonData.ts
+ M src/world/mountainTrails.ts
+ M tests/lagoon.browser.mjs
+ M tests/lagoon.test.cjs
+ M tests/mountain-routes.test.cjs
+?? artifacts/hydrology/
+?? docs/optimization/
+?? scripts/bake-watershed.cjs
+?? src/world/WatershedHydrology.ts
+?? src/world/water/CascadeGeometry.ts
+?? src/world/water/WaterOptics.ts
+?? src/world/watershedHeadwaters.ts
+?? tests/underwater-color.browser.mjs
+?? tests/water-optics.browser.mjs
+?? tests/watershed.browser.mjs
+?? tests/watershed.test.cjs
