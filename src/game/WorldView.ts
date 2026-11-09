@@ -37,6 +37,7 @@ import { GEOLOGY_FORMATIONS, geologyLocal, geologyPoint, sameGeologyFormation } 
 import { selectRockPart } from '../world/rockPackData';
 import { vegetationForChunk, type VegetationExclusion } from '../world/vegetationData';
 import { bridgeDeckAt, isInlandWater, waterSurfaceAt } from '../world/geographicFeatures';
+import { sampleRiverFlow } from '../world/water/riverFlow';
 import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
 import { createPointOfInterestView } from '../world/PointOfInterestView';
 import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, isLand, sampleMainlandHeight } from '../world/terrainData';
@@ -286,8 +287,19 @@ export class WorldView {
       // Evaluate immersion after the orbit/occlusion has placed the active camera.
       this.scene.activeCamera?.getViewMatrix(true);
       const eye=this.scene.activeCamera?.globalPosition??this.camera.position;
-      const water=this.lagoon.inside?GROTTO_WATER:lagoonWaterAt(eye.x,eye.z)?.level;
+      const surface=this.lagoon.inside?null:waterSurfaceAt(eye.x,eye.z);
+      const water=this.lagoon.inside?GROTTO_WATER:surface?.level;
+      const flow=surface?sampleRiverFlow(eye.x,eye.z,surface.kind):null;
+      // Lakes are level; rivers follow their own descending surface. Using a
+      // horizontal lake plane for a sloped river creates a false blue horizon.
+      const sloped=surface&&(surface.kind==='river'||surface.kind==='stream');
+      const slopeX=sloped?((waterSurfaceAt(eye.x+1,eye.z)?.level??water!)-
+        (waterSurfaceAt(eye.x-1,eye.z)?.level??water!))*.5:0;
+      const slopeZ=sloped?((waterSurfaceAt(eye.x,eye.z+1)?.level??water!)-
+        (waterSurfaceAt(eye.x,eye.z-1)?.level??water!))*.5:0;
       this.lagoon.updateView(eye,this.player.position,water??null,this.player);
+      this.speedMotionBlur.updateWaterSurface(this.cameraFrameDt,water??null,
+        flow?flow.directionX*flow.velocity:0,flow?flow.directionZ*flow.velocity:0,slopeX,slopeZ);
       if(start)this.telemetry?.recordCamera(performance.now()-start);
     },-1,true); // Other materials consume the resolved atmosphere this frame.
     this.engine.runRenderLoop(() => {
@@ -1227,9 +1239,7 @@ export class WorldView {
     const sprintVisual=sprinting&&walking&&
       this.traversal.mode==='grounded'&&!actionDriven&&
       Math.hypot(direction.x,direction.z)>1e-5;
-    const blurEye=this.camera.position;
-    const blurWater=this.lagoon.inside?GROTTO_WATER:lagoonWaterAt(blurEye.x,blurEye.z)?.level;
-    this.speedMotionBlur.update(dt,sprintVisual,blurWater===undefined?0:Math.max(0,blurWater-blurEye.y));
+    this.speedMotionBlur.update(dt,sprintVisual);
     const sprintDistance=sprintVisual?THIRD_PERSON_CAMERA.sprintDistance:0;
     this.sprintCameraOffset+=(sprintDistance-this.sprintCameraOffset)*
       Math.min(1,dt*(sprintVisual?4:5));
@@ -1271,7 +1281,7 @@ export class WorldView {
     this.ocean?.update(dt,this.player.position);
     this.telemetry?.mark('oceano');
     this.mountainPasses.update(localX,localY,localZ,dt);
-    this.lagoon.update(dt,localX,localY,localZ);
+    this.lagoon.update(dt,localX,localY,localZ,climateFrame);
     this.waterContactTimer-=dt;
     if(this.waterContactTimer<=0){
       this.waterContactTimer=.25;

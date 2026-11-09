@@ -1,5 +1,6 @@
 import { EXPANSION_V3_ASSETS, type ExpansionV3Id } from './expansionV3Catalog';
 import { CASCADE_LAGOON, GROTTO_PORTALS, lagoonRadius } from './lagoonData';
+import { HEADWATER_LAKE } from './watershedHeadwaters';
 import { getWorldDocument, type PlacedAsset } from './editor/WorldEditState';
 import { insideFoliageForest } from './foliageForestConfig';
 import { geologyFaceExcludes } from './geologyData';
@@ -83,8 +84,8 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
     if(w.valle+w.ecos+w.nacar<.55)continue;
     add(choose(grove.family==='cherry'?cherry:jacaranda,seed),x,z,seed,true);
   }
-  for(const [b,basin] of [...LAKE_RESERVATIONS,...LAGOONS,CASCADE_LAGOON].entries()){
-    const count=basin===CASCADE_LAGOON?240:96;
+  for(const [b,basin] of [...LAKE_RESERVATIONS,...LAGOONS,CASCADE_LAGOON,HEADWATER_LAKE].entries()){
+    const count=basin===CASCADE_LAGOON?240:basin===HEADWATER_LAKE?32:96;
     for(let i=0;i<count;i++){
       const seed=20000+b*1000+i*6;
       const angle=(i+hash01(i,b,712)*.7)/count*Math.PI*2;
@@ -119,7 +120,7 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
         }
       }
       // Discrete floating colonies leave the lake centre and navigation routes open.
-      if(i%4<2){
+      if(basin!==HEADWATER_LAKE&&i%4<2){
         const radial=.56+hash01(seed,19,81)*.27;
         add(choose(floating,seed+4),basin.x+Math.cos(angle)*basin.radiusX*radial,
           basin.z+Math.sin(angle)*basin.radiusZ*radial,seed+4);

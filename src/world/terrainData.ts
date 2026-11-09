@@ -3,8 +3,13 @@
  *  +X = este; +Z = sur; origen = núcleo de Brisalia.
  *  Funciones PURAS: el atlas, las colisiones y el render comparten esta geografía.
  */
+import { applyHeightEdits } from './editor/WorldEditState';
 import { applyGeographicRelief, LAKE_RESERVATIONS, RIVER_RESERVATION } from './geographicFeatures';
 import { applyGeologyRelief } from './geologyData';
+import { FOLIAGE_FOREST } from './foliageForestConfig';
+import { applyRegionalRelief } from './regionalRelief';
+import { applyLandscapeRelief } from './landscapeRelief';
+import { applyLagoonRelief } from './lagoonData';
 export { LAKE_RESERVATIONS, RIVER_RESERVATION } from './geographicFeatures';
 export const MAINLAND = {
   centerX: 0,
@@ -53,6 +58,7 @@ export const ROAD_RESERVATIONS: readonly Route[] = [
   { name:'Senda de la Cascada', points:[[200,-660],[290,-760],[400,-865],[470,-1005]], width:4.4, existing:true },
   { name:'Mirador de Altapiedra', points:[[-275,-535],[-310,-550],[-340,-565]], width:4.2, existing:true },
   { name:'Cueva Antigua', points:[[-340,-565],[-325,-600],[-300,-640]], width:4.2, existing:true },
+  { name:'Bosque Ilustrado', points:FOLIAGE_FOREST.trailPoints, width:4.5, existing:true },
   { name:'Senda occidental', points:[[-350,-285],[-630,-560],[-950,-850],[-1250,-1150]], width:5, existing:false },
   { name:'Ruta de las cumbres', points:[[-275,-535],[-300,-850],[-100,-1230],[300,-1740]], width:5, existing:false },
   { name:'Paso oriental', points:[[245,-250],[520,-400],[850,-830],[1110,-1260]], width:5, existing:false }
@@ -94,16 +100,18 @@ function distanceToRoute(x:number,z:number,points:readonly (readonly [number,num
   return best;
 }
 /** Continuous masks shared by relief, vegetation and the map. */
-export function geographyMasks(x:number,z:number):{lake:number;river:number;road:number}{
+export function geographyMasks(x:number,z:number):{lake:number;river:number;road:number;existingRoadClearance:number}{
   let lake=0;
   for(const p of LAKE_RESERVATIONS)lake=Math.max(lake,gaussian(x,z,p.x,p.z,p.radiusX,p.radiusZ));
   const river=1-smooth(TERRAIN_CONFIG.reservations.riverHalfWidth,TERRAIN_CONFIG.reservations.riverHalfWidth+TERRAIN_CONFIG.reservations.riverBlend,distanceToRoute(x,z,RIVER_RESERVATION));
-  let road=0;
+  let road=0,existingRoadClearance=Infinity;
   for(const route of ROAD_RESERVATIONS){
     const distance=distanceToRoute(x,z,route.points);
+    if(route.existing)existingRoadClearance=Math.min(existingRoadClearance,
+      distance-route.width-TERRAIN_CONFIG.reservations.roadHalfWidth);
     road=Math.max(road,1-smooth(route.width+TERRAIN_CONFIG.reservations.roadHalfWidth,route.width+TERRAIN_CONFIG.reservations.roadHalfWidth+TERRAIN_CONFIG.reservations.roadBlend,distance));
   }
-  return {lake,river,road};
+  return {lake,river,road,existingRoadClearance};
 }
 
 /** Blend regional influences before applying relief; no biome boundary changes height abruptly. */
@@ -145,13 +153,24 @@ function legacyHeight(x:number,z:number):number {
 }
 
 export function sampleMainlandHeight(x:number,z:number):number {
+  const masks=geographyMasks(x,z);
   const oldRadial=Math.hypot((x-LEGACY.centerX)/LEGACY.radiusX,(z-LEGACY.centerZ)/LEGACY.radiusZ);
   const preserve=Math.max(1-smooth(.72,1.02,oldRadial),1-smooth(155,240,Math.hypot(x,z)));
-  if(preserve>=1)return applyGeologyRelief(x,z,applyGeographicRelief(x,z,legacyHeight(x,z)),
-    geographyMasks(x,z).road);
-  const weights=biomeWeightsAt(x,z),masks=geographyMasks(x,z),n=TERRAIN_CONFIG.noise,r=TERRAIN_CONFIG.relief;
+  if(preserve>=1)return applyHeightEdits(x,z,applyLagoonRelief(x,z,applyGeologyRelief(x,z,
+    applyGeographicRelief(x,z,applyLandscapeRelief(x,z,
+      applyRegionalRelief(x,z,legacyHeight(x,z),masks.road),masks.road,masks.existingRoadClearance)),masks.road)));
+  const weights=biomeWeightsAt(x,z),n=TERRAIN_CONFIG.noise,r=TERRAIN_CONFIG.relief;
   const broad=noise(x,z,n.broadScale,1),medium=noise(x,z,n.mediumScale,2),fine=noise(x,z,n.fineScale,3);
-  const ridge=1-Math.abs(noise(x,z,115,4));
+  const ridgeNoise=noise(x,z,115,4);
+  // Rounded ridged noise: abs(noise) creates a needle-like cusp at every zero
+  // crossing, narrower than the near terrain's triangles.
+  const oldRidge=1-Math.abs(ridgeNoise);
+  const roundedRidge=1-(Math.hypot(ridgeNoise,.2)-.2)/(Math.hypot(1,.2)-.2);
+  // Apply to the new northern massifs, retaining the historical substrate
+  // around inhabited areas, the illustrated forest, coast and existing roads.
+  const northernMassifs=1-smooth(.85,1.15,Math.hypot((x-100)/650,(z+1600)/700));
+  const ridge=oldRidge+(roundedRidge-oldRidge)*northernMassifs*
+    smooth(1.1,1.4,oldRadial)*smooth(0,60,masks.existingRoadClearance);
   const rolling=n.broadAmplitude*broad+n.mediumAmplitude*medium*(1-.7*masks.road)+n.fineAmplitude*fine*(1-.85*masks.road);
   let height=r.valleyBase+rolling+weights.ecos*(-r.forestDepression+2.5*medium)
     +weights.sierras*(r.sierraBase+r.sierraRidges*ridge*(1-.55*masks.road))
@@ -164,7 +183,9 @@ export function sampleMainlandHeight(x:number,z:number):number {
   const blended=preserve>0 ? old*preserve+height*(1-preserve) : height;
   // Existing traversable shoreline remains traversable for saved player positions.
   const compatible=oldRadial<1.1 && old>MAINLAND.waterLevel+.6 ? Math.max(blended,old) : blended;
-  return applyGeologyRelief(x,z,applyGeographicRelief(x,z,compatible),masks.road);
+  return applyHeightEdits(x,z,applyLagoonRelief(x,z,applyGeologyRelief(x,z,
+    applyGeographicRelief(x,z,applyLandscapeRelief(x,z,
+      applyRegionalRelief(x,z,compatible,masks.road),masks.road,masks.existingRoadClearance)),masks.road)));
 }
 export function isLand(x:number,z:number):boolean {
   return sampleMainlandHeight(x,z) > MAINLAND.waterLevel + 0.6;

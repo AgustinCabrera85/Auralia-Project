@@ -6,10 +6,15 @@ import { createWorldWaterMaterial, updateWorldWaterMaterial } from './editor/Liv
 import { loadWaterMasks } from './editor/AuraliaWaterProfiles';
 import { LagoonRockMaterial } from './materials/LagoonRockMaterial';
 import { RockColliderSystem } from './RockColliderSystem';
+import { HEADWATER_LAKE, headwaterLakeRadius } from './watershedHeadwaters';
+import { WatershedHydrology } from './WatershedHydrology';
+import type { ClimateFrame } from './climate/ClimateModel';
+import { createCascadeBedGeometry, createCascadeGeometry } from './water/CascadeGeometry';
 
 /** Local scenery is streamed as a unit; plants use AuthoredAssets' shared GLB batches.
  * This watershed owns its continuous water surfaces. No rigid-body fluid particles. */
 export class LagoonSystem {
+  readonly hydrology=new WatershedHydrology();
   readonly rockColliders=new RockColliderSystem(()=>undefined);
   private exterior:TransformNode|null=null;
   private interior:TransformNode|null=null;
@@ -31,7 +36,7 @@ export class LagoonSystem {
   private litPlayer:TransformNode|null=null;
   private litMeshCount=0;
   private time=0;
-  private readonly impacts=LAGOON_FALLS.map(f=>new Vector4(f.x,f.z+f.run,f.width*.5,1));
+  private readonly impacts=LAGOON_FALLS.map(f=>new Vector4(f.x,f.z+f.run,f.width*.64,1));
   private fog:{color:Color3;density:number;mode:number}|null=null;
   private returnId='laguna-sumergida';
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
@@ -136,8 +141,9 @@ export class LagoonSystem {
       if(j&&i){const a=j*(nx+1)+i;idx.push(a,a-1,a-nx-2,a,a-nx-2,a-nx-1);}
     }
     this.mesh('laguna-superficie',p,idx,uv,root,this.pool,col);
+    this.buildHeadwaterLake(root);
     this.riverBuild=this.buildRivers(root);
-    for(const spring of LAGOON_SPRINGS){
+    for(const spring of LAGOON_SPRINGS.filter(s=>s.kind==='aquifer')){
       const {x,z,level,dx,dz}=spring,nx=-dz,nz=dx;
       const mouth=spring.mouthDistance;
       const sx=x-dx*mouth,sz=z-dz*mouth;
@@ -157,20 +163,16 @@ export class LagoonSystem {
         const x=f.x+side*(f.width*.5+8+tier*13),z=f.z-7-tier*10;
         this.rock(root,x,22,z,11+tier*5,f.top-20+tier*7,15+tier*8,n*7+tier+side);
       }
-      // A curved lip, free-falling sheet and widening apron, with authored fall UVs.
-      const pos:number[]=[],idx:number[]=[],uv:number[]=[],col:number[]=[],nx=24,ny=40;
-      for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){
-        const t=j/ny*1.015,u=i/nx,spread=1+.28*t;
-        const x=f.x+(u-.5)*f.width*spread;
-        const y=f.top-(f.top-f.bottom)*t*t+.035*Math.sin(u*32+n)*Math.sin(Math.PI*t);
-        const z=f.z+f.run*t;
-        pos.push(x,y+.045,z);uv.push(u,1-t);col.push(0,1,t,1);
-        if(j&&i){const a=j*(nx+1)+i;idx.push(a,a-1,a-nx-2,a,a-nx-2,a-nx-1);}
-      }
-      this.mesh('cascada-'+f.id,pos,idx,uv,root,this.fall,col);
+      const spec={...f,seed:n*2.7};
+      const bed=createCascadeBedGeometry(spec,this.heightAt);
+      this.rockColliders.registerGeneratedMesh(this.mesh('lecho-cascada-'+f.id,
+        bed.positions,bed.indices,bed.uvs,root,this.wetStone));
+      const geometry=createCascadeGeometry(spec);
+      const curtain=this.mesh('cascada-'+f.id,geometry.positions,geometry.indices,geometry.uvs,root,this.fall,geometry.colors);
+      curtain.metadata={waterfall:true,curtainVertices:geometry.curtainVertices};
       // Small upper spring pools settle at the same level as their feeding channel.
       const spray=new ParticleSystem('rocío-'+f.id,120,this.scene);
-      spray.particleTexture=this.mistTexture;spray.emitter=new Vector3(f.x,25,f.z+f.run);
+      spray.particleTexture=this.mistTexture;spray.emitter=new Vector3(f.x,f.bottom+1,f.z+f.run);
       spray.minEmitBox=new Vector3(-f.width*.45,0,-2);spray.maxEmitBox=new Vector3(f.width*.45,1,3);
       spray.direction1=new Vector3(-1,2,0);spray.direction2=new Vector3(1,4,2);
       spray.color1=new Color4(.8,.94,.9,.18);spray.color2=new Color4(.86,.97,.94,.10);
@@ -188,6 +190,18 @@ export class LagoonSystem {
     const n=this.inside?GROTTO_NODES[p.node]:{x:p.x,z:p.z,y:p.submerged?11:this.heightAt(p.x,p.z)};
     return Math.hypot(x-n.x,z-n.z)<9&&Math.abs(y-n.y)<(p.submerged?7:4);
   });}
+  private buildHeadwaterLake(root:TransformNode){
+    const l=HEADWATER_LAKE,p:number[]=[],idx:number[]=[],uv:number[]=[],col:number[]=[];
+    const nx=40,nz=44,step=3;
+    for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){
+      const x=l.x+(i-nx/2)*step,z=l.z+(j-nz/2)*step;
+      const depth=l.level-this.heightAt(x,z),wet=headwaterLakeRadius(x,z)<1.025;
+      p.push(x,l.level+.045,z);uv.push(x/16,z/16);
+      col.push(wet?1-Math.min(1,Math.max(0,depth)/.45):1,0,0,Math.min(1,Math.max(0,depth)/7));
+      if(j&&i){const a=j*(nx+1)+i;idx.push(a,a-1,a-nx-2,a,a-nx-2,a-nx-1);}
+    }
+    this.mesh('laguna-alta-gemelas',p,idx,uv,root,this.pool,col);
+  }
   /** Follow the continuous banks rather than stair-stepping on terrain cell edges.
    * Work is sliced over frames; every station shares one cross-section. */
   private *buildRivers(root:TransformNode):Generator<void,void,void>{
@@ -211,6 +225,7 @@ export class LagoonSystem {
           tx*=1-lip;tz=tz*(1-lip)+lip;
           const tl=Math.hypot(tx,tz),nx=tz/tl,nz=-tx/tl;
           const waterY=(xx:number,zz:number)=>{
+            if(headwaterLakeRadius(xx,zz)<1.02)return HEADWATER_LAKE.level;
             const level=lagoonChannelAt(xx,zz).level;
             return fall?level+(fall.top-level)*lip:level;
           };
@@ -232,13 +247,14 @@ export class LagoonSystem {
           for(let i=0;i<=segments;i++){
             const across=-left+(left+right)*i/segments,xx=x+nx*across,zz=z+nz*across;
             const ground=this.heightAt(xx,zz),localLevel=waterY(xx,zz),depth=Math.max(0,localLevel-ground);
-            const inPool=lagoonRadius(xx,zz)<1.015;
-            const y=inPool?Math.min(localLevel,CASCADE_LAGOON.level):localLevel;
+            const highPool=headwaterLakeRadius(xx,zz)<1.015;
+            const inPool=lagoonRadius(xx,zz)<1.015||highPool;
+            const y=inPool?Math.min(localLevel,highPool?HEADWATER_LAKE.level:CASCADE_LAGOON.level):localLevel;
             p.push(xx,y+.045,zz);uv.push(across/16,(along+length*t)/16);flow.push(tx/tl,tz/tl);
             col.push(inPool?1:1-Math.min(1,depth/.45),.35,.08,Math.min(1,depth/6));
             if(row&&i){const v=row*(segments+1)+i;ix.push(v,v-1,v-segments-2,v,v-segments-2,v-segments-1);}
           }row++;yield;
-          if(n<3&&s===1&&j===0){
+          if(n===0&&s===1&&j===0){
             // Close the upstream end with a curved pool. Its radial boundary
             // meets the real terrain, and its diameter shares the river's row.
             const cp:number[]=[x,waterY(x,z)+.045,z],ci:number[]=[],cu:number[]=[x/16,z/16],cc:number[]=[0,0,0,.6],cf:number[]=[dx,dz];
@@ -358,8 +374,9 @@ export class LagoonSystem {
     }
   }
   restoreAtmosphere(){if(this.fog){this.scene.fogColor.copyFrom(this.fog.color);this.scene.fogDensity=this.fog.density;this.scene.fogMode=this.fog.mode;this.fog=null;}}
-  update(dt:number,x:number,y:number,z:number){
+  update(dt:number,x:number,y:number,z:number,climate?:ClimateFrame){
     this.time+=Math.min(dt,.1);
+    this.hydrology.update(dt,climate?.weatherMix.rain,climate?.season);
     const distance=watershedDistance(x,z);
     if(!this.inside&&distance<350&&!this.exterior)this.buildExterior();
     if(!this.inside&&distance>550&&this.exterior){
@@ -370,7 +387,7 @@ export class LagoonSystem {
     if(this.riverBuild&&!this.inside){const deadline=performance.now()+1.5;
       while(this.riverBuild&&performance.now()<deadline)if(this.riverBuild.next().done)this.riverBuild=null;}
     for(let i=0;i<this.mist.length;i++){
-      const f=LAGOON_FALLS[i];this.mist[i].emitRate=!this.inside&&Math.hypot(x-f.x,z-f.z)<230?30:0;
+      const f=LAGOON_FALLS[i];this.mist[i].emitRate=!this.inside&&Math.hypot(x-f.x,z-f.z)<230?30*this.hydrology.intensity:0;
     }
     if(this.inside)this.lights[1]?.position.set(x,y+3,z);
   }
@@ -379,12 +396,13 @@ export class LagoonSystem {
     this.restoreAtmosphere();
     const depth=water===null?0:Math.max(0,water-eye.y);
     const underwater=depth>.1;
-    if(underwater||this.inside){
+    if(this.inside){
       this.fog={color:this.scene.fogColor.clone(),density:this.scene.fogDensity,mode:this.scene.fogMode};
       this.scene.fogMode=Scene.FOGMODE_EXP2;
-      this.scene.fogColor.set(underwater?.075:.035,underwater?.27:.065,underwater?.29:.07);
-      // Clear near field: the character and nearby rock remain legible.
-      this.scene.fogDensity=underwater?.013+Math.min(depth,24)*.00025:.008;
+      this.scene.fogColor.set(.035,.065,.07);
+      // Water absorption is evaluated per view segment by WaterOptics. Global
+      // underwater fog would also tint the dry cliff above the surface.
+      this.scene.fogDensity=.008;
     }
     const immersed=water!==null&&player.y+1.25<water;
     if(immersed&&!this.bubbles){
@@ -409,21 +427,27 @@ export class LagoonSystem {
     }
     if(immersed&&!this.swimmerLight){
       this.swimmerLight=new PointLight('santi-visibilidad-submarina',Vector3.Zero(),this.scene);
-      this.swimmerLight.diffuse=new Color3(.65,.84,.85);this.swimmerLight.specular=Color3.Black();
-      this.swimmerLight.intensity=.85;this.swimmerLight.range=18;
+      this.swimmerLight.diffuse=new Color3(.28,.65,.72);this.swimmerLight.specular=Color3.Black();
+      this.swimmerLight.intensity=.22;this.swimmerLight.range=18;
     }
     if(this.swimmerLight){
       this.swimmerLight.setEnabled(immersed);
       if(immersed){
-        this.swimmerLight.position.copyFrom(eye).addInPlace(new Vector3(0,2,0));
+        this.swimmerLight.intensity=.22-Math.min(1,Math.max(0,water!-player.y-1.25)/16)*.08;
+        this.swimmerLight.position.copyFrom(eye);this.swimmerLight.position.y+=2;
         if(this.litPlayer!==avatar||this.litMeshCount!==this.scene.meshes.length){
           this.swimmerLight.includedOnlyMeshes=avatar.getChildMeshes();
           this.litPlayer=avatar;this.litMeshCount=this.scene.meshes.length;
         }
       }
     }
-    if(this.exterior)updateWorldWaterMaterial(this.fall,'fall',this.scene,this.time,{rockEnabled:false});
-    if(this.exterior)updateWorldWaterMaterial(this.river,'river',this.scene,this.time);
+    if(this.exterior){
+      updateWorldWaterMaterial(this.fall,'fall',this.scene,this.hydrology.phase,{rockEnabled:false});
+      updateWorldWaterMaterial(this.river,'river',this.scene,this.hydrology.phase);
+      this.fall.setFloat('uFoamIntensity',.8+.35*this.hydrology.intensity);
+      this.river.setFloat('uFoamIntensity',.22+.18*this.hydrology.intensity);
+      for(const impact of this.impacts)impact.w=this.hydrology.intensity;
+    }
     if(this.inside||this.exterior){
       updateWorldWaterMaterial(this.pool,'pool',this.scene,this.time,{impactEnabled:!this.inside,
         impactA:this.impacts[0],impactB:this.impacts[1]});

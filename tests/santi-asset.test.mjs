@@ -7,7 +7,23 @@ import { FreeCamera, NullEngine, Scene, LoadAssetContainerAsync, MorphTarget, Tr
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_NLA_ACTIONS,
   availableCombatAttacks, combatInputForKey } from '../src/game/SantiCatalog.ts';
-import { SpeedBlurEnvelope, SpeedMotionBlur } from '../src/game/SpeedMotionBlur.ts';
+// Like the controller below, transpile the actual modules without changing
+// the application's bundler resolution or substituting mocks for water optics.
+const blurFiles=['WaterOptics','SpeedMotionBlur'].map(name=>resolve('.test-build',`santi-${name}.mjs`));
+mkdirSync(resolve('.test-build'),{recursive:true});
+let SpeedBlurEnvelope,SpeedMotionBlur;
+try{
+  for(const [i,path] of ['world/water/WaterOptics','game/SpeedMotionBlur'].entries()){
+    const source=readFileSync(new URL(`../src/${path}.ts`,import.meta.url),'utf8');
+    const js=ts.transpileModule(source,{compilerOptions:{
+      target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext
+    }}).outputText.replace("from '../world/water/WaterOptics'","from './santi-WaterOptics.mjs'");
+    writeFileSync(blurFiles[i],js);
+  }
+  ({SpeedBlurEnvelope,SpeedMotionBlur}=await import(pathToFileURL(blurFiles[1]).href));
+}finally{
+  for(const path of blurFiles)try{unlinkSync(path);}catch{}
+}
 
 const bytes=readFileSync(new URL('../public/assets/characters/santi/Santi_NLA_SK_Opt.glb',import.meta.url));
 assert.equal(bytes.toString('ascii',0,4),'glTF');

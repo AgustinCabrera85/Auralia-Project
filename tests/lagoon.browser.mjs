@@ -93,7 +93,7 @@ export async function verifyUnderwater(world){
   const before=counts();
   for(let i=0;i<20;i++){
     world.lagoon.updateView(new Vector3(-160,14,-810),world.player.position,24,world.player);
-    check(world.scene.fogDensity<.022,'clear near field underwater');
+    check(Math.exp(-Math.pow(world.scene.fogDensity*8,2))>.9,'at least 90% visibility at the swimming camera distance');
     world.lagoon.updateView(new Vector3(-160,30,-810),new Vector3(-160,30,-810),24,world.player);
     check(!world.lagoon.swimmerLight.isEnabled(),'fill is disabled outside water');
   }
@@ -115,6 +115,7 @@ export async function reviewSpring(world){
   for(let i=0;i<1600;i++){world.update(1/60);if(i%80===0){world.scene.render();await new Promise(r=>setTimeout(r,2));}}
   const results=[];
   for(const [i,s] of LAGOON_SPRINGS.entries()){
+    if(s.kind!=='aquifer')continue;
     const m=world.scene.getMeshByName('naciente-poza-'+i);check(m,'each river has a rounded spring pool');
     const p=m.getVerticesData('position'),start=1+11*49;let gap=0;
     for(let k=0;k<49;k++){const j=(start+k)*3;gap=Math.max(gap,Math.abs(p[j+1]-.045-world.lagoon.heightAt(p[j],p[j+2])));}
@@ -140,11 +141,11 @@ export async function reviewWaterfallJoins(world){
   for(let i=0;i<1400;i++){world.update(1/60);if(i%80===0){world.scene.render();await new Promise(r=>setTimeout(r,2));}}
   const joins=LAGOON_FALLS.map((f,i)=>{
     const river=world.scene.getMeshByName('vertientes-río-'+i).getVerticesData('position');
-    const fall=world.scene.getMeshByName('cascada-'+f.id).getVerticesData('position');
+    const mesh=world.scene.getMeshByName('cascada-'+f.id),fall=mesh.getVerticesData('position');
     let gap=0;
     for(let k=0;k<25;k++)for(let a=0;a<3;a++)gap=Math.max(gap,Math.abs(river[river.length-75+k*3+a]-fall[k*3+a]));
     check(gap<.001,'river and waterfall lip share the exact same cross-section');
-    check(fall[fall.length-2]<24,'fall penetrates the receiving pool');
+    check(fall[mesh.metadata.curtainVertices*3-2]<f.bottom,'fall penetrates the receiving pool');
     return {fall:f.id,maxLipGap:gap};
   });
   const pool=world.scene.getMeshByName('laguna-superficie').getVerticesData('position');

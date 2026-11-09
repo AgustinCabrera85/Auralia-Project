@@ -1,7 +1,9 @@
 import { MOUNTAIN_TRAILS } from './mountainTrailData';
 import { routeProjection, type BridgeRoute, type RoutePoint } from './mountainRoutes';
+import { waterSurfaceAt } from './geographicFeatures';
 
 export type MountainTrail={id:string;name:string;from:string;to:string;width:number;points:RoutePoint[];
+  crossings:{start:number;end:number}[];
   bounds:{minX:number;maxX:number;minZ:number;maxZ:number}};
 
 /** Narrow stone terraces follow the contour and retain their outer edge down
@@ -40,7 +42,24 @@ export function createMountainTrails(heightAt:(x:number,z:number)=>number,bridge
       }
     }
     points[0].y=waypoints[0].y;points.at(-1)!.y=waypoints.at(-1)!.y;
-    return {id:def.id,name:def.name,from:def.from,to:def.to,width,points,bounds:{
+    const crossings:{start:number;end:number}[]=[];
+    let start=-1;
+    for(let i=0;i<=points.length;i++){
+      const p=points[i],water=p?waterSurfaceAt(p.x,p.z):null;
+      const wet=!!(p&&water&&heightAt(p.x,p.z)<water.level+.35);
+      if(wet&&start<0)start=i;
+      if(!wet&&start>=0){
+        const a=Math.max(0,start-4),b=Math.min(points.length-1,i+3);
+        const previous=crossings.at(-1);
+        if(previous&&a<=previous.end)previous.end=b;else crossings.push({start:a,end:b});
+        start=-1;
+      }
+    }
+    for(const crossing of crossings)for(let i=crossing.start;i<=crossing.end;i++){
+      const p=points[i],water=waterSurfaceAt(p.x,p.z);
+      if(water)p.y=Math.max(p.y,water.level+5);
+    }
+    return {id:def.id,name:def.name,from:def.from,to:def.to,width,points,crossings,bounds:{
       minX:Math.min(...points.map(p=>p.x))-width,maxX:Math.max(...points.map(p=>p.x))+width,
       minZ:Math.min(...points.map(p=>p.z))-width,maxZ:Math.max(...points.map(p=>p.z))+width}};
   });

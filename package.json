@@ -35,7 +35,8 @@
     "test:routes": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/MountainPassSystem.ts src/world/terrainData.ts src/world/RegionCatalog.ts && node tests/setup-cjs.cjs && node tests/mountain-routes.test.cjs",
     "test:physics": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/physics/ChainDynamics.ts src/physics/ChainCurve.ts src/world/HangingLanterns.ts src/world/TreeColliderSystem.ts && node tests/setup-cjs.cjs && node tests/physics.test.cjs",
     "bench:physics": "npm run test:physics && node scripts/bench-chain-dynamics.cjs && node scripts/bench-segment-pairs.cjs && node scripts/bench-tree-collisions.cjs artifacts/physics/tree-baseline-repeat.json --legacy && node scripts/bench-tree-collisions.cjs artifacts/physics/tree-after.json",
-    "test:lagoon": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/LagoonSystem.ts src/world/terrainData.ts src/world/expansionBiomeData.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/lagoon.test.cjs"
+    "test:lagoon": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/LagoonSystem.ts src/world/terrainData.ts src/world/expansionBiomeData.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/lagoon.test.cjs && node tests/watershed.test.cjs",
+    "watershed:bake": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WatershedHydrology.ts src/world/terrainData.ts && node tests/setup-cjs.cjs && node scripts/bake-watershed.cjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.32.0",

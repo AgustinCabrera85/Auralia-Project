@@ -1,7 +1,8 @@
-import { Color3, DirectionalLight, Effect, Scene, ShaderMaterial, Texture, Vector3 } from '@babylonjs/core';
+import { Color3, DirectionalLight, Effect, Scene, ShaderMaterial, Texture, Vector2, Vector3 } from '@babylonjs/core';
 import { LAKE_RESERVATIONS, LAGOONS, riverSample, streamSample, waterSurfaceAt } from '../geographicFeatures';
 import { GEOLOGY_FORMATIONS, geologyInfluence, geologyLocal } from '../geologyData';
 import { biomeWeightsAt, MAINLAND } from '../terrainData';
+import { FOLIAGE_FOREST } from '../foliageForestConfig';
 
 /** Metres and dimensionless blend controls for the continental terrain. */
 export type TerrainMaterialConfig=Readonly<{
@@ -69,15 +70,18 @@ Effect.ShadersStore['auraliaContinentalTerrainVertexShader']=`
   attribute vec3 position;
   attribute vec3 normal;
   attribute vec4 color;
+  attribute vec2 uv;
   uniform mat4 world;
   uniform mat4 worldViewProjection;
   varying vec3 vWorldPos;
   varying vec3 vWorldNormal;
   varying vec4 vWeights;
+  varying vec2 vExtras;
   void main(void){
     vWorldPos=(world*vec4(position,1.0)).xyz;
     vWorldNormal=normalize(mat3(world)*normal);
     vWeights=color;
+    vExtras=uv;
     gl_Position=worldViewProjection*vec4(position,1.0);
   }
 `;
@@ -87,10 +91,13 @@ Effect.ShadersStore['auraliaContinentalTerrainFragmentShader']=`
   varying vec3 vWorldPos;
   varying vec3 vWorldNormal;
   varying vec4 vWeights;
+  varying vec2 vExtras;
   uniform sampler2D texGrass;
   uniform sampler2D texSoil;
   uniform sampler2D texRock;
   uniform sampler2D texSand;
+  uniform sampler2D texSnow;
+  uniform sampler2D texLava;
   uniform sampler2D normGrass;
   uniform sampler2D normRock;
   uniform vec3 cameraPosition;
@@ -104,6 +111,8 @@ Effect.ShadersStore['auraliaContinentalTerrainFragmentShader']=`
   uniform float macroStrength;
   uniform float normalStrength;
   uniform float rockNormalStrength;
+  uniform vec2 forestCenter;
+  uniform vec2 forestRadii;
 
   vec4 rockColor(vec3 p,vec3 axes){
     vec3 q=p*tileScale*.83;
@@ -124,7 +133,9 @@ Effect.ShadersStore['auraliaContinentalTerrainFragmentShader']=`
     vec3 normal=normalize(vWorldNormal);
     if(!gl_FrontFacing)normal=-normal;
     vec4 weights=max(vWeights,vec4(0.0));
-    weights/=max(dot(weights,vec4(1.0)),0.0001);
+    float total=max(dot(weights,vec4(1.0))+vExtras.x+vExtras.y,0.0001);
+    weights/=total;
+    vec2 extra=max(vExtras,vec2(0.0))/total;
     // Continuous world-space warp and a rotated second grass sample break 1K repeats.
     float broad=sin(vWorldPos.x*macroScale+sin(vWorldPos.z*macroScale*.71))*
       cos(vWorldPos.z*macroScale-vWorldPos.x*macroScale*.37);
@@ -132,15 +143,30 @@ Effect.ShadersStore['auraliaContinentalTerrainFragmentShader']=`
     vec2 uv=vWorldPos.xz*tileScale+warp;
     vec2 uvGrass2=vec2(uv.y,-uv.x)*grassDetailScale+vec2(17.3,4.9);
     vec4 grass=mix(texture2D(texGrass,uv),texture2D(texGrass,uvGrass2),.34+.12*broad);
+    float forestDistance=length((vWorldPos.xz-forestCenter)/forestRadii);
+    float forestMask=1.0-smoothstep(.88,1.02,forestDistance);
+    vec3 forestGrass=clamp(grass.rgb*vec3(1.40,1.48,.94)+
+      vec3(.022,.018,.003),0.0,1.0);
+    grass.rgb=mix(grass.rgb,forestGrass,forestMask);
+    // The distant meadow keeps a low-cost world-space cover pattern after GLB tufts thin out.
+    float distanceToCamera=length(vWorldPos-cameraPosition);
+    float coverNoise=sin(vWorldPos.x*.54+sin(vWorldPos.z*.27))*
+      cos(vWorldPos.z*.47-vWorldPos.x*.21);
+    float coverPatch=smoothstep(.12,.75,coverNoise);
+    float coverBlend=forestMask*smoothstep(95.0,165.0,distanceToCamera)*coverPatch*.28;
+    grass.rgb=mix(grass.rgb,clamp(grass.rgb*vec3(1.26,1.33,.90)+
+      vec3(.006,.012,0.0),0.0,1.0),coverBlend);
     vec4 soil=texture2D(texSoil,uv*1.07+vec2(2.4,7.1));
     vec4 sand=texture2D(texSand,uv*.9+vec2(11.7,3.2));
     vec3 axes=pow(abs(normal),vec3(5.0));
     axes/=max(dot(axes,vec3(1.0)),.0001);
     vec4 rock=rockColor(vWorldPos+vec3(warp.x,0.0,warp.y),axes);
+    vec4 snow=texture2D(texSnow,uv*.73+vec2(3.1,6.2));
+    vec4 lava=texture2D(texLava,uv*.64+vec2(8.4,2.7));
     vec3 albedo=grass.rgb*weights.x+soil.rgb*weights.y+
-      rock.rgb*weights.z+sand.rgb*weights.w;
+      rock.rgb*weights.z+sand.rgb*weights.w+snow.rgb*extra.x+lava.rgb*extra.y;
     float roughness=clamp(grass.a*weights.x+soil.a*weights.y+
-      rock.a*weights.z+sand.a*weights.w,.48,1.0);
+      rock.a*weights.z+sand.a*weights.w+snow.a*extra.x+lava.a*extra.y,.48,1.0);
     vec3 grassMap=texture2D(normGrass,uv).xyz*2.0-1.0;
     vec3 grain=vec3(grassMap.x,0.0,grassMap.y)*weights.x*normalStrength+
       rockNormal(vWorldPos+vec3(warp.x,0.0,warp.y),axes)*weights.z*rockNormalStrength;
@@ -152,9 +178,10 @@ Effect.ShadersStore['auraliaContinentalTerrainFragmentShader']=`
     vec3 halfDir=normalize(viewDir+normalize(sunDirection));
     float highlight=pow(max(dot(normal,halfDir),0.0),mix(40.0,4.0,roughness));
     lit+=sunColor*highlight*(1.0-roughness)*.17;
+    lit+=lava.rgb*extra.y*1.25; // Emission from painted lava
     // Small colour drift follows world coordinates, independent of chunk origin.
     lit*=1.0+macroStrength*broad+.025*sin(vWorldPos.x*.137)*cos(vWorldPos.z*.119);
-    float distanceToCamera=length(vWorldPos-cameraPosition);
+    lit*=1.0+forestMask*weights.x*.10;
     float fog=1.0-exp(-pow(distanceToCamera*fogDensity,2.0));
     gl_FragColor=vec4(mix(lit,fogColor,clamp(fog,0.0,1.0)),1.0);
   }
@@ -164,11 +191,11 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig=T
   {material:ShaderMaterial;dispose:()=>void}{
   const material=new ShaderMaterial('material-terreno-continental',scene,
     {vertex:'auraliaContinentalTerrain',fragment:'auraliaContinentalTerrain'},
-    {attributes:['position','normal','color'],
+    {attributes:['position','normal','color','uv'],
       uniforms:['world','worldViewProjection','cameraPosition','sunDirection','sunColor',
         'fogColor','fogDensity','tileScale','grassDetailScale','macroScale','macroStrength',
-        'normalStrength','rockNormalStrength'],
-      samplers:['texGrass','texSoil','texRock','texSand','normGrass','normRock']});
+        'normalStrength','rockNormalStrength','forestCenter','forestRadii'],
+      samplers:['texGrass','texSoil','texRock','texSand','texSnow','texLava','normGrass','normRock']});
   material.backFaceCulling=false;
   const sun=scene.lights.find(light=>light instanceof DirectionalLight) as DirectionalLight|undefined;
   material.setVector3('sunDirection',sun?sun.direction.scale(-1).normalize():new Vector3(.5,1,-.4).normalize());
@@ -181,10 +208,13 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig=T
   material.setFloat('macroStrength',config.macroStrength);
   material.setFloat('normalStrength',config.normalStrength);
   material.setFloat('rockNormalStrength',config.rockNormalStrength);
+  material.setVector2('forestCenter',new Vector2(FOLIAGE_FOREST.x,FOLIAGE_FOREST.z));
+  material.setVector2('forestRadii',new Vector2(FOLIAGE_FOREST.radiusX,FOLIAGE_FOREST.radiusZ));
   const textures:Texture[]=[];
   for(const [uniform,name] of [
     ['texGrass','grass_albedo_rough'],['texSoil','soil_albedo_rough'],
     ['texRock','rock_albedo_rough'],['texSand','sand_albedo_rough'],
+    ['texSnow','snow_albedo_rough'],['texLava','lava_albedo_rough'],
     ['normGrass','grass_normal'],['normRock','rock_normal']
   ]){
     const texture=new Texture(`/assets/terrain/${name}.webp`,scene,false,false,Texture.TRILINEAR_SAMPLINGMODE);

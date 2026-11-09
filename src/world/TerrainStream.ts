@@ -1,7 +1,10 @@
 import { Mesh, Scene, ShaderMaterial, TransformNode, VertexData } from '@babylonjs/core';
+import { surfaceWeightsAt } from './editor/WorldEditState';
 import { MAINLAND, sampleMainlandHeight } from './terrainData';
-import { createTerrainMaterial, terrainMaterialWeightsAt, TERRAIN_MATERIAL_CONFIG,
+import { terrainMaterialWeightsAt, TERRAIN_MATERIAL_CONFIG,
   type TerrainMaterialConfig } from './materials/TerrainMaterial';
+import { createTerrainMaterial } from './materials/TerrainBiomeMaterial';
+import { terrainTileTopology } from './terrainTileTopology';
 import { cellAt, childrenOf, lodKey, parentOf, selectGroups, tileDistance,
   TERRAIN_LOD_CONFIG, type TerrainCell, type TerrainLod } from './terrainLod';
 
@@ -25,6 +28,8 @@ export class TerrainStream {
   private visibleNear=new Set<string>();
   private visibleMid=0;
   private visibleFar=0;
+  private readonly readyMid=new Set<string>();
+  private lodVisibilityDirty=true;
   private centerKey='';
   private lastX=Infinity;
   private lastZ=Infinity;
@@ -85,53 +90,29 @@ export class TerrainStream {
   }
 
   private createTile(lod:TerrainLod,cell:TerrainCell):Mesh{
-    const {nearSize,midSize,farSize,nearSubdivisions,midSubdivisions,
-      farSubdivisions,skirtDepth}=TERRAIN_LOD_CONFIG;
-    const size=lod==='near'?nearSize:lod==='mid'?midSize:farSize;
-    const subdiv=lod==='near'?nearSubdivisions:lod==='mid'?midSubdivisions:farSubdivisions;
-    const step=size/subdiv,centerX=(cell.cx+.5)*size,centerZ=(cell.cz+.5)*size;
-    const positions:number[]=[],normals:number[]=[],colors:number[]=[],indices:number[]=[];
-    for(let iz=0;iz<=subdiv;iz++)for(let ix=0;ix<=subdiv;ix++){
-      const x=cell.cx*size+ix*step,z=cell.cz*size+iz*step;
-      const h=this.height(x,z),eps=lod==='near'?.7:step;
+    const {size,offsets,indices}=terrainTileTopology(lod);
+    const centerX=(cell.cx+.5)*size,centerZ=(cell.cz+.5)*size;
+    // Half a canonical cell also reuses derivative samples along fine edges.
+    const eps=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions/2;
+    const positions:number[]=[],normals:number[]=[],colors:number[]=[],extras:number[]=[];
+    for(const [dx,dz] of offsets){
+      const x=cell.cx*size+dx,z=cell.cz*size+dz;
+      // A shared point must have identical slope, lighting and biome weights
+      // in all three LODs, independently of the interior triangle spacing.
+      const h=this.height(x,z);
       const nx=this.height(x-eps,z)-this.height(x+eps,z);
       const nz=this.height(x,z-eps)-this.height(x,z+eps);
       const length=Math.hypot(nx,2*eps,nz);
       positions.push(x-centerX,h,z-centerZ);
       normals.push(nx/length,2*eps/length,nz/length);
-      colors.push(...terrainMaterialWeightsAt(x,z,h,Math.hypot(nx,nz)/(2*eps),
-        this.materialConfig));
-    }
-    const stride=subdiv+1;
-    for(let iz=0;iz<subdiv;iz++)for(let ix=0;ix<subdiv;ix++){
-      const a=iz*stride+ix,b=a+1,c=a+stride,d=c+1;
-      // Babylon's left-handed ground winding keeps the upper surface front-facing.
-      indices.push(a,b,c,b,d,c);
-    }
-    if(lod!=='near'){
-      // Coarse edges extend below the canonical surface to cover T-junctions.
-      const edges=[
-        Array.from({length:stride},(_,i)=>i),
-        Array.from({length:stride},(_,i)=>subdiv*stride+i),
-        Array.from({length:stride},(_,i)=>i*stride),
-        Array.from({length:stride},(_,i)=>i*stride+subdiv)
-      ];
-      for(const edge of edges){
-        const bottoms:number[]=[];
-        for(const top of edge){
-          const index=positions.length/3;
-          positions.push(positions[top*3],positions[top*3+1]-skirtDepth,positions[top*3+2]);
-          normals.push(...normals.slice(top*3,top*3+3));
-          colors.push(...colors.slice(top*4,top*4+4));
-          bottoms.push(index);
-        }
-        for(let i=0;i<edge.length-1;i++)indices.push(
-          edge[i],bottoms[i],edge[i+1],edge[i+1],bottoms[i],bottoms[i+1]);
-      }
+      const weights=surfaceWeightsAt(x,z,terrainMaterialWeightsAt(x,z,h,
+        Math.hypot(nx,nz)/(2*eps),this.materialConfig));
+      colors.push(...weights.slice(0,4));
+      extras.push(weights[4],weights[5]);
     }
     const mesh=new Mesh(`terreno-${lod}-${cell.cx}-${cell.cz}`,this.scene);
     const data=new VertexData();
-    data.positions=positions;data.normals=normals;data.colors=colors;data.indices=indices;
+    data.positions=positions;data.normals=normals;data.colors=colors;data.uvs=extras;data.indices=indices;
     data.applyToMesh(mesh);
     mesh.parent=this.parent;
     mesh.position.set(centerX,0,centerZ);
@@ -158,6 +139,7 @@ export class TerrainStream {
   }
 
   private refreshTargets(x:number,z:number):void{
+    this.lodVisibilityDirty=true;
     this.desiredMid.clear();this.desiredNear.clear();
     for(const parent of selectGroups(x,z,TERRAIN_LOD_CONFIG.midRadius,
       TERRAIN_LOD_CONFIG.farSize))
@@ -201,6 +183,13 @@ export class TerrainStream {
   }
 
   update(x:number,z:number,forwardX=0,forwardZ=0):boolean{
+    // Visibility depends on position and completed tiles, not camera heading.
+    // Keep idle frames from rebuilding hundreds of temporary LOD groups/sets.
+    // Pending refinement must still advance while the player stands still.
+    if(x===this.lastX&&z===this.lastZ&&this.pending.size===0){
+      this.lastGenerationMs=0;
+      return false;
+    }
     const start=performance.now();
     const center=cellAt(x,z,TERRAIN_LOD_CONFIG.nearSize);
     const nextCenter=lodKey(center);
@@ -221,6 +210,7 @@ export class TerrainStream {
       const key=lodKey(job.cell);
       if(!target.has(key))target.set(key,{cell:job.cell,mesh:this.createTile(job.lod,job.cell)});
       generated++;
+      this.lodVisibilityDirty=true;
     }
     this.lastGenerationMs=performance.now()-start;
     this.heightCache.clear();
@@ -228,27 +218,47 @@ export class TerrainStream {
   }
 
   private refreshVisibility(x:number,z:number):boolean{
-    const midReady=(cell:TerrainCell)=>childrenOf(cell).every(child=>
-      this.desiredMid.has(lodKey(child))&&this.mid.has(lodKey(child)));
-    const nearReady=(cell:TerrainCell)=>childrenOf(cell).every(child=>
-      this.desiredNear.has(lodKey(child))&&this.near.has(lodKey(child)));
-    this.visibleFar=0;this.visibleMid=0;
-    const nearKeys=new Set<string>();
-    for(const {cell,mesh} of this.far.values()){
+    let changed=false;
+    // Group completeness changes only when a tile is added/removed. Movement
+    // within a cell only affects the far distance cutoff below.
+    if(this.lodVisibilityDirty){
+      this.lodVisibilityDirty=false;
+      changed=this.refreshLodVisibility();
+    }
+    this.visibleFar=0;
+    for(const [key,{cell,mesh}] of this.far){
       const visible=tileDistance(cell,TERRAIN_LOD_CONFIG.farSize,x,z)<=
-        TERRAIN_LOD_CONFIG.farRadius&&!midReady(cell);
+        TERRAIN_LOD_CONFIG.farRadius&&!this.readyMid.has(key);
       if(mesh.isEnabled()!==visible)mesh.setEnabled(visible);
       mesh.isVisible=this.debugLayer==='all'||this.debugLayer==='far';
       if(visible)this.visibleFar++;
     }
+    return changed;
+  }
+
+  private refreshLodVisibility():boolean{
+    const nearReady=(cell:TerrainCell)=>childrenOf(cell).every(child=>
+      this.desiredNear.has(lodKey(child))&&this.near.has(lodKey(child)));
+    this.readyMid.clear();
+    // Authored extensions can lie beyond the original resident far grid.
+    // Readiness depends on four loaded, desired children, not on a far mesh
+    // existing for their parent. Otherwise valid outer mid/near tiles vanish.
+    const loadedChildren=new Map<string,number>();
+    for(const [key,{cell}] of this.mid)if(this.desiredMid.has(key)){
+      const parent=lodKey(parentOf(cell));
+      loadedChildren.set(parent,(loadedChildren.get(parent)??0)+1);
+    }
+    for(const [key,count] of loadedChildren)if(count===4)this.readyMid.add(key);
+    this.visibleMid=0;
+    const nearKeys=new Set<string>();
     for(const {cell,mesh} of this.mid.values()){
-      const visible=midReady(parentOf(cell))&&!nearReady(cell);
+      const visible=this.readyMid.has(lodKey(parentOf(cell)))&&!nearReady(cell);
       if(mesh.isEnabled()!==visible)mesh.setEnabled(visible);
       mesh.isVisible=this.debugLayer==='all'||this.debugLayer==='mid';
       if(visible)this.visibleMid++;
     }
     for(const [key,{cell,mesh}] of this.near){
-      const visible=midReady(parentOf(parentOf(cell)))&&nearReady(parentOf(cell));
+      const visible=this.readyMid.has(lodKey(parentOf(parentOf(cell))))&&nearReady(parentOf(cell));
       if(mesh.isEnabled()!==visible)mesh.setEnabled(visible);
       mesh.isVisible=this.debugLayer==='all'||this.debugLayer==='near';
       if(visible)nearKeys.add(key);
@@ -258,8 +268,47 @@ export class TerrainStream {
     return changed;
   }
 
+  /** Updates only edited patches at every LOD, including the permanent far coverage. */
+  invalidateRegion(x:number,z:number,radius:number):void {
+    this.heightCache.clear();
+    for(const [lod,group] of [
+      ['near',this.near],['mid',this.mid],['far',this.far]
+    ] as const){
+      const size=lod==='near'?TERRAIN_LOD_CONFIG.nearSize:
+        lod==='mid'?TERRAIN_LOD_CONFIG.midSize:TERRAIN_LOD_CONFIG.farSize;
+      for(const [key,tile] of group){
+        const cx=(tile.cell.cx+.5)*size,cz=(tile.cell.cz+.5)*size;
+        if(Math.abs(cx-x)>size*.5+radius||Math.abs(cz-z)>size*.5+radius)continue;
+        const enabled=tile.mesh.isEnabled(),visible=tile.mesh.isVisible;
+        tile.mesh.dispose(false,false);
+        const mesh=this.createTile(lod,tile.cell);
+        mesh.setEnabled(enabled);mesh.isVisible=visible;
+        group.set(key,{cell:tile.cell,mesh});
+      }
+    }
+    this.heightCache.clear();
+  }
+
+  /** Called after importing a complete world file or performing undo/redo. */
+  reloadEdits():void {
+    this.heightCache.clear();
+    for(const [lod,group] of [
+      ['near',this.near],['mid',this.mid],['far',this.far]
+    ] as const){
+      for(const [key,tile] of group){
+        const enabled=tile.mesh.isEnabled(),visible=tile.mesh.isVisible;
+        tile.mesh.dispose(false,false);
+        const mesh=this.createTile(lod,tile.cell);
+        mesh.setEnabled(enabled);mesh.isVisible=visible;
+        group.set(key,{cell:tile.cell,mesh});
+      }
+    }
+    this.heightCache.clear();
+  }
+
   setDebugLayer(layer:TerrainLod|'all'):void{
     this.debugLayer=layer;
+    this.lodVisibilityDirty=true;
     if(Number.isFinite(this.lastX))this.refreshVisibility(this.lastX,this.lastZ);
   }
 
@@ -270,6 +319,7 @@ export class TerrainStream {
       group.clear();
     }
     this.visibleNear.clear();
+    this.readyMid.clear();
     this.disposeMaterial();
   }
 }

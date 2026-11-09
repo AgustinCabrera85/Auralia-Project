@@ -12,7 +12,10 @@ export const MAIN_RIVER:readonly WaterPoint[]=[
   {x:430,z:-680,level:5,width:15},
   {x:450,z:-500,level:3,width:16},{x:450,z:-380,level:1.9,width:16},
   {x:500,z:-320,level:1.4,width:17},{x:385,z:-270,level:.8,width:19},
-  {x:390,z:-100,level:.6,width:18},{x:220,z:50,level:.35,width:18},
+  {x:390,z:-100,level:.6,width:18},
+  // Exact shared confluence with Arroyo del Prado (same station and datum).
+  {x:330,z:-100+150*60/170,level:.6-.25*60/170,width:18},
+  {x:220,z:50,level:.35,width:18},
   {x:150,z:200,level:.05,width:20},{x:120,z:250,level:-.15,width:23},
   {x:120,z:290,level:-.15,width:26}
 ];
@@ -21,7 +24,7 @@ export const STREAMS:readonly {name:string;points:readonly WaterPoint[]}[]=[
   {name:'Arroyo del Prado',points:[
     {x:110,z:-340,level:10,width:4},{x:130,z:-235,level:7,width:5},
     {x:155,z:-125,level:4,width:5},{x:230,z:-100,level:1.5,width:6},
-    {x:330,z:-47,level:.5,width:7}
+    {x:330,z:-100+150*60/170,level:.6-.25*60/170,width:7}
   ]}
 ];
 

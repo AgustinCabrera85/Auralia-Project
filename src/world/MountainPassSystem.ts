@@ -152,7 +152,14 @@ export class MountainPassSystem {
       for(const side of [-1,1]){
         const x=p.x+nx*trail.width*.5*side,z=p.z+nz*trail.width*.5*side;
         positions.push(x,p.y,z);uvs.push(side*trail.width/8,along/8);
-        const ground=Math.min(p.y-.15,this.heightAt(x,z)-.25);
+        let ground=Math.min(p.y-.15,this.heightAt(x,z)-.25);
+        // Leave an arched opening under stream crossings instead of extending
+        // retaining walls across the channel. Walking support remains shared.
+        const crossing=trail.crossings.find(c=>i>=c.start&&i<=c.end);
+        if(crossing){
+          const t=(i-crossing.start)/(crossing.end-crossing.start);
+          ground=Math.max(ground,p.y-.65-4.5*(1-Math.sin(Math.PI*t)));
+        }
         walls.push(x,p.y-.03,z,x,ground,z);wallUV.push(along/5,p.y/5,along/5,ground/5);
       }
       if(i){const a=(i-1)*2;indices.push(a,a+2,a+1,a+1,a+2,a+3);

@@ -1,0 +1,574 @@
+{
+  "name": "Cuenca piloto de las Tres Vertientes",
+  "method": "Red dirigida diseñada y validada contra triángulos de terreno de 6 m. No es una extracción automática de cuencas ni una simulación de fluidos.",
+  "flowUnits": "Índice relativo de aporte de esta cuenca, no m³/s. El tramo compartido del río principal no incluye otros aportes.",
+  "stationSpacingM": 3,
+  "catchments": [
+    {
+      "id": "ferragris",
+      "name": "Recarga de Ferragrís",
+      "kind": "aquifer",
+      "x": -714,
+      "z": -1510,
+      "level": 150,
+      "length": 260,
+      "halfWidth": 170,
+      "rise": 100,
+      "runoff": 0.3,
+      "baseflow": 0.16,
+      "snow": 0
+    },
+    {
+      "id": "velo",
+      "name": "Quebrada del Velo",
+      "kind": "rain",
+      "x": -205,
+      "z": -1058,
+      "level": 74,
+      "length": 220,
+      "halfWidth": 130,
+      "rise": 95,
+      "runoff": 0.58,
+      "baseflow": 0.055,
+      "snow": 0
+    },
+    {
+      "id": "gemelas",
+      "name": "Circo de las Gemelas",
+      "kind": "uplandLake",
+      "x": 18,
+      "z": -1105,
+      "level": 64,
+      "length": 300,
+      "halfWidth": 145,
+      "rise": 205,
+      "runoff": 0.48,
+      "baseflow": 0.08,
+      "snow": 1
+    }
+  ],
+  "sections": [
+    {
+      "id": "reach-0",
+      "lengthM": 755.6,
+      "stations": 255,
+      "minRenderedDepthM": 2.589,
+      "maxGrade": 0.244
+    },
+    {
+      "id": "reach-1",
+      "lengthM": 108.7,
+      "stations": 38,
+      "minRenderedDepthM": 2.785,
+      "maxGrade": 0.047
+    },
+    {
+      "id": "reach-2",
+      "lengthM": 213,
+      "stations": 72,
+      "minRenderedDepthM": 3.5,
+      "maxGrade": 0.067
+    },
+    {
+      "id": "reach-3",
+      "lengthM": 444.3,
+      "stations": 150,
+      "minRenderedDepthM": 2.016,
+      "maxGrade": 0.044
+    },
+    {
+      "id": "reach-4",
+      "lengthM": 152.1,
+      "stations": 44,
+      "minRenderedDepthM": 0.728,
+      "maxGrade": 0.46
+    },
+    {
+      "id": "reach-5",
+      "lengthM": 135.4,
+      "stations": 38,
+      "minRenderedDepthM": 1.516,
+      "maxGrade": 0.469
+    },
+    {
+      "id": "reach-6",
+      "lengthM": 193.9,
+      "stations": 58,
+      "minRenderedDepthM": 0.509,
+      "maxGrade": 1.25
+    }
+  ],
+  "climateScenarios": [
+    {
+      "season": "winter",
+      "rain": 0,
+      "relativeOutflow": 0.29500000000000004
+    },
+    {
+      "season": "spring",
+      "rain": 0,
+      "relativeOutflow": 0.615
+    },
+    {
+      "season": "spring",
+      "rain": 1,
+      "relativeOutflow": 1.9749999999999999
+    },
+    {
+      "season": "summer",
+      "rain": 0,
+      "relativeOutflow": 0.455
+    }
+  ],
+  "reaches": [
+    {
+      "id": "reach-0",
+      "points": [
+        {
+          "x": -714,
+          "z": -1510,
+          "level": 150,
+          "width": 11
+        },
+        {
+          "x": -670,
+          "z": -1320,
+          "level": 122,
+          "width": 13
+        },
+        {
+          "x": -545,
+          "z": -1190,
+          "level": 78,
+          "width": 12
+        },
+        {
+          "x": -420,
+          "z": -1040,
+          "level": 40,
+          "width": 14
+        },
+        {
+          "x": -325,
+          "z": -978,
+          "level": 36,
+          "width": 12
+        },
+        {
+          "x": -286,
+          "z": -918,
+          "level": 34,
+          "width": 7
+        }
+      ],
+      "kind": "channel",
+      "to": "fall-0",
+      "catchment": 0,
+      "share": 1
+    },
+    {
+      "id": "reach-1",
+      "points": [
+        {
+          "x": -205,
+          "z": -1058,
+          "level": 74,
+          "width": 6
+        },
+        {
+          "x": -184,
+          "z": -998,
+          "level": 71,
+          "width": 7
+        },
+        {
+          "x": -174,
+          "z": -954,
+          "level": 69,
+          "width": 5.5
+        }
+      ],
+      "kind": "channel",
+      "to": "fall-1",
+      "catchment": 1,
+      "share": 0.2
+    },
+    {
+      "id": "reach-2",
+      "points": [
+        {
+          "x": 18,
+          "z": -1115,
+          "level": 64,
+          "width": 7
+        },
+        {
+          "x": 18,
+          "z": -1085,
+          "level": 64,
+          "width": 7
+        },
+        {
+          "x": 18,
+          "z": -1020,
+          "level": 64,
+          "width": 7
+        },
+        {
+          "x": 0,
+          "z": -994,
+          "level": 64,
+          "width": 7
+        },
+        {
+          "x": -38,
+          "z": -970,
+          "level": 61,
+          "width": 8
+        },
+        {
+          "x": -52,
+          "z": -931,
+          "level": 59,
+          "width": 8.5
+        }
+      ],
+      "kind": "channel",
+      "to": "fall-2",
+      "catchment": 2,
+      "share": 0.15
+    },
+    {
+      "id": "reach-3",
+      "points": [
+        {
+          "x": -150,
+          "z": -699,
+          "level": 24,
+          "width": 13
+        },
+        {
+          "x": -104,
+          "z": -638,
+          "level": 21,
+          "width": 11
+        },
+        {
+          "x": -28,
+          "z": -554,
+          "level": 16,
+          "width": 9
+        },
+        {
+          "x": 55,
+          "z": -426,
+          "level": 12,
+          "width": 7
+        },
+        {
+          "x": 110,
+          "z": -340,
+          "level": 10,
+          "width": 4
+        }
+      ],
+      "kind": "channel",
+      "to": "prado",
+      "share": 0
+    },
+    {
+      "id": "reach-4",
+      "points": [
+        {
+          "x": -277,
+          "z": -1190,
+          "level": 132,
+          "width": 1.3
+        },
+        {
+          "x": -262,
+          "z": -1140,
+          "level": 108,
+          "width": 2.1
+        },
+        {
+          "x": -232,
+          "z": -1094,
+          "level": 87,
+          "width": 2.8
+        },
+        {
+          "x": -205,
+          "z": -1058,
+          "level": 74,
+          "width": 4
+        }
+      ],
+      "kind": "channel",
+      "to": "reach-1",
+      "catchment": 1,
+      "share": 0.4
+    },
+    {
+      "id": "reach-5",
+      "points": [
+        {
+          "x": -127,
+          "z": -1165,
+          "level": 126,
+          "width": 1.3
+        },
+        {
+          "x": -148,
+          "z": -1116,
+          "level": 101,
+          "width": 2
+        },
+        {
+          "x": -181,
+          "z": -1075,
+          "level": 80,
+          "width": 2.6
+        },
+        {
+          "x": -205,
+          "z": -1058,
+          "level": 74,
+          "width": 4
+        }
+      ],
+      "kind": "channel",
+      "to": "reach-1",
+      "catchment": 1,
+      "share": 0.4
+    },
+    {
+      "id": "reach-6",
+      "points": [
+        {
+          "x": 75,
+          "z": -1345,
+          "level": 224,
+          "width": 1.5
+        },
+        {
+          "x": 63,
+          "z": -1290,
+          "level": 181,
+          "width": 2
+        },
+        {
+          "x": 44,
+          "z": -1240,
+          "level": 130,
+          "width": 2.7
+        },
+        {
+          "x": 27,
+          "z": -1190,
+          "level": 64,
+          "width": 3.5
+        },
+        {
+          "x": 18,
+          "z": -1160,
+          "level": 64,
+          "width": 4
+        }
+      ],
+      "kind": "channel",
+      "to": "upland-lake",
+      "catchment": 2,
+      "share": 0.85
+    },
+    {
+      "id": "fall-0",
+      "to": "lagoon",
+      "kind": "fall",
+      "points": [
+        {
+          "x": -286,
+          "z": -918,
+          "level": 34,
+          "width": 1
+        },
+        {
+          "x": -286,
+          "z": -902,
+          "level": 24,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "id": "fall-1",
+      "to": "lagoon",
+      "kind": "fall",
+      "points": [
+        {
+          "x": -174,
+          "z": -954,
+          "level": 69,
+          "width": 1
+        },
+        {
+          "x": -174,
+          "z": -939,
+          "level": 24,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "id": "fall-2",
+      "to": "lagoon",
+      "kind": "fall",
+      "points": [
+        {
+          "x": -52,
+          "z": -931,
+          "level": 59,
+          "width": 1
+        },
+        {
+          "x": -52,
+          "z": -914,
+          "level": 24,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "id": "upland-lake",
+      "to": "reach-2",
+      "kind": "lake",
+      "points": [
+        {
+          "x": 18,
+          "z": -1160,
+          "level": 64,
+          "width": 4
+        },
+        {
+          "x": 18,
+          "z": -1140,
+          "level": 64,
+          "width": 1
+        },
+        {
+          "x": 18,
+          "z": -1115,
+          "level": 64,
+          "width": 7
+        }
+      ]
+    },
+    {
+      "id": "lagoon",
+      "to": "reach-3",
+      "kind": "lake",
+      "points": [
+        {
+          "x": -160,
+          "z": -810,
+          "level": 24,
+          "width": 1
+        },
+        {
+          "x": -150,
+          "z": -699,
+          "level": 24,
+          "width": 13
+        }
+      ]
+    },
+    {
+      "id": "prado",
+      "to": "main-lower",
+      "kind": "channel",
+      "points": [
+        {
+          "x": 110,
+          "z": -340,
+          "level": 10,
+          "width": 4
+        },
+        {
+          "x": 130,
+          "z": -235,
+          "level": 7,
+          "width": 5
+        },
+        {
+          "x": 155,
+          "z": -125,
+          "level": 4,
+          "width": 5
+        },
+        {
+          "x": 230,
+          "z": -100,
+          "level": 1.5,
+          "width": 6
+        },
+        {
+          "x": 330,
+          "z": -47.05882352941177,
+          "level": 0.5117647058823529,
+          "width": 7
+        }
+      ]
+    },
+    {
+      "id": "main-lower",
+      "to": "sea",
+      "kind": "channel",
+      "points": [
+        {
+          "x": 330,
+          "z": -47.05882352941177,
+          "level": 0.5117647058823529,
+          "width": 18
+        },
+        {
+          "x": 220,
+          "z": 50,
+          "level": 0.35,
+          "width": 18
+        },
+        {
+          "x": 150,
+          "z": 200,
+          "level": 0.05,
+          "width": 20
+        },
+        {
+          "x": 120,
+          "z": 250,
+          "level": -0.15,
+          "width": 23
+        },
+        {
+          "x": 120,
+          "z": 290,
+          "level": -0.15,
+          "width": 26
+        }
+      ]
+    },
+    {
+      "id": "sea",
+      "to": null,
+      "kind": "sea",
+      "points": [
+        {
+          "x": 120,
+          "z": 290,
+          "level": -0.15,
+          "width": 26
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="1020" viewBox="0 0 820 1020">
+<rect width="820" height="1020" fill="#101f2a"/>
+<style>text{font-family:Arial,sans-serif;fill:#dfebea} .label{font-size:12px;paint-order:stroke;stroke:#101f2a;stroke-width:4px;stroke-linejoin:round}</style>
+<defs><marker id="flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#87e4df"/></marker></defs>
+<text x="40" y="45" font-size="24">Auralia · Cuenca de las Tres Vertientes</text>
+<text x="40" y="73" font-size="14">Red piloto: nacimientos → afluentes → lagunas → río principal → mar</text>
+<text x="40" y="97" font-size="12">Coordenadas en metros · norte arriba · escala del mundo aún abierta</text>
+<ellipse cx="158.66" cy="230.6" rx="52.7" ry="52.39" fill="#526d56" fill-opacity=".38" stroke="#91b279" stroke-dasharray="5 5"/>
+<ellipse cx="316.45" cy="376.91999999999996" rx="40.3" ry="44.33" fill="#526d56" fill-opacity=".38" stroke="#91b279" stroke-dasharray="5 5"/>
+<ellipse cx="385.58" cy="349.95" rx="44.95" ry="60.45" fill="#526d56" fill-opacity=".38" stroke="#91b279" stroke-dasharray="5 5"/>
+<ellipse cx="385.58" cy="385.6" rx="13.02" ry="14.879999999999999" fill="#277b8a" stroke="#87e4df"/>
+<ellipse cx="330.4" cy="487.9" rx="52.7" ry="41.85" fill="#277b8a" stroke="#87e4df"/>
+<polyline points="158.66,270.9 172.3,329.8 211.05,370.1 249.8,416.6 279.25,435.82 291.34000000000003,454.42" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="316.45,411.02 322.96000000000004,429.62 326.06,443.26" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="385.58,393.35 385.58,402.65 385.58,422.8 380,430.86 368.21999999999997,438.3 363.88,450.39" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="333.5,522.31 347.76,541.22 371.32,567.26 397.05,606.94 414.1,633.6" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="294.13,370.1 298.78,385.6 308.08,399.86 316.45,411.02" fill="none" stroke="#87e4df" stroke-width="2" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="340.63,377.85 334.12,393.03999999999996 323.89,405.75 316.45,411.02" fill="none" stroke="#87e4df" stroke-width="2" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="403.25,322.05 399.53,339.1 393.64,354.6 388.37,370.1 385.58,379.4" fill="none" stroke="#87e4df" stroke-width="2" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="291.34000000000003,454.42 291.34000000000003,459.38" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="326.06,443.26 326.06,447.91" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="363.88,450.39 363.88,455.66" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="414.1,633.6 420.3,666.15 428.05,700.25 451.3,708 482.3,724.4117647058823" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<polyline points="482.3,724.4117647058823 448.2,754.5 426.5,801 417.2,816.5 417.2,828.9" fill="none" stroke="#87e4df" stroke-width="3" stroke-linejoin="round" marker-end="url(#flow)"/>
+<text class="label" x="94.8" y="253.85">Ferragrís · manantial 150 m</text>
+<text class="label" x="242.05" y="360.8">Velo · dos quebradas de lluvia</text>
+<text class="label" x="415.65" y="317.4">Gemelas · aporte estacional</text>
+<text class="label" x="412.55" y="385.6">Laguna Alta · 64 m</text>
+<text class="label" x="190.9" y="491">Tres Vertientes · 24 m</text>
+<text class="label" x="366.05" y="570.05">Desagüe permanente</text>
+<text class="label" x="432.7" y="684.75">Arroyo del Prado</text>
+<text class="label" x="490.05" y="751.4">Confluencia con el río principal</text>
+<text class="label" x="435.8" y="828.9">Desembocadura · mar</text>
+<text x="40" y="890" font-size="14">655 estaciones de cauce verificadas · 0 errores</text>
+<text x="40" y="920" font-size="12">Líneas discontinuas: áreas de alimentación diseñadas; no divisorias calculadas.</text>
+<text x="40" y="942" font-size="12">El caudal visual responde a lluvia y estación, con retardo en manantial y lagunas.</text>
+<text x="40" y="964" font-size="12">La cota del agua permanece fija. La red no simula erosión ni inundaciones.</text></svg>

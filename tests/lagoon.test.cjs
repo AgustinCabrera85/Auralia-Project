@@ -13,7 +13,7 @@ for(const route of d.LAGOON_CHANNELS)for(let i=1;i<route.length;i++){
 assert.equal(sampleMainlandHeight(-160,-810),6,'18m deep lake shares its terrain datum');
 assert.equal(waterSurfaceAt(-160,-810).level,24);
 assert.equal(d.watershedDistance(-714,-1510),0,'upstream river loads even far from the lake centre');
-for(const s of d.LAGOON_SPRINGS){
+for(const s of d.LAGOON_SPRINGS.filter(s=>s.kind==='aquifer')){
   assert.ok(sampleMainlandHeight(s.x,s.z)<s.level-2,'spring starts in a wet basin');
   assert.ok(sampleMainlandHeight(s.x-s.dx*s.mouthDistance,s.z-s.dz*s.mouthDistance)<s.level-.5,
     'rock opening meets the pool below its waterline, without an elevated water ramp');

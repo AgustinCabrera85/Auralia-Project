@@ -53,7 +53,9 @@ for(const trail of trails)for(let i=1;i<trail.points.length;i++){
     const hit=mountainTrailSurfaceAt(trails,x,z),water=waterSurfaceAt(x,z);
     assert.ok(hit&&Math.abs(hit.height-y)<.15,`${trail.id}: continuous foot support`);
     assert.ok(y>=height(x,z)-.15,`${trail.id}: path cannot bury the player's feet`);
-    assert.ok(!water||height(x,z)>water.level+.3,`${trail.id}: trail follows dry land, not a river crossing`);
+    const crossing=trail.crossings.some(c=>i>=c.start&&i<=c.end+1);
+    assert.ok(!water||height(x,z)>water.level+.3||(crossing&&y>water.level+3),
+      `${trail.id}: water crossings need a raised span with an open channel`);
     assert.ok(routes.mountainRouteExcludes(x,z),`${trail.id}: vegetation and rocks leave the path clear`);
   }
 }

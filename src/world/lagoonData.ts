@@ -1,3 +1,5 @@
+import { applyHeadwaterRelief, HEADWATER_CATCHMENTS, HEADWATER_LAKE,
+  HEADWATER_TRIBUTARIES, headwaterLakeRadius } from './watershedHeadwaters';
 /** One watershed datum for terrain, water, planting and traversal (metres). */
 export const CASCADE_LAGOON={name:'Laguna de las Tres Vertientes',x:-160,z:-810,
   radiusX:170,radiusZ:135,level:24,depth:18} as const;
@@ -13,23 +15,25 @@ export const LAGOON_CHANNELS:readonly (readonly ChannelPoint[])[]=[
    {x:-325,z:-978,level:36,width:12},{x:-286,z:-918,level:34,width:7}],
   [{x:-205,z:-1058,level:74,width:6},{x:-184,z:-998,level:71,width:7},
    {x:-174,z:-954,level:69,width:5.5}],
-  [{x:18,z:-1020,level:64,width:7},{x:-38,z:-970,level:61,width:8},
+  [{x:18,z:-1115,level:64,width:7},{x:18,z:-1085,level:64,width:7},
+   {x:18,z:-1020,level:64,width:7},{x:0,z:-994,level:64,width:7},{x:-38,z:-970,level:61,width:8},
    {x:-52,z:-931,level:59,width:8.5}],
   // The lake has an outlet: it is not an endlessly filling bowl.
   [{x:-150,z:-699,level:24,width:13},{x:-104,z:-638,level:21,width:11},
    {x:-28,z:-554,level:16,width:9},{x:55,z:-426,level:12,width:7},
-   {x:110,z:-340,level:10,width:4}]
+   {x:110,z:-340,level:10,width:4}],
+  ...HEADWATER_TRIBUTARIES.map(t=>t.points)
 ];
-/** Three aquifer outlets; the fourth channel drains the lake. */
+/** Source controls: aquifer outlet, rain ravine and upland lake outlet. */
 export const LAGOON_SPRINGS=LAGOON_CHANNELS.slice(0,3).map((route,index)=>{
   const a=route[0],b=route[1],length=Math.hypot(b.x-a.x,b.z-a.z);
-  return {...a,id:['ferragris','velo','gemelas'][index],dx:(b.x-a.x)/length,dz:(b.z-a.z)/length,
+  return {...a,id:['ferragris','velo','gemelas'][index],kind:HEADWATER_CATCHMENTS[index].kind,dx:(b.x-a.x)/length,dz:(b.z-a.z)/length,
     // Keep the opening inside its basin, including the two narrower springs.
     mouthDistance:Math.min(16,a.width+6)};
 });
 const clamp=(v:number)=>Math.max(0,Math.min(1,v));
 const smooth=(a:number,b:number,v:number)=>{const t=clamp((v-a)/(b-a));return t*t*(3-2*t);};
-export function inLagoonRegion(x:number,z:number):boolean{return x>-820&&x<170&&z>-1580&&z<-315;}
+export function inLagoonRegion(x:number,z:number):boolean{return x>-1040&&x<300&&z>-1890&&z<-315;}
 export function lagoonRadius(x:number,z:number):number{
   const l=CASCADE_LAGOON;return Math.hypot((x-l.x)/l.radiusX,(z-l.z)/l.radiusZ);
 }
@@ -44,21 +48,25 @@ export function watershedDistance(x:number,z:number):number{
   return distance;
 }
 export function lagoonChannelAt(x:number,z:number){
-  let best={distance:Infinity,level:0,width:0,dx:0,dz:1,pastEnd:0};
+  let best={distance:Infinity,level:0,width:0,dx:0,dz:1,pastEnd:0,routeIndex:-1,along:0};
   if(!inLagoonRegion(x,z))return best;
-  for(const route of LAGOON_CHANNELS){
+  for(const [routeIndex,route] of LAGOON_CHANNELS.entries()){
     const end=route.at(-1)!,before=route.at(-2)!;
     const pastEnd=Math.max(0,((x-end.x)*(end.x-before.x)+(z-end.z)*(end.z-before.z))/Math.hypot(end.x-before.x,end.z-before.z));
+    let along=0;
     for(let i=1;i<route.length;i++){
     const a=route[i-1],b=route[i],dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
     const t=clamp(((x-a.x)*dx+(z-a.z)*dz)/(len*len));
     const distance=Math.hypot(x-a.x-dx*t,z-a.z-dz*t);
     if(distance<best.distance)best={distance,level:a.level+(b.level-a.level)*t,
-      width:a.width+(b.width-a.width)*t,dx:dx/len,dz:dz/len,pastEnd};
+      width:a.width+(b.width-a.width)*t,dx:dx/len,dz:dz/len,pastEnd,routeIndex,along:along+len*t};
+    along+=len;
   }}return best;
 }
 export function lagoonWaterAt(x:number,z:number):{level:number;kind:'lagoon'|'stream';distance:number;edge:number}|null{
   if(!inLagoonRegion(x,z))return null;
+  const highLake=headwaterLakeRadius(x,z);
+  if(highLake<1.02)return {level:HEADWATER_LAKE.level,kind:'lagoon',distance:highLake,edge:clamp((1.02-highLake)/.08)};
   const r=lagoonRadius(x,z);
   if(r<1.015)return {level:24,kind:'lagoon',distance:r,edge:clamp((1.015-r)/.08)};
   const c=lagoonChannelAt(x,z);
@@ -75,7 +83,7 @@ export function ownsLagoonWater(x:number,z:number):boolean{
  * Falls spill over shelves with a recess behind the falling sheet, never uphill. */
 export function applyLagoonRelief(x:number,z:number,base:number):number{
   if(!inLagoonRegion(x,z))return base;
-  let h=base;const r=lagoonRadius(x,z),l=CASCADE_LAGOON;
+  let h=applyHeadwaterRelief(x,z,base);const r=lagoonRadius(x,z),l=CASCADE_LAGOON;
   if(r<1.6){
     const bed=l.level-l.depth*(1-smooth(.25,1.025,r));
     const bank=l.level+1.5+Math.max(0,r-1.06)*16;
@@ -102,13 +110,19 @@ export function applyLagoonRelief(x:number,z:number,base:number):number{
     // this inner profile independently of the hills also avoids sudden spikes
     // where a steep mountain intersects the channel. Water meshes and collision
     // support both sample this same terrain; its water level stays unchanged.
-    const bed=c.level-4-c.width*.16;
-    const channel=bed+(crest-bed)*smooth(c.width*.45,c.width+14,c.distance);
+    const tributary=c.routeIndex>=4;
+    const sourceDepth=tributary?smooth(0,24,c.along):1;
+    const bed=c.level-(tributary?1.4+c.width*.35:4+c.width*.16)*sourceDepth;
+    const channel=bed+(crest-bed)*smooth(c.width*.45,c.width+(tributary?8:14),c.distance);
     h=channel+(h-channel)*smooth(c.width+14,c.width+52,c.distance);
   }
   h=beforeChannel+(h-beforeChannel)*endFade*smooth(.85,1.06,r);
-  for(const f of LAGOON_FALLS){
-    const back=f.z-z,across=Math.abs(x-f.x),half=f.width*.5;
+  for(const [index,f] of LAGOON_FALLS.entries()){
+    const back=f.z-z,approach=LAGOON_CHANNELS[index].at(-2)!;
+    // The upstream throat follows the incoming bend, then meets the straight
+    // fall lip. A fixed X here used to dam the diagonal Ferragrís approach.
+    const centre=f.x+(approach.x-f.x)*clamp(back/(f.z-approach.z));
+    const across=Math.abs(x-centre),half=f.width*.5;
     const lip=smooth(-4,0,back)*(1-smooth(18,36,back))*(1-smooth(half+8,half+22,across));
     if(lip>0){
       const level=Math.max(f.top,c.level),bed=level-3.5;
@@ -116,7 +130,7 @@ export function applyLagoonRelief(x:number,z:number,base:number):number{
       h+=(bank-h)*lip;
     }
   }
-  for(const spring of LAGOON_SPRINGS){
+  for(const spring of LAGOON_SPRINGS.filter(s=>s.kind==='aquifer')){
     const dx=x-spring.x,dz=z-spring.z,d=Math.hypot(dx,dz);
     const behind=-(dx*spring.dx+dz*spring.dz);
     if(behind>0&&d<spring.width+55){
@@ -132,7 +146,10 @@ export function applyLagoonRelief(x:number,z:number,base:number):number{
   if(mouth<26)h+=(Math.min(h,10)-h)*(1-smooth(12,26,mouth));
   // The regional bounding box is a CPU shortcut, not a visible cliff. Blend
   // back to the original surface before reaching any of its four boundaries.
-  const boundary=Math.min(x+820,170-x,z+1580,-315-z);
+  // Restore the upland lake's level bed after nearby rills carve their junction.
+  const highLake=headwaterLakeRadius(x,z);
+  if(highLake<.94)h=Math.min(h,HEADWATER_LAKE.level-HEADWATER_LAKE.depth*(1-smooth(.35,1,highLake)));
+  const boundary=Math.min(x+1040,300-x,z+1890,-315-z);
   return base+(h-base)*smooth(0,24,boundary);
 }
 

@@ -9,6 +9,8 @@ const {nearTerrainHeightAt}=require('../.test-build/world/terrainLod.js');
 const {MAIN_RIVER,LAKE_ISLANDS,LAKE_RESERVATIONS,WATERFALL,bridgeDeckAt,isInlandWater,riverSample,waterSurfaceAt}=require('../.test-build/world/geographicFeatures.js');
 const {POINTS_OF_INTEREST}=require('../.test-build/world/pointsOfInterest.js');
 const {mapPercent}=require('../.test-build/world/mapProjection.js');
+const {createBridgeRoutes,bridgeSurfaceAt}=require('../.test-build/world/mountainRoutes.js');
+const mountainBridges=createBridgeRoutes((x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight));
 
 for(let i=1;i<MAIN_RIVER.length;i++)assert.ok(MAIN_RIVER[i].level<=MAIN_RIVER[i-1].level,'river never flows uphill');
 for(let i=1;i<MAIN_RIVER.length;i++){
@@ -44,11 +46,16 @@ for(const route of ROAD_RESERVATIONS.filter(r=>r.existing)){
     const count=Math.ceil(Math.hypot(bx-ax,bz-az)/5);
     for(let j=0;j<=count;j++){
       const t=j/count,x=ax+(bx-ax)*t,z=az+(bz-az)*t;
-      assert.ok(!isInlandWater(x,z,sampleMainlandHeight(x,z)),`route ${route.name} remains dry or bridged`);
+      const bridge=bridgeSurfaceAt(mountainBridges,x,z);
+      assert.ok(!isInlandWater(x,z,sampleMainlandHeight(x,z))||
+        bridge&&bridge.height>(waterSurfaceAt(x,z)?.level??-Infinity),
+        `route ${route.name} remains dry or bridged (${x}, ${z})`);
     }
   }
 }
-assert.equal(new Set(POINTS_OF_INTEREST.map(p=>p.id)).size,6,'POI ids are unique');
+assert.equal(new Set(POINTS_OF_INTEREST.map(p=>p.id)).size,POINTS_OF_INTEREST.length,'POI ids are unique');
+assert.ok(POINTS_OF_INTEREST.some(p=>p.id==='bosque-ilustrado'),'forest reachable from map');
+assert.ok(POINTS_OF_INTEREST.some(p=>p.id==='pradera-florida-v4'),'flower meadow reachable from map');
 for(const place of POINTS_OF_INTEREST){
   assert.ok(isLand(place.x,place.z)&&!isInlandWater(place.x,place.z,sampleMainlandHeight(place.x,place.z)),`${place.name} has a dry approach`);
   const mapped=mapPercent(place.x,place.z);
@@ -57,6 +64,19 @@ for(const place of POINTS_OF_INTEREST){
 
 const engine=new NullEngine(),scene=new Scene(engine),root=new TransformNode('continent',scene);
 const stream=new GeographyStream(scene,root);
+function advanceUntil(done,label){
+  for(let i=0;i<20000&&!done();i++)stream.update();
+  assert.ok(done(),label);
+}
+function singleBuildSlice(){
+  const descriptor=Object.getOwnPropertyDescriptor(performance,'now');
+  let clock=0;
+  Object.defineProperty(performance,'now',{configurable:true,value:()=>clock+=5});
+  try{stream.update();}finally{
+    if(descriptor)Object.defineProperty(performance,'now',descriptor);
+    else delete performance.now;
+  }
+}
 const calm=sampleRiverFlow(335,-255,'lake');
 assert.equal(Math.hypot(calm.directionX,calm.directionZ),0,'Nácar stays still');
 assert.equal(calm.velocity,0,'lake has no river current');
@@ -93,7 +113,9 @@ assert.equal(visualWaterSurfaceAt(475,-1014,sampleMainlandHeight(475,-1014)),nul
   'the visual bank does not extend beyond the limited apron');
 assert.equal(visualWaterSurfaceAt(490,-1204,sampleMainlandHeight(490,-1204)),null,
   'the river does not flood terrain far from its channel');
-for(const [wetX,dryX,z] of [[430,420,-1703],[430,410,-1626]]){
+// The rounded northern substrate puts this bank near X=438; X=430 is
+// already above water. Exercise the wet apron and the first dry bank.
+for(const [wetX,dryX,z] of [[440,430,-1703],[430,410,-1626]]){
   assert.equal(waterSurfaceAt(wetX,z),null,'the canonical narrow channel is preserved');
   const visible=visualWaterSurfaceAt(wetX,z,sampleMainlandHeight(wetX,z));
   assert.ok(visible&&visible.level>sampleMainlandHeight(wetX,z)+.05,
@@ -126,7 +148,13 @@ for(const z of [-1152,-1146,-1143,-1140]){
 assert.equal(stream.activeCount,0,'no water chunks are generated at startup');
 const cells=[{cx:6,cz:-15},{cx:7,cz:-15},{cx:6,cz:-14},{cx:7,cz:-14}];
 stream.setActiveChunks(cells,504,-1000);
-for(let i=0;i<cells.length;i++)stream.update();
+singleBuildSlice();
+assert.equal(stream.activeCount,0,'a partial build does not publish incomplete geometry');
+const building=stream.activeBuild.steps;
+stream.setActiveChunks(cells,504,-1000);
+assert.equal(stream.activeBuild.steps,building,'repeated focus updates preserve in-progress work');
+advanceUntil(()=>cells.every(c=>scene.getMeshByName(`agua-chunk-${c.cx}-${c.cz}`)),
+  'near water completes over multiple frames');
 const a=scene.getMeshByName('agua-chunk-6--14'),b=scene.getMeshByName('agua-chunk-7--14');
 assert.ok(a&&b,'water crosses two streamed terrain cells');
 const waterfall=scene.getMeshByName('auralia-waterfall');
@@ -135,6 +163,7 @@ assert.equal(scene.meshes.filter(mesh=>mesh.metadata?.waterfall).length,1,'exact
 assert.equal(waterfall.material.needAlphaBlending(),false,'the waterfall keeps the opaque depth-writing water model');
 assert.ok(a.material instanceof ShaderMaterial,'inland water uses the river shader');
 assert.equal(a.material.needAlphaBlending(),false,'inland water hides the ocean beneath it');
+assert.ok(a.getVerticesData(VertexBuffer.UVKind).length>0,'inland water provides UVs to the Water Lab shader');
 assert.ok(a.getVerticesData(VertexBuffer.UV2Kind).some(value=>Math.abs(value)>.01),'river mesh carries flow direction');
 const waterNormals=a.getVerticesData(VertexBuffer.NormalKind);
 assert.ok(waterNormals.every((value,index)=>index%3!==1||value>0),'river surface normals face the sky');
@@ -230,8 +259,8 @@ for(const [z,y] of left)if(right.has(z)){
 assert.ok(common>0,'both cells have a shared water border');
 const nearVertices=a.getTotalVertices();
 stream.setActiveChunks([],504,-1000);
-for(let i=0;i<20&&(!scene.getMeshByName('agua-far-chunk-7--14')||
-  !scene.getMeshByName('agua-far-chunk-6--15'));i++)stream.update();
+advanceUntil(()=>scene.getMeshByName('agua-far-chunk-7--14')&&
+  scene.getMeshByName('agua-far-chunk-6--15'),'far replacement completes');
 const coarse=scene.meshes.find(mesh=>mesh.metadata?.waterLod==='far');
 assert.ok(coarse&&coarse.getTotalVertices()<nearVertices,'distant river keeps a lower resolution water mesh');
 const farNeighbor=scene.getMeshByName('agua-far-chunk-7--14');
@@ -250,7 +279,11 @@ for(const z of [WATERFALL_CUT.minZ,WATERFALL_CUT.maxZ]){
   assert.ok(matches>0,'far river has a populated waterfall connection');
 }
 stream.setActiveChunks([{cx:6,cz:-14}],504,-1000);
-stream.update();
+const oldLod=scene.getMeshByName('agua-far-chunk-6--14');
+singleBuildSlice();
+assert.ok(oldLod&&!oldLod.isDisposed(),'old water remains visible during partial LOD replacement');
+advanceUntil(()=>scene.getMeshByName('agua-chunk-6--14'),'near LOD replaces far water');
+assert.ok(oldLod.isDisposed(),'old water is released only after its replacement is ready');
 let lodBorder=0;
 for(const [z,y] of edge(scene.getMeshByName('agua-chunk-6--14'))){
   const other=edge(farNeighbor).get(z);
@@ -262,9 +295,17 @@ assert.equal(stream.activeCount+stream.farActiveCount,0,'water chunks are releas
 assert.equal(scene.getMeshByName('auralia-waterfall'),null,'the waterfall mesh is released outside coverage');
 assert.equal(scene.getMaterialByName('auralia-waterfall-material'),null,'the waterfall material is released outside coverage');
 stream.setActiveChunks([{cx:4,cz:-4}],335,-255);
-stream.update();
+singleBuildSlice();
+const cancelled=stream.activeBuild.steps;
+stream.setActiveChunks([],3000,3000);
+assert.equal(stream.activeBuild,null,'moving away releases the partial water build');
+assert.equal(cancelled.next().done,true,'cancelled builds cannot publish obsolete meshes');
+assert.equal(stream.activeCount+stream.farActiveCount,0);
+stream.setActiveChunks([{cx:4,cz:-4}],335,-255);
+advanceUntil(()=>scene.getMeshByName('agua-chunk-4--4'),'lake water completes');
 const nacar=scene.getMeshByName('agua-chunk-4--4');
 assert.ok(nacar,'Nácar water is streamed in its existing chunk');
+assert.equal(nacar.material.name,'water_pool','Nacar uses the Water Lab pool profile');
 const lakePositions=nacar.getVerticesData(VertexBuffer.PositionKind),lakeColors=nacar.getVerticesData(VertexBuffer.ColorKind);
 for(let i=0;i<lakePositions.length;i+=3){
   if(sampleMainlandHeight(lakePositions[i],lakePositions[i+2])>=LAKE_RESERVATIONS[0].level){
@@ -274,7 +315,7 @@ for(let i=0;i<lakePositions.length;i+=3){
   }
 }
 stream.setActiveChunks([{cx:5,cz:-23}],430,-1626);
-stream.update();
+advanceUntil(()=>scene.getMeshByName('agua-chunk-5--23'),'upper river water completes');
 const upperMesh=scene.getMeshByName('agua-chunk-5--23');
 assert.ok(upperMesh,'the expanded upper bank is streamed across the adjacent chunk');
 const upperPositions=upperMesh.getVerticesData(VertexBuffer.PositionKind);
@@ -283,7 +324,8 @@ assert.ok(upperPositions.some((_,i)=>i%3===0&&upperPositions[i]>429&&upperPositi
   upperPositions[i+1]>sampleMainlandHeight(upperPositions[i],upperPositions[i+2])+.2),
   'the visible upper river reaches the valley bank');
 stream.setActiveChunks([{cx:7,cz:-17},{cx:7,cz:-16}],536,-1152);
-stream.update();stream.update();
+advanceUntil(()=>scene.getMeshByName('agua-chunk-7--17')&&
+  scene.getMeshByName('agua-chunk-7--16'),'bank water completes');
 let dryBankVertices=0;
 for(const mesh of [scene.getMeshByName('agua-chunk-7--17'),scene.getMeshByName('agua-chunk-7--16')]){
   assert.ok(mesh,'river bank chunks are streamed near the reported edge');
@@ -301,15 +343,29 @@ for(const mesh of [scene.getMeshByName('agua-chunk-7--17'),scene.getMeshByName('
 }
 assert.ok(dryBankVertices>0,'reported river bank has dry shoreline vertices');
 const ocean=new OceanWater(scene);
-ocean.update(1/60,new Vector3(0,0,200));
+function settleOcean(position){
+  for(let i=0;i<2000;i++){
+    ocean.update(1/60,position);
+    if(!ocean.pendingPatch)return;
+  }
+  assert.fail('ocean mask finishes within a bounded number of updates');
+}
+settleOcean(new Vector3(0,0,200));
 const near=scene.getMeshByName('auralia-ocean-near'),far=scene.getMeshByName('auralia-ocean-far');
 assert.ok(near&&far&&near.material instanceof ShaderMaterial&&far.material instanceof ShaderMaterial,'ocean has distinct near and far shader surfaces');
 assert.notEqual(near.material,a.material,'ocean and river have separate materials');
-assert.ok(Effect.ShadersStore.auraliaOceanVertexShader.includes('gerstner'),'ocean uses Gerstner waves');
-assert.ok(!Effect.ShadersStore.auraliaRiverVertexShader.includes('gerstner'),'river has a separate motion model');
-assert.ok(!Effect.ShadersStore.auraliaRiverVertexShader.includes('verticalRipple'),'river normals animate without opening mesh gaps');
+const labShader=(profile,stage)=>{
+  const key=Object.keys(Effect.ShadersStore).find(name=>
+    name.startsWith(`auraliaWaterLabV4_${profile}_`)&&name.endsWith(`${stage}Shader`));
+  assert.ok(key,`${profile} uses the Water Lab v4 ${stage} shader`);
+  return Effect.ShadersStore[key];
+};
+assert.ok(labShader('ocean','Vertex').includes('patchFade'),'ocean waves fade at the near patch edge');
+assert.ok(labShader('river','Fragment').includes('vWorldWaterInfo'),'river shader reads the canonical bank mask');
+assert.ok(labShader('pool','Fragment').includes('waterfallImpact'),'lakes use the Water Lab pool profile');
+assert.ok(labShader('fall','Fragment').includes('collisionGapDebug'),'waterfall uses the Water Lab fall profile');
 assert.equal(near.position.z,192,'ocean near patch follows player in 32m blocks');
-ocean.update(1/60,new Vector3(335,0,-255));
+settleOcean(new Vector3(335,0,-255));
 const oceanPositions=near.getVerticesData(VertexBuffer.PositionKind),oceanColors=near.getVerticesData(VertexBuffer.ColorKind);
 let maskedLake=false;
 for(let i=0;i<oceanPositions.length;i+=3){
