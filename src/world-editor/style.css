@@ -1,0 +1,98 @@
+:root{font-family:Inter,'Segoe UI',system-ui,sans-serif;color:#e4e9db;background:#121b1a;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;overflow:hidden}button,input,select{font:inherit}button{cursor:pointer;color:inherit}
+#editor-app{display:flex;flex-direction:column;height:100vh;min-height:400px}
+.topbar{height:62px;flex-shrink:0;background:#152321;border-bottom:1px solid #344942;display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;letter-spacing:.18em;font-size:15px}.brand div{display:flex;flex-direction:column;gap:3px}.brand small{font-size:9px;color:#92b1a4;letter-spacing:.14em}.brand-emblem{font-size:27px;color:#b4d391}.top-actions{display:flex;align-items:center;gap:8px}
+.top-actions button,.inspector-sidebar button{border:1px solid #445a50;background:#223630;color:#d4e6d5;border-radius:5px;padding:8px 11px;font-size:12px}
+.top-actions button:hover,.inspector-sidebar button:hover{border-color:#b3cf98;background:#30473b}.top-actions .primary,.inspector-sidebar .primary{background:#92b378;border-color:#a0c48b;color:#12251a;font-weight:700}
+.separator{width:1px;height:22px;background:#496054;margin:0 6px}.workspace{display:grid;grid-template-columns:250px minmax(0,1fr) 302px;flex:1;min-height:0}
+.sidebar{background:#182522;overflow:auto;padding:16px;border-right:1px solid #344942}.inspector-sidebar{border-right:0;border-left:1px solid #344942}
+h2{font-size:11px;letter-spacing:.18em;color:#bfd1bb;font-weight:650;margin:2px 0 16px}h3{font-size:10px;letter-spacing:.12em;color:#a6c398;margin:0 0 12px}
+.tool-group{display:flex;flex-direction:column;gap:3px}.group-label{font-size:9px;color:#709487;letter-spacing:.14em;margin:15px 0 5px 5px}
+.tool{display:flex;align-items:center;gap:9px;text-align:left;border:1px solid transparent;border-radius:4px;background:transparent;color:#b8cdc2;padding:9px 11px;font-size:12px}.tool:first-letter{font-size:16px}
+.tool:hover{background:#283d36}.tool.active{background:#37553d;border-color:#60835b;color:#e3f4cf}
+.panel-block{border-top:1px solid #34463f;margin-top:18px;padding-top:16px}.panel-block label:not(.toggle){display:flex;justify-content:space-between;color:#c2d1c8;font-size:11px;margin-bottom:9px;gap:10px}.panel-block output{color:#b9e19b}
+input[type=range]{appearance:none;-webkit-appearance:none;width:100%;height:4px;background:#426355;outline:none;border-radius:4px;margin:0 0 20px}input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:12px;background:#b0d391;border-radius:50%;border:0}
+select,input[type=number],input[type=text],input[type=color]{background:#172620;border:1px solid #496153;border-radius:4px;color:#e2ebdc;padding:8px 9px;width:100%;font-size:12px}
+select:focus,input:focus{outline:1px solid #a5c38c}.subtle{font-size:11px;line-height:1.55;color:#94aca1;margin:10px 0}.toggle{display:flex;gap:8px;align-items:center;font-size:11px;color:#bac9bf;padding:5px 0;cursor:pointer}
+.viewport{position:relative;background:#243c3d;min-width:0;min-height:0;overflow:hidden}canvas{display:block;width:100%;height:100%;outline:none;touch-action:none;cursor:crosshair}
+.viewport-top,.viewport-bottom{pointer-events:none;position:absolute;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;color:#edf5e8;font-size:11px;text-shadow:0 1px 2px #14221b}
+.viewport-top{top:12px}.viewport-bottom{bottom:12px;font-family:Consolas,monospace;color:#d8ecd6;font-size:10px}.viewport-top span,.viewport-bottom span{padding:5px 8px;background:#142820b8;border-radius:4px}
+.toast{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:#15271fe6;color:#d7e6cd;padding:9px 15px;font-size:12px;border:1px solid #6d8968;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .15s}.toast.show{opacity:1}
+.palette{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.swatch{border:1px solid #4a6256;border-radius:5px;padding:8px 2px;background:#1e3029;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;color:#d2dfd2}
+.swatch.selected{outline:2px solid #b8dc9c}.swatch-color{width:30px;height:24px;border-radius:3px;border:1px solid #fff3}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}.field label{font-size:11px;color:#b8cbba}
+.inspector-subtitle{font-size:13px;font-weight:600;color:#dcedd7;margin-bottom:12px}.inspector-help{font-size:11px;line-height:1.55;color:#94aa9e;margin:10px 0 15px}
+.object-list{max-height:270px;overflow:auto}.object-row{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;border-bottom:1px solid #31473f;padding:8px 5px;font-size:11px}.object-row:hover,.object-row.selected{background:#345040}.object-row small{color:#a4bbab}
+.inspector-sidebar .danger{border-color:#925d5d;color:#f7b3ab}.inspector-actions{display:flex;gap:8px;margin:10px 0}.inspector-actions button{flex:1}
+input[type=color]{height:35px;padding:2px}code{color:#abd098;overflow-wrap:anywhere}
+@media(max-width:1100px){.workspace{grid-template-columns:205px minmax(0,1fr) 245px}.sidebar{padding:12px}.topbar{padding:0 10px}}
+@media(max-width:800px){.workspace{grid-template-columns:150px minmax(0,1fr) 195px}.top-actions button{font-size:10px;padding:6px}.brand{font-size:11px}.brand-emblem{display:none}}
+
+.top-actions .lab-link{color:#b6dfb1;text-decoration:none;border:1px solid #47685c;padding:8px 11px;border-radius:5px;font-size:12px;white-space:nowrap}.top-actions .lab-link:hover{background:#2a4b3b}
+.inspector-sidebar{scrollbar-color:#496455 transparent}.inspector-sidebar .field input[type=color]{height:36px}.tool-sidebar{scrollbar-color:#496455 transparent}
+@media(max-width:1200px){.lab-link{display:none}}
+
+/* Real 1K material previews, not just palette-color squares. */
+.swatch-material{width:45px;height:38px;background-size:cover;background-position:center;border:1px solid #d0dfc377;box-shadow:inset 0 0 0 1px #0008}
+.swatch:hover .swatch-material{filter:brightness(1.16)}
+
+/* World Editor v0.3 - compact waterfall authoring workflow. */
+.workspace{grid-template-columns:222px minmax(0,1fr) 350px}
+.sidebar[hidden], .panel-block[hidden]{display:none !important}
+.inspector-sidebar h2{margin-bottom:12px}
+.inspector-sidebar .field{min-width:0;margin-bottom:9px;gap:4px}
+.inspector-sidebar .field label{font-size:10px;color:#9db9aa;letter-spacing:.015em}
+.inspector-sidebar .field input{padding:7px 8px;font-variant-numeric:tabular-nums}
+.inspector-sidebar details{margin:9px 0;border:1px solid #355248;border-radius:6px;background:#162820;overflow:hidden}
+.inspector-sidebar details summary{cursor:pointer;padding:10px 12px;color:#c2dccc;font-weight:600;font-size:11px;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.inspector-sidebar details summary::after{content:'▸';color:#b0c897}
+.inspector-sidebar details[open] summary::after{content:'▾'}
+.inspector-sidebar details[open]{padding-bottom:10px}
+.inspector-sidebar details[open]>.field,.inspector-sidebar details[open]>.subtle,.inspector-sidebar details[open]>.toggle{margin:8px 12px}
+.inspector-sidebar details .fall-main-grid{padding:2px 10px 0}
+.fall-main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;align-items:start}
+.fall-main-grid .field:last-child:nth-child(odd){grid-column:span 2}
+.fall-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0 13px}
+.inspector-sidebar .fall-presets button{padding:9px 3px;font-size:11px}
+.fall-handles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:15px}
+.inspector-sidebar button.fall-handle{text-align:left;display:flex;gap:6px;align-items:center;padding:9px 7px;border-color:#4c6457;background:#1b3329;color:#c5dccc;font-size:10px}
+.inspector-sidebar button.fall-handle.active{border-color:#b3df97;background:#345343;box-shadow:0 0 0 1px #88b572}
+.fall-handle span{display:inline-flex;width:20px;height:20px;flex:0 0 20px;align-items:center;justify-content:center;border-radius:50%;color:#142824;font-weight:800;font-size:12px}
+.fall-handle-0 span{background:#b5ee99}.fall-handle-1 span{background:#70daf8}.fall-handle-2 span{background:#ffd17d}.fall-handle-3 span{background:#ff956f}
+.fall-quick-actions{display:flex;gap:6px;margin:6px 0 14px}
+.inspector-sidebar .fall-quick-actions button{flex:1;padding:9px 5px}
+.inspector-sidebar .fall-quick-actions button:first-child{background:#345845;border-color:#699e7b}
+.water-v4-title{font-size:10px;letter-spacing:.09em;color:#add2be;font-weight:700;margin:15px 0 7px;border-top:1px solid #345145;padding-top:13px}
+.interaction-tip{position:absolute;bottom:33px;left:50%;transform:translateX(-50%);background:#102a29e6;max-width:calc(100% - 30px);border:1px solid #52776d;border-radius:6px;padding:7px 10px;font-size:11px;color:#cce8db;pointer-events:none;text-align:center;white-space:normal}
+@media(max-width:1100px){.workspace{grid-template-columns:185px minmax(0,1fr) 300px}}
+@media(max-width:800px){.workspace{grid-template-columns:130px minmax(0,1fr) 270px}.fall-main-grid{grid-template-columns:1fr}.fall-main-grid .field:last-child:nth-child(odd){grid-column:auto}}
+
+/* AURALIA_XYZ_GIZMO_V4: manipulador X/Y/Z para cascadas. */
+.fall-axis-mode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0 11px}
+.inspector-sidebar .fall-axis-mode button{font-size:11px;padding:9px 7px}
+.inspector-sidebar .fall-axis-mode button.active{background:#3b5c48;border-color:#a7d98c;color:#ebffe1}
+.fall-axis-hint{font-size:11px;color:#b9cfbd;margin:6px 0 8px;line-height:1.45}
+.fall-xyz-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:6px 0 10px}
+.fall-xyz-inputs .field{min-width:0;margin:0}
+.fall-xyz-inputs .field input{width:100%;min-width:0;font-size:13px;font-weight:600}
+.fall-xyz-inputs .field:nth-child(1) label{color:#f48781}
+.fall-xyz-inputs .field:nth-child(2) label{color:#a8e98a}
+.fall-xyz-inputs .field:nth-child(3) label{color:#75c4ff}
+.fall-snap-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.fall-snap-row label{font-size:10px;color:#aac5af;white-space:nowrap}
+.fall-snap-row select{max-width:145px;flex:1;min-width:0}
+.fall-axis-help{font-size:10px;color:#93b0a0;line-height:1.5;margin:5px 0 11px}
+
+/* AURALIA_WATER_JOIN_V5 - river/waterfall continuity controls. */
+.fall-connection{border:1px solid #46645d;border-radius:7px;background:#1a302b;padding:11px;margin:9px 0 14px}
+.fall-connection.connected{border-color:#77a883;background:#203c2f}
+.fall-connection-title{font-size:11px;font-weight:700;letter-spacing:.04em;color:#d8efd5}
+.fall-connection p{font-size:10px;line-height:1.55;color:#a9c5ba;margin:7px 0 10px}
+.inspector-sidebar .fall-connection .fall-join-button{display:block;width:100%;font-size:12px;font-weight:700;padding:10px 8px;background:#345f46;border-color:#8fb494;color:#e9f8e7}
+.fall-connection.connected .fall-join-button{background:#253c33;color:#c5d8cd}
+
+/* AURALIA_MODULES_GRASS_V6 — módulos de 72m + paleta de césped anclado. */
+.module-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.module-two-cols .field{min-width:0}
+.module-two-cols input{width:100%;min-width:0}
+.module-clip-control{padding-top:10px;border-top:1px solid #3e5649;margin-top:10px}

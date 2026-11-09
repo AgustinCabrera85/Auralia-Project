@@ -28,7 +28,11 @@ La triangulación cercana y la superficie de colisión no cambian.
 | Intensidad de luz directa importada | 0,62 | `src/world/LandscapeAtmosphere.ts` |
 | Color multiplicador del acantilado | (0,74; 0,80; 0,69) | `src/world/LandscapeAtmosphere.ts` |
 
-Todos los sectores comparten un solo `TerrainMaterial` y sus texturas 1K.
+Todos los sectores comparten un solo material. La ruta activa es
+`TerrainStream → TerrainBiomeMaterial → BiomeTextureArrays`: fuentes de 1K
+con arrays de trabajo de 512 px y seis pesos por vértice (RGBA + UV).
+`TerrainMaterialV2` es el fallback para WebGL1, NullEngine, ausencia de
+`createImageBitmap` o selección explícita del material legacy.
 El shader usa coordenadas globales. Los sectores lejanos no reciben picking
 ni colisiones: la física y la altura siguen consultando la geografía canónica.
 

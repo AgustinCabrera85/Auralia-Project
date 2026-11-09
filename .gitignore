@@ -5,3 +5,17 @@ dist/
 .env
 .env.local
 .DS_Store
+
+# These are runtime dependencies, even when a local .git/info/exclude hides
+# authoring experiments. A clean checkout needs the genuine editor and world.
+!/src/world/editor/
+!/src/world/editor/**
+!/src/world-editor/
+!/src/world-editor/**
+!/world-editor.html
+!/public/world/auralia-world.json
+!/public/water-lab-v4.html
+!/public/assets/water/caustics-refractive-1k.png
+!/public/assets/water/waterfall-foam-plates-1k.png
+!/public/assets/terrain/snow_albedo_rough.webp
+!/public/assets/terrain/lava_albedo_rough.webp

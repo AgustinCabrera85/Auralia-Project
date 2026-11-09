@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auralia | World Editor</title>
+</head>
+<body>
+  <div id="editor-app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-emblem">✦</span><div><strong>AURALIA</strong><small>WORLD EDITOR · LOCAL</small></div></div>
+      <div class="top-actions">
+        <button id="undo" title="Deshacer (Ctrl+Z)">↶ Deshacer</button>
+        <button id="redo" title="Rehacer (Ctrl+Y)">↷ Rehacer</button>
+        <span class="separator"></span>
+        <a class="lab-link" href="/water-lab-v4.html" target="_blank" rel="noopener">Water Lab v4 ↗</a>
+        <button id="import">Importar JSON / Presets v4</button>
+        <button id="draft">Guardar borrador</button>
+        <button id="export" class="primary">Exportar mundo ↓</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden />
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar tool-sidebar">
+        <h2>HERRAMIENTAS</h2>
+        <div class="tool-group" id="tool-list">
+          <button class="tool active" data-tool="select">⌖ <span>Seleccionar / inspeccionar</span></button>
+          <div class="group-label">ESCULPIR</div>
+          <button class="tool" data-tool="raise">⬆ <span>Elevar terreno</span></button>
+          <button class="tool" data-tool="lower">⬇ <span>Hundir terreno</span></button>
+          <button class="tool" data-tool="flatten">▱ <span>Aplanar a nivel</span></button>
+          <button class="tool" data-tool="smooth">〰 <span>Suavizar relieve</span></button>
+          <div class="group-label">PINTAR</div>
+          <button class="tool" data-tool="surface">◈ <span>Capas de terreno</span></button>
+          <button class="tool" data-tool="grass">❧ <span>Césped procedural</span></button>
+          <div class="group-label">COLOCAR</div>
+          <button class="tool" data-tool="placeAsset">▥ <span>Asset GLB / Thin Instance</span></button>
+          <button class="tool" data-tool="placeWater">≋ <span>Superficie de agua</span></button>
+          <button class="tool" data-tool="waterPath">╱ <span>Extender río seleccionado</span></button>
+        </div>
+        <div class="panel-block" id="brush-panel">
+          <label for="radius">Radio del pincel <output id="radius-val">18 m</output></label>
+          <input id="radius" type="range" min="4" max="130" value="18" />
+          <label for="strength">Intensidad <output id="strength-val">70%</output></label>
+          <input id="strength" type="range" min="5" max="100" value="70" />
+          <p class="subtle">Botón izquierdo pinta/coloca · Derecho orbita · Rueda zoom · WASD desplaza · Shift acelera</p>
+        </div>
+        <div class="panel-block">
+          <h3>IR A REGIÓN</h3>
+          <select id="goto">
+            <option value="0,0">Brisalia</option>
+            <option value="-350,-285">Bosque de los Ecos</option>
+            <option value="-275,-535">Altapiedra</option>
+            <option value="245,-250">Orilla de Nácar</option>
+            <option value="200,-660">Altaluz</option>
+            <option value="501,-1004">Cascada del Valle</option>
+          </select>
+        </div>
+        <div class="panel-block">
+          <h3>VISUALIZACIÓN</h3>
+          <label class="toggle"><input id="showGrass" type="checkbox" checked /> Césped procedural</label>
+          <label class="toggle"><input id="showVegetation" type="checkbox" checked /> Vegetación existente</label>
+          <label class="toggle"><input id="showLegacyWater" type="checkbox" checked /> Agua original (referencia)</label>
+          <p class="subtle">El agua nueva usa los perfiles v4; el agua anterior se conserva hasta migrar su geometría.</p>
+        </div>
+      </aside>
+      <section class="viewport">
+        <canvas id="world-canvas"></canvas>
+        <div class="viewport-top"><span id="coords">X 0 · Z 0</span><span id="fps">— FPS</span></div>
+        <div id="toast" class="toast" role="status"></div>
+        <div id="interaction-tip" class="interaction-tip">Clic: seleccionar · Derecho: orbitar · Rueda: zoom · WASD: desplazar</div>
+        <div class="viewport-bottom"><span id="world-stats">Iniciando Babylon.js...</span><span>EDITOR v0.3 · Auralia Water Lab v4</span></div>
+      </section>
+      <aside class="sidebar inspector-sidebar">
+        <h2>INSPECTOR</h2>
+        <div id="tool-inspector"></div>
+        <div class="panel-block">
+          <h3>OBJETOS EDITADOS</h3>
+          <div id="world-objects" class="object-list"></div>
+        </div>
+        <div class="panel-block">
+          <h3>AYUDA</h3>
+          <p class="subtle">Guardá un borrador en este navegador o exportá el JSON y copialo a <code>public/world/auralia-world.json</code> para usarlo en el juego.</p>
+          <p class="subtle">Los recursos recolectables no se instancian: requieren una lógica individual.</p>
+        </div>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="/src/world-editor/index.ts"></script>
+</body>
+</html>
