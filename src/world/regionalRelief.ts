@@ -49,9 +49,15 @@ export function applyRegionalRelief(x:number,z:number,base:number,roadMask:numbe
 
   let height=base;
   for(const feature of FAROLES_RELIEF.features){
-    const radius=Math.hypot((x-feature.x)/feature.radiusX,(z-feature.z)/feature.radiusZ);
+    const u=(x-feature.x)/feature.radiusX,v=(z-feature.z)/feature.radiusZ;
+    // Keep the plateau's buildable crown; break up only hill outlines and
+    // flanks with broad asymmetric lobes, not noisy one-triangle spikes.
+    const radius=feature.kind==='ridge'
+      ?Math.hypot(u+.13*Math.sin(v*3.2),v+.09*Math.sin(u*4.1))
+      :Math.hypot(u,v);
     const influence=(1-smooth(feature.inner,feature.outer,radius))*feature.strength;
-    if(feature.kind==='ridge')height+=feature.height*influence;
+    if(feature.kind==='ridge')height+=feature.height*influence*
+      (.86+.14*Math.cos(u*5+v*2));
     else height+=(feature.height-height)*influence;
   }
   const gorge=FAROLES_RELIEF.gorge;

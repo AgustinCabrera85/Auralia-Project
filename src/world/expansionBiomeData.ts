@@ -1,7 +1,9 @@
 import { EXPANSION_V3_ASSETS, type ExpansionV3Id } from './expansionV3Catalog';
+import { CASCADE_LAGOON, GROTTO_PORTALS, lagoonRadius } from './lagoonData';
 import { getWorldDocument, type PlacedAsset } from './editor/WorldEditState';
 import { insideFoliageForest } from './foliageForestConfig';
 import { geologyFaceExcludes } from './geologyData';
+import { mountainTrailExcludes } from './mountainTrailData';
 import { LAKE_RESERVATIONS, LAGOONS, MAIN_RIVER, waterSurfaceAt } from './geographicFeatures';
 import { biomeWeightsAt, geographyMasks, hash01, isStarterArea, LANDMARKS,
   MAINLAND, sampleMainlandHeight } from './terrainData';
@@ -30,7 +32,10 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
   const result:PlacedAsset[]=[],trees:{x:number;z:number;radius:number}[]=[];
   const protectedAssets=existing.filter(p=>(p.collisionRadius??0)>0);
   const clear=(x:number,z:number,radius:number):boolean=>
-    !isStarterArea(x,z)&&!insideFoliageForest(x,z)&&!geologyFaceExcludes(x,z)&&
+    !mountainTrailExcludes(x,z,radius)&&
+    GROTTO_PORTALS.every(p=>Math.hypot(x-p.x,z-p.z)>10+radius)&&
+    !isStarterArea(x,z)&&!insideFoliageForest(x,z)&&
+    (lagoonRadius(x,z)<1.6||!geologyFaceExcludes(x,z))&&
     geographyMasks(x,z).road<.45&&
     LANDMARKS.every(p=>Math.hypot(x-p.x,z-p.z)>24+radius)&&
     protectedAssets.every(p=>Math.hypot(x-p.x,z-p.z)>(p.collisionRadius??0)*p.scale+radius+2);
@@ -38,8 +43,9 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
     sampleMainlandHeight(x+2,z)-sampleMainlandHeight(x-2,z),
     sampleMainlandHeight(x,z+2)-sampleMainlandHeight(x,z-2))/4;
   const add=(id:ExpansionV3Id,x:number,z:number,seed:number,tree=false):boolean=>{
-    const scale=(.87+hash01(seed,172,27)*.26)*(tree?1.4:1);
-    const spread=tree?7.5*scale:1.8*scale;
+    const lagoon=Math.hypot(x-CASCADE_LAGOON.x,z-CASCADE_LAGOON.z)<245;
+    const scale=(.87+hash01(seed,172,27)*.26)*(tree?(lagoon?2.05:1.4):(lagoon?1.35:1));
+    const spread=tree?(lagoon?5.5:7.5)*scale:1.8*scale;
     if(!clear(x,z,spread))return false;
     const h=sampleMainlandHeight(x,z),water=waterSurfaceAt(x,z);
     const catalog=EXPANSION_V3_ASSETS[id];
@@ -52,13 +58,14 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
           sampleMainlandHeight(x+dx,z+dz)>water.level-.12)return false;
       }
     }else{
-      if(h<MAINLAND.waterLevel+.18||slope(x,z)>(tree?.30:.24))return false;
+      if(h<MAINLAND.waterLevel+.18||slope(x,z)>(tree?(lagoon?.48:.30):.24))return false;
       // Reeds tolerate damp soil; dry flowers/trees keep their roots out of deep water.
       if(water&&h<water.level+(tree?.65:-.45))return false;
       if(tree){
-        if(h>55||trees.some(p=>Math.hypot(x-p.x,z-p.z)<p.radius+spread))return false;
-        if([[spread,0],[-spread,0],[0,spread],[0,-spread]].some(([dx,dz])=>
-          Math.abs(sampleMainlandHeight(x+dx,z+dz)-h)>2.6))return false;
+        if(h>(lagoon?85:55)||trees.some(p=>Math.hypot(x-p.x,z-p.z)<p.radius+spread))return false;
+        const rootRadius=lagoon?2.2:spread;
+        if([[rootRadius,0],[-rootRadius,0],[0,rootRadius],[0,-rootRadius]].some(([dx,dz])=>
+          Math.abs(sampleMainlandHeight(x+dx,z+dz)-h)>(lagoon?1.15:2.6)))return false;
         trees.push({x,z,radius:spread});
       }
     }
@@ -76,10 +83,11 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
     if(w.valle+w.ecos+w.nacar<.55)continue;
     add(choose(grove.family==='cherry'?cherry:jacaranda,seed),x,z,seed,true);
   }
-  for(const [b,basin] of [...LAKE_RESERVATIONS,...LAGOONS].entries()){
-    for(let i=0;i<96;i++){
+  for(const [b,basin] of [...LAKE_RESERVATIONS,...LAGOONS,CASCADE_LAGOON].entries()){
+    const count=basin===CASCADE_LAGOON?240:96;
+    for(let i=0;i<count;i++){
       const seed=20000+b*1000+i*6;
-      const angle=(i+hash01(i,b,712)*.7)/96*Math.PI*2;
+      const angle=(i+hash01(i,b,712)*.7)/count*Math.PI*2;
       // Find this bank's actual waterline, including terrain edits and protected islands.
       let lo=.60,hi=1.16;
       for(let j=0;j<10;j++){
@@ -101,6 +109,14 @@ export function expansionBiomeAssets(existing:readonly PlacedAsset[]=[]):PlacedA
         const radial=bank+12/Math.min(basin.radiusX,basin.radiusZ);
         add(choose(banks,seed+3),basin.x+Math.cos(angle)*basin.radiusX*radial,
           basin.z+Math.sin(angle)*basin.radiusZ*radial,seed+3,true);
+      }
+      if(basin===CASCADE_LAGOON){
+        for(let ring=0;ring<3;ring++){
+          const radial=bank+.09+ring*.12+hash01(seed,81,3)*.10;
+          const treeSeed=seed+8000+ring*100000;
+          add(choose(banks,treeSeed),basin.x+Math.cos(angle)*basin.radiusX*radial,
+            basin.z+Math.sin(angle)*basin.radiusZ*radial,treeSeed,true);
+        }
       }
       // Discrete floating colonies leave the lake centre and navigation routes open.
       if(i%4<2){

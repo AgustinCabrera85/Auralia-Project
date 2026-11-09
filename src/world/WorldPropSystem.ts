@@ -58,6 +58,9 @@ export class WorldPropSystem {
   get activeCrystalCount():number{return this.resources.size;}
   get sharedAssetCount():number{return this.sources.size;}
   get activeRockColliderCount():number{return this.rockColliders.activeColliderCount;}
+  waterContacts(x:number,z:number,waterAt:(x:number,z:number)=>number|null){
+    return this.rockColliders.waterContacts(x,z,waterAt);
+  }
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,private readonly store:GameStore,
     private readonly exclusions:()=>readonly VegetationExclusion[],private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){

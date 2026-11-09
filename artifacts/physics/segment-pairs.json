@@ -1,0 +1,207 @@
+{
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "node": "v22.12.0",
+  "conditions": "Capsule snapshot, 2 warmups + 10 measurements, 0.1 m radius, identical contacts asserted",
+  "results": [
+    {
+      "n": 10,
+      "layout": "sparse",
+      "index": false,
+      "potential": 45,
+      "tests": 45,
+      "contacts": 0,
+      "medianMs": 0.11280000000000001,
+      "p95Ms": 0.5652000000000044
+    },
+    {
+      "n": 10,
+      "layout": "sparse",
+      "index": true,
+      "potential": 45,
+      "tests": 0,
+      "contacts": 0,
+      "medianMs": 0.02740000000000009,
+      "p95Ms": 0.035899999999998045
+    },
+    {
+      "n": 10,
+      "layout": "dense",
+      "index": false,
+      "potential": 45,
+      "tests": 45,
+      "contacts": 43,
+      "medianMs": 0.060700000000004195,
+      "p95Ms": 0.27830000000000155
+    },
+    {
+      "n": 10,
+      "layout": "dense",
+      "index": true,
+      "potential": 45,
+      "tests": 44,
+      "contacts": 43,
+      "medianMs": 0.19829999999999615,
+      "p95Ms": 0.5486000000000004
+    },
+    {
+      "n": 100,
+      "layout": "sparse",
+      "index": false,
+      "potential": 4950,
+      "tests": 4950,
+      "contacts": 0,
+      "medianMs": 3.39759999999999,
+      "p95Ms": 5.123900000000006
+    },
+    {
+      "n": 100,
+      "layout": "sparse",
+      "index": true,
+      "potential": 4950,
+      "tests": 0,
+      "contacts": 0,
+      "medianMs": 0.19499999999999318,
+      "p95Ms": 0.4543999999999926
+    },
+    {
+      "n": 100,
+      "layout": "dense",
+      "index": false,
+      "potential": 4950,
+      "tests": 4950,
+      "contacts": 4799,
+      "medianMs": 3.5775000000000006,
+      "p95Ms": 5.088599999999985
+    },
+    {
+      "n": 100,
+      "layout": "dense",
+      "index": true,
+      "potential": 4950,
+      "tests": 4908,
+      "contacts": 4799,
+      "medianMs": 3.0722000000000094,
+      "p95Ms": 3.7142000000000053
+    },
+    {
+      "n": 500,
+      "layout": "sparse",
+      "index": false,
+      "potential": 124750,
+      "tests": 124750,
+      "contacts": 0,
+      "medianMs": 59.1644,
+      "p95Ms": 63.77529999999996
+    },
+    {
+      "n": 500,
+      "layout": "sparse",
+      "index": true,
+      "potential": 124750,
+      "tests": 0,
+      "contacts": 0,
+      "medianMs": 1.0644999999999527,
+      "p95Ms": 1.6346999999999525
+    },
+    {
+      "n": 500,
+      "layout": "dense",
+      "index": false,
+      "potential": 124750,
+      "tests": 124750,
+      "contacts": 121091,
+      "medianMs": 75.41519999999991,
+      "p95Ms": 145.8795
+    },
+    {
+      "n": 500,
+      "layout": "dense",
+      "index": true,
+      "potential": 124750,
+      "tests": 123791,
+      "contacts": 121091,
+      "medianMs": 88.89760000000024,
+      "p95Ms": 103.51900000000023
+    },
+    {
+      "n": 1000,
+      "layout": "sparse",
+      "index": false,
+      "potential": 499500,
+      "tests": 499500,
+      "contacts": 0,
+      "medianMs": 222.92069999999967,
+      "p95Ms": 253.95050000000037
+    },
+    {
+      "n": 1000,
+      "layout": "sparse",
+      "index": true,
+      "potential": 499500,
+      "tests": 0,
+      "contacts": 0,
+      "medianMs": 1.5485000000007858,
+      "p95Ms": 2.442500000000109
+    },
+    {
+      "n": 1000,
+      "layout": "dense",
+      "index": false,
+      "potential": 499500,
+      "tests": 499500,
+      "contacts": 484733,
+      "medianMs": 258.47370000000046,
+      "p95Ms": 282.03529999999955
+    },
+    {
+      "n": 1000,
+      "layout": "dense",
+      "index": true,
+      "potential": 499500,
+      "tests": 495583,
+      "contacts": 484733,
+      "medianMs": 389.4310000000005,
+      "p95Ms": 418.03700000000026
+    },
+    {
+      "n": 2000,
+      "layout": "sparse",
+      "index": false,
+      "potential": 1999000,
+      "tests": 1999000,
+      "contacts": 0,
+      "medianMs": 920.9125000000022,
+      "p95Ms": 1089.826799999999
+    },
+    {
+      "n": 2000,
+      "layout": "sparse",
+      "index": true,
+      "potential": 1999000,
+      "tests": 0,
+      "contacts": 0,
+      "medianMs": 4.261000000002241,
+      "p95Ms": 6.356700000000274
+    },
+    {
+      "n": 2000,
+      "layout": "dense",
+      "index": false,
+      "potential": 1999000,
+      "tests": 1999000,
+      "contacts": 1939659,
+      "medianMs": 1057.6460000000006,
+      "p95Ms": 1204.1849000000002
+    },
+    {
+      "n": 2000,
+      "layout": "dense",
+      "index": true,
+      "potential": 1999000,
+      "tests": 1983063,
+      "contacts": 1939659,
+      "medianMs": 1718.279300000002,
+      "p95Ms": 2168.6034
+    }
+  ]
+}

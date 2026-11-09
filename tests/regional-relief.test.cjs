@@ -9,6 +9,7 @@ const {CharacterTraversalController}=require('../.test-build/game/CharacterTrave
 const {slopeAllowed}=require('../.test-build/game/traversalRules.js');
 const {LocalStorageSaveRepository}=require('../.test-build/persistence/SaveRepository.js');
 const {newGame}=require('../.test-build/domain/types.js');
+const {applyLagoonRelief,lagoonWaterAt}=require('../.test-build/world/lagoonData.js');
 const height=(x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight);
 const near=(a,b,eps=1e-8)=>assert.ok(Math.abs(a-b)<eps,`${a} != ${b}`);
 
@@ -18,6 +19,14 @@ for(const group of ['anchors','roads','core','outside'])for(const p of baseline[
   // redesign. All inhabited/water/geology/forest reference points stay exact.
   if(group==='outside'&&((p.x===-1200||p.x===1000)&&p.z===-1000)){
     assert.ok(sampleMainlandHeight(p.x,p.z)>p.height+25,'outer landscape gains substantial relief');
+    continue;
+  }
+  // The new watershed intentionally crosses this former dry road. Its bridge
+  // support is tested separately; all other historic heights stay exact.
+  const watershed=applyLagoonRelief(p.x,p.z,p.height);
+  if(Math.abs(watershed-p.height)>.00001){
+    near(sampleMainlandHeight(p.x,p.z),watershed);
+    if(lagoonWaterAt(p.x,p.z))assert.ok(Number.isFinite(height(p.x,p.z)));
     continue;
   }
   near(sampleMainlandHeight(p.x,p.z),p.height);

@@ -1,9 +1,10 @@
 import { Engine, EngineInstrumentation, Scene, SceneInstrumentation } from '@babylonjs/core';
+import type { DynamicsMetrics } from '../physics/ChainDynamics';
 import { PHASE_LABELS, T, TELEMETRY_COLUMNS, TELEMETRY_PHASES, TelemetryHistory, TelemetryMemoryHistory,
   type TelemetryPhase } from './telemetryData';
 
 export type TelemetryWorldStats={zone:string;near:number;mid:number;far:number;
-  vegetation:number;vegetationLod:number;grass:number;grassSectors:number};
+  vegetation:number;vegetationLod:number;grass:number;grassSectors:number;secondaryDynamics?:DynamicsMetrics};
 type BrowserEvent={timeMs:number;kind:'resource'|'longtask';label:string;durationMs:number};
 const ms=(value:number):string=>value.toFixed(1)+' ms';
 
@@ -203,6 +204,8 @@ export class GameTelemetry {
       `Terreno N/M/F ${world.near}/${world.mid}/${world.far} · cola ${pending(this.frame[T.pendingTerrain])}\n`+
       `Vegetación ${world.vegetation} (${world.vegetationLod} LOD)\n`+
       `Pasto ${world.grass} · sectores ${world.grassSectors}\n`+
+      (world.secondaryDynamics?`Cadenas ${world.secondaryDynamics.active} activas · ${world.secondaryDynamics.sleeping} dormidas · ${world.secondaryDynamics.culled} suspendidas\n`+
+        `Solver ${ms(world.secondaryDynamics.simulationMs)} · geometría ${ms(world.secondaryDynamics.reconstructionMs)} · contactos ${world.secondaryDynamics.contacts}\n`:'')+
       `Cargas Babylon pendientes ${pending(this.frame[T.pendingLoads])}`+
       (memory?` · JS ${(memory.usedJSHeapSize/1048576).toFixed(0)} MiB`:'')+
       `\nHistorial de memoria: ${this.memoryHistory.count} muestras (1/s, hasta 10 min)`+

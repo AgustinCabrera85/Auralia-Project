@@ -11,6 +11,7 @@ const {sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-buil
 const {waterSurfaceAt}=require('../.test-build/world/geographicFeatures.js');
 const {insideFoliageForest}=require('../.test-build/world/foliageForestConfig.js');
 const {configureExpansionV3Material}=require('../.test-build/world/LandscapeAtmosphere.js');
+const {mountainTrailExcludes}=require('../.test-build/world/mountainTrailData.js');
 
 const generated=expansionBiomeAssets();
 assert.deepEqual(generated,expansionBiomeAssets(),'reloads keep the same deterministic vegetation');
@@ -35,6 +36,8 @@ for(const p of generated){
   const catalog=EXPANSION_V3_ASSETS[p.assetId];
   assert.ok(!insideFoliageForest(p.x,p.z)&&!isStarterArea(p.x,p.z));
   assert.ok(geographyMasks(p.x,p.z).road<.45,'roads stay open');
+  assert.ok(!mountainTrailExcludes(p.x,p.z,(p.collisionRadius??0)*p.scale),
+    'mountain trails and bridge approaches stay clear of generated vegetation');
   if(catalog.surface==='water'){
     const water=waterSurfaceAt(p.x,p.z);
     assert.ok(water&&['lake','lagoon'].includes(water.kind));

@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict');
+require('./water-contacts.test.cjs');
 const fs=require('node:fs');
 const path=require('node:path');
 const {NullEngine,Scene,TransformNode,ImportMeshAsync,VertexBuffer}=require('@babylonjs/core');
@@ -42,10 +43,10 @@ assert.ok(rocksFromSeveralChunks.every(p=>Number.isInteger(p.partIndex)&&p.partI
 assert.ok(new Set(rocksFromSeveralChunks.map(p=>p.partIndex)).size>4,'varied independent parts are selected');
 assert.ok(rectangularRocks.length>0,'rectangular rocks belong to global formations');
 assert.ok(rectangularRocks.every(p=>p.pieceIndex>=0&&p.pieceIndex<21&&p.diameterMeters>=7.5&&p.worldHeight>2));
-assert.ok(GEOLOGY_COMPOSITIONS.every(c=>c.pieces.some(p=>
+assert.ok(GEOLOGY_COMPOSITIONS.filter(c=>!['sierra-plateau','sierra-canyon'].includes(c.formation.id)).every(c=>c.pieces.some(p=>
   (p.id.includes(':column:')||p.id.includes(':outcrop:'))&&
   p.kind==='formacionRocosa'&&p.worldHeight<20)),
-  'each rock formation uses low solid outcrops instead of monumental columns');
+  'retained rock formations use low solid outcrops instead of monumental columns');
 assert.equal(new Set(rectangularRocks.map(p=>p.id)).size,rectangularRocks.length,
   'global pieces keep unique stable IDs');
 const {nearTerrainHeightAt}=require('../.test-build/world/terrainLod.js');

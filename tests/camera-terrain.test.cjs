@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {cameraTerrainView,CAMERA_TERRAIN}=require('../.test-build/game/cameraTerrain.js');
+const {cameraTerrainView,CAMERA_TERRAIN,swimmingCameraOrbit}=require('../.test-build/game/cameraTerrain.js');
 
 const target={x:0,y:1.85,z:0};
 const back={x:1,y:0,z:0};
@@ -26,3 +26,10 @@ const repeated=cameraTerrainView({...target,y:sky.targetY},skyDirection,29,flat,
 assert.equal(repeated.targetY,sky.targetY,'the sky lift does not accumulate each frame');
 
 console.log('Camera terrain clearance checks passed');
+for(const depth of [1.3,2,5,12])for(const beta of [.4,.9,1.3,1.9]){
+  const y=24-depth,view=swimmingCameraOrbit(y,24,beta,20);
+  assert.ok(view.radius<=8,'swimming frames the player at a useful distance');
+  assert.ok(y+Math.cos(view.beta)*view.radius<=23.45+.001,'diving orbit cannot separate from the body across the surface');
+}
+assert.equal(swimmingCameraOrbit(23.6,24,1,11).beta,1,'surface swimming preserves the orbit');
+assert.equal(swimmingCameraOrbit(2,null,1,11).beta,1,'absent water never forces an underwater orbit');

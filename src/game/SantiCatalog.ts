@@ -46,6 +46,7 @@ export const SANTI_LOCOMOTION = {
   idle: 'Idle (1)',
   walk: 'Walking (6)',
   run: 'Run',
+  swim: 'Swimming (3)',
   uphillWalk: 'Ascending Stairs',
   uphillRun: 'Running Up Stairs',
   backward: 'Running Backward',

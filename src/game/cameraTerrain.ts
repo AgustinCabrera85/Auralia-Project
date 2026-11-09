@@ -1,5 +1,14 @@
 export type CameraPoint = {x:number;y:number;z:number};
 
+/** A diver's orbit follows the body, staying under the surface once submerged.
+ * Terrain clearance is still resolved separately along this orbit. */
+export function swimmingCameraOrbit(targetY:number,waterY:number|null,beta:number,radius:number){
+  const distance=Math.min(radius,8);
+  const submerged=waterY!==null&&targetY<waterY-1.2;
+  const surfaceBeta=submerged?Math.acos(Math.max(-1,Math.min(1,(waterY!-.55-targetY)/distance))):0;
+  return {radius:distance,beta:Math.max(beta,surfaceBeta),targetHeight:1.25};
+}
+
 export const CAMERA_TERRAIN = {
   minRadius:1.4,
   clearance:.85,

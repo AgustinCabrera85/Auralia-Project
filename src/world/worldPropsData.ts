@@ -1,6 +1,7 @@
 import { ASSET_CATALOG, type AssetId } from './assetCatalog';
 import { rockDiameterForPart, rockScaleForDiameter, selectRockPart } from './rockPackData';
 import { waterSurfaceAt } from './geographicFeatures';
+import { mountainRouteExcludes } from './mountainRoutes';
 import { geologyFaceExcludes } from './geologyData';
 import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isLand, isStarterArea,
   MAINLAND, sampleMainlandHeight, type Biome } from './terrainData';
@@ -70,7 +71,7 @@ export function propsForChunk(cx:number,cz:number,exclusions:readonly Vegetation
       const z=kind==='packRocas'
         ?clamp(anchorZ+Math.sin(angle)*distance,cz*MAINLAND.chunkSize+2,(cz+1)*MAINLAND.chunkSize-2)
         :(cz+hash01(cx,cz,seed+1))*MAINLAND.chunkSize;
-      if(!isLand(x,z)||isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z))continue;
+      if(!isLand(x,z)||isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z)||mountainRouteExcludes(x,z))continue;
       const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height,water=waterSurfaceAt(x,z);
       if(h<MAINLAND.waterLevel+.7||(water&&h<water.level+.8))continue;
       if(geographyMasks(x,z).road>PROP_CONFIG.roadMaskLimit)continue;

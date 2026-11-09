@@ -1,5 +1,6 @@
 import { InstancedMesh, Mesh, Ray, Scene, Vector3, VertexBuffer } from '@babylonjs/core';
 import type { VegetationKind, VegetationPlacement } from './vegetationData';
+import { SpatialHash } from '../physics/SpatialHash';
 
 const TREE_KINDS:readonly VegetationKind[]=['arbolito1','arbolito2','arbolito3','arbolitoSeco'];
 const ROOT_MAX_HEIGHT=1.15;
@@ -14,8 +15,15 @@ export class TreeColliderSystem {
   private readonly sources=new Map<VegetationKind,Mesh>();
   private readonly colliders=new Map<string,TreeCollider>();
   private readonly focusRadius=34;
+  private readonly index=new SpatialHash(8);
+  private readonly byId=new Map<number,TreeCollider>();
+  private readonly candidateIds:number[]=[];
+  private readonly candidateMeshes:InstancedMesh[]=[];
+  private readonly candidateEntries=new Map<InstancedMesh,TreeCollider>();
+  private readonly queryBounds={minX:0,maxX:0,minY:0,maxY:0,minZ:0,maxZ:0};
+  useSpatialIndex=true;
 
-  constructor(private readonly scene:Scene,
+  constructor(_scene:Scene,
     private readonly sourceFor:(kind:VegetationKind)=>Mesh|undefined){}
 
   private key(p:VegetationPlacement):string{return `${p.kind}:${p.x}:${p.z}`;}
@@ -63,20 +71,27 @@ export class TreeColliderSystem {
       instance.rotationQuaternion=null;instance.rotation.y=p.yaw;
       instance.scaling.setAll(p.scale);
       instance.isVisible=false;instance.isPickable=true;instance.checkCollisions=false;
-      this.colliders.set(id,{placement:p,instance,radius,trunkRadius});
+      const entry={placement:p,instance,radius,trunkRadius};
+      this.colliders.set(id,entry);this.byId.set(instance.uniqueId,entry);
+      this.index.upsert(instance.uniqueId,{minX:p.x-radius,maxX:p.x+radius,minY:0,maxY:0,minZ:p.z-radius,maxZ:p.z+radius});
     }
     for(const [id,entry] of this.colliders){
       if(desired.has(id))continue;
       entry.instance.dispose(false,false);
+      this.index.remove(entry.instance.uniqueId);this.byId.delete(entry.instance.uniqueId);
       this.colliders.delete(id);
     }
   }
 
   private nearby(x:number,z:number,reach=0):Map<InstancedMesh,TreeCollider>{
-    const result=new Map<InstancedMesh,TreeCollider>();
-    for(const entry of this.colliders.values()){
+    const result=this.candidateEntries;result.clear();this.candidateMeshes.length=0;
+    const b=this.queryBounds;b.minX=x-reach;b.maxX=x+reach;b.minZ=z-reach;b.maxZ=z+reach;
+    this.index.query(b,this.candidateIds,!this.useSpatialIndex);
+    for(const id of this.candidateIds){
+      const entry=this.byId.get(id)!;
       if(Math.hypot(entry.placement.x-x,entry.placement.z-z)>entry.radius+reach)continue;
       result.set(entry.instance,entry);
+      entry.instance.computeWorldMatrix();this.candidateMeshes.push(entry.instance);
     }
     return result;
   }
@@ -86,7 +101,7 @@ export class TreeColliderSystem {
     const candidates=this.nearby(x,z);
     if(!candidates.size)return null;
     const ray=new Ray(new Vector3(x,originY,z),Vector3.Down(),maxDistance);
-    const hits=this.scene.multiPickWithRay(ray,mesh=>candidates.has(mesh as InstancedMesh))??[];
+    const hits=ray.intersectsMeshes(this.candidateMeshes,false);
     for(const hit of hits.sort((a,b)=>a.distance-b.distance)){
       const entry=candidates.get(hit.pickedMesh as InstancedMesh);
       const point=hit.pickedPoint,normal=hit.getNormal(true);
@@ -105,7 +120,7 @@ export class TreeColliderSystem {
     const candidates=this.nearby(x,z,maxDistance);
     if(!candidates.size)return null;
     const ray=new Ray(new Vector3(x,y,z),new Vector3(nx,0,nz),maxDistance);
-    const hits=this.scene.multiPickWithRay(ray,mesh=>candidates.has(mesh as InstancedMesh))??[];
+    const hits=ray.intersectsMeshes(this.candidateMeshes,false);
     for(const hit of hits.sort((a,b)=>a.distance-b.distance)){
       const entry=candidates.get(hit.pickedMesh as InstancedMesh);
       const point=hit.pickedPoint,normal=hit.getNormal(true);
@@ -122,6 +137,7 @@ export class TreeColliderSystem {
   dispose():void{
     for(const entry of this.colliders.values())entry.instance.dispose(false,false);
     this.colliders.clear();
+    this.index.clear();this.byId.clear();this.candidateEntries.clear();this.candidateMeshes.length=0;this.candidateIds.length=0;
     for(const source of this.sources.values())source.dispose(false,false);
     this.sources.clear();
   }

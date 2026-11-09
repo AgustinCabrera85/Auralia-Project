@@ -1,9 +1,13 @@
 import { MAP_LOCATIONS, ZONES, type ZoneId } from '../data/world';
+import { REGIONS, regionAt } from '../world/RegionCatalog';
+import { BRIDGE_DEFINITIONS, TUNNEL_LINKS, TUNNEL_NODES } from '../world/mountainRoutes';
 import { GameStore, type Milestone } from '../domain/GameStore';
 import { BUILD_CATALOG, RECIPES, costAsText, hasCost } from '../domain/recipes';
 import { EQUIPMENT_IDS, ITEM_ICON, ITEM_LABEL, MATERIALS,
   type BuildType, type EquipmentId, type Structure } from '../domain/types';
-import { LANDMARKS } from '../world/terrainData';
+import { islandOutline, LANDMARKS } from '../world/terrainData';
+import { MAIN_RIVER, LAKE_RESERVATIONS, STREAMS } from '../world/geographicFeatures';
+import { LANDSCAPE_LANDFORMS } from '../world/landscapeRelief';
 import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
 import { mapPercent } from '../world/mapProjection';
 import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
@@ -290,6 +294,32 @@ export class Hud {
     const tabs=`<div class="map-tabs"><button data-map-view="regional" class="${this.mapView==='regional'?'current':''}">🧭 Mapa del terreno jugable</button><button data-map-view="illustrated" class="${this.mapView==='illustrated'?'current':''}">🗺️ Atlas ilustrado de Auralia</button></div>`;
     if(this.mapView==='regional'){
       const pos=this.projectPosition();
+      const region=regionAt(this.local.x,this.local.z);
+      const mapPoint=(x:number,z:number)=>{const p=mapPercent(x,z);return `${p.left},${p.top*.8}`;};
+      const coast=islandOutline(220).map(p=>mapPoint(p.x,p.z)).join(' ');
+      const palette=['#8da467','#839469','#386a58','#7f8174','#7c544a','#a7b4b5',
+        '#bd965d','#685a79','#538e8c','#397560','#a5a565','#6d929c'];
+      const territories=`<svg viewBox="0 0 100 80" style="display:block;width:100%;height:auto" role="img" aria-label="Territorios y conexiones de las Doce Coronas">
+        <defs><clipPath id="region-coast"><polygon points="${coast}"/></clipPath></defs>
+        <rect width="100" height="80" fill="#184455"/>
+        <polygon points="${coast}" fill="#829077" stroke="#e2ca8e" stroke-width=".55"/>
+        <g clip-path="url(#region-coast)">
+        ${REGIONS.map((r,i)=>`<polygon points="${r.polygon.map(p=>mapPoint(...p)).join(' ')}" fill="${palette[i]}" stroke="#f8e3ac" stroke-opacity=".5" stroke-width=".15"/>`).join('')}
+        ${LANDSCAPE_LANDFORMS.map(f=>{const p=mapPercent(f.x,f.z),edge=mapPercent(f.x+f.rx,f.z+f.rz);
+          return [1,.7,.4].map(scale=>`<ellipse cx="${p.left}" cy="${p.top*.8}" rx="${(edge.left-p.left)*scale}" ry="${(edge.top-p.top)*.8*scale}" fill="none" stroke="#ebe5cf" stroke-opacity=".22" stroke-width=".18"/>`).join('');}).join('')}
+        <polyline points="${MAIN_RIVER.map(p=>mapPoint(p.x,p.z)).join(' ')}" fill="none" stroke="#8fdae0" stroke-width=".6"/>
+        ${STREAMS.map(s=>`<polyline points="${s.points.map(p=>mapPoint(p.x,p.z)).join(' ')}" fill="none" stroke="#8fdae0" stroke-width=".25"/>`).join('')}
+        ${LAKE_RESERVATIONS.map(l=>{const p=mapPercent(l.x,l.z),edge=mapPercent(l.x+l.radiusX,l.z+l.radiusZ);
+          return `<ellipse cx="${p.left}" cy="${p.top*.8}" rx="${edge.left-p.left}" ry="${(edge.top-p.top)*.8}" fill="#4c9da9" stroke="#a8e5df" stroke-width=".2"/>`;}).join('')}
+        ${TUNNEL_LINKS.map(([a,b])=>`<polyline points="${mapPoint(TUNNEL_NODES[a].x,TUNNEL_NODES[a].z)} ${mapPoint(TUNNEL_NODES[b].x,TUNNEL_NODES[b].z)}" fill="none" stroke="#f4b54f" stroke-width=".35" stroke-dasharray=".6 .4"/>`).join('')}
+        ${BRIDGE_DEFINITIONS.map(b=>`<polyline points="${mapPoint(b.a.x,b.a.z)} ${mapPoint(b.b.x,b.b.z)}" stroke="#fff5d4" stroke-width=".6"/>`).join('')}
+        </g>
+        ${REGIONS.map(r=>`<text x="${mapPercent(...r.center).left}" y="${mapPercent(...r.center).top*.8-1.6}" text-anchor="middle" fill="#fff3cd" stroke="#233c40" stroke-width=".14" paint-order="stroke" font-size="1.45" font-family="Georgia,serif">${r.realm}<title>${r.name}</title></text>`).join('')}
+        <text x="4" y="6" font-family="Georgia,serif" font-size="3" fill="#f5dfaa">AURALIA</text>
+        <text x="4" y="8.4" font-size="1.25" fill="#cbe1da">Territorios y conexiones · en desarrollo</text>
+        <text x="94" y="6" text-anchor="middle" font-size="2" fill="#f5dfaa">N</text>
+        <path d="M94 7L93.2 10L94 9.5L94.8 10Z" fill="#f5dfaa"/>
+      </svg>`;
       const discovered=new Set(this.store.state.discoveredPlaces??[]);
       const placeMarkers=POINTS_OF_INTEREST.filter(place=>
         place.id!==FOLIAGE_FOREST.id&&
@@ -299,10 +329,10 @@ export class Hud {
       }).join('');
       const forest=mapPercent(FOLIAGE_FOREST.x,FOLIAGE_FOREST.z);
       const forestMarker=`<button class="poi-map-marker forest-map-marker" data-landmark="${FOLIAGE_FOREST.id}" style="left:${forest.left.toFixed(2)}%;top:${forest.top.toFixed(2)}%" title="Viajar al ${FOLIAGE_FOREST.name}" aria-label="Viajar al ${FOLIAGE_FOREST.name}">♣</button>`;
-      return tabs+`<p class="panel-lead">Esta es la geografía real de la <strong>isla principal de aproximadamente 4 × 3 km</strong>. Sus seis biomas se pueden recorrer, pero <strong>las ciudades adicionales todavía no están construidas</strong>. Para facilitar las pruebas, elegí un mirador y teletransportate allí.</p>
+      return tabs+`<p class="panel-lead">Las <strong>Doce Coronas</strong> comparten cordilleras, valles y cuencas. El mapa muestra sus territorios en desarrollo. La línea dorada discontinua recorre las Galerías de Ferragrís; los trazos claros señalan sus puentes de montaña.</p>
       <div class="map-layout regional-layout">
         <div class="map-board regional-map-board">
-          <img src="/assets/mapa-geografico-v0.2.svg" alt="Mapa geográfico de la isla principal con regiones, senderos e islas" />
+          ${territories}
           ${placeMarkers}
           ${forestMarker}
           <span id="map-player" class="player-map-marker" style="left:${pos.left.toFixed(2)}%;top:${pos.top.toFixed(2)}%" title="Tu ubicación">✦</span>
@@ -310,6 +340,8 @@ export class Hud {
         <div class="map-details">
           <span class="micro-title">EXPLORACIÓN CONTINENTAL</span>
           <h3>${this.local.region}</h3>
+          <p><strong>${region.realm}</strong> · ${region.id}</p>
+          <p>${region.landforms.join(' · ')}</p>
           <p>Posición <strong>X ${Math.round(this.local.x)} · Z ${Math.round(this.local.z)}</strong></p>
           <p>${this.local.chunks} sectores 3D activos cerca del personaje. Los demás se descargan para conservar recursos.</p>
           <div class="map-specialty"><small>VIAJE DE PRUEBA · NO MODIFICA LAS MISIONES</small><strong>Visitar un hito geográfico</strong></div>
@@ -422,7 +454,7 @@ export class Hud {
   }
 
   private helpMarkup(): string {
-    return `<p class="panel-lead">Auralia: isla principal de aproximadamente 4 × 3 km, terreno generado por sectores, seis biomas explorables y posiciones persistentes. El mapa (M) permite teletransportarse a los miradores solamente para probar el desarrollo.</p><div class="help-grid">
+    return `<p class="panel-lead">Las Doce Coronas están en desarrollo sobre el continente actual. El tamaño definitivo del mundo sigue abierto. El mapa (M) permite visitar hitos para probar los recorridos. En las entradas de Ferragrís, presioná E para explorar las galerías o salir por otro acceso.</p><div class="help-grid">
       <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr, dos pulsaciones rápidas de <strong>Shift</strong> y mantener la segunda para sprint, y <strong>Espacio</strong> para saltar o volver a saltar en el aire. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
       <article><h3>⚔️ Acciones de Santi</h3><p>Abrí <strong>Equipo (V)</strong> o usá <strong>1–5</strong> para elegir mano limpia, espada o herramienta. <strong>Q</strong> alterna las patadas a mano limpia o los ataques de espada si está seleccionada. <strong>F</strong> ejecuta la barrida y <strong>R</strong> el roll. Las patadas no trasladan al personaje; el roll conserva la dirección con la que empezó. Patadas, barrida y rolls deben terminar antes de repetirse. Tras una caída muy alta, Santi hace automáticamente el roll de aterrizaje.</p></article>
       <article><h3>🪵 Recolección</h3><p>Acercate a árboles con marcador, rocas y cristales, y presioná <strong>E</strong>. Los recursos reaparecen después de unos segundos.</p></article>

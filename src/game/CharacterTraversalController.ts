@@ -18,11 +18,13 @@ export type TraversalWorld={
   sameSupport?:(a:string,b:string)=>boolean;
   canMove:(nextX:number,nextZ:number,fromX:number,fromZ:number,feetY:number)=>boolean;
   fallbackHeight:(x:number,z:number)=>number;
+  waterLevel?:(x:number,z:number)=>number|null;
 };
 export type TraversalInput={
   moveX:number;moveZ:number;forwardX:number;forwardZ:number;
   horizontal:number;vertical:number;run:boolean;sprint:boolean;jumpPressed:boolean;
   airKickPressed?:boolean;
+  swimVertical?:number;
 };
 export type ActionMotionKind='sweep'|'roll'|'landingRoll'|'landingHold'|'attackHold';
 
@@ -53,6 +55,9 @@ export class CharacterTraversalController {
   private mantleProbeCooldown=0;
   private climbDetachRemaining=0;
   private grade=0;
+  private swimVelocityX=0;
+  private swimVelocityZ=0;
+  private swimDepthTarget:number|null=null;
   private climbTravel={vertical:0,side:0};
   private lastClimbWall:TraversalWall|null=null;
   private mantle:{from:TraversalPosition;to:TraversalPosition;elapsed:number;duration:number}|null=null;
@@ -74,10 +79,17 @@ export class CharacterTraversalController {
     this.mantleProbeCooldown=0;
     this.climbDetachRemaining=0;this.grade=0;
     this.climbTravel={vertical:0,side:0};
+    this.swimVelocityX=0;this.swimVelocityZ=0;
+    this.swimDepthTarget=null;
   }
 
   get canInteract():boolean{return this.mode!=='climbing'&&this.mode!=='mantling';}
+  constrainCeiling(ceiling:number):void{
+    const maxY=ceiling-TRAVERSAL.playerHeight-.08;
+    if(this.position.y>maxY){this.position.y=maxY;this.velocityY=Math.min(0,this.velocityY);}
+  }
   get canBuild():boolean{return this.mode==='grounded';}
+  get swimSubmerged():boolean{return this.mode==='swimming'&&this.swimDepthTarget!==null;}
   get jumpCount():number{return this.jumpsUsed;}
   get airKickActive():boolean{return this.verticalAirKick&&this.airDashRemaining>0;}
   get actionMotionActive():boolean{return this.actionMotion!==null;}
@@ -160,6 +172,14 @@ export class CharacterTraversalController {
 
   private substep(dt:number,input:TraversalInput,world:TraversalWorld):boolean{
     const p=this.position;
+    const water=world.waterLevel?.(p.x,p.z);
+    if(water!==undefined&&water!==null&&p.y<water-1.7&&
+      water-world.fallbackHeight(p.x,p.z)>3&&this.mode!=='mantling'){
+      if(this.mode!=='swimming')this.swimDepthTarget=water-p.y>3?water-p.y:null;
+      this.mode='swimming';this.velocityY=0;this.jumpsUsed=0;this.actionMotion=null;
+      this.climbRockId=null;this.lastClimbWall=null;this.supportRockId=null;
+    }
+    if(this.mode==='swimming')return this.swimStep(dt,input,world,water??null);
     this.climbDetachRemaining=Math.max(0,this.climbDetachRemaining-dt);
     if(this.mode==='mantling'){
       const mantle=this.mantle!;
@@ -399,7 +419,7 @@ export class CharacterTraversalController {
     if(this.mode==='grounded'&&!this.actionMotion&&!this.supportRockId&&
       Math.hypot(input.moveX,input.moveZ)<1e-5){
       const floor=world.ground(p.x,p.z,p.y+.1,TRAVERSAL.groundSnap+.2,TRAVERSAL.playerRadius*.55);
-      if(floor&&!floor.rockId&&!slopeAllowed(floor.normalY)){
+      if(!floor||!floor.rockId&&!slopeAllowed(floor.normalY)){
         this.mode='airborne';this.velocityY=0;
       }
     }
@@ -460,6 +480,60 @@ export class CharacterTraversalController {
         this.teleport(p.x,world.fallbackHeight(p.x,p.z),p.z);
     }
     return moved;
+  }
+
+  private swimStep(dt:number,input:TraversalInput,world:TraversalWorld,water:number|null):boolean{
+    const p=this.position,oldX=p.x,oldY=p.y,oldZ=p.z;
+    if(water===null){this.mode='airborne';this.velocityY=0;this.swimDepthTarget=null;return false;}
+    const speed=input.run?8:5.5,blend=1-Math.exp(-dt*5);
+    this.swimVelocityX+=(input.moveX*speed-this.swimVelocityX)*blend;
+    this.swimVelocityZ+=(input.moveZ*speed-this.swimVelocityZ)*blend;
+    // Swimming uses the same solid shells as walking. Remove only the inward
+    // velocity so the swimmer can still slide along a submerged rock face.
+    for(let pass=0;pass<2;pass++){
+      const length=Math.hypot(this.swimVelocityX,this.swimVelocityZ);
+      if(length<.001)break;
+      const dx=this.swimVelocityX/length,dz=this.swimVelocityZ/length;
+      let nearest:TraversalWall|null=null;
+      for(const h of [.35,1.15,1.8])for(const side of [-1,0,1]){
+        const offset=side*TRAVERSAL.playerRadius;
+        const reach=length*dt+.08+(side===0?TRAVERSAL.playerRadius:0);
+        const hit=world.wall(p.x-dz*offset,p.y+h,p.z+dx*offset,dx,dz,reach);
+        if(hit&&(!nearest||hit.distance<nearest.distance))nearest=hit;
+      }
+      if(!nearest)break;
+      if(pass===1){this.swimVelocityX=0;this.swimVelocityZ=0;break;}
+      const n=Math.hypot(nearest.normalX,nearest.normalZ);
+      if(n<1e-5){this.swimVelocityX=0;this.swimVelocityZ=0;break;}
+      const nx=nearest.normalX/n,nz=nearest.normalZ/n;
+      const inward=Math.min(0,this.swimVelocityX*nx+this.swimVelocityZ*nz);
+      this.swimVelocityX-=nx*inward;this.swimVelocityZ-=nz*inward;
+    }
+    const x=p.x+this.swimVelocityX*dt,z=p.z+this.swimVelocityZ*dt;
+    const bed=world.fallbackHeight(x,z);
+    if(world.canMove(x,z,p.x,p.z,p.y)&&bed<p.y+1.2){p.x=x;p.z=z;}
+    const nextWater=world.waterLevel?.(p.x,p.z)??water;
+    // A distinct Space press toggles dive / resurface. Releasing it holds the
+    // chosen depth; the controller owns the transition, not keyboard repeats.
+    if(input.jumpPressed)this.swimDepthTarget=this.swimDepthTarget===null?8:null;
+    const vertical=input.swimVertical??0;
+    const target=this.swimDepthTarget===null?nextWater-1.65:nextWater-this.swimDepthTarget;
+    const verticalSpeed=vertical!==0?vertical*4:Math.max(-4,Math.min(4,(target-p.y)*3));
+    let nextY=Math.max(world.fallbackHeight(p.x,p.z)+.3,
+      Math.min(nextWater-1.65,p.y+verticalSpeed*dt));
+    if(nextY>p.y&&!world.headroom(p.x,p.y+.2,p.z,1.6+nextY-p.y))nextY=p.y;
+    if(nextY<p.y){
+      const floor=world.solidTop(p.x,p.z,p.y+.1,p.y-nextY+.4);
+      if(floor)nextY=Math.max(nextY,Math.min(p.y,floor.height+.3));
+    }
+    p.y=nextY;
+    if(vertical!==0)this.swimDepthTarget=p.y>=nextWater-1.66?null:nextWater-p.y;
+    if(nextWater-world.fallbackHeight(p.x,p.z)<1.8){
+      p.y=world.fallbackHeight(p.x,p.z);this.mode='grounded';
+      this.swimVelocityX=0;this.swimVelocityZ=0;
+      this.swimDepthTarget=null;
+    }
+    return Math.hypot(p.x-oldX,p.y-oldY,p.z-oldZ)>.001;
   }
 
   private findClimbWall(world:TraversalWorld):TraversalWall|null{

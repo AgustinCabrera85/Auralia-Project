@@ -1,8 +1,8 @@
-export const TELEMETRY_PHASES=['clima','movimiento','oceano','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
+export const TELEMETRY_PHASES=['clima','movimiento','oceano','dinamica','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
 export type TelemetryPhase=typeof TELEMETRY_PHASES[number];
 export const PHASE_LABELS:Record<TelemetryPhase,string>={clima:'Clima',movimiento:'Movimiento/colisiones',
   terreno:'Terreno/streaming',vegetacion:'Vegetación',pasto:'Pasto',props:'Rocas/recursos',
-  assets:'Assets GLB/LOD',agua:'Agua',oceano:'Océano',ui:'UI/guardado'};
+  assets:'Assets GLB/LOD',agua:'Agua',oceano:'Océano',dinamica:'Pasos/física secundaria',ui:'UI/guardado'};
 export const TELEMETRY_COLUMNS=['timeMs','frameMs','updateMs','renderMs','cameraMs','activeMeshesMs','gpuMs',
   'shaderMs','drawCalls','triangles','pendingTerrain','pendingLoads','x','z',...TELEMETRY_PHASES] as const;
 export const T=Object.fromEntries(TELEMETRY_COLUMNS.map((name,i)=>[name,i])) as

@@ -1,0 +1,46 @@
+﻿{
+    "underwater":  {
+                       "surfaceAndDiveOrbits":  48,
+                       "caveOrbits":  12,
+                       "waterlineCycles":  20,
+                       "resourcesStable":  true
+                   },
+    "springs":  [
+                    {
+                        "spring":  "ferragris",
+                        "maxShoreGap":  0.0004979435680638744
+                    },
+                    {
+                        "spring":  "velo",
+                        "maxShoreGap":  0.000579117429012399
+                    },
+                    {
+                        "spring":  "gemelas",
+                        "maxShoreGap":  0.000533747672520235
+                    }
+                ],
+    "joins":  {
+                  "joins":  [
+                                {
+                                    "fall":  "ferragris",
+                                    "maxLipGap":  0
+                                },
+                                {
+                                    "fall":  "velo",
+                                    "maxLipGap":  0
+                                },
+                                {
+                                    "fall":  "gemelas",
+                                    "maxLipGap":  7.1054273576010019E-15
+                                }
+                            ],
+                  "poolHeightVariation":  0
+              },
+    "space":  {
+                  "diveY":  16.000000027877878,
+                  "surfaceY":  22.34998686509155,
+                  "heldKeyDoesNotRepeat":  true,
+                  "underwaterEffect":  true
+              },
+    "method":  "Isolated Chrome fixture; actual keyboard/controller/camera/shaders and mesh vertices. Resource counts are not a Chrome RAM benchmark."
+}

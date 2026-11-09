@@ -40,6 +40,7 @@ const LOCKED_ACTIONS=new Set<SantiActionName>([
   ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,SANTI_COMBAT.highFallRoll
 ]);
 const TRAVERSAL_LOOPS=new Set<SantiActionName>([
+  SANTI_LOCOMOTION.swim,
   SANTI_LOCOMOTION.uphillWalk,SANTI_LOCOMOTION.uphillRun,SANTI_LOCOMOTION.climb,
   SANTI_LOCOMOTION.hanging,SANTI_LOCOMOTION.shimmyLeft,SANTI_LOCOMOTION.shimmyRight,
   SANTI_LOCOMOTION.mantle,'Climbing','Climbing To Top'
@@ -393,6 +394,9 @@ export class SantiCharacter {
     if(this.slopeOrientation&&!this.climbContact)
       this.slopeOrientation.position.z*=Math.exp(-dt*18);
     if(motion.mode!=='grounded')this.cancelCombat();
+    if(motion.mode==='swimming'){
+      this.overrideSeconds=0;this.actionLockSeconds=0;this.landingRecoverySeconds=0;
+    }
     let landing:SantiLanding|null=null;
     const landed=this.previousMode==='airborne'&&motion.mode==='grounded';
     const highFallLanding=landed&&
@@ -454,7 +458,9 @@ export class SantiCharacter {
         let name:SantiActionName;
         let loop=true;
         let speed=1;
-        if(motion.mode==='climbing'){
+        if(motion.mode==='swimming'){
+          name=SANTI_LOCOMOTION.swim;speed=motion.movementIntent?(motion.run?1.25:1):.45;
+        }else if(motion.mode==='climbing'){
           const up=motion.climbVertical??(motion.moving?1:0),side=motion.climbSide??0;
           name=Math.abs(up)>.08?SANTI_LOCOMOTION.climb:
             side<-.08?SANTI_LOCOMOTION.shimmyLeft:

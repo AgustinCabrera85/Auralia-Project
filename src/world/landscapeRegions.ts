@@ -1,3 +1,4 @@
+import { regionAt } from './RegionCatalog';
 /** Geographic subregions refine the six legacy resource biomes without changing save IDs. */
 export const LANDSCAPE_REGIONS = {
   forest:{x:-650,z:-410,rx:540,rz:390},
@@ -29,12 +30,6 @@ export function landscapeVegetation(x:number,z:number):{trees:number;grass:numbe
   return {trees:1-barren*.98,grass:1-barren*.98,scale:1+forest*.3+jungle*.35};
 }
 
-const NEW_REGION_NAMES={steppe:'Valles Occidentales',desert:'Desierto del Ocaso',
-  volcanic:'Cordillera del Crisol',cursed:'Tierras Malditas',jungle:'Selva de las Mil Cascadas'} as const;
-
-export function landscapeNameAt(x:number,z:number,legacyName:string):string {
-  let name=legacyName;
-  for(const key of Object.keys(NEW_REGION_NAMES) as (keyof typeof NEW_REGION_NAMES)[])
-    if(landscapeRegionWeight(x,z,LANDSCAPE_REGIONS[key])>.65)name=NEW_REGION_NAMES[key];
-  return name;
+export function landscapeNameAt(x:number,z:number,_legacyName:string):string {
+  return regionAt(x,z).name;
 }

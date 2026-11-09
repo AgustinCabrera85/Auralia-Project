@@ -4,6 +4,8 @@ import { ASSET_CATALOG, DECORATIVE_TREE_ASSETS } from './assetCatalog';
 import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geologyData';
 import { insideFoliageForest } from './foliageForestConfig';
 import { landscapeVegetation } from './landscapeRegions';
+import { regionalAssetAllowed } from './RegionCatalog';
+import { mountainRouteExcludes } from './mountainRoutes';
 import { nearTerrainSurfaceAt, terrainFootprintAt } from './terrainLod';
 
 export const VEGETATION_CONFIG = {
@@ -100,7 +102,8 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const seed=VEGETATION_CONFIG.seed+i*17+kinds.indexOf(kind)*1009;
       const x=(cx+hash01(cx,cz,seed+1))*size;
       const z=(cz+hash01(cx,cz,seed+2))*size;
-      if(isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z))continue;
+      if(isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z)||
+        mountainRouteExcludes(x,z)||!regionalAssetAllowed(kind,x,z))continue;
       const water=MAINLAND.waterLevel;
       const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height;
       const tree=kind!=='plantitas1'&&kind!=='tronco1';

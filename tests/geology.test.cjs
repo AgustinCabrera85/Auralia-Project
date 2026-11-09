@@ -12,6 +12,9 @@ const {insideFoliageForest}=require('../.test-build/world/foliageForestConfig.js
 const {terrainFootprintAt}=require('../.test-build/world/terrainLod.js');
 const {WorldPropSystem}=require('../.test-build/world/WorldPropSystem.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
+const {lagoonRadius}=require('../.test-build/world/lagoonData.js');
+const {mountainRouteExcludes}=require('../.test-build/world/mountainRoutes.js');
+const watershedReplaces=f=>['sierra-plateau','sierra-canyon'].includes(f.id);
 
 assert.equal(GEOLOGY_FORMATIONS.length,4);
 assert.deepEqual(GEOLOGY_FORMATIONS.map(f=>f.kind),['cliff','plateau','coastalCliff','canyon']);
@@ -20,6 +23,16 @@ assert.equal(new Set(allPieces.map(p=>p.id)).size,allPieces.length,'piece IDs ar
 for(const composition of GEOLOGY_COMPOSITIONS){
   const f=composition.formation;
   assert.deepEqual(composeGeology(f),composition,'a composition is deterministic');
+  if(watershedReplaces(f)){
+    assert.ok(composition.pieces.length>0,'retained dry outcrops remain streamed');
+    for(const p of composition.pieces){
+      const radius=p.worldRadius??p.scale;
+      assert.ok(lagoonRadius(p.x,p.z)>=1.18+radius/135,'old shelves cannot intersect the new basin');
+      assert.ok(!mountainRouteExcludes(p.x,p.z,radius),'whole rock footprint clears bridge decks and portals');
+      if(f.kind==='canyon')assert.ok(p.kind==='packRocas'&&radius<4,'river banks use small embedded rocks');
+    }
+    continue;
+  }
   assert.ok(composition.pieces.length>=18);
   assert.ok(new Set(composition.pieces.map(p=>p.kind)).size>=5,'each landscape uses several GLBs');
   assert.ok(composition.pieces.every(p=>geographyMasks(p.x,p.z).road<.2),
@@ -71,6 +84,7 @@ for(const f of GEOLOGY_FORMATIONS){
   assert.ok(vegetation.every(p=>!geologyFaceExcludes(p.x,p.z)),
     'tree roots do not cross geological walls');
   for(const i of [-1,0,1]){
+    if(watershedReplaces(f))continue; // New wetland placement is covered by lagoon/expansion tests.
     const across=f.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
     const at=geologyPoint(f,i*22,across);
     const planted=vegetation.some(p=>p.kind==='plantitas1'&&
@@ -283,72 +297,13 @@ for(const f of GEOLOGY_FORMATIONS){
     system.update(1/60);
     assert.ok(system.activeFormationIds.includes(region.id),
       'another region loads its own composition');
+    if(watershedReplaces(region))continue; // Lagoon tests cover the replacement river and lake.
     const ledge=composition.pieces.find(p=>p.id.includes(':terrace:0'));
     let walkable=false;
     for(let dx=-9;dx<=9&&!walkable;dx+=3)for(let dz=-9;dz<=9&&!walkable;dz+=3)
       walkable=system.queryRockGround(ledge.x+dx,ledge.z+dz,
         region.targetHeight+4,6,.33)?.rockId===ledge.id;
     assert.ok(walkable,`${region.id} has a real walkable ledge`);
-    if(region.id==='sierra-plateau'){
-      const seam=system.queryRockGround(-206,-728,23.2,1.7,.33);
-      assert.ok(seam&&seam.height>22.4&&seam.normal.y>=.75,
-        'the Sierra block seam supports a full capsule footprint above its open underside');
-      const seamWalker=new CharacterTraversalController();
-      const start=system.queryRockGround(-204,-728,25,8,.33);
-      seamWalker.teleport(-204,start.height,-728);
-      const acrossSeam={moveX:-1,moveZ:0,forwardX:-1,forwardZ:0,
-        horizontal:0,vertical:0,run:false,jumpPressed:false};
-      for(let i=0;i<8;i++){
-        seamWalker.step(.025,acrossSeam,world);
-        assert.ok(seamWalker.mode==='grounded'&&seamWalker.position.y>22.2,
-          `walking over the Sierra block crack retains support at step ${i}: ${seamWalker.mode} ${JSON.stringify(seamWalker.position)}`);
-      }
-      let leftBlock=false;
-      for(let i=0;i<25;i++){
-        seamWalker.step(.025,acrossSeam,world);
-        leftBlock ||= seamWalker.mode==='airborne';
-      }
-      assert.ok(leftBlock&&seamWalker.position.y<22.2,
-        'the player still drops from the actual outer edge of the block');
-      const walls=scene.meshes.filter(m=>m.metadata?.rockCollider===true&&
-        m.metadata?.rockId?.startsWith('geo:sierra-plateau:wall:'));
-      assert.ok(walls.length>=8);
-      for(const along of [-40,-20,0,20,40,82]){
-        const from=geologyPoint(region,along,-65);
-        const ray=new Ray(new Vector3(from.x,30,from.z),
-          new Vector3(region.highX,0,region.highZ),100);
-        assert.ok(walls.some(mesh=>{
-          mesh.computeWorldMatrix();return ray.intersectsMesh(mesh,true).hit;
-        }),`Sierra's cliff backing covers the face at ${along}`);
-      }
-    }
-    if(region.kind==='canyon'){
-      const floor=geologyPoint(region,0,0);
-      const left=geologyPoint(region,0,-55),right=geologyPoint(region,0,55);
-      const floorHeight=sampleMainlandHeight(floor.x,floor.z);
-      assert.ok(Math.min(sampleMainlandHeight(left.x,left.z),
-        sampleMainlandHeight(right.x,right.z))-floorHeight>25,
-      'the canyon has two raised mountain banks around a lower route');
-      const runner=new CharacterTraversalController();
-      const start=geologyPoint(region,-70,0);
-      runner.teleport(start.x,sampleMainlandHeight(start.x,start.z),start.z);
-      const run={moveX:0,moveZ:1,forwardX:0,forwardZ:1,
-        horizontal:0,vertical:1,run:true,jumpPressed:false};
-      for(let i=0;i<140;i++){
-        runner.step(.025,run,world);
-        assert.ok(runner.mode==='grounded'&&runner.position.y>=
-          sampleMainlandHeight(runner.position.x,runner.position.z)-.12,
-        `the canyon floor stays runnable at step ${i}`);
-      }
-      assert.ok(runner.position.z>start.z+20);
-      const shelf=composition.pieces.find(p=>p.id.includes(':step:0'));
-      const shelfTop=system.queryRockGround(shelf.x,shelf.z,
-        sampleMainlandHeight(shelf.x,shelf.z)+5,6,.33);
-      assert.ok(shelfTop?.rockId===shelf.id&&
-        shelfTop.height>sampleMainlandHeight(shelf.x,shelf.z)+1&&
-        shelfTop.height<sampleMainlandHeight(shelf.x,shelf.z)+2.3,
-      'the first canyon shelf is solid and within jumping height');
-    }
     assert.equal(system.queryRockWall(region.x+800,region.targetHeight,region.z,
       region.highX,region.highZ,10),null,'there is no invisible region-wide wall');
   }

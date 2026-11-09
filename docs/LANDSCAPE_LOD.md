@@ -4,16 +4,24 @@
 `sampleMainlandHeight`. No existe una segunda geografía. El nivel lejano se
 construye una vez al iniciar y permanece como respaldo mientras se generan
 los sectores medios y cercanos. El cambio de nivel se hace por grupos de
-cuatro hijos completos, para que nunca falte suelo entre cargas. Los bordes
-medios y lejanos tienen faldones de 22 m que tapan las uniones entre
-resoluciones sin afectar la superficie ni las colisiones.
+cuatro hijos completos, para que nunca falte suelo entre cargas.
+
+`terrainTileTopology` mantiene un perímetro común con vértices cada 6 m en
+los tres niveles. Solo refina los triángulos del borde: el interior medio
+conserva pasos de 18 m y el lejano de 36 m. Así, las uniones coinciden incluso
+cuando el vecino cambia de detalle o sigue pendiente de carga. No se usan
+faldones verticales superpuestos, que provocaban líneas negras y no cerraban
+todos los desniveles. Las normales y los pesos de material también se calculan
+con la misma escala en todos los niveles (diferencias centrales a ±3 m).
+La triangulación cercana y la superficie de colisión no cambian.
 
 | Parámetro | Valor | Archivo |
 | --- | ---: | --- |
 | Radio cercano / tamaño de sector | 252 m / 72 m | `src/world/terrainLod.ts` |
 | Radio medio / tamaño de sector | 720 m / 144 m | `src/world/terrainLod.ts` |
 | Radio lejano / tamaño de sector | 1700 m / 288 m | `src/world/terrainLod.ts` |
-| Muestras por lado cercano / medio / lejano | 12 / 8 / 8 | `src/world/terrainLod.ts` |
+| Subdivisiones interiores cercano / medio / lejano | 12 / 8 / 8 | `src/world/terrainLod.ts` |
+| Separación de vértices en todos los bordes | 6 m | `src/world/terrainTileTopology.ts` |
 | Presupuesto de generación | 4 ms, hasta 2 sectores por cuadro | `src/world/terrainLod.ts` |
 | Distancia del acantilado detallado | 320 m | `src/world/terrainLod.ts` |
 | Densidad y color de niebla | 0,00135 / `#b5d6f2` | `src/world/LandscapeAtmosphere.ts` |
@@ -59,3 +67,6 @@ escena. Para comparar rendimiento, medir en las mismas coordenadas y con el
 mismo ángulo de cámara. `npm run test:stream`, `npm run test:vegetation` y
 `npm run test:props` cubren continuidad, colocación, materiales compartidos y
 colisiones esenciales con NullEngine.
+La prueba de terreno verifica todas las parejas de LOD en ambos ejes,
+incluyendo coordenadas negativas: posiciones, normales, seis pesos de material,
+ausencia de aristas interiores abiertas y cobertura sin triángulos superpuestos.

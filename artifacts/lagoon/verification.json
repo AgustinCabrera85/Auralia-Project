@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-08",
+  "fixture": "/tests/landscape-review.html",
+  "results": [
+    {
+      "route": "boca → sifon",
+      "frames": 772,
+      "mode": "swimming",
+      "distance": 69.71186349959206
+    },
+    {
+      "route": "sifon → recodo",
+      "frames": 701,
+      "mode": "swimming",
+      "distance": 64.0256170280091
+    },
+    {
+      "route": "recodo → sala",
+      "frames": 656,
+      "mode": "swimming",
+      "distance": 59.89494516093325
+    },
+    {
+      "route": "sala → sendero",
+      "frames": 530,
+      "mode": "grounded",
+      "distance": 86.06511955139378
+    },
+    {
+      "route": "sendero → mirador",
+      "frames": 427,
+      "mode": "grounded",
+      "distance": 78.13578061083467
+    },
+    {
+      "route": "bosque → galeria",
+      "frames": 385,
+      "mode": "grounded",
+      "distance": 70.58333333333287
+    },
+    {
+      "route": "galeria → sala",
+      "frames": 623,
+      "mode": "swimming",
+      "distance": 107.99704248649788
+    },
+    {
+      "route": "sala → recodo",
+      "frames": 656,
+      "mode": "swimming",
+      "distance": 59.94653925687467
+    },
+    {
+      "route": "recodo → sifon",
+      "frames": 701,
+      "mode": "swimming",
+      "distance": 64.03044308271491
+    },
+    {
+      "route": "sifon → boca",
+      "frames": 765,
+      "mode": "swimming",
+      "distance": 69.88706459534406
+    }
+  ],
+  "counts": {
+    "meshes": 1223,
+    "lights": 5,
+    "materials": 295
+  },
+  "repeatVisits": 8,
+  "swimmingClip": "Swimming (3)",
+  "geometry": [
+    {
+      "route": "boca-sifon",
+      "collisions": []
+    },
+    {
+      "route": "sifon-recodo",
+      "collisions": []
+    },
+    {
+      "route": "recodo-sala",
+      "collisions": []
+    },
+    {
+      "route": "sala-sendero",
+      "collisions": []
+    },
+    {
+      "route": "sendero-mirador",
+      "collisions": []
+    },
+    {
+      "route": "sala-galeria",
+      "collisions": []
+    },
+    {
+      "route": "galeria-bosque",
+      "collisions": []
+    }
+  ]
+}

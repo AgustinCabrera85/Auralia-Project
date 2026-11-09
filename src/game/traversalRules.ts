@@ -24,7 +24,7 @@ export const TRAVERSAL = {
   climbWallMaxNormalY: 0.6,
   maxFallResetHeight: 140,
 } as const;
-export type LocomotionMode='grounded'|'airborne'|'climbing'|'mantling';
+export type LocomotionMode='grounded'|'airborne'|'climbing'|'mantling'|'swimming';
 export type GroundHit={height:number;normalY:number;rockId?:string};
 export function slopeAllowed(normalY:number,sprint=false):boolean {
   return Number.isFinite(normalY)&&normalY>=Math.cos(

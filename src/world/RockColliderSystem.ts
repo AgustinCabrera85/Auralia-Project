@@ -2,6 +2,7 @@ import { InstancedMesh, Mesh, Ray, Vector3, VertexBuffer } from '@babylonjs/core
 import { isWalkableRockFace } from './rectRockData';
 import { sameGeologyFormation } from './geologyData';
 import type { PropKind, PropPlacement } from './worldPropsData';
+import { MAX_WATER_CONTACTS, rockWaterContact, type WaterContact } from './water/WaterContacts';
 
 const COLLIDABLE_ROCKS:readonly PropKind[]=[
   'rocasRectangulares','formacionRocosa','escalonRocoso','mesetaPasto','acantilado2','packRocas'
@@ -13,7 +14,8 @@ export type RockSurface={
   climbable:boolean;worldHeight:number;worldRadius:number;centerX:number;centerZ:number;
 };
 export type RockWallHit=Omit<RockSurface,'height'>&{point:Vector3;distance:number};
-type Collider={placement:PropPlacement;radius:number;height:number;instances:InstancedMesh[]};
+type Collider={placement:PropPlacement;radius:number;height:number;instances:(Mesh|InstancedMesh)[];generated?:boolean;
+  water?:{level:number;slopeX:number;slopeZ:number;contact:WaterContact|null}};
 
 /** Invisible, pickable instances share the visible GLB geometry and material. */
 export class RockColliderSystem {
@@ -29,6 +31,28 @@ export class RockColliderSystem {
   }
 
   constructor(private readonly sourceFor:(kind:PropKind)=>readonly Mesh[]|undefined){ }
+
+  /** Keep the exact procedural shell before the visible meshes are merged.
+   * Geometry/material are shared; the hidden proxy follows its streamed parent. */
+  registerGeneratedMesh(source:Mesh):void{
+    const id=`generated-rock:${source.uniqueId}`;
+    if(this.colliders.has(id))return;
+    const proxy=source.clone(`collider-${source.name}`,source.parent,true);
+    proxy.isVisible=false;proxy.isPickable=true;proxy.checkCollisions=false;
+    proxy.computeWorldMatrix(true);
+    const bounds=proxy.getBoundingInfo().boundingBox;
+    const min=bounds.minimumWorld,max=bounds.maximumWorld;
+    const radius=Math.hypot(max.x-min.x,max.z-min.z)*.5,height=max.y-min.y;
+    const placement:PropPlacement={id,kind:'formacionRocosa',x:(min.x+max.x)*.5,
+      y:min.y,z:(min.z+max.z)*.5,scale:1,yaw:0,climbable:true};
+    proxy.metadata={rockCollider:true,rockId:id};
+    proxy.freezeWorldMatrix();
+    const entry:Collider={placement,radius,height,instances:[proxy],generated:true};
+    this.colliders.set(id,entry);
+    proxy.onDisposeObservable.addOnce(()=>{
+      if(this.colliders.get(id)===entry)this.colliders.delete(id);
+    });
+  }
 
   private dimensions(mesh:Mesh):{radius:number;height:number}{
     const cachedRadius=this.sourceRadius.get(mesh.uniqueId);
@@ -91,7 +115,7 @@ export class RockColliderSystem {
       desired.set(placement.id,{placement,parts,radius,height});
     }
     for(const [id,entry] of this.colliders){
-      if(desired.has(id)||protectedRockIds.has(id))continue;
+      if(entry.generated||desired.has(id)||protectedRockIds.has(id))continue;
       for(const instance of entry.instances)instance.dispose(false,false);
       this.colliders.delete(id);
     }
@@ -115,17 +139,45 @@ export class RockColliderSystem {
     }
   }
 
-  private nearby(x:number,z:number,reach=0,rockId?:string):Set<InstancedMesh>{
-    const candidates=new Set<InstancedMesh>();
+  private nearby(x:number,z:number,reach=0,rockId?:string):Set<Mesh|InstancedMesh>{
+    const candidates=new Set<Mesh|InstancedMesh>();
     for(const entry of this.colliders.values()){
       if(rockId&&entry.placement.id!==rockId)continue;
       if(Math.hypot(entry.placement.x-x,entry.placement.z-z)>entry.radius+reach+1)continue;
-      for(const instance of entry.instances)candidates.add(instance);
+      for(const instance of entry.instances)
+        if(!instance.isDisposed()&&instance.isEnabled())candidates.add(instance);
     }
     return candidates;
   }
 
-  private hits(ray:Ray,candidates:Set<InstancedMesh>){
+  /** Reuse streamed rock geometry, including thin-instance transforms. Results
+   * disappear with their colliders; dry or fully submerged rocks produce none. */
+  waterContacts(x:number,z:number,waterAt:(x:number,z:number)=>number|null):WaterContact[]{
+    const candidates=[...this.colliders.values()].filter(c=>
+      Math.hypot(c.placement.x-x,c.placement.z-z)<100&&c.radius<25);
+    candidates.sort((a,b)=>Math.hypot(a.placement.x-x,a.placement.z-z)-
+      Math.hypot(b.placement.x-x,b.placement.z-z));
+    const result:WaterContact[]=[];let built=0;
+    for(const c of candidates){
+      const p=c.placement,level=waterAt(p.x,p.z);
+      if(level===null||p.y>level+1||p.y+c.height<level-.1)continue;
+      const slopeX=((waterAt(p.x+.5,p.z)??level)-(waterAt(p.x-.5,p.z)??level));
+      const slopeZ=((waterAt(p.x,p.z+.5)??level)-(waterAt(p.x,p.z-.5)??level));
+      if(!c.water||Math.abs(c.water.level-level)>.01||Math.abs(c.water.slopeX-slopeX)>.001||Math.abs(c.water.slopeZ-slopeZ)>.001){
+        // Spread first-time sections over refreshes after a teleport/stream load.
+        if(built>=2)continue;
+        c.water={level,slopeX,slopeZ,contact:rockWaterContact(c.instances,level,p.x,p.z,p.yaw,slopeX,slopeZ)};
+        built++;
+      }
+      if(!c.water.contact)continue;
+      const contact=c.water.contact,distance=Math.hypot(contact.x-x,contact.z-z);
+      result.push({...contact,strength:Math.max(0,Math.min(1,(100-distance)/30))});
+      if(result.length===MAX_WATER_CONTACTS)break;
+    }
+    return result;
+  }
+
+  private hits(ray:Ray,candidates:Set<Mesh|InstancedMesh>){
     const meshes=[...candidates];
     for(const mesh of meshes)mesh.computeWorldMatrix();
     return ray.intersectsMeshes(meshes,false);
@@ -136,7 +188,7 @@ export class RockColliderSystem {
     if(!candidates.size)return null;
     const ray=new Ray(new Vector3(x,originY,z),Vector3.Down(),maxDistance);
     for(const hit of this.hits(ray,candidates)){
-      const point=hit.pickedPoint,mesh=hit.pickedMesh as InstancedMesh|null;
+      const point=hit.pickedPoint,mesh=hit.pickedMesh;
       const normal=hit.getNormal(true);
       if(!point||!mesh||!normal)continue;
       const entry=this.colliders.get(mesh.metadata?.rockId);
@@ -217,7 +269,7 @@ export class RockColliderSystem {
     const ray=new Ray(new Vector3(x,y,z),new Vector3(nx,0,nz),maxDistance);
     const hits=this.hits(ray,candidates);
     for(const hit of hits){
-      const point=hit.pickedPoint,mesh=hit.pickedMesh as InstancedMesh|null;
+      const point=hit.pickedPoint,mesh=hit.pickedMesh;
       if(!point||!mesh)continue;
       const normal=hit.getNormal(true);
       if(!normal||normal.y>=.75)continue;
@@ -247,13 +299,24 @@ export class RockColliderSystem {
   }
 
   /** First closed rock shell between the player and the desired camera position. */
-  queryCameraObstruction(from:Vector3,to:Vector3):number|null{
+  queryCameraObstruction(from:Vector3,to:Vector3,clearance=0):number|null{
     const direction=to.subtract(from),distance=direction.length();
     if(distance<.1)return null;
-    const candidates=this.nearby(from.x,from.z,distance);
+    const candidates=this.nearby(from.x,from.z,distance+clearance);
     if(!candidates.size)return null;
-    const hit=this.hits(new Ray(from,direction.scale(1/distance),distance),candidates)[0];
-    return hit?.hit?hit.distance:null;
+    direction.scaleInPlace(1/distance);
+    const origins=[from];
+    if(clearance>0){
+      const right=Vector3.Cross(direction,Math.abs(direction.y)<.99?Vector3.Up():Vector3.Right()).normalize();
+      const up=Vector3.Cross(right,direction).normalize();
+      for(const axis of [right,up])for(const sign of [-1,1])origins.push(from.add(axis.scale(clearance*sign)));
+    }
+    let nearest:number|null=null;
+    for(const origin of origins){
+      const hit=this.hits(new Ray(origin,direction,distance),candidates)[0];
+      if(hit?.hit&&(nearest===null||hit.distance<nearest))nearest=hit.distance;
+    }
+    return nearest;
   }
 
   dispose():void{
