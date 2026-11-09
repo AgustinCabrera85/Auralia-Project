@@ -109,6 +109,9 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   assert.ok(farTree&&farTree.getTotalVertices()>0&&
     farTree.getTotalIndices()<scene.getMeshByName('vegetacion-arbolito2').getTotalIndices(),
     'distant trees use a simplified version of the source GLB');
+  // Chunks load nearest first; reach the distant ring before checking its LOD.
+  let loadedUpdates=60;
+  for(let i=0;i<300&&!farTree.thinInstanceCount;i++,loadedUpdates++)system.update();
   assert.ok(farTree.thinInstanceCount>0,'distant trees switch to the proxy');
   assert.equal(farTree.material,scene.getMeshByName('vegetacion-arbolito2').material,
     'near and far models share the original texture and PBR settings');
@@ -162,7 +165,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   assert.equal(system.sharedMeshCount,6,'shared GLBs survive chunk release');
   assert.ok(before>0);
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
-  for(let i=0;i<60;i++)system.update();
+  for(let i=0;i<loadedUpdates;i++)system.update();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
   assert.equal(imports.length,13,'reload makes no new GLB imports');
   const target={x:-509,z:32};

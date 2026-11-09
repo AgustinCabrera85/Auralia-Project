@@ -1,0 +1,1889 @@
+{
+  "version": 1,
+  "head": "295cfc01b8f005d3d6f9dadbd5e137f802861a85",
+  "sourceManifest": "source.json",
+  "startedAt": "2026-11-09T09:22:06.853Z",
+  "environment": {
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "cores": 12,
+    "approximateDeviceMemoryGiB": 32,
+    "backend": "webgl2",
+    "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "viewportCss": [
+      1264,
+      805
+    ],
+    "dpr": 1,
+    "material": "auralia-biome-terrain",
+    "materialState": {
+      "biomeMaterials": {
+        "status": "ready",
+        "layers": 17,
+        "samplers": 3,
+        "gpuBytes": 47535445.333333336,
+        "sharedWaterMask": true,
+        "sourceSize": 1024,
+        "runtimeSize": 512
+      }
+    },
+    "navigation": [
+      {
+        "domContentLoadedMs": 310.80000001192093,
+        "loadMs": 310.90000000596046,
+        "type": "reload"
+      }
+    ],
+    "notes": "Isolated dev-server fixture; DOM timings are not a measured game-ready time. Heap is not total Chrome RAM or VRAM.",
+    "os": "Windows_NT 10.0.19045 x64",
+    "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "ramBytes": 51491508224,
+    "node": "v22.12.0"
+  },
+  "conditions": {
+    "server": "Vite development",
+    "quality": "balanced",
+    "weather": "clear",
+    "hour": 14,
+    "clockScale": 0,
+    "repetitions": 3,
+    "seconds": 30,
+    "telemetry": true,
+    "sampleDrainSeconds": 5,
+    "save": "ephemeral newGame, no player save"
+  },
+  "runs": [
+    {
+      "scenario": "bosque-ilustrado",
+      "repetition": 1,
+      "setup": {
+        "scenario": {
+          "id": "bosque-ilustrado",
+          "x": -730,
+          "z": -420
+        },
+        "warmupMs": 15173.5,
+        "settled": true,
+        "pose": {
+          "player": [
+            -730,
+            9.244403624704937,
+            -420
+          ],
+          "camera": [
+            -721.6656534103223,
+            15.379278033546512,
+            -416.2781096218293
+          ],
+          "target": [
+            -730,
+            11.294403624704938,
+            -420
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "bosque-ilustrado-1.json.gz",
+      "frames": 2807,
+      "actualMs": 30015.19999998808,
+      "startPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2807,
+          "p50": 15147.2,
+          "p95": 28563.9,
+          "p99": 29709.9,
+          "max": 29993.1
+        },
+        "frameMs": {
+          "samples": 2807,
+          "p50": 10.1,
+          "p95": 14,
+          "p99": 16.6,
+          "max": 71.1
+        },
+        "updateMs": {
+          "samples": 2807,
+          "p50": 0.6,
+          "p95": 1,
+          "p99": 1.2,
+          "max": 59.9
+        },
+        "renderMs": {
+          "samples": 2807,
+          "p50": 9.1,
+          "p95": 12.7,
+          "p99": 15.1,
+          "max": 20.8
+        },
+        "cameraMs": {
+          "samples": 2807,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.3,
+          "max": 0.9
+        },
+        "activeMeshesMs": {
+          "samples": 2807,
+          "p50": 2.7,
+          "p95": 4.1,
+          "p99": 4.5,
+          "max": 8.2
+        },
+        "gpuMs": {
+          "samples": 2807,
+          "p50": 5.93,
+          "p95": 8.74,
+          "p99": 10.38,
+          "max": 11.69
+        },
+        "shaderMs": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2807,
+          "p50": 474,
+          "p95": 474,
+          "p99": 474,
+          "max": 474
+        },
+        "triangles": {
+          "samples": 2807,
+          "p50": 9353499,
+          "p95": 9353499,
+          "p99": 9353499,
+          "max": 9353499
+        },
+        "pendingTerrain": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2807,
+          "p50": -730,
+          "p95": -730,
+          "p99": -730,
+          "max": -730
+        },
+        "z": {
+          "samples": 2807,
+          "p50": -420,
+          "p95": -420,
+          "p99": -420,
+          "max": -420
+        },
+        "clima": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.2,
+          "max": 1.3
+        },
+        "movimiento": {
+          "samples": 2807,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 59.6
+        },
+        "oceano": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "dinamica": {
+          "samples": 2807,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.7
+        },
+        "terreno": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "vegetacion": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "pasto": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "assets": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2807,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.5
+        },
+        "ui": {
+          "samples": 2807,
+          "p50": 0.2,
+          "p95": 0.4,
+          "p99": 0.7,
+          "max": 1.1
+        }
+      },
+      "over50": 1,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29131.59999999404,
+        "jsUsedBytes": 360444914,
+        "jsAllocatedBytes": 581049094,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1720,
+        "geometries": 1615,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -730,
+        "z": -420
+      },
+      "copyCostsMs": [
+        1.7000000178813934,
+        3.7999999821186066,
+        3.199999988079071,
+        4,
+        5.5999999940395355,
+        5.299999982118607
+      ]
+    },
+    {
+      "scenario": "bosque-ilustrado",
+      "repetition": 2,
+      "setup": {
+        "scenario": {
+          "id": "bosque-ilustrado",
+          "x": -730,
+          "z": -420
+        },
+        "warmupMs": 15173.5,
+        "settled": true,
+        "pose": {
+          "player": [
+            -730,
+            9.244403624704937,
+            -420
+          ],
+          "camera": [
+            -721.6656534103223,
+            15.379278033546512,
+            -416.2781096218293
+          ],
+          "target": [
+            -730,
+            11.294403624704938,
+            -420
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "bosque-ilustrado-2.json.gz",
+      "frames": 2874,
+      "actualMs": 30009.899999976158,
+      "startPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2874,
+          "p50": 14919.2,
+          "p95": 28487.5,
+          "p99": 29688.8,
+          "max": 29991.8
+        },
+        "frameMs": {
+          "samples": 2874,
+          "p50": 10,
+          "p95": 13.3,
+          "p99": 15.9,
+          "max": 19.7
+        },
+        "updateMs": {
+          "samples": 2874,
+          "p50": 0.6,
+          "p95": 0.9,
+          "p99": 1.1,
+          "max": 1.6
+        },
+        "renderMs": {
+          "samples": 2874,
+          "p50": 9,
+          "p95": 12.2,
+          "p99": 14.6,
+          "max": 17.7
+        },
+        "cameraMs": {
+          "samples": 2874,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.4,
+          "max": 0.8
+        },
+        "activeMeshesMs": {
+          "samples": 2874,
+          "p50": 2.6,
+          "p95": 3.9,
+          "p99": 4.3,
+          "max": 6
+        },
+        "gpuMs": {
+          "samples": 2874,
+          "p50": 5.87,
+          "p95": 8.41,
+          "p99": 9.71,
+          "max": 11.31
+        },
+        "shaderMs": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2874,
+          "p50": 474,
+          "p95": 474,
+          "p99": 474,
+          "max": 474
+        },
+        "triangles": {
+          "samples": 2874,
+          "p50": 9353499,
+          "p95": 9353499,
+          "p99": 9353499,
+          "max": 9353499
+        },
+        "pendingTerrain": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2874,
+          "p50": -730,
+          "p95": -730,
+          "p99": -730,
+          "max": -730
+        },
+        "z": {
+          "samples": 2874,
+          "p50": -420,
+          "p95": -420,
+          "p99": -420,
+          "max": -420
+        },
+        "clima": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "movimiento": {
+          "samples": 2874,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 1.1
+        },
+        "oceano": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "dinamica": {
+          "samples": 2874,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.9
+        },
+        "terreno": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "vegetacion": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "pasto": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "assets": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2874,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.3
+        },
+        "ui": {
+          "samples": 2874,
+          "p50": 0.2,
+          "p95": 0.4,
+          "p99": 0.6,
+          "max": 1
+        }
+      },
+      "over50": 0,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29180.80000001192,
+        "jsUsedBytes": 370276962,
+        "jsAllocatedBytes": 589437702,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1720,
+        "geometries": 1615,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -730,
+        "z": -420
+      },
+      "copyCostsMs": [
+        1.899999976158142,
+        2.9000000059604645,
+        3.2999999821186066,
+        5.0999999940395355,
+        4.0999999940395355,
+        3.9000000059604645
+      ]
+    },
+    {
+      "scenario": "bosque-ilustrado",
+      "repetition": 3,
+      "setup": {
+        "scenario": {
+          "id": "bosque-ilustrado",
+          "x": -730,
+          "z": -420
+        },
+        "warmupMs": 15173.5,
+        "settled": true,
+        "pose": {
+          "player": [
+            -730,
+            9.244403624704937,
+            -420
+          ],
+          "camera": [
+            -721.6656534103223,
+            15.379278033546512,
+            -416.2781096218293
+          ],
+          "target": [
+            -730,
+            11.294403624704938,
+            -420
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "bosque-ilustrado-3.json.gz",
+      "frames": 2760,
+      "actualMs": 30019.90000000596,
+      "startPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -730,
+          9.244403624704937,
+          -420
+        ],
+        "camera": [
+          -721.6656534103223,
+          15.379278033546512,
+          -416.2781096218293
+        ],
+        "target": [
+          -730,
+          11.294403624704938,
+          -420
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2760,
+          "p50": 14888.6,
+          "p95": 28531.3,
+          "p99": 29697.1,
+          "max": 30002.7
+        },
+        "frameMs": {
+          "samples": 2760,
+          "p50": 10.3,
+          "p95": 14.3,
+          "p99": 16.3,
+          "max": 66.9
+        },
+        "updateMs": {
+          "samples": 2760,
+          "p50": 0.6,
+          "p95": 1,
+          "p99": 1.3,
+          "max": 3.4
+        },
+        "renderMs": {
+          "samples": 2760,
+          "p50": 9.3,
+          "p95": 13.1,
+          "p99": 15,
+          "max": 62.5
+        },
+        "cameraMs": {
+          "samples": 2760,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.3,
+          "max": 0.6
+        },
+        "activeMeshesMs": {
+          "samples": 2760,
+          "p50": 2.7,
+          "p95": 4.1,
+          "p99": 4.5,
+          "max": 5.4
+        },
+        "gpuMs": {
+          "samples": 2760,
+          "p50": 6.08,
+          "p95": 8.94,
+          "p99": 10.58,
+          "max": 13.96
+        },
+        "shaderMs": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2760,
+          "p50": 474,
+          "p95": 474,
+          "p99": 474,
+          "max": 474
+        },
+        "triangles": {
+          "samples": 2760,
+          "p50": 9353499,
+          "p95": 9353499,
+          "p99": 9353499,
+          "max": 9353499
+        },
+        "pendingTerrain": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2760,
+          "p50": -730,
+          "p95": -730,
+          "p99": -730,
+          "max": -730
+        },
+        "z": {
+          "samples": 2760,
+          "p50": -420,
+          "p95": -420,
+          "p99": -420,
+          "max": -420
+        },
+        "clima": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.2,
+          "max": 0.7
+        },
+        "movimiento": {
+          "samples": 2760,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 2.5
+        },
+        "oceano": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "dinamica": {
+          "samples": 2760,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.9
+        },
+        "terreno": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "vegetacion": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "pasto": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "assets": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2760,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.6
+        },
+        "ui": {
+          "samples": 2760,
+          "p50": 0.2,
+          "p95": 0.4,
+          "p99": 0.7,
+          "max": 1.2
+        }
+      },
+      "over50": 1,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29158.70000001788,
+        "jsUsedBytes": 369964086,
+        "jsAllocatedBytes": 476978526,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1720,
+        "geometries": 1615,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -730,
+        "z": -420
+      },
+      "copyCostsMs": [
+        1.699999988079071,
+        2.300000011920929,
+        3,
+        6.0999999940395355,
+        4.4000000059604645,
+        4.0999999940395355
+      ]
+    },
+    {
+      "scenario": "pradera-florida",
+      "repetition": 1,
+      "setup": {
+        "scenario": {
+          "id": "pradera-florida",
+          "x": -790,
+          "z": -510
+        },
+        "warmupMs": 15171.59999999404,
+        "settled": true,
+        "pose": {
+          "player": [
+            -790,
+            11.43899996221788,
+            -510
+          ],
+          "camera": [
+            -781.6656534103223,
+            17.573874371059453,
+            -506.2781096218293
+          ],
+          "target": [
+            -790,
+            13.488999962217878,
+            -510
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "pradera-florida-1.json.gz",
+      "frames": 2758,
+      "actualMs": 30014.69999998808,
+      "startPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2758,
+          "p50": 15231.7,
+          "p95": 28487.3,
+          "p99": 29708.4,
+          "max": 29995.9
+        },
+        "frameMs": {
+          "samples": 2758,
+          "p50": 10.3,
+          "p95": 14.1,
+          "p99": 16,
+          "max": 19.8
+        },
+        "updateMs": {
+          "samples": 2758,
+          "p50": 0.7,
+          "p95": 1,
+          "p99": 1.1,
+          "max": 1.6
+        },
+        "renderMs": {
+          "samples": 2758,
+          "p50": 9.3,
+          "p95": 12.9,
+          "p99": 14.9,
+          "max": 17.4
+        },
+        "cameraMs": {
+          "samples": 2758,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.3,
+          "max": 0.8
+        },
+        "activeMeshesMs": {
+          "samples": 2758,
+          "p50": 2.7,
+          "p95": 4.1,
+          "p99": 4.5,
+          "max": 5.4
+        },
+        "gpuMs": {
+          "samples": 2758,
+          "p50": 6.16,
+          "p95": 8.99,
+          "p99": 10.44,
+          "max": 11.51
+        },
+        "shaderMs": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2758,
+          "p50": 469,
+          "p95": 469,
+          "p99": 469,
+          "max": 469
+        },
+        "triangles": {
+          "samples": 2758,
+          "p50": 10512246,
+          "p95": 10512246,
+          "p99": 10512246,
+          "max": 10512246
+        },
+        "pendingTerrain": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2758,
+          "p50": -790,
+          "p95": -790,
+          "p99": -790,
+          "max": -790
+        },
+        "z": {
+          "samples": 2758,
+          "p50": -510,
+          "p95": -510,
+          "p99": -510,
+          "max": -510
+        },
+        "clima": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.3
+        },
+        "movimiento": {
+          "samples": 2758,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 0.6
+        },
+        "oceano": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "dinamica": {
+          "samples": 2758,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.5
+        },
+        "terreno": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "vegetacion": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.2
+        },
+        "pasto": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "assets": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2758,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.3
+        },
+        "ui": {
+          "samples": 2758,
+          "p50": 0.3,
+          "p95": 0.4,
+          "p99": 0.5,
+          "max": 0.7
+        }
+      },
+      "over50": 0,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29174.80000001192,
+        "jsUsedBytes": 388171650,
+        "jsAllocatedBytes": 496299102,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1750,
+        "geometries": 1645,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -790,
+        "z": -510
+      },
+      "copyCostsMs": [
+        1.800000011920929,
+        2.199999988079071,
+        3,
+        4.4000000059604645,
+        4.5,
+        3.9000000059604645
+      ]
+    },
+    {
+      "scenario": "pradera-florida",
+      "repetition": 2,
+      "setup": {
+        "scenario": {
+          "id": "pradera-florida",
+          "x": -790,
+          "z": -510
+        },
+        "warmupMs": 15171.59999999404,
+        "settled": true,
+        "pose": {
+          "player": [
+            -790,
+            11.43899996221788,
+            -510
+          ],
+          "camera": [
+            -781.6656534103223,
+            17.573874371059453,
+            -506.2781096218293
+          ],
+          "target": [
+            -790,
+            13.488999962217878,
+            -510
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "pradera-florida-2.json.gz",
+      "frames": 2770,
+      "actualMs": 30018.80000001192,
+      "startPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2770,
+          "p50": 15142.3,
+          "p95": 28495,
+          "p99": 29715.5,
+          "max": 29997.6
+        },
+        "frameMs": {
+          "samples": 2770,
+          "p50": 10.3,
+          "p95": 14,
+          "p99": 16.1,
+          "max": 19.4
+        },
+        "updateMs": {
+          "samples": 2770,
+          "p50": 0.6,
+          "p95": 0.9,
+          "p99": 1.1,
+          "max": 1.4
+        },
+        "renderMs": {
+          "samples": 2770,
+          "p50": 9.3,
+          "p95": 12.9,
+          "p99": 14.8,
+          "max": 17.2
+        },
+        "cameraMs": {
+          "samples": 2770,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.3,
+          "max": 0.8
+        },
+        "activeMeshesMs": {
+          "samples": 2770,
+          "p50": 2.7,
+          "p95": 4.1,
+          "p99": 4.5,
+          "max": 5.9
+        },
+        "gpuMs": {
+          "samples": 2770,
+          "p50": 6.14,
+          "p95": 8.89,
+          "p99": 10.46,
+          "max": 11.63
+        },
+        "shaderMs": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2770,
+          "p50": 469,
+          "p95": 469,
+          "p99": 469,
+          "max": 469
+        },
+        "triangles": {
+          "samples": 2770,
+          "p50": 10512246,
+          "p95": 10512246,
+          "p99": 10512246,
+          "max": 10512246
+        },
+        "pendingTerrain": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2770,
+          "p50": -790,
+          "p95": -790,
+          "p99": -790,
+          "max": -790
+        },
+        "z": {
+          "samples": 2770,
+          "p50": -510,
+          "p95": -510,
+          "p99": -510,
+          "max": -510
+        },
+        "clima": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "movimiento": {
+          "samples": 2770,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 0.8
+        },
+        "oceano": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "dinamica": {
+          "samples": 2770,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.5
+        },
+        "terreno": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "vegetacion": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "pasto": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "assets": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2770,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "ui": {
+          "samples": 2770,
+          "p50": 0.3,
+          "p95": 0.4,
+          "p99": 0.5,
+          "max": 0.7
+        }
+      },
+      "over50": 0,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29177.79999998212,
+        "jsUsedBytes": 387600706,
+        "jsAllocatedBytes": 504426166,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1750,
+        "geometries": 1645,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -790,
+        "z": -510
+      },
+      "copyCostsMs": [
+        1,
+        2.300000011920929,
+        4.199999988079071,
+        4.0999999940395355,
+        4.699999988079071,
+        5.0999999940395355
+      ]
+    },
+    {
+      "scenario": "pradera-florida",
+      "repetition": 3,
+      "setup": {
+        "scenario": {
+          "id": "pradera-florida",
+          "x": -790,
+          "z": -510
+        },
+        "warmupMs": 15171.59999999404,
+        "settled": true,
+        "pose": {
+          "player": [
+            -790,
+            11.43899996221788,
+            -510
+          ],
+          "camera": [
+            -781.6656534103223,
+            17.573874371059453,
+            -506.2781096218293
+          ],
+          "target": [
+            -790,
+            13.488999962217878,
+            -510
+          ],
+          "alpha": 0.42,
+          "beta": 1.15,
+          "radius": 10,
+          "fov": 0.8,
+          "mode": "grounded",
+          "insideCave": false,
+          "postProcessActive": false
+        }
+      },
+      "raw": "pradera-florida-3.json.gz",
+      "frames": 2764,
+      "actualMs": 30025.19999998808,
+      "startPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "endPose": {
+        "player": [
+          -790,
+          11.43899996221788,
+          -510
+        ],
+        "camera": [
+          -781.6656534103223,
+          17.573874371059453,
+          -506.2781096218293
+        ],
+        "target": [
+          -790,
+          13.488999962217878,
+          -510
+        ],
+        "alpha": 0.42,
+        "beta": 1.15,
+        "radius": 10,
+        "fov": 0.8,
+        "mode": "grounded",
+        "insideCave": false,
+        "postProcessActive": false
+      },
+      "resolution": [
+        1264,
+        805
+      ],
+      "viewportCss": [
+        1264,
+        805
+      ],
+      "scaling": 1,
+      "metrics": {
+        "timeMs": {
+          "samples": 2764,
+          "p50": 15024.9,
+          "p95": 28532.5,
+          "p99": 29721.9,
+          "max": 30005
+        },
+        "frameMs": {
+          "samples": 2764,
+          "p50": 10.2,
+          "p95": 14.3,
+          "p99": 16.5,
+          "max": 67.3
+        },
+        "updateMs": {
+          "samples": 2764,
+          "p50": 0.6,
+          "p95": 1,
+          "p99": 1.1,
+          "max": 1.6
+        },
+        "renderMs": {
+          "samples": 2764,
+          "p50": 9.3,
+          "p95": 13.1,
+          "p99": 15.1,
+          "max": 65.6
+        },
+        "cameraMs": {
+          "samples": 2764,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 0.8
+        },
+        "activeMeshesMs": {
+          "samples": 2764,
+          "p50": 2.7,
+          "p95": 4.1,
+          "p99": 4.5,
+          "max": 6.5
+        },
+        "gpuMs": {
+          "samples": 2764,
+          "p50": 6.14,
+          "p95": 8.78,
+          "p99": 10.55,
+          "max": 12.65
+        },
+        "shaderMs": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "drawCalls": {
+          "samples": 2764,
+          "p50": 469,
+          "p95": 469,
+          "p99": 469,
+          "max": 469
+        },
+        "triangles": {
+          "samples": 2764,
+          "p50": 10512246,
+          "p95": 10512246,
+          "p99": 10512246,
+          "max": 10512246
+        },
+        "pendingTerrain": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "pendingLoads": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "x": {
+          "samples": 2764,
+          "p50": -790,
+          "p95": -790,
+          "p99": -790,
+          "max": -790
+        },
+        "z": {
+          "samples": 2764,
+          "p50": -510,
+          "p95": -510,
+          "p99": -510,
+          "max": -510
+        },
+        "clima": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.2,
+          "max": 0.2
+        },
+        "movimiento": {
+          "samples": 2764,
+          "p50": 0.2,
+          "p95": 0.3,
+          "p99": 0.4,
+          "max": 0.8
+        },
+        "oceano": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "dinamica": {
+          "samples": 2764,
+          "p50": 0.1,
+          "p95": 0.2,
+          "p99": 0.3,
+          "max": 0.6
+        },
+        "terreno": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "vegetacion": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "pasto": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.1
+        },
+        "props": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "assets": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "agua": {
+          "samples": 2764,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.2
+        },
+        "ui": {
+          "samples": 2764,
+          "p50": 0.3,
+          "p95": 0.4,
+          "p99": 0.6,
+          "max": 0.8
+        }
+      },
+      "over50": 1,
+      "over100": 0,
+      "resources": {
+        "timeMs": 29174,
+        "jsUsedBytes": 356634586,
+        "jsAllocatedBytes": 405836278,
+        "jsLimitBytes": 4395630592,
+        "meshes": 1750,
+        "geometries": 1645,
+        "textures": 227,
+        "materials": 606,
+        "skeletons": 1,
+        "morphManagers": 8,
+        "animationGroups": 36,
+        "animatables": 195,
+        "x": -790,
+        "z": -510
+      },
+      "copyCostsMs": [
+        0.9000000059604645,
+        3.0999999940395355,
+        2.5,
+        3.300000011920929,
+        4.200000017881393,
+        5.0999999940395355
+      ]
+    }
+  ],
+  "errors": [],
+  "finalEnvironment": {
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "cores": 12,
+    "approximateDeviceMemoryGiB": 32,
+    "backend": "webgl2",
+    "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "viewportCss": [
+      1264,
+      805
+    ],
+    "dpr": 1,
+    "material": "auralia-biome-terrain",
+    "materialState": {
+      "biomeMaterials": {
+        "status": "ready",
+        "layers": 17,
+        "samplers": 3,
+        "gpuBytes": 47535445.333333336,
+        "sharedWaterMask": true,
+        "sourceSize": 1024,
+        "runtimeSize": 512
+      }
+    },
+    "navigation": [
+      {
+        "domContentLoadedMs": 310.80000001192093,
+        "loadMs": 310.90000000596046,
+        "type": "reload"
+      }
+    ],
+    "notes": "Isolated dev-server fixture; DOM timings are not a measured game-ready time. Heap is not total Chrome RAM or VRAM."
+  }
+}

@@ -25,6 +25,21 @@ export function environment(){
       domContentLoadedMs:n.domContentLoadedEventEnd,loadMs:n.loadEventEnd,type:n.type})),
     notes:'Isolated dev-server fixture; DOM timings are not a measured game-ready time. Heap is not total Chrome RAM or VRAM.'};
 }
+// Sampled on demand after a rendered frame; never runs in the game loop.
+export function meshBreakdown(){
+  const {world}=window.review,scene=world.scene;
+  const meshes=scene.getActiveMeshes().data.slice(0,scene.getActiveMeshes().length);
+  const rows=meshes.map(mesh=>{
+    const instances=mesh.thinInstanceCount||mesh.instances?.length||1;
+    const triangles=mesh.getTotalIndices()/3*instances;
+    return {name:mesh.name,material:mesh.material?.name??null,
+      indices:mesh.getTotalIndices(),instances,triangles,
+      thinInstances:mesh.thinInstanceCount||0,subMeshes:mesh.subMeshes?.length??0};
+  }).filter(row=>row.triangles>0).sort((a,b)=>b.triangles-a.triangles);
+  return {activeMeshes:meshes.length,sceneActiveTriangles:scene.getActiveIndices()/3,
+    estimatedMeshTriangles:rows.reduce((sum,row)=>sum+row.triangles,0),
+    rows};
+}
 export async function prepare(id){
   const scenario=scenarios.find(s=>s.id===id);if(!scenario)throw new Error(`Unknown scenario ${id}`);
   const {world}=window.review;

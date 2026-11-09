@@ -97,3 +97,19 @@ El costo mediano de actualización del juego fue 0,3–1,3 ms, mientras que el b
 3. Completar las capturas dinámicas y prolongadas de memoria. Solo después valorar presupuestos compartidos, cachés o cambios de streaming según los picos observados.
 
 No se ha aplicado una optimización de renderizado ni se afirma una reducción de memoria o aumento de FPS en esta entrega. El resultado es recuperar reproducibilidad, corregir premisas del dossier y establecer evidencia para decidir la primera intervención.
+
+## Continuación: desglose de renderizado
+
+Se añadió un perfil bajo demanda que enumera las mallas activas, sus materiales, índices e instancias desde la misma escena aislada. [El desglose a 1264 × 805](../../artifacts/optimization/phase1/mesh-breakdown-fullsize.json) coincide exactamente con `scene.getActiveIndices()/3` en las tres escenas; no suma una estimación distinta a la telemetría F8. Se captura con `node scripts/profile-mesh-breakdown.mjs <salida>` y un Chrome dedicado con depuración local, igual que el benchmark. No se ejecuta en el bucle de juego.
+
+| Escena | Triángulos activos | Assets editables V4 | Mallas V4 activas | `v4GrassShort` |
+|---|---:|---:|---:|---:|
+| Brisalia | 1.167.629 | 137.584 | 36 | 0 |
+| Bosque ilustrado | 10.487.832 | 9.611.069 (91,6 %) | 320 | 3.089.778 |
+| Pradera florida | 11.283.821 | 10.385.632 (92,0 %) | 320 | 2.692.215 |
+
+Se ensayó reducir de 255 a 190 m el radio de render de los tres pastos V4. Los triángulos activos bajaron 10,8 % en bosque y 6,8 % en pradera, con el mismo número de draw calls. [Las seis capturas del ensayo](../../artifacts/optimization/phase1/grass190/baseline.json) muestran menos tiempo que la referencia anterior, pero [un nuevo control con el radio original](../../artifacts/optimization/phase1/control255-repeat/baseline.json), en el mismo Chrome y resolución, también mejoró mucho respecto de aquella referencia. En bosque, las medianas de tres repeticiones fueron: radio original repetido 10,4 ms por cuadro, 14,5 ms p95 y 5,98 ms GPU; ensayo 10,1 ms, 14,0 ms p95 y 5,93 ms GPU. La diferencia de GPU es pequeña frente a la variación entre sesiones. Se restauró el radio original para conservar la densidad visual; no se atribuye el cambio grande de FPS al ensayo.
+
+La próxima hipótesis se enfoca en evaluación y envío de mallas: el control del bosque tiene 427 mallas activas, 474 draw calls y 2,8 ms p50 de evaluación de mallas. Hay que separar el costo de los 320 componentes V4 del resto y probar agrupación o visibilidad con una comparación A/B en el mismo navegador. La fase de movimiento y la memoria total del proceso siguen pendientes.
+
+En esta continuación, `npm run check` y `npm run test:vegetation` pasaron. La prueba de vegetación ahora espera a que la cola alcance el anillo lejano y repite el mismo número de tandas tras recargar. `npm run test:stream` pasó una vez con 2.213 ms de inicialización; el límite de 2.500 ms ya había fallado bajo otras condiciones, por lo que no se considera estable. `npm run test:geography` sigue fallando: tras reconocer los soportes triangulados que toca la nueva cuenca, llega a la expectativa antigua de más de 25 m de relieve exterior. No se redujo ese umbral ni se cambió el terreno para hacer pasar la prueba.

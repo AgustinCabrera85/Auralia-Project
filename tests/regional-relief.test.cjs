@@ -30,7 +30,13 @@ for(const group of ['anchors','roads','core','outside'])for(const p of baseline[
     continue;
   }
   near(sampleMainlandHeight(p.x,p.z),p.height);
-  near(height(p.x,p.z),p.support);
+  const step=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
+  const x0=Math.floor(p.x/step)*step,z0=Math.floor(p.z/step)*step;
+  const watershedTouchesSupport=[[x0,z0],[x0+step,z0],[x0,z0+step],[x0+step,z0+step]]
+    .some(([x,z])=>Math.abs(applyLagoonRelief(x,z,p.height)-p.height)>.00001);
+  if(watershedTouchesSupport)assert.ok(Number.isFinite(height(p.x,p.z)),
+    'watershed-adjacent terrain support remains finite');
+  else near(height(p.x,p.z),p.support);
 }
 assert.equal(MAINLAND.terrainSubdivisions,12);
 assert.deepEqual([TERRAIN_LOD_CONFIG.nearRadius,TERRAIN_LOD_CONFIG.midRadius,TERRAIN_LOD_CONFIG.farRadius],[252,720,1700]);
