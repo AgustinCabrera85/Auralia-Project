@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
-import {NullEngine,Scene,LoadAssetContainerAsync,TransformNode,FreeCamera,Vector3} from '@babylonjs/core';
+import {NullEngine,Scene,LoadAssetContainerAsync,TransformNode,FreeCamera,Vector3,Matrix} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 fs.mkdirSync('.test-build',{recursive:true});
 fs.writeFileSync('.test-build/feet-runtime.mjs',ts.transpileModule(fs.readFileSync('src/game/GroundFootPlacement.ts','utf8'),
@@ -9,7 +9,7 @@ fs.writeFileSync('.test-build/feet-runtime.mjs',ts.transpileModule(fs.readFileSy
 const {GroundFootPlacement}=await import('../.test-build/feet-runtime.mjs');
 const models=[
   ['santi/Santi_NLA_SK_Opt.glb','Santi_Mesh_primitive0',3.8,.55,
-    [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot'],['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot']]],
+    [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot',-1],['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot',1]]],
   ['dogo/Dogo_Auralia.glb','Dogo_primitive0',1.35,.32,
     [['front_upper.L','front_forearm.L','front_paw.L'],['front_upper.R','front_forearm.R','front_paw.R'],
      ['hind_thigh.L','hind_shin.L','hind_paw.L'],['hind_thigh.R','hind_shin.R','hind_paw.R']]]
@@ -39,6 +39,61 @@ for(const [file,bodyName,height,adjust,chains] of models){
     assert.ok(status.feet.every(f=>Math.abs(f.error)<.035),JSON.stringify({file,sx,sz,step,status}));
     assert.ok(Math.abs(status.pelvis)<=adjust+.001);
     runs.push({hz,sx,sz,step,maxError:Math.max(...status.feet.map(f=>Math.abs(f.error)))});
+  }
+  // Landing reenables support gradually; the first grounded render must not
+  // pull a previously free ankle to the surface in one visible step.
+  solver.update(1/60,false,{ground:()=>null},{x:0,z:0});scene.render();restore();
+  const settleFoot=footNodes[0];settleFoot.computeWorldMatrix(true);
+  const initialY=settleFoot.absolutePosition.y,settled=[];
+  const raised={ground:()=>({height:adjust*.55,normalY:1})};
+  for(let i=0;i<14;i++){
+    solver.update(1/60,true,raised,{x:0,z:0});scene.render();
+    settleFoot.computeWorldMatrix(true);settled.push(settleFoot.absolutePosition.y);
+  }
+  assert.ok(Math.abs(settled[0]-initialY)<adjust*.25,
+    'the first support frame blends only a fraction of the foot correction');
+  assert.ok(Math.abs(settled.at(-1)-initialY)>adjust*.35,
+    'the foot still reaches the raised surface after settling');
+  assert.ok(settled.every((y,i)=>i===0||Math.abs(y-settled[i-1])<adjust*.3),
+    'landing support has no abrupt frame-to-frame foot snap');
+  if(height>2){
+    // The real gait used to flip a nearly straight knee across the body and
+    // backward when IK raised the foot, particularly on an ascending slope.
+    const localPoint=(node,inverse)=>{
+      node.computeWorldMatrix(true);
+      return Vector3.TransformCoordinates(node.absolutePosition,inverse);
+    };
+    for(const action of ['Walking (6)','Ascending Stairs'])for(const slope of [0,.35]){
+      const group=asset.animationGroups.find(g=>g.name===action);
+      assert.ok(group);group.start(true);
+      const previous=[null,null];
+      for(let frame=0;frame<24;frame++){
+        solver.restore();group.goToFrame(group.from+(group.to-group.from)*frame/24,true);
+        const inverse=Matrix.Invert(root.computeWorldMatrix(true));
+        const authored=chains.map(([a,b,c])=>{
+          const [hip,knee,foot]=[a,b,c].map(name=>asset.transformNodes.find(n=>n.name===name));
+          const [h,k,f]=[hip,knee,foot].map(node=>localPoint(node,inverse));
+          const along=f.subtract(h).normalize();
+          const bend=k.subtract(h).subtractInPlace(along.scale(Vector3.Dot(k.subtract(h),along)));
+          return {hip,knee,foot,bendZ:bend.z};
+        });
+        solver.update(1/60,true,{ground:(x,z)=>({height:slope*z,normalY:1/Math.hypot(1,slope)})},{x:0,z:0});
+        solver.apply();
+        for(let side=0;side<2;side++){
+          const {hip,knee,foot,bendZ}=authored[side];
+          const [h,k,f]=[hip,knee,foot].map(node=>localPoint(node,inverse));
+          const limit=side===0?Math.max(h.x,f.x)+.05:Math.min(h.x,f.x)-.05;
+          assert.ok(side===0?k.x<=limit:k.x>=limit,`${action} slope=${slope} frame=${frame}: knee crosses inward`);
+          const axis=f.subtract(h).normalize();
+          const afterBend=k.subtract(h).subtractInPlace(axis.scale(Vector3.Dot(k.subtract(h),axis)));
+          if(bendZ>.02)assert.ok(afterBend.z>0,`${action} slope=${slope} frame=${frame}: knee bend flips`);
+          if(previous[side])assert.ok(Vector3.Distance(k,previous[side])<.5,
+            `${action} slope=${slope} frame=${frame}: knee snaps between frames`);
+          previous[side]=k;
+        }
+      }
+      group.stop();
+    }
   }
   // A lifted foot remains lifted. Correcting the support cannot freeze the gait.
   solver.update(1/60,false,{ground:()=>null},{x:0,z:0});scene.render();restore();

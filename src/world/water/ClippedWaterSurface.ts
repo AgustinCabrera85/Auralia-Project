@@ -18,7 +18,7 @@ export function* clippedWaterSurface(scene:Scene,parent:TransformNode,g:ActiveWo
     if(h===undefined){h=g.source.heightAt(x,z);heights.set(key,h);}return h;};
   const at=(x:number,z:number):Point=>{
     const key=`${x}:${z}`,known=cache.get(key);if(known)return known;
-    const field=g.ownsLagoon(x,z)?null:g.waterFieldAt!(x,z),height=nearTerrainHeightAt(x,z,ground);
+    const field=g.ownsLagoon(x,z)?null:g.waterFieldAt!(x,z),height=nearTerrainHeightAt(x,z,ground,g.source.meshSpacing);
     const level=field?.level??0,depth=level-height;
     const point={x,z,level,depth,wet:!!field&&depth>0,pool:field?.kind==='lake'||field?.kind==='lagoon'};
     cache.set(key,point);return point;

@@ -143,14 +143,17 @@ try{
   const managersBeforeSanti=new Set(scene.morphTargetManagers);
   const santi=new SantiCharacter(scene,parent,url);
   assert.equal(await santi.load(),true);
+  santi.blinkTime=-1000; // Isolate existing exact expression-count assertions.
   assert.equal(santi.actions.size,35);
   assert.ok(santi.shapeKeys.size>=52);
   const santiManagers=scene.morphTargetManagers.filter(manager=>!managersBeforeSanti.has(manager));
   assert.ok(santiManagers.length>0);
   assert.ok(santiManagers.every(manager=>manager.optimizeInfluencers&&manager.numMaxInfluencers===0),
     'character shaders process active facial weights instead of all exported targets');
-  assert.ok(santiManagers.every(manager=>manager.numInfluencers<=1),
-    'the default smile activates at most one target per mesh');
+  assert.ok(santiManagers.every(manager=>manager.numInfluencers<=3),
+    'the default smile and both prepared eyelids fit the shader budget');
+  assert.ok(santiManagers.some(manager=>manager.numInfluencers===3),
+    'blink targets are active before the first blink');
   assert.ok(santiManagers.every(manager=>!manager.useTextureToStoreTargets),
     'ordinary expressions do not allocate an atlas containing every facial target');
   const jumpSpin=scene.getAnimationGroupByName('Santi Air Kick');
@@ -190,10 +193,14 @@ try{
   const uphill={mode:'grounded',moving:true,run:false,sprint:false,backward:false,
     groundGrade:.6,feetY:2,jumpStarted:false};
   for(let i=0;i<15;i++)santi.update(.02,uphill);
-  assert.ok(santi.actions.get('Ascending Stairs').isPlaying,'walking uphill uses the stair NLA');
+  assert.ok(santi.actions.get('Walking (6)').isPlaying,'a walkable hillside keeps the walking gait');
   santi.update(.2,{...uphill,run:true});
-  assert.ok(santi.actions.get('Running Up Stairs').isPlaying,'running uphill uses its stair NLA');
-  santi.update(.2,{...uphill,run:true,sprint:true});
+  assert.ok(santi.actions.get('Run').isPlaying,'running on a hillside keeps the running gait');
+  santi.update(.2,{...uphill,onStairs:true});
+  assert.ok(santi.actions.get('Ascending Stairs').isPlaying,'a marked stair can use its authored gait');
+  santi.update(.2,{...uphill,onStairs:true,run:true});
+  assert.ok(santi.actions.get('Running Up Stairs').isPlaying);
+  santi.update(.2,{...uphill,onStairs:true,run:true,sprint:true});
   assert.equal(santi.actions.get('Running Up Stairs').speedRatio,2);
   const lean=scene.getTransformNodeByName('santi-slope-orientation');
   assert.ok(lean.rotation.x>.1&&lean.rotation.x<.4,'2X sprint leans forward into the slope');
@@ -288,16 +295,33 @@ try{
   assert.ok(standingJump.isStarted&&!standingJump.isPlaying,
     'the suspended pose stays paused through physical descent');
   assert.ok(!fall.isPlaying,'standing jump keeps its suspended pose while descending');
+  const hardLanding=santi.actions.get('Hard Landing');
+  const landingRoot=rootTrack(hardLanding).animation.getKeys();
+  const idleRoot=rootTrack(santi.actions.get('Idle (1)')).animation.getKeys()[0].value;
+  assert.ok(landingRoot.every(key=>Math.abs(key.value.x-idleRoot.x)<1e-6&&
+    Math.abs(key.value.y-idleRoot.y)<1e-6),
+  'the impact keeps the body over the physics position instead of lunging forward and back');
+  santi.update(.016,{mode:'airborne',moving:false,run:false,backward:false,
+    feetY:.35,jumpStarted:false,descending:true,groundDistance:.35});
+  assert.ok(hardLanding.isStarted&&!hardLanding.isPlaying,
+    'Santi bends into impact before physical contact');
+  assert.ok(hardLanding.getCurrentFrame()<hardLanding.to*45/152,
+    'the approach stays ahead of the landing contact frame');
   santi.update(.016,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
-  assert.ok(standingJump.isPlaying,'standing jump recovery begins at physical landing');
-  assert.ok(standingJump.speedRatio>1,'landing recovery has its own timing');
-  assert.ok(standingJump.animatables.every(animatable=>
-    animatable.fromFrame>standingJump.to*.6),
-  'landing starts at the contact pose after the suspended frames');
-  assert.ok(Math.abs(standingJump.getCurrentFrame()-standingJump.to*35/54)<1,
-    'landing applies the contact pose on the first grounded frame');
-  santi.update(.6,{mode:'grounded',moving:false,run:false,backward:false,
+  assert.ok(hardLanding.isPlaying,'the grounded frame continues the impact pose');
+  assert.ok(hardLanding.speedRatio>1,'landing recovery has its own timing');
+  assert.ok(hardLanding.animatables.every(animatable=>
+    Math.abs(animatable.fromFrame-hardLanding.to*45/152)<1),
+  'landing starts at the authored foot-contact frame');
+  assert.ok(Math.abs(hardLanding.getCurrentFrame()-hardLanding.to*45/152)<1,
+    'the grounded frame does not begin upright');
+  const contactFeet=['mixamorig:LeftFoot','mixamorig:RightFoot'].map(name=>{
+    const foot=scene.getTransformNodeByName(name);foot.computeWorldMatrix(true);
+    return foot.absolutePosition.y;
+  });
+  assert.ok(contactFeet.every(y=>y<.5),`the impact pose plants both feet: ${contactFeet}`);
+  santi.update(.8,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
   assert.ok(santi.actions.get('Idle (1)').isPlaying,'idle resumes after landing recovery');
   santi.update(.016,{mode:'airborne',moving:false,run:false,backward:false,
@@ -323,8 +347,8 @@ try{
     'the second jump holds the suspended pose until ground contact');
   santi.update(.016,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
-  assert.ok(standingJump.isPlaying,'double jump also recovers on landing');
-  santi.update(.6,{mode:'grounded',moving:false,run:false,backward:false,
+  assert.ok(hardLanding.isPlaying,'double jump also recovers on landing');
+  santi.update(.8,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
   santi.update(.016,{mode:'airborne',moving:false,run:false,backward:false,
     feetY:.1,takeoffY:0,jumpStarted:true});
@@ -335,9 +359,9 @@ try{
   assert.equal(earlySpinLanding?.kind,'standing',
     'early ground contact ends the airborne kick immediately');
   assert.equal(jumpSpin.isStarted,false);
-  assert.ok(Math.abs(standingJump.getCurrentFrame()-standingJump.to*35/54)<1,
+  assert.ok(Math.abs(hardLanding.getCurrentFrame()-hardLanding.to*45/152)<1,
     'the aerial kick enters the landing contact pose, never its ground attack recovery');
-  santi.update(.6,{mode:'grounded',moving:false,run:false,backward:false,
+  santi.update(.8,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
   santi.update(.016,{mode:'airborne',moving:true,run:false,backward:false,
     feetY:.1,takeoffY:0,jumpStarted:true});
@@ -372,9 +396,13 @@ try{
     feetY:10,takeoffY:10,jumpStarted:false});
   santi.update(.3,{mode:'airborne',moving:false,run:false,backward:false,
     feetY:4,jumpStarted:false});
+  santi.update(.016,{mode:'airborne',moving:false,run:false,backward:false,
+    feetY:.8,jumpStarted:false,descending:true,groundDistance:.8});
+  const highFallRoll=santi.actions.get(SANTI_COMBAT.highFallRoll);
+  assert.ok(highFallRoll.isStarted&&!highFallRoll.isPlaying,
+    'a high fall prepares the roll before the feet touch');
   santi.update(.016,{mode:'grounded',moving:false,run:false,backward:false,
     feetY:0,jumpStarted:false});
-  const highFallRoll=santi.actions.get(SANTI_COMBAT.highFallRoll);
   assert.ok(highFallRoll.isPlaying,'a high drop automatically starts Falling To Roll');
   assert.ok(highFallRoll.animatables.every(animatable=>
     animatable.fromFrame>highFallRoll.to*.1),
@@ -389,7 +417,7 @@ try{
   assert.ok(surprise.every(target=>target.influence===.6),
     'skeletal locomotion leaves the facial expression intact');
   assert.equal(santi.setShapeKey('SF_01_FELIZ_SonrisaNatural',.3),true);
-  assert.ok(santiManagers.some(manager=>manager.numInfluencers===2),
+  assert.ok(santiManagers.some(manager=>manager.numInfluencers===4),
     'active-target optimization still supports blending multiple facial shapes');
   assert.ok(surprise.every(target=>target.influence===.6));
   assert.ok(santiManagers.every(manager=>!manager.useTextureToStoreTargets),
@@ -509,6 +537,8 @@ try{
       const doubleJumpStarted=(jumpPressed||airKickPressed)&&beforeJumps===1&&avatar.jumpCount===2;
       santi.update(dt,{...grounded,mode:avatar.mode,moving,movementIntent:!stationary,run:!stationary,
         feetY:avatar.position.y,takeoffY:beforeY,
+        descending:avatar.mode==='airborne'&&avatar.position.y<beforeY,
+        groundDistance:avatar.mode==='airborne'?avatar.position.y:null,
         jumpStarted:beforeMode==='grounded'&&jumpPressed&&avatar.mode==='airborne',
         doubleJumpStarted,airKickStarted:doubleJumpStarted&&airKickPressed});
     };
@@ -539,9 +569,70 @@ try{
     assert.equal(avatar.mode,'grounded','repeated Q cannot keep the character flying');
     assert.equal(avatar.airKickActive,false);
     assert.equal(avatar.jumpCount,0,'landing restores the second jump');
-    assert.ok(santi.actions.get(stationary?'Jumping':'Run').isPlaying,
+    assert.ok(santi.actions.get(stationary?'Hard Landing':'Run').isPlaying,
       'Q lands into recovery or held running according to movement input');
   }
+  // A stationary jump on sloping ground must land crouched at the same place.
+  settleCombat();
+  const slopeAvatar=new CharacterTraversalController();
+  const slope=.28,groundHeight=(x,z)=>slope*z;
+  slopeAvatar.teleport(0,groundHeight(0,0),0);
+  const slopeWorld={ground:(x,z,origin,max)=>{
+    const height=groundHeight(x,z);
+    return origin>=height&&origin-max<=height?
+      {height,normalY:1/Math.hypot(1,slope)}:null;
+  },solidTop:()=>null,wall:()=>null,headroom:()=>true,canMove:()=>true,
+  fallbackHeight:groundHeight};
+  const hipNode=scene.getTransformNodeByName('mixamorig:Hips');
+  const headNode=scene.getTransformNodeByName('mixamorig:Head');
+  const soles=['mixamorig:LeftFoot','mixamorig:RightFoot'].map(name=>scene.getTransformNodeByName(name));
+  const originalDeltaTime=engine.getDeltaTime;
+  engine.getDeltaTime=()=>1000/60;
+  let slopeApproach=false,slopeImpact=false,impactFrame=-1;
+  const settlingFeet=[];
+  for(let frame=0;frame<100;frame++){
+    const dt=1/60,beforeY=slopeAvatar.position.y,beforeMode=slopeAvatar.mode;
+    slopeAvatar.step(dt,{moveX:0,moveZ:0,forwardX:0,forwardZ:1,
+      horizontal:0,vertical:0,run:false,sprint:false,jumpPressed:frame===0},slopeWorld);
+    const p=slopeAvatar.position;
+    parent.position.set(p.x,p.y,p.z);
+    const distance=p.y-groundHeight(p.x,p.z);
+    santi.update(dt,{mode:slopeAvatar.mode,moving:false,run:false,sprint:false,
+      backward:false,feetY:p.y,takeoffY:beforeY,
+      jumpStarted:beforeMode==='grounded'&&slopeAvatar.mode==='airborne',
+      descending:slopeAvatar.mode==='airborne'&&p.y<beforeY,
+      groundDistance:slopeAvatar.mode==='airborne'?distance:null});
+    santi.updateGroundContact(dt,slopeAvatar.mode==='grounded',slopeWorld,{x:0,z:0});
+    scene.render();
+    if(slopeAvatar.mode==='airborne'&&hardLanding.isStarted&&!hardLanding.isPlaying)
+      slopeApproach=true;
+    if(beforeMode==='airborne'&&slopeAvatar.mode==='grounded'){
+      slopeImpact=true;impactFrame=frame;
+      assert.ok(slopeApproach,'impact animation starts before the physical landing');
+      for(const node of [hipNode,headNode,...soles])node.computeWorldMatrix(true);
+      const footY=Math.min(...soles.map(node=>node.absolutePosition.y));
+      assert.ok(headNode.absolutePosition.y-footY<2.1,
+        'the body is flexed at contact rather than landing upright');
+      assert.ok(Math.abs(footY-p.y)<.5,
+        `the planted foot stays near the sloped support: ${JSON.stringify({footY,player:p,frame:hardLanding.getCurrentFrame()})}`);
+    }
+    hipNode.computeWorldMatrix(true);
+    assert.ok(Math.hypot(hipNode.absolutePosition.x-p.x,hipNode.absolutePosition.z-p.z)<.2,
+      `stationary slope jump cannot move the model away from its collider at frame ${frame}: ${JSON.stringify({hip:hipNode.absolutePosition.asArray(),player:p})}`);
+    if(impactFrame>=0&&frame-impactFrame<48){
+      for(const node of soles)node.computeWorldMatrix(true);
+      settlingFeet.push(soles.map(node=>node.absolutePosition.clone()));
+    }
+  }
+  engine.getDeltaTime=originalDeltaTime;
+  assert.ok(slopeImpact);
+  assert.ok(Math.hypot(slopeAvatar.position.x,slopeAvatar.position.z)<1e-6);
+  assert.ok(settlingFeet.length>=40);
+  assert.ok(settlingFeet.every((feet,i)=>i===0||feet.every((foot,side)=>
+    Vector3.Distance(foot,settlingFeet[i-1][side])<.22)),
+  'feet settle continuously through impact, recovery and the return to idle');
+  parent.position.set(0,0,0);
+  settleCombat();
   for(const hz of [30,60,144]){
     settleCombat();
     const dt=1/hz;
@@ -669,6 +760,33 @@ try{
       key.value.x===first.x&&key.value.y===first.y),
     `${name} keeps the visual aligned with the player collider`);
   }
+  // Real exported eyelids, while a skeletal action and a facial expression run.
+  santi.setExpression('SF_01_FELIZ_SonrisaNatural',.22);
+  scene.render();
+  const blinkStorage=santiManagers.map(manager=>manager.useTextureToStoreTargets);
+  const blinkInfluencers=santiManagers.map(manager=>manager.numInfluencers);
+  for(const hz of [30,60,144]){
+    santi.blinkTime=0;santi.repeatBlink=true;
+    let peak=0,returned=false;
+    for(let t=0;t<.5;t+=1/hz){
+      santi.update(1/hz,grounded);scene.render();
+      const left=santi.shapeKeys.get('SF_AU45_Blink_L').map(t=>t.influence);
+      const right=santi.shapeKeys.get('SF_AU45_Blink_R').map(t=>t.influence);
+      assert.deepEqual(left,right,'both eyelids move together on every primitive');
+      peak=Math.max(peak,...left);if(peak>.95&&left.every(v=>v<.00001))returned=true;
+      assert.ok(santi.shapeKeys.get('SF_01_FELIZ_SonrisaNatural').every(t=>t.influence===.22));
+      assert.deepEqual(santiManagers.map(manager=>manager.numInfluencers),blinkInfluencers,
+        'blinking never changes the shader influencer count');
+      assert.deepEqual(santiManagers.map(manager=>manager.useTextureToStoreTargets),blinkStorage,
+        'blinking never rebuilds morph storage');
+    }
+    assert.ok(peak>.95&&returned,`blink closes and reopens at ${hz} FPS`);
+    assert.ok(santi.blinkTime< -2,'the next spontaneous blink waits several seconds');
+  }
+  santi.setShapeKey('SF_AU45_Blink_L',.4);santi.blinkTime=0;santi.repeatBlink=true;
+  for(let i=0;i<30;i++)santi.update(1/60,grounded);
+  assert.ok(santi.shapeKeys.get('SF_AU45_Blink_L').every(t=>t.influence===.4),
+    'automatic blinking restores a manually authored eyelid pose');
   santi.dispose();
   assert.equal(santi.isReady,false);
   assert.deepEqual(new Set(scene.morphTargetManagers),managersBeforeSanti,

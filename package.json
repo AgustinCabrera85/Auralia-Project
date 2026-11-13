@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "check": "tsc --noEmit",
+    "test:geographic-detail": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts src/world/geography/PlayableWorld.ts && node tests/setup-cjs.cjs && node tests/geographic-detail.test.cjs",
     "test:grass-lod": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/grass/GrassSectorSystem.ts src/world/geography/PlayableWorld.ts && node tests/setup-cjs.cjs && node tests/grass-lod.test.cjs",
     "test:lagoon-vegetation": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/LagoonVegetation.ts src/world/editor/AuthoredAssets.ts && node tests/setup-cjs.cjs && node tests/lagoon-vegetation.test.cjs",
     "test:lagoon-shore": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts src/world/geography/PlayableWorld.ts src/world/GeographyStream.ts src/world/water/OceanWater.ts && node tests/setup-cjs.cjs && node tests/lagoon-shore.test.cjs",

@@ -6,6 +6,9 @@ dist/
 .env.local
 .DS_Store
 
+# Disposable screenshots and measurements from the water review harness.
+/artifacts/geographic-source/water-review/
+
 # These are runtime dependencies, even when a local .git/info/exclude hides
 # authoring experiments. A clean checkout needs the genuine editor and world.
 !/src/world/editor/

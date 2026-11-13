@@ -1,9 +1,9 @@
 {
   "perimeterSamples": 1805,
-  "waterChecks": 494,
+  "waterChecks": 497,
   "lodChecks": 225,
-  "maxLodError": 2.9753977059954195e-14,
-  "maxShoreRadiusErrorMeters": 0.02427964836356367,
+  "maxLodError": 2.842170943040401e-14,
+  "maxShoreRadiusErrorMeters": 0.006418519317984207,
   "shoreSections": 80,
   "waterMeshes": [
     {
@@ -34,37 +34,37 @@
       "x": -2947.4239246364523,
       "z": -1240.230552079488,
       "lod": "near",
-      "triangles": 947
+      "triangles": 945
     },
     {
       "x": -2947.4239246364523,
       "z": -1240.230552079488,
       "lod": "far",
-      "triangles": 947
+      "triangles": 945
     },
     {
       "x": -2701.0239246364526,
       "z": -1321.6305520794879,
       "lod": "near",
-      "triangles": 821
+      "triangles": 833
     },
     {
       "x": -2701.0239246364526,
       "z": -1321.6305520794879,
       "lod": "far",
-      "triangles": 821
+      "triangles": 833
     },
     {
       "x": -2432.6239246364526,
       "z": -1266.630552079488,
       "lod": "near",
-      "triangles": 901
+      "triangles": 909
     },
     {
       "x": -2432.6239246364526,
       "z": -1266.630552079488,
       "lod": "far",
-      "triangles": 901
+      "triangles": 909
     }
   ],
   "impacts": [

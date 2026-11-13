@@ -29,6 +29,7 @@ function contains(points:readonly (readonly [number,number])[],x:number,z:number
  * move existing content; only local settlement/watershed relief is adapted. */
 export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   readonly id='worldstudio-playable-v1';readonly streamed=true;readonly source=this;
+  readonly meshSpacing=3;
   readonly town={x:-1250,z:1943};readonly surface=new GeographicSurface(this);
   readonly dock={x:-1217,z:3700};
   get firefly(){return {x:this.dock.x-400,z:this.dock.z+420};}
@@ -118,7 +119,17 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
     }
     return height;
   }
-  weightsAt(x:number,z:number,height:number,slope:number){return this.scaffold.weightsAt(x,z,height,slope);}
+  weightsAt(x:number,z:number,height:number,slope:number){
+    const base=this.scaffold.weightsAt(x,z,height,slope);
+    const field=this.waterFieldAt(x,z);
+    // Incised upland channels have exposed bedrock. Blend through the wetted
+    // bank, retaining sand around lowland lagoons and the open coast.
+    const rocky=field?.kind==='stream'?smooth(this.seaLevel+3,this.seaLevel+18,field.level)*
+      (1-smooth(field.level-.4,field.level+2.2,height)):0;
+    const dry=1-rocky;
+    return [base[0]*dry,base[1]*dry+.14*rocky,base[2]*dry+.86*rocky,
+      base[3]*dry,base[4]*dry,base[5]*dry] as const;
+  }
   waterAt(x:number,z:number):WaterSample|null{
     const field=this.waterFieldAt(x,z);if(!field)return null;
     const depth=field.level-this.surface.heightAt(x,z);
@@ -127,7 +138,7 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   waterFieldAt(x:number,z:number):WaterSample|null{
     const p=regionLocal(this.lagoon,x,z),local=lagoonWaterAt(p.x,p.z);
     if(local)return {...local,level:Math.max(this.seaLevel,local.level+this.lagoon.y)};
-    // Ownership extends under the dry bank. Actual six-metre terrain clips
+    // Ownership extends under the dry bank. Actual canonical terrain clips
     // the waterline; neither the 8 m ocean mask nor an ellipse clips the shore.
     if(lagoonRadius(p.x,p.z)<1.12)
       return {kind:'lagoon',level:CASCADE_LAGOON.level+this.lagoon.y,distance:0,edge:1};

@@ -51,6 +51,7 @@ export const SANTI_LOCOMOTION = {
   uphillRun: 'Running Up Stairs',
   backward: 'Running Backward',
   jump: 'Jumping',
+  landing: 'Hard Landing',
   doubleJump: 'Jumping',
   runningJump: 'Running Jump',
   fall: 'Falling Idle',

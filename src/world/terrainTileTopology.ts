@@ -1,18 +1,17 @@
 import { TERRAIN_LOD_CONFIG, type TerrainLod } from './terrainLod';
 
 type TileTopology={size:number;offsets:ReadonlyArray<readonly [number,number]>;indices:number[]};
-const topologies=new Map<TerrainLod,TileTopology>();
+const topologies=new Map<string,TileTopology>();
 
-/** Coarse interiors meet on the same six-metre perimeter at every LOD.
+/** Coarse interiors meet on the same canonical perimeter at every LOD.
  * Refining only boundary cells avoids T-junctions without overlapping skirts
  * or rebuilding a tile when its neighbour finishes streaming.
  */
-export function terrainTileTopology(lod:TerrainLod):TileTopology{
-  const cached=topologies.get(lod);
+export function terrainTileTopology(lod:TerrainLod,unit=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions):TileTopology{
+  const key=`${lod}:${unit}`,cached=topologies.get(key);
   if(cached)return cached;
   const config=TERRAIN_LOD_CONFIG;
-  const size=config[`${lod}Size`],subdiv=config[`${lod}Subdivisions`];
-  const unit=config.nearSize/config.nearSubdivisions;
+  const size=config[`${lod}Size`],subdiv=lod==='near'?size/unit:config[`${lod}Subdivisions`];
   const ratio=size/subdiv/unit,stride=subdiv+1;
   const offsets:Array<readonly [number,number]>=[],indices:number[]=[];
   const vertices=new Map<string,number>();
@@ -48,18 +47,19 @@ export function terrainTileTopology(lod:TerrainLod):TileTopology{
       indices.push(anchor,polygon[(start+i)%count],polygon[(start+i+1)%count]);
   }
   const topology={size,offsets,indices};
-  topologies.set(lod,topology);
+  topologies.set(key,topology);
   return topology;
 }
 
 /** Keep only feature-crossed coarse cells at the playable resolution. Fine edge
  * vertices are shared with adjacent coarse cells and all tile perimeters. */
-export function featureTerrainTopology(lod:TerrainLod,refine:(x:number,z:number,size:number)=>boolean):TileTopology{
-  if(lod==='near')return terrainTileTopology(lod);
+export function featureTerrainTopology(lod:TerrainLod,refine:(x:number,z:number,size:number)=>boolean,
+  unit=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions):TileTopology{
+  if(lod==='near')return terrainTileTopology(lod,unit);
   const config=TERRAIN_LOD_CONFIG,size=config[`${lod}Size`],count=config[`${lod}Subdivisions`];
-  const unit=config.nearSize/config.nearSubdivisions,step=size/count,ratio=step/unit;
+  const step=size/count,ratio=step/unit;
   const fine=Array.from({length:count*count},(_,i)=>refine(i%count*step,Math.floor(i/count)*step,step));
-  if(!fine.some(Boolean))return terrainTileTopology(lod);
+  if(!fine.some(Boolean))return terrainTileTopology(lod,unit);
   const offsets:Array<readonly [number,number]>=[],indices:number[]=[],vertices=new Map<string,number>();
   const vertex=(x:number,z:number)=>{const key=`${x}:${z}`,found=vertices.get(key);if(found!==undefined)return found;
     const i=offsets.length;offsets.push([x,z]);vertices.set(key,i);return i;};

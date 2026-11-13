@@ -1407,11 +1407,16 @@ export class WorldView {
     const sprintDistance=sprintVisual?THIRD_PERSON_CAMERA.sprintDistance:0;
     this.sprintCameraOffset+=(sprintDistance-this.sprintCameraOffset)*
       Math.min(1,dt*(sprintVisual?4:5));
+    const contactWorld=this.traversalWorld(zone);
+    const descending=this.traversal.mode==='airborne'&&localY<feetBeforeStep-.001;
+    const landingGround=descending?contactWorld.ground(localX,localZ,localY+.1,1.6,
+      TRAVERSAL.playerRadius*.55):null;
     const landing=this.santi?.update(dt,{
       mode:this.traversal.mode,moving:walking,
       movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
       run:running,sprint:sprinting,
       groundGrade:this.traversal.groundGrade,
+      descending,groundDistance:landingGround?localY-landingGround.height:null,
       climbVertical:this.traversal.climbMotion.vertical,
       climbSide:this.traversal.climbMotion.side,
       climbContact:this.traversal.climbContact,
@@ -1422,7 +1427,7 @@ export class WorldView {
       jumpStarted:groundedBeforeStep&&jumpPressed&&this.traversal.mode==='airborne',
       doubleJumpStarted,airKickStarted:doubleJumpStarted&&airKickPressed
     });
-    this.santi?.updateGroundContact(dt,this.traversal.mode==='grounded',this.traversalWorld(zone),zone.offset);
+    this.santi?.updateGroundContact(dt,this.traversal.mode==='grounded',contactWorld,zone.offset);
     if(landing?.kind==='standing')
       this.beginDirectedMotion('landingHold',0,landing.duration-dt);
     else if(landing?.kind==='highFallRoll')

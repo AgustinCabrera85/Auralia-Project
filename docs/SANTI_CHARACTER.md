@@ -47,12 +47,18 @@ en sus fotogramas de contacto. Los ataques y rolls se ejecutan solo en suelo.
 Por ahora activan las animaciones; el juego aún no tiene daño ni enemigos de combate.
 El salto de pie omite la preparación inicial del clip. Sus fotogramas de
 despegue siguen el tiempo físico una sola vez y mantienen la pose suspendida
-desde el punto más alto hasta el aterrizaje. Al tocar suelo aplica de inmediato
-el fotograma de contacto y reproduce la recuperación. El salto corriendo conserva `Running Jump` hasta
-aterrizar; `Falling Idle` solo aparece
+desde el punto más alto hasta el descenso final. Al acercarse al suelo empieza
+la flexión de `Hard Landing`; el contacto físico continúa desde su pose con los
+pies apoyados y el torso bajo. El desplazamiento horizontal de la raíz de ese
+clip se fija al jugador, también al saltar quieto sobre un desnivel. La caída
+alta anticipa de la misma forma `Falling To Roll`. El salto corriendo conserva
+`Running Jump` hasta la aproximación al suelo; `Falling Idle` solo aparece
 si los pies descienden más de 1,5 unidades respecto del despegue. El movimiento
 de la raíz de ambos clips de salto se fija al inicio para que la trayectoria
 la controle la física del jugador.
+La corrección de pisada entra desde el impacto y aumenta durante 0,18 s;
+los pies se asientan mientras el torso se recupera, sin una corrección súbita
+al terminar la animación.
 
 El salto con Shift tiene más impulso vertical y conserva más velocidad horizontal
 que el salto caminando. En el aire, un segundo Espacio con una dirección pulsada
@@ -63,8 +69,10 @@ el primer tramo del vuelo. La carrera con doble Shift aplica una intensidad
 mucho menor mientras Santi avanza por el suelo; ambos efectos se desactivan
 cuando dejan de corresponder. El desenfoque preserva el centro luminoso del sol.
 Si se mantienen teclas de movimiento al aterrizar, el salto de pie o doble salto
-enlaza directamente con caminar o correr. Sin movimiento, la recuperación visual
-detiene el traslado hasta que termina para evitar que patine en una pose estática.
+enlaza desde la pose de impacto con caminar o correr. Sin movimiento, la
+recuperación visual detiene el traslado hasta que termina para evitar que patine.
+Las cuestas caminables usan `Walking (6)` o `Run`; las animaciones de subir
+escaleras requieren un contexto de escalera explícito.
 
 La barrida y el roll fijan su dirección al comenzar y avanzan con velocidad
 decreciente, sin giro libre durante el clip. El roll toma la dirección y velocidad
@@ -87,3 +95,20 @@ el personaje provisional.
 
 Verificación: `npm run test:santi` comprueba que las 35 acciones mueven huesos,
 y que el esqueleto, la escala y las expresiones funcionan en Babylon.
+
+## Parpadeo espontáneo
+
+`SantiCharacter` anima los shape keys originales `SF_AU45_Blink_L` y
+`SF_AU45_Blink_R` sobre las expresiones faciales y las acciones NLA existentes.
+Cada parpadeo dura 0,24 s: cierre de 75 ms, pausa de 30 ms y reapertura de
+135 ms, con interpolación suave. Los intervalos varían entre 2,6 y 6,2 s;
+un 12 % de los ciclos añade un segundo parpadeo breve, sin encadenarlos.
+Una pausa de la pestaña no acumula parpadeos pendientes. Al terminar se
+restaura cualquier pose manual de los párpados; las demás expresiones se conservan.
+
+`npm run test:santi` verifica ambos párpados en todas las primitivas del GLB,
+cierre y reapertura a 30/60/144 FPS, conservación de la sonrisa, restauración
+de una pose manual y el presupuesto de atributos GPU. No se modifica el GLB.
+La comprobación visual `node scripts/check-worldstudio-game.mjs --run --water-review --blink-only`
+usa un perfil descartable y genera capturas locales de ojos abiertos, cerrados
+y reabiertos en `artifacts/geographic-source/water-review/after/`.

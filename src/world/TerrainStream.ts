@@ -106,11 +106,12 @@ export class TerrainStream {
 
   private *buildTile(lod:TerrainLod,cell:TerrainCell):Generator<void,Mesh,void>{
     const tileSize=TERRAIN_LOD_CONFIG[`${lod}Size`],preserve=this.source.preserveDetail;
+    const spacing=this.source.meshSpacing??TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
     const {size,offsets,indices}=preserve?featureTerrainTopology(lod,(x,z,s)=>
-      preserve.call(this.source,[cell.cx*tileSize+x,cell.cz*tileSize+z,cell.cx*tileSize+x+s,cell.cz*tileSize+z+s])):terrainTileTopology(lod);
+      preserve.call(this.source,[cell.cx*tileSize+x,cell.cz*tileSize+z,cell.cx*tileSize+x+s,cell.cz*tileSize+z+s]),spacing):terrainTileTopology(lod,spacing);
     const centerX=(cell.cx+.5)*size,centerZ=(cell.cz+.5)*size;
     // Half a canonical cell also reuses derivative samples along fine edges.
-    const eps=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions/2;
+    const eps=spacing/2;
     const positions:number[]=[],normals:number[]=[],colors:number[]=[],extras:number[]=[];
     let sampled=0;
     for(const [dx,dz] of offsets){

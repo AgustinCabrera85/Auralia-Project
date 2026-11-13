@@ -1,4 +1,5 @@
 import { MAINLAND } from './terrainData';
+import { activeGeography } from './geography/ActiveGeography';
 
 /** All distances are metres. Each level is an integer multiple of the next. */
 export const TERRAIN_LOD_CONFIG = {
@@ -31,8 +32,10 @@ export const parentOf=(cell:TerrainCell):TerrainCell=>
   ({cx:Math.floor(cell.cx/2),cz:Math.floor(cell.cz/2)});
 
 /** Interpolate the same two triangles emitted by a near TerrainStream tile. */
-export function nearTerrainHeightAt(x:number,z:number,heightAtGrid:(x:number,z:number)=>number):number{
-  const step=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
+export const canonicalTerrainSpacing=()=>activeGeography()?.source.meshSpacing??
+  TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
+export function nearTerrainHeightAt(x:number,z:number,heightAtGrid:(x:number,z:number)=>number,
+  step=canonicalTerrainSpacing()):number{
   const x0=Math.floor(x/step)*step,z0=Math.floor(z/step)*step;
   const tx=(x-x0)/step,tz=(z-z0)/step;
   const a=heightAtGrid(x0,z0),b=heightAtGrid(x0+step,z0);
@@ -43,9 +46,8 @@ export function nearTerrainHeightAt(x:number,z:number,heightAtGrid:(x:number,z:n
 
 /** Height and exact slopes of the visible near-tile triangle under a point. */
 export function nearTerrainSurfaceAt(x:number,z:number,
-  heightAtGrid:(x:number,z:number)=>number):
+  heightAtGrid:(x:number,z:number)=>number,step=canonicalTerrainSpacing()):
   {height:number;slopeX:number;slopeZ:number}{
-  const step=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions;
   const x0=Math.floor(x/step)*step,z0=Math.floor(z/step)*step;
   const tx=(x-x0)/step,tz=(z-z0)/step;
   const a=heightAtGrid(x0,z0),b=heightAtGrid(x0+step,z0);
@@ -60,14 +62,14 @@ export function nearTerrainSurfaceAt(x:number,z:number,
  * straddle a triangle crease or cliff edge. Callers can cache grid samples for
  * their chunk, then discard that cache after placement generation. */
 export function terrainFootprintAt(x:number,z:number,radius:number,
-  heightAtGrid:(x:number,z:number)=>number):
+  heightAtGrid:(x:number,z:number)=>number,step=canonicalTerrainSpacing()):
   {height:number;minHeight:number;maxHeight:number;maxSlope:number}{
-  const center=nearTerrainSurfaceAt(x,z,heightAtGrid);
+  const center=nearTerrainSurfaceAt(x,z,heightAtGrid,step);
   let minHeight=center.height,maxHeight=center.height;
   let maxSlope=Math.hypot(center.slopeX,center.slopeZ);
   for(let i=0;i<8;i++){
     const angle=i*Math.PI/4;
-    const surface=nearTerrainSurfaceAt(x+Math.cos(angle)*radius,z+Math.sin(angle)*radius,heightAtGrid);
+    const surface=nearTerrainSurfaceAt(x+Math.cos(angle)*radius,z+Math.sin(angle)*radius,heightAtGrid,step);
     minHeight=Math.min(minHeight,surface.height);maxHeight=Math.max(maxHeight,surface.height);
     maxSlope=Math.max(maxSlope,Math.hypot(surface.slopeX,surface.slopeZ));
   }

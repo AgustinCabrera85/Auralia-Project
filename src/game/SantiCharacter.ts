@@ -18,11 +18,18 @@ const BLEND_SECONDS=.18;
 const COMBAT_BLEND_SECONDS=.09;
 const LEVEL_DROP_FOR_FALL=1.5;
 const LEVEL_JUMP_APEX_SECONDS=TRAVERSAL.initialJumpSpeed/TRAVERSAL.gravity;
-const LANDING_RECOVERY_SECONDS=.55;
+const LANDING_RECOVERY_SECONDS=.7;
+const LANDING_APPROACH_METERS=1.3;
+const HARD_LANDING_APPROACH=37/152;
+const HARD_LANDING_CONTACT=45/152;
+const FALL_ROLL_APPROACH=3/55;
+const BLINK_KEYS=['SF_AU45_Blink_L','SF_AU45_Blink_R'] as const;
+// Keep the eyelid targets in the shader from the first frame. A zero influence
+// removes them from Babylon's active set and recompiles the whole body material.
+const BLINK_IDLE_INFLUENCE=1e-6;
 // The source Jumping clip crouches for frames 1-12; frame 25 is airborne.
 const STANDING_JUMP_TAKEOFF=13/54;
 const STANDING_JUMP_HOVER=25/54;
-const STANDING_JUMP_CONTACT=35/54;
 // Only the airborne kick: omit its ground wind-up and its ground recovery.
 const SPIN_JUMP_FROM=.4;
 const SPIN_JUMP_TO=.65;
@@ -34,7 +41,7 @@ const SPIN_FULL_TURN=-Math.PI*2;
 const HIGH_FALL_ROLL_DROP=8;
 const FALL_ROLL_CONTACT=9/55;
 const IN_PLACE_ACTIONS=new Set<SantiActionName>([
-  SANTI_LOCOMOTION.jump,SANTI_LOCOMOTION.runningJump,
+  SANTI_LOCOMOTION.jump,SANTI_LOCOMOTION.runningJump,SANTI_LOCOMOTION.landing,
   ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,
   SANTI_COMBAT.highFallRoll
 ]);
@@ -62,6 +69,9 @@ export type SantiMotion={
   sprint:boolean;
   backward:boolean;
   groundGrade?:number;
+  onStairs?:boolean;
+  descending?:boolean;
+  groundDistance?:number|null;
   climbVertical?:number;
   climbSide?:number;
   mantleProgress?:number;
@@ -100,7 +110,7 @@ export class SantiCharacter {
   private groundIncline=0;
   private feet:GroundFootPlacement|null=null;
   private contactRoot:TransformNode|null=null;
-  private ascendingSlope=false;
+  private landingApproach:'normal'|'highFall'|null=null;
   private climbContact:ClimbContact|null=null;
   private contactObserver:Observer<Scene>|null=null;
   private contactHands:TransformNode[]=[];
@@ -111,6 +121,10 @@ export class SantiCharacter {
   private actionLockSeconds=0;
   private debugPanel:HTMLDivElement|null=null;
   private disposed=false;
+  private blinkTime=-(2.6+Math.random()*3.6);
+  private blinkWeight=0;
+  private repeatBlink=false;
+  private readonly eyelidBase=new Map<string,number>();
   isReady=false;
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
@@ -159,6 +173,8 @@ export class SantiCharacter {
         list.push(target);this.shapeKeys.set(target.name,list);
       }
     }
+    for(const name of BLINK_KEYS)for(const target of this.shapeKeys.get(name)??[])
+      target.influence=BLINK_IDLE_INFLUENCE;
     this.syncMorphStorage();
     const groups=new Map(result.animationGroups.map(group=>[group.name,group]));
     const restHips=groups.get(SANTI_LOCOMOTION.idle)?.targetedAnimations.find(track=>
@@ -185,10 +201,11 @@ export class SantiCharacter {
           const keys=track.animation.getKeys();
           if(!keys.length)continue;
           const origin=keys[0].value as Vector3;
+          const anchor=name===SANTI_LOCOMOTION.landing?restHips??origin:origin;
           track.animation.setKeys(keys.map(key=>{
             const value=key.value as Vector3;
             return {...key,value:isJump?origin.clone():
-              new Vector3(origin.x,origin.y,value.z)};
+              new Vector3(anchor.x,anchor.y,value.z)};
           }));
         }
       }
@@ -244,8 +261,8 @@ export class SantiCharacter {
     this.contactRoot=new TransformNode('santi-foot-support',this.scene);
     this.contactRoot.parent=this.visualOrientation;root.parent=this.contactRoot;
     this.feet=new GroundFootPlacement(this.scene,this.parent,this.contactRoot,result.transformNodes,
-      [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot'],
-       ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot']],.55);
+      [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot',-1],
+       ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot',1]],.55);
     this.contactHands=result.transformNodes.filter(node=>
       node.name==='mixamorig:LeftHand'||node.name==='mixamorig:RightHand');
     this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>this.alignClimbContact());
@@ -258,8 +275,8 @@ export class SantiCharacter {
   }
 
   updateGroundContact(dt:number,grounded:boolean,world:TraversalWorld,offset:{x:number;z:number}):void{
-    this.feet?.update(dt,grounded&&!this.combat&&this.actionLockSeconds<=0&&
-      this.overrideSeconds<=0&&this.landingRecoverySeconds<=0,world,offset);
+    this.feet?.update(dt,grounded&&!this.combat&&this.overrideSeconds<=0&&
+      (this.actionLockSeconds<=0||this.landingRecoverySeconds>0),world,offset);
   }
   get footContact(){return this.feet?.status;}
 
@@ -287,10 +304,33 @@ export class SantiCharacter {
   setShapeKey(name:string,influence:number):boolean{
     const targets=this.shapeKeys.get(name);
     if(!targets)return false;
-    const value=Math.max(0,Math.min(1,influence));
+    let value=Math.max(0,Math.min(1,influence));
+    if(BLINK_KEYS.includes(name as typeof BLINK_KEYS[number])){
+      this.eyelidBase.set(name,value);
+      value=Math.max(value,this.blinkWeight,BLINK_IDLE_INFLUENCE);
+    }
     for(const target of targets)target.influence=value;
     this.syncMorphStorage();
     return true;
+  }
+
+  /** Facial overlay: NLA groups keep sole ownership of skeletal movement. */
+  private updateBlink(dt:number):void{
+    // A suspended tab must not replay a queue of missed blinks on return.
+    this.blinkTime+=Math.max(0,Math.min(dt,.1));
+    if(this.blinkTime>=.24){
+      const repeat=!this.repeatBlink&&Math.random()<.12;
+      this.repeatBlink=repeat;
+      this.blinkTime=repeat?-.16:-(2.6+Math.random()*3.6);
+    }
+    const t=this.blinkTime;
+    const ramp=t<0?0:t<.075?t/.075:t<.105?1:1-(t-.105)/.135;
+    const v=Math.max(0,Math.min(1,ramp)),weight=v*v*(3-2*v);
+    if(weight===this.blinkWeight)return;
+    this.blinkWeight=weight;
+    for(const name of BLINK_KEYS)for(const target of this.shapeKeys.get(name)??[])
+      target.influence=Math.max(this.eyelidBase.get(name)??0,weight,BLINK_IDLE_INFLUENCE);
+    this.syncMorphStorage();
   }
 
   private syncMorphStorage():void{
@@ -298,7 +338,7 @@ export class SantiCharacter {
       let active=0;
       for(let i=0;i<manager.numTargets;i++)
         if(manager.getTarget(i).influence!==0)active++;
-      // Normal expressions need only one or two vertex-attribute buffers.
+      // The eyelids stay active so blinking never changes the storage mode.
       // Allocate the full floating-point target atlas only for complex blends
       // that exceed the available attributes; all authored shapes stay usable.
       manager.useTextureToStoreTargets=active>budget;
@@ -394,11 +434,10 @@ export class SantiCharacter {
 
   update(dt:number,motion:SantiMotion):SantiLanding|null{
     if(!this.isReady)return null;
+    this.updateBlink(dt);
     this.samplingSpin=false;
     const grade=motion.mode==='grounded'&&motion.moving?Math.max(0,motion.groundGrade??0):0;
     this.groundIncline+=(Math.atan(grade)-this.groundIncline)*(1-Math.exp(-dt*12));
-    this.ascendingSlope=motion.mode==='grounded'&&motion.moving&&
-      this.groundIncline>(this.ascendingSlope?5:9)*Math.PI/180;
     this.climbContact=motion.mode==='climbing'?motion.climbContact??null:null;
     const lean=this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
       motion.mode==='grounded'&&motion.moving&&motion.sprint&&
@@ -415,9 +454,7 @@ export class SantiCharacter {
     const landed=this.previousMode==='airborne'&&motion.mode==='grounded';
     const highFallLanding=landed&&
       this.airbornePeakY-motion.feetY>=HIGH_FALL_ROLL_DROP;
-    const landedStandingJump=this.previousMode==='airborne'&&
-      motion.mode==='grounded'&&this.jumpInProgress&&!this.jumpWasRunning&&
-      (this.active?.name===SANTI_LOCOMOTION.jump||this.active===this.airKickAnimation);
+    const landedJump=landed&&this.jumpInProgress;
     if(motion.mode==='airborne'){
       if(this.previousMode!=='airborne'){
         this.airborneStartY=motion.takeoffY??motion.feetY;
@@ -428,6 +465,7 @@ export class SantiCharacter {
         this.jumpElapsed=0;
         this.airKickInProgress=false;
         this.landingRecoverySeconds=0;
+        this.landingApproach=null;
       }
       if(motion.doubleJumpStarted){
         this.jumpInProgress=true;
@@ -436,20 +474,23 @@ export class SantiCharacter {
         // Only airborne Q selects the kick. A second Space uses Jumping even
         // without directional input; physics independently controls its impulse.
         this.airKickInProgress=motion.airKickStarted===true;
+        this.landingApproach=null;
         this.airborneStartY=Math.min(this.airborneStartY,motion.feetY);
       }
       this.airbornePeakY=Math.max(this.airbornePeakY,motion.feetY);
       if(this.jumpInProgress&&!this.jumpWasRunning)this.jumpElapsed+=dt;
+      this.seekLandingApproach(motion);
     }else{
       this.jumpInProgress=false;
       this.airKickInProgress=false;
+      this.landingApproach=null;
       if(motion.mode!=='grounded')this.landingRecoverySeconds=0;
     }
     this.previousMode=motion.mode;
     if(highFallLanding){
       if(this.playAction(SANTI_COMBAT.highFallRoll,FALL_ROLL_CONTACT,true))
         landing={kind:'highFallRoll',duration:this.actionDuration(SANTI_COMBAT.highFallRoll,FALL_ROLL_CONTACT)};
-    }else if(landedStandingJump){
+    }else if(landedJump){
       if(!motion.movementIntent){
         this.startStandingLanding();
         landing={kind:'standing',duration:LANDING_RECOVERY_SECONDS};
@@ -459,7 +500,8 @@ export class SantiCharacter {
     this.overrideSeconds=Math.max(0,this.overrideSeconds-dt);
     this.actionLockSeconds=Math.max(0,this.actionLockSeconds-dt);
     this.advanceCombat(dt);
-    if(this.overrideSeconds===0&&this.landingRecoverySeconds===0){
+    if(this.overrideSeconds===0&&this.landingRecoverySeconds===0&&
+      !(motion.mode==='airborne'&&this.landingApproach)){
       if(motion.mode==='mantling'){
         const group=this.actions.get(SANTI_LOCOMOTION.mantle)!;
         if(this.active!==group)this.transition(SANTI_LOCOMOTION.mantle,false);
@@ -493,8 +535,8 @@ export class SantiCharacter {
             // A shallow step off an edge should retain locomotion until landing.
             name=this.active?this.active.name as SantiActionName:SANTI_LOCOMOTION.idle;
           }
-        }else if(motion.moving||landedStandingJump&&motion.movementIntent){
-          name=this.ascendingSlope?(motion.run?SANTI_LOCOMOTION.uphillRun:SANTI_LOCOMOTION.uphillWalk):
+        }else if(motion.moving||landedJump&&motion.movementIntent){
+          name=motion.onStairs?(motion.run?SANTI_LOCOMOTION.uphillRun:SANTI_LOCOMOTION.uphillWalk):
             motion.backward?SANTI_LOCOMOTION.backward:
               motion.run?SANTI_LOCOMOTION.run:SANTI_LOCOMOTION.walk;
           if(motion.run&&motion.sprint)speed=2;
@@ -518,6 +560,29 @@ export class SantiCharacter {
       }
     }
     return landing;
+  }
+
+  private seekLandingApproach(motion:SantiMotion):void{
+    const distance=motion.groundDistance;
+    if(!motion.descending||distance==null||!Number.isFinite(distance)||
+      distance>LANDING_APPROACH_METERS||distance<0){
+      this.landingApproach=null;
+      return;
+    }
+    const drop=this.airbornePeakY-(motion.feetY-distance);
+    if(!this.jumpInProgress&&drop<LEVEL_DROP_FOR_FALL)return;
+    const kind=drop>=HIGH_FALL_ROLL_DROP?'highFall':'normal';
+    const group=this.actions.get(kind==='highFall'?SANTI_COMBAT.highFallRoll:SANTI_LOCOMOTION.landing)!;
+    const from=group.from+(group.to-group.from)*
+      (kind==='highFall'?FALL_ROLL_APPROACH:HARD_LANDING_APPROACH);
+    const contact=group.from+(group.to-group.from)*
+      (kind==='highFall'?FALL_ROLL_CONTACT:HARD_LANDING_CONTACT);
+    if(this.landingApproach!==kind)
+      this.transitionGroup(group,false,1,from,contact,.12);
+    this.landingApproach=kind;
+    const progress=1-distance/LANDING_APPROACH_METERS;
+    group.goToFrame(from+(contact-from)*progress,true);
+    group.pause();
   }
 
   private seekStandingJump():void{
@@ -553,12 +618,11 @@ export class SantiCharacter {
   }
 
   private startStandingLanding():void{
-    const group=this.actions.get(SANTI_LOCOMOTION.jump)!;
-    const from=group.from+(group.to-group.from)*STANDING_JUMP_CONTACT;
+    const group=this.actions.get(SANTI_LOCOMOTION.landing)!;
+    const from=group.from+(group.to-group.from)*HARD_LANDING_CONTACT;
     this.fading?.stop();this.fading=null;
-    if(this.active!==group)this.active?.stop();
-    group.stop();this.active=null;
-    this.transition(SANTI_LOCOMOTION.jump,false,
+    this.active?.stop();this.active=null;
+    this.transition(SANTI_LOCOMOTION.landing,false,
       group.getLength(from,group.to)/LANDING_RECOVERY_SECONDS,from,group.to);
     group.goToFrame(from,true);
     this.landingRecoverySeconds=LANDING_RECOVERY_SECONDS;

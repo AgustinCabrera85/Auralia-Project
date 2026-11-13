@@ -3,7 +3,7 @@ import {
 } from '@babylonjs/core';
 import { MAINLAND, sampleMainlandHeight } from '../terrainData';
 import { waterSurfaceAt } from '../geographicFeatures';
-import { loadWaterMasks, WATER_PROFILES } from '../editor/AuraliaWaterProfiles';
+import { loadWaterMasks, WATER_PROFILES, type WaterConfig } from '../editor/AuraliaWaterProfiles';
 import { createWorldWaterMaterial, updateWorldWaterMaterial } from '../editor/LiveWaterProfiles';
 import { activeGeography } from '../geography/ActiveGeography';
 
@@ -73,12 +73,18 @@ export class OceanWater {
     // Until the first mask is complete, the far surface covers the whole ocean.
     this.near.setEnabled(false);
     const waveAmp=WATER_PROFILES.ocean.params.uWaveAmp;
+    // The continent's coastal inlets share the clear-water palette. Keep the
+    // same two mutually exclusive ocean patches and inland ownership mask.
+    const coastal:WaterConfig=geography?{uClearWater:1,uDeepColor:'#164951',uShallowColor:'#55978f',
+      uCaustics:.32,uFoamIntensity:.65}:{};
     this.nearMaterial=createWorldWaterMaterial(scene,'ocean',this.masks,{
+      ...coastal,
       uWaveAmp:waveAmp*(options.waveStrength??1),
       uNormalStrength:options.normalStrength??1,
       uExcludeInland:exclusion?1:0,
     });
     this.farMaterial=createWorldWaterMaterial(scene,'ocean',this.masks,{
+      ...coastal,
       uWaveAmp:waveAmp*(options.waveStrength??1),
       uNormalStrength:(options.normalStrength??1)*.65,
       uExcludeInland:exclusion?1:0,
