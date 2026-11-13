@@ -8,7 +8,7 @@ export type MountainTrail={id:string;name:string;from:string;to:string;width:num
 
 /** Narrow stone terraces follow the contour and retain their outer edge down
  * to solid ground. One shared profile drives both the mesh and foot support. */
-export function createMountainTrails(heightAt:(x:number,z:number)=>number,bridges:readonly BridgeRoute[]):MountainTrail[]{
+export function createMountainTrails(heightAt:(x:number,z:number)=>number,bridges:readonly BridgeRoute[],waterAt=waterSurfaceAt):MountainTrail[]{
   const anchors=new Map<string,RoutePoint>();
   for(const b of bridges){anchors.set(b.id+':west',b.points[0]);anchors.set(b.id+':east',b.points.at(-1)!);}
   const trails:MountainTrail[]=MOUNTAIN_TRAILS.map(def=>{
@@ -45,7 +45,7 @@ export function createMountainTrails(heightAt:(x:number,z:number)=>number,bridge
     const crossings:{start:number;end:number}[]=[];
     let start=-1;
     for(let i=0;i<=points.length;i++){
-      const p=points[i],water=p?waterSurfaceAt(p.x,p.z):null;
+      const p=points[i],water=p?waterAt(p.x,p.z):null;
       const wet=!!(p&&water&&heightAt(p.x,p.z)<water.level+.35);
       if(wet&&start<0)start=i;
       if(!wet&&start>=0){
@@ -56,7 +56,7 @@ export function createMountainTrails(heightAt:(x:number,z:number)=>number,bridge
       }
     }
     for(const crossing of crossings)for(let i=crossing.start;i<=crossing.end;i++){
-      const p=points[i],water=waterSurfaceAt(p.x,p.z);
+      const p=points[i],water=waterAt(p.x,p.z);
       if(water)p.y=Math.max(p.y,water.level+5);
     }
     return {id:def.id,name:def.name,from:def.from,to:def.to,width,points,crossings,bounds:{

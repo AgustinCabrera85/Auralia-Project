@@ -1,0 +1,28 @@
+{
+  "schema": "auralia-trial-qa-v1",
+  "tiles": 25,
+  "sideVertices": 640,
+  "quantizationMaxErrorM": 0.013383182017183089,
+  "maxEdgeDifferenceQuantized": 0,
+  "sourceHeightsMetres": [
+    -45.0,
+    1709.1336669921875
+  ],
+  "floatingWest": [
+    -4750,
+    1350,
+    -3500
+  ],
+  "floatingEast": [
+    5200,
+    1200,
+    -3700
+  ],
+  "generatedFiles": 50,
+  "sourceWorldStudioPreserved": true,
+  "sourceGameTouched": false,
+  "sources": {
+    "master": "/mnt/data/auralia_map_floating_preview/Auralia_V3_6_CONTINENTE_CASCADA_ALTA.ptrterrain",
+    "sectors": "/mnt/data/Auralia_V3_6_SECTORES.zip"
+  }
+}

@@ -1,0 +1,612 @@
+{
+  "schema": "auralia-worldstudio-trial-v1",
+  "name": "Auralia Mapa Maestro v3.6 - Visual Preview",
+  "source": "World Studio v3.6 (user-approved) - 25 authored tiles",
+  "coordinateSystem": {
+    "horizontal": "metres, +X east, +Z south",
+    "height": "metres, +Y up",
+    "boundsXZ": [
+      -7000,
+      -7000,
+      7000,
+      7000
+    ]
+  },
+  "widthMeters": 14000,
+  "depthMeters": 14000,
+  "tileSizeMeters": 2800,
+  "resolution": 640,
+  "colorResolution": 256,
+  "heightEncoding": {
+    "type": "uint16",
+    "byteOrder": "little-endian",
+    "minMetres": -45.0,
+    "maxMetres": 1709.1336669921875,
+    "formula": "min+(r16/65535)*(max-min)"
+  },
+  "seaLevelMetres": 1.0,
+  "tiles": [
+    {
+      "cx": -2,
+      "cz": -2,
+      "id": "CX-2_CZ-2",
+      "heightFile": "/auralia-preview/height/CX-2_CZ-2.r16",
+      "colorFile": "/auralia-preview/colors/CX-2_CZ-2.rgb",
+      "centerXZ": [
+        -5600,
+        -5600
+      ],
+      "boundsXZ": [
+        -7000,
+        -7000,
+        -4200,
+        -4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 570.3021240234375
+    },
+    {
+      "cx": -1,
+      "cz": -2,
+      "id": "CX-1_CZ-2",
+      "heightFile": "/auralia-preview/height/CX-1_CZ-2.r16",
+      "colorFile": "/auralia-preview/colors/CX-1_CZ-2.rgb",
+      "centerXZ": [
+        -2800,
+        -5600
+      ],
+      "boundsXZ": [
+        -4200,
+        -7000,
+        -1400,
+        -4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 1229.078857421875
+    },
+    {
+      "cx": 0,
+      "cz": -2,
+      "id": "CX+0_CZ-2",
+      "heightFile": "/auralia-preview/height/CX+0_CZ-2.r16",
+      "colorFile": "/auralia-preview/colors/CX+0_CZ-2.rgb",
+      "centerXZ": [
+        0,
+        -5600
+      ],
+      "boundsXZ": [
+        -1400,
+        -7000,
+        1400,
+        -4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 1637.12890625
+    },
+    {
+      "cx": 1,
+      "cz": -2,
+      "id": "CX+1_CZ-2",
+      "heightFile": "/auralia-preview/height/CX+1_CZ-2.r16",
+      "colorFile": "/auralia-preview/colors/CX+1_CZ-2.rgb",
+      "centerXZ": [
+        2800,
+        -5600
+      ],
+      "boundsXZ": [
+        1400,
+        -7000,
+        4200,
+        -4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 1309.8834228515625
+    },
+    {
+      "cx": 2,
+      "cz": -2,
+      "id": "CX+2_CZ-2",
+      "heightFile": "/auralia-preview/height/CX+2_CZ-2.r16",
+      "colorFile": "/auralia-preview/colors/CX+2_CZ-2.rgb",
+      "centerXZ": [
+        5600,
+        -5600
+      ],
+      "boundsXZ": [
+        4200,
+        -7000,
+        7000,
+        -4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 321.6116638183594
+    },
+    {
+      "cx": -2,
+      "cz": -1,
+      "id": "CX-2_CZ-1",
+      "heightFile": "/auralia-preview/height/CX-2_CZ-1.r16",
+      "colorFile": "/auralia-preview/colors/CX-2_CZ-1.rgb",
+      "centerXZ": [
+        -5600,
+        -2800
+      ],
+      "boundsXZ": [
+        -7000,
+        -4200,
+        -4200,
+        -1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 1062.155029296875
+    },
+    {
+      "cx": -1,
+      "cz": -1,
+      "id": "CX-1_CZ-1",
+      "heightFile": "/auralia-preview/height/CX-1_CZ-1.r16",
+      "colorFile": "/auralia-preview/colors/CX-1_CZ-1.rgb",
+      "centerXZ": [
+        -2800,
+        -2800
+      ],
+      "boundsXZ": [
+        -4200,
+        -4200,
+        -1400,
+        -1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 1537.0928955078125
+    },
+    {
+      "cx": 0,
+      "cz": -1,
+      "id": "CX+0_CZ-1",
+      "heightFile": "/auralia-preview/height/CX+0_CZ-1.r16",
+      "colorFile": "/auralia-preview/colors/CX+0_CZ-1.rgb",
+      "centerXZ": [
+        0,
+        -2800
+      ],
+      "boundsXZ": [
+        -1400,
+        -4200,
+        1400,
+        -1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 1175.7071533203125
+    },
+    {
+      "cx": 1,
+      "cz": -1,
+      "id": "CX+1_CZ-1",
+      "heightFile": "/auralia-preview/height/CX+1_CZ-1.r16",
+      "colorFile": "/auralia-preview/colors/CX+1_CZ-1.rgb",
+      "centerXZ": [
+        2800,
+        -2800
+      ],
+      "boundsXZ": [
+        1400,
+        -4200,
+        4200,
+        -1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 1709.1336669921875
+    },
+    {
+      "cx": 2,
+      "cz": -1,
+      "id": "CX+2_CZ-1",
+      "heightFile": "/auralia-preview/height/CX+2_CZ-1.r16",
+      "colorFile": "/auralia-preview/colors/CX+2_CZ-1.rgb",
+      "centerXZ": [
+        5600,
+        -2800
+      ],
+      "boundsXZ": [
+        4200,
+        -4200,
+        7000,
+        -1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 816.176513671875
+    },
+    {
+      "cx": -2,
+      "cz": 0,
+      "id": "CX-2_CZ+0",
+      "heightFile": "/auralia-preview/height/CX-2_CZ+0.r16",
+      "colorFile": "/auralia-preview/colors/CX-2_CZ+0.rgb",
+      "centerXZ": [
+        -5600,
+        0
+      ],
+      "boundsXZ": [
+        -7000,
+        -1400,
+        -4200,
+        1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 639.834228515625
+    },
+    {
+      "cx": -1,
+      "cz": 0,
+      "id": "CX-1_CZ+0",
+      "heightFile": "/auralia-preview/height/CX-1_CZ+0.r16",
+      "colorFile": "/auralia-preview/colors/CX-1_CZ+0.rgb",
+      "centerXZ": [
+        -2800,
+        0
+      ],
+      "boundsXZ": [
+        -4200,
+        -1400,
+        -1400,
+        1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 675.214599609375
+    },
+    {
+      "cx": 0,
+      "cz": 0,
+      "id": "CX+0_CZ+0",
+      "heightFile": "/auralia-preview/height/CX+0_CZ+0.r16",
+      "colorFile": "/auralia-preview/colors/CX+0_CZ+0.rgb",
+      "centerXZ": [
+        0,
+        0
+      ],
+      "boundsXZ": [
+        -1400,
+        -1400,
+        1400,
+        1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -19.399999618530273,
+      "maxHeight": 87.6701889038086
+    },
+    {
+      "cx": 1,
+      "cz": 0,
+      "id": "CX+1_CZ+0",
+      "heightFile": "/auralia-preview/height/CX+1_CZ+0.r16",
+      "colorFile": "/auralia-preview/colors/CX+1_CZ+0.rgb",
+      "centerXZ": [
+        2800,
+        0
+      ],
+      "boundsXZ": [
+        1400,
+        -1400,
+        4200,
+        1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 377.2633056640625
+    },
+    {
+      "cx": 2,
+      "cz": 0,
+      "id": "CX+2_CZ+0",
+      "heightFile": "/auralia-preview/height/CX+2_CZ+0.r16",
+      "colorFile": "/auralia-preview/colors/CX+2_CZ+0.rgb",
+      "centerXZ": [
+        5600,
+        0
+      ],
+      "boundsXZ": [
+        4200,
+        -1400,
+        7000,
+        1400
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 598.6494750976562
+    },
+    {
+      "cx": -2,
+      "cz": 1,
+      "id": "CX-2_CZ+1",
+      "heightFile": "/auralia-preview/height/CX-2_CZ+1.r16",
+      "colorFile": "/auralia-preview/colors/CX-2_CZ+1.rgb",
+      "centerXZ": [
+        -5600,
+        2800
+      ],
+      "boundsXZ": [
+        -7000,
+        1400,
+        -4200,
+        4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -40.831459045410156,
+      "maxHeight": 181.75827026367188
+    },
+    {
+      "cx": -1,
+      "cz": 1,
+      "id": "CX-1_CZ+1",
+      "heightFile": "/auralia-preview/height/CX-1_CZ+1.r16",
+      "colorFile": "/auralia-preview/colors/CX-1_CZ+1.rgb",
+      "centerXZ": [
+        -2800,
+        2800
+      ],
+      "boundsXZ": [
+        -4200,
+        1400,
+        -1400,
+        4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 153.69943237304688
+    },
+    {
+      "cx": 0,
+      "cz": 1,
+      "id": "CX+0_CZ+1",
+      "heightFile": "/auralia-preview/height/CX+0_CZ+1.r16",
+      "colorFile": "/auralia-preview/colors/CX+0_CZ+1.rgb",
+      "centerXZ": [
+        0,
+        2800
+      ],
+      "boundsXZ": [
+        -1400,
+        1400,
+        1400,
+        4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -43.10923385620117,
+      "maxHeight": 114.16651153564453
+    },
+    {
+      "cx": 1,
+      "cz": 1,
+      "id": "CX+1_CZ+1",
+      "heightFile": "/auralia-preview/height/CX+1_CZ+1.r16",
+      "colorFile": "/auralia-preview/colors/CX+1_CZ+1.rgb",
+      "centerXZ": [
+        2800,
+        2800
+      ],
+      "boundsXZ": [
+        1400,
+        1400,
+        4200,
+        4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 212.007080078125
+    },
+    {
+      "cx": 2,
+      "cz": 1,
+      "id": "CX+2_CZ+1",
+      "heightFile": "/auralia-preview/height/CX+2_CZ+1.r16",
+      "colorFile": "/auralia-preview/colors/CX+2_CZ+1.rgb",
+      "centerXZ": [
+        5600,
+        2800
+      ],
+      "boundsXZ": [
+        4200,
+        1400,
+        7000,
+        4200
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -45.0,
+      "maxHeight": 263.1487731933594
+    },
+    {
+      "cx": -2,
+      "cz": 2,
+      "id": "CX-2_CZ+2",
+      "heightFile": "/auralia-preview/height/CX-2_CZ+2.r16",
+      "colorFile": "/auralia-preview/colors/CX-2_CZ+2.rgb",
+      "centerXZ": [
+        -5600,
+        5600
+      ],
+      "boundsXZ": [
+        -7000,
+        4200,
+        -4200,
+        7000
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 62.57746505737305
+    },
+    {
+      "cx": -1,
+      "cz": 2,
+      "id": "CX-1_CZ+2",
+      "heightFile": "/auralia-preview/height/CX-1_CZ+2.r16",
+      "colorFile": "/auralia-preview/colors/CX-1_CZ+2.rgb",
+      "centerXZ": [
+        -2800,
+        5600
+      ],
+      "boundsXZ": [
+        -4200,
+        4200,
+        -1400,
+        7000
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 40.190155029296875
+    },
+    {
+      "cx": 0,
+      "cz": 2,
+      "id": "CX+0_CZ+2",
+      "heightFile": "/auralia-preview/height/CX+0_CZ+2.r16",
+      "colorFile": "/auralia-preview/colors/CX+0_CZ+2.rgb",
+      "centerXZ": [
+        0,
+        5600
+      ],
+      "boundsXZ": [
+        -1400,
+        4200,
+        1400,
+        7000
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 54.43633270263672
+    },
+    {
+      "cx": 1,
+      "cz": 2,
+      "id": "CX+1_CZ+2",
+      "heightFile": "/auralia-preview/height/CX+1_CZ+2.r16",
+      "colorFile": "/auralia-preview/colors/CX+1_CZ+2.rgb",
+      "centerXZ": [
+        2800,
+        5600
+      ],
+      "boundsXZ": [
+        1400,
+        4200,
+        4200,
+        7000
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 27.04886817932129
+    },
+    {
+      "cx": 2,
+      "cz": 2,
+      "id": "CX+2_CZ+2",
+      "heightFile": "/auralia-preview/height/CX+2_CZ+2.r16",
+      "colorFile": "/auralia-preview/colors/CX+2_CZ+2.rgb",
+      "centerXZ": [
+        5600,
+        5600
+      ],
+      "boundsXZ": [
+        4200,
+        4200,
+        7000,
+        7000
+      ],
+      "quantizationMaxErrorMetres": 0.013383182017183089,
+      "minHeight": -38.0,
+      "maxHeight": 36.3510856628418
+    }
+  ],
+  "islands": [
+    {
+      "id": "albor",
+      "name": "Albor - oeste",
+      "file": "/auralia-preview/models/Auralia_Albor_Islas_Flotantes_v6.glb",
+      "positionXYZ": [
+        -4750,
+        1350,
+        -3500
+      ],
+      "scale": 1,
+      "orientation": "check-source-Z-up",
+      "role": "floating"
+    },
+    {
+      "id": "umbrael",
+      "name": "Umbrael - este",
+      "file": "/auralia-preview/models/Auralia_Umbrael_Islas_Flotantes_v6.glb",
+      "positionXYZ": [
+        5200,
+        1200,
+        -3700
+      ],
+      "scale": 1,
+      "orientation": "check-source-Z-up",
+      "role": "floating"
+    }
+  ],
+  "bookmarks": [
+    {
+      "name": "Continente completo",
+      "x": 0,
+      "z": 0,
+      "range": 17000
+    },
+    {
+      "name": "Albor (oeste)",
+      "x": -4750,
+      "z": -3500,
+      "range": 1900,
+      "floating": "albor"
+    },
+    {
+      "name": "Umbrael (este)",
+      "x": 5200,
+      "z": -3700,
+      "range": 1900,
+      "floating": "umbrael"
+    },
+    {
+      "name": "Lago de Nácar",
+      "x": 1450,
+      "z": -520,
+      "range": 1600
+    },
+    {
+      "name": "Laguna de las Tres Vertientes",
+      "x": -160,
+      "z": -810,
+      "range": 950
+    },
+    {
+      "name": "Ferragrís (ingenieros)",
+      "x": -2700,
+      "z": -1670,
+      "range": 1150
+    },
+    {
+      "name": "Brisalia (atlas)",
+      "x": -1250,
+      "z": 1920,
+      "range": 1300
+    }
+  ],
+  "limitations": [
+    "Preview de geografía, NO sustituye gameplay",
+    "Lagos y mar: plano de agua simplificado en Y=1",
+    "Ríos: guías opcionales, no caudal",
+    "Las islas v6 son GLB de diseño, no ubicaciones físicas definitivas",
+    "Sin construcción/guardados/NPC/cuevas/cascadas funcionales"
+  ],
+  "repositoryBaseline": "c72ac2e17e466c4720c3c031baa3489772dd3159"
+}

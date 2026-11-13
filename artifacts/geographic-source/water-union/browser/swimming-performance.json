@@ -1,0 +1,45 @@
+{
+  "frames": 300,
+  "fps": 30.00600120010594,
+  "frameMs": {
+    "mean": 33.3306666666766,
+    "p95": 39.600000001490116
+  },
+  "cpuMs": {
+    "mean": 12.646511627342614,
+    "p95": 19.600000001490116
+  },
+  "heapBytes": 309816580,
+  "heapAfterGC": false,
+  "surfacePass": true,
+  "surfaceTarget": {
+    "width": 1600,
+    "height": 900
+  },
+  "terrainBytes": 6266880,
+  "source": {
+    "residentTiles": 4,
+    "maxResidentTiles": 9,
+    "heightBytes": 3276800,
+    "lastLoadMs": 32.399999998509884,
+    "totalLoaded": 13,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  }
+}

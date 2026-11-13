@@ -10,6 +10,8 @@ import { HEADWATER_LAKE, headwaterLakeRadius } from './watershedHeadwaters';
 import { WatershedHydrology } from './WatershedHydrology';
 import type { ClimateFrame } from './climate/ClimateModel';
 import { createCascadeBedGeometry, createCascadeGeometry } from './water/CascadeGeometry';
+import type { RegionFrame } from './geography/PlayableWorld';
+import { CLEAR_RIVER_PROFILE, riverBankDistance } from './water/RiverProfile';
 
 /** Local scenery is streamed as a unit; plants use AuthoredAssets' shared GLB batches.
  * This watershed owns its continuous water surfaces. No rigid-body fluid particles. */
@@ -40,7 +42,9 @@ export class LagoonSystem {
   private fog:{color:Color3;density:number;mode:number}|null=null;
   private returnId='laguna-sumergida';
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
-    private readonly heightAt:(x:number,z:number)=>number){
+    private readonly groundAt:(x:number,z:number)=>number,
+    readonly frame:RegionFrame={x:0,y:0,z:0,scale:1}){
+    for(const impact of this.impacts){impact.x=frame.x+impact.x*frame.scale;impact.y=frame.z+impact.y*frame.scale;impact.z*=frame.scale;}
     const rock='/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp';
     this.stone=new StandardMaterial('vertientes-roca-estratificada',scene);
     this.stone.diffuseTexture=new Texture(rock,scene);this.stone.diffuseColor=new Color3(.92,.94,.90);
@@ -65,8 +69,7 @@ export class LagoonSystem {
       uWaveAmp:.22,uFlowSpeed:2.3,uFoamIntensity:1.15,uDeepColor:'#327773',uShallowColor:'#8fc6bd'});
     this.pool=createWorldWaterMaterial(scene,'pool',this.masks,{uClearWater:1,uWaveAmp:.08,uWaveSpeed:.6,
       uCaustics:.7,uDeepColor:'#103f46',uShallowColor:'#4b9987',uFoamIntensity:.35,uContactFoam:.85});
-    this.river=createWorldWaterMaterial(scene,'river',this.masks,{uClearWater:1,uWaveAmp:.09,uWaveSpeed:.8,
-      uFlowSpeed:1.2,uFoamIntensity:.4,uDeepColor:'#28595b',uShallowColor:'#79a79a',uCaustics:.2,uContactFoam:.95});
+    this.river=createWorldWaterMaterial(scene,'river',this.masks,CLEAR_RIVER_PROFILE);
     this.mistTexture=new DynamicTexture('vertientes-rocío',{width:64,height:64},scene,false);
     const ctx=this.mistTexture.getContext();const g=ctx.createRadialGradient(32,32,0,32,32,32);
     g.addColorStop(0,'rgba(235,255,250,.65)');g.addColorStop(.4,'rgba(225,250,245,.25)');g.addColorStop(1,'rgba(225,250,245,0)');
@@ -79,7 +82,10 @@ export class LagoonSystem {
     this.wetStone.emissiveColor.set(.25*scale,.28*scale,.30*scale);
   }
   get returnPortal(){return GROTTO_PORTALS.find(p=>p.id===this.returnId)!;}
-  private root(name:string){const r=new TransformNode(name,this.scene);r.parent=this.parent;return r;}
+  private heightAt=(x:number,z:number):number=>this.groundAt(this.frame.x+x*this.frame.scale,this.frame.z+z*this.frame.scale)-this.frame.y;
+  private root(name:string){const r=new TransformNode(name,this.scene);r.parent=this.parent;
+    if(name==='cuenca-tres-vertientes'){r.position.set(this.frame.x,this.frame.y,this.frame.z);r.scaling.set(this.frame.scale,1,this.frame.scale);}
+    return r;}
   private mesh(name:string,positions:number[],indices:number[],uvs:number[],root:TransformNode,
     material:StandardMaterial|ShaderMaterial,colors?:number[],uvs2?:number[]):Mesh{
     const normals:number[]=[];VertexData.ComputeNormals(positions,indices,normals);
@@ -94,7 +100,7 @@ export class LagoonSystem {
   private merge(root:TransformNode){
     for(const mat of [this.stone,this.wetStone,this.floor,this.glow]){
       const group=root.getChildMeshes().filter(m=>m.material===mat&&m instanceof Mesh&&!m.metadata?.rockCollider) as Mesh[];
-      if(group.length>1){const m=Mesh.MergeMeshes(group,true,true);if(m){m.parent=root;m.isPickable=false;m.freezeWorldMatrix();}}
+      if(group.length>1){const m=Mesh.MergeMeshes(group,true,true);if(m){m.setParent(root);m.isPickable=false;m.freezeWorldMatrix();}}
     }
   }
   /** Weathered columns with strata, broad shoulders and an irregular silhouette. */
@@ -129,6 +135,9 @@ export class LagoonSystem {
   }
   private buildExterior(){
     const root=this.root('cuenca-tres-vertientes');this.exterior=root;
+    // The migrated world streams all horizontal water through GeographyStream;
+    // keeping these native ribbons too would reintroduce a second surface.
+    if(!this.frame.streamWater){
     const p:number[]=[],idx:number[]=[],uv:number[]=[],col:number[]=[];
     const l=CASCADE_LAGOON,nx=120,nz=96,step=3;
     for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){
@@ -143,6 +152,7 @@ export class LagoonSystem {
     this.mesh('laguna-superficie',p,idx,uv,root,this.pool,col);
     this.buildHeadwaterLake(root);
     this.riverBuild=this.buildRivers(root);
+    }
     for(const spring of LAGOON_SPRINGS.filter(s=>s.kind==='aquifer')){
       const {x,z,level,dx,dz}=spring,nx=-dz,nz=dx;
       const mouth=spring.mouthDistance;
@@ -172,7 +182,7 @@ export class LagoonSystem {
       curtain.metadata={waterfall:true,curtainVertices:geometry.curtainVertices};
       // Small upper spring pools settle at the same level as their feeding channel.
       const spray=new ParticleSystem('rocío-'+f.id,120,this.scene);
-      spray.particleTexture=this.mistTexture;spray.emitter=new Vector3(f.x,f.bottom+1,f.z+f.run);
+      spray.particleTexture=this.mistTexture;spray.emitter=new Vector3(this.frame.x+f.x*this.frame.scale,f.bottom+1+this.frame.y,this.frame.z+(f.z+f.run)*this.frame.scale);
       spray.minEmitBox=new Vector3(-f.width*.45,0,-2);spray.maxEmitBox=new Vector3(f.width*.45,1,3);
       spray.direction1=new Vector3(-1,2,0);spray.direction2=new Vector3(1,4,2);
       spray.color1=new Color4(.8,.94,.9,.18);spray.color2=new Color4(.86,.97,.94,.10);
@@ -186,7 +196,10 @@ export class LagoonSystem {
     }
     this.merge(root);
   }
-  nearestPortal(x:number,y:number,z:number){return GROTTO_PORTALS.find(p=>{
+  nearestPortal(x:number,y:number,z:number){
+    if(!this.inside){x=(x-this.frame.x)/this.frame.scale;z=(z-this.frame.z)/this.frame.scale;y-=this.frame.y;}
+    return GROTTO_PORTALS.find(p=>{
+    if(!this.inside&&Math.hypot(x-p.x,z-p.z)>=9)return false;
     const n=this.inside?GROTTO_NODES[p.node]:{x:p.x,z:p.z,y:p.submerged?11:this.heightAt(p.x,p.z)};
     return Math.hypot(x-n.x,z-n.z)<9&&Math.abs(y-n.y)<(p.submerged?7:4);
   });}
@@ -226,22 +239,11 @@ export class LagoonSystem {
           const tl=Math.hypot(tx,tz),nx=tz/tl,nz=-tx/tl;
           const waterY=(xx:number,zz:number)=>{
             if(headwaterLakeRadius(xx,zz)<1.02)return HEADWATER_LAKE.level;
-            const level=lagoonChannelAt(xx,zz).level;
+            const level=Math.max(this.frame.waterFloor??-Infinity,lagoonChannelAt(xx,zz).level);
             return fall?level+(fall.top-level)*lip:level;
           };
-          const bank=(side:number)=>{
-            // Bracket the FIRST bank. A lower valley farther away must not make
-            // the search skip over the bank and spawn isolated water triangles.
-            let lo=0,hi=width+35;
-            for(let d=2;d<=width+37;d+=2){
-              const xx=x+nx*side*d,zz=z+nz*side*d;
-              if(this.heightAt(xx,zz)>=waterY(xx,zz)){hi=d;break;}lo=d;
-            }
-            for(let k=0;k<12;k++){const mid=(lo+hi)/2;
-              const xx=x+nx*side*mid,zz=z+nz*side*mid;
-              if(this.heightAt(xx,zz)<waterY(xx,zz))lo=mid;else hi=mid;}
-            return (lo+hi)/2;
-          };
+          const bank=(side:number)=>riverBankDistance(x,z,nx*side,nz*side,width,
+            (xx,zz)=>this.heightAt(xx,zz),waterY);
           const left=bank(-1)*(1-lip)+(fall?.width??0)*.5*lip;
           const right=bank(1)*(1-lip)+(fall?.width??0)*.5*lip,segments=24;
           for(let i=0;i<=segments;i++){
@@ -292,7 +294,8 @@ export class LagoonSystem {
   }
   leave(id:string):Vector3|null{
     const p=GROTTO_PORTALS.find(p=>p.id===id);if(!p)return null;
-    this.disposeInterior();return new Vector3(p.x,p.submerged?14:this.heightAt(p.x,p.z),p.z);
+    this.disposeInterior();return new Vector3(this.frame.x+p.x*this.frame.scale,
+      (p.submerged?14:this.heightAt(p.x,p.z))+this.frame.y,this.frame.z+p.z*this.frame.scale);
   }
   private buildInterior(){
     const root=this.root('gruta-de-las-vertientes');this.interior=root;
@@ -375,6 +378,7 @@ export class LagoonSystem {
   }
   restoreAtmosphere(){if(this.fog){this.scene.fogColor.copyFrom(this.fog.color);this.scene.fogDensity=this.fog.density;this.scene.fogMode=this.fog.mode;this.fog=null;}}
   update(dt:number,x:number,y:number,z:number,climate?:ClimateFrame){
+    if(!this.inside){x=(x-this.frame.x)/this.frame.scale;z=(z-this.frame.z)/this.frame.scale;y-=this.frame.y;}
     this.time+=Math.min(dt,.1);
     this.hydrology.update(dt,climate?.weatherMix.rain,climate?.season);
     const distance=watershedDistance(x,z);

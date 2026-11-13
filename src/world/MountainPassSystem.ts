@@ -4,6 +4,7 @@ import { bridgeRailBlocks, bridgeSurfaceAt, CHAMBER_RADIUS, createBridgeRoutes, 
   TUNNEL_LINKS, TUNNEL_NODES, TUNNEL_RADIUS, tunnelFloorAt, type BridgeRoute } from './mountainRoutes';
 import { ChainDynamics } from '../physics/ChainDynamics';
 import { HangingLanterns } from './HangingLanterns';
+import { waterSurfaceAt } from './geographicFeatures';
 import { createMountainTrails, mountainTrailSurfaceAt, type MountainTrail } from './mountainTrails';
 
 /** One regional connection system: shared materials, streamed exteriors, and
@@ -29,7 +30,8 @@ export class MountainPassSystem {
   private readonly focus={x:0,y:0,z:0};
   private readonly playerCollider={id:1,kind:'capsule' as const,x:0,y:0,z:0,bx:0,by:0,bz:0,radius:.48,group:1,mask:1,friction:.4,restitution:0};
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
-    private readonly heightAt:(x:number,z:number)=>number){
+    private readonly heightAt:(x:number,z:number)=>number,
+    private readonly offset:{x:number;z:number}={x:0,z:0}){
     this.stone=new StandardMaterial('pasos-roca',scene);
     this.stone.diffuseTexture=new Texture('/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp',scene);
     this.stone.diffuseColor=new Color3(.72,.76,.79);this.stone.specularColor=Color3.Black();
@@ -57,8 +59,11 @@ export class MountainPassSystem {
       .forEach((label,i)=>labelCtx.fillText(label,256,i*64+42));labels.update();
     this.signs.diffuseTexture=labels;this.signs.specularColor=Color3.Black();this.signs.emissiveColor=new Color3(.14,.12,.08);
     this.secondaryDynamics.enabled=typeof location==='undefined'||new URLSearchParams(location.search).get('secondaryPhysics')!=='0';
-    this.bridges=createBridgeRoutes(heightAt);
-    this.trails=createMountainTrails(heightAt,this.bridges);
+    const localHeight=(x:number,z:number)=>heightAt(x+offset.x,z+offset.z);
+    this.bridges=createBridgeRoutes(localHeight);
+    this.trails=createMountainTrails(localHeight,this.bridges,(x,z)=>waterSurfaceAt(x+offset.x,z+offset.z));
+    for(const route of [...this.bridges,...this.trails])for(const p of route.points){p.x+=offset.x;p.z+=offset.z;}
+    for(const trail of this.trails){trail.bounds.minX+=offset.x;trail.bounds.maxX+=offset.x;trail.bounds.minZ+=offset.z;trail.bounds.maxZ+=offset.z;}
     for(const route of this.bridges)this.bridgeRoots.push(this.buildBridge(route));
     for(const trail of this.trails)this.trailRoots.push(this.buildTrail(trail));
     for(let b=0;b<2;b++)for(let end=0;end<2;end++){
@@ -70,7 +75,7 @@ export class MountainPassSystem {
         backUVs:new Vector4(0,1-(label+1)/4,1,1-label/4)},scene);
       sign.position.set(x,y+3.5,z);sign.material=this.signs;sign.parent=root;sign.isPickable=false;
     }
-    for(const p of MOUNTAIN_PORTALS)this.portals.set(p.id,this.buildPortal(p.id,p.x,p.z));
+    for(const p of MOUNTAIN_PORTALS)this.portals.set(p.id,this.buildPortal(p.id,p.x+offset.x,p.z+offset.z));
   }
   get inside():boolean{return this.interior!==null;}
   visualFor(id:string):TransformNode|undefined{
@@ -81,7 +86,8 @@ export class MountainPassSystem {
     mountainTrailSurfaceAt(this.trails,x,z)?.height??this.heightAt(x,z);}
   nearestPortal(x:number,y:number,z:number){
     return MOUNTAIN_PORTALS.find(p=>{
-      const n=this.inside?TUNNEL_NODES[p.node]:{x:p.x,z:p.z,y:this.exteriorHeight(p.x,p.z)};
+      if(!this.inside&&Math.hypot(x-p.x-this.offset.x,z-p.z-this.offset.z)>=8)return false;
+      const n=this.inside?TUNNEL_NODES[p.node]:{x:p.x+this.offset.x,z:p.z+this.offset.z,y:this.exteriorHeight(p.x+this.offset.x,p.z+this.offset.z)};
       return Math.hypot(x-n.x,z-n.z)<8&&Math.abs(y-n.y)<4;
     });
   }
@@ -93,7 +99,8 @@ export class MountainPassSystem {
   leave(id:string):Vector3|null{
     const p=MOUNTAIN_PORTALS.find(p=>p.id===id);if(!p)return null;
     this.disposeInterior();
-    this.entryId=null;return new Vector3(p.x,this.exteriorHeight(p.x,p.z),p.z);
+    const x=p.x+this.offset.x,z=p.z+this.offset.z;
+    this.entryId=null;return new Vector3(x,this.exteriorHeight(x,z),z);
   }
   update(x:number,y:number,z:number,dt=1/60):void{
     for(let i=0;i<this.bridges.length;i++){
@@ -105,7 +112,7 @@ export class MountainPassSystem {
       this.trailRoots[i].setEnabled(!this.inside&&x>b.minX-500&&x<b.maxX+500&&z>b.minZ-500&&z<b.maxZ+500);
     }
     for(const [id,root] of this.portals){const p=MOUNTAIN_PORTALS.find(p=>p.id===id)!;
-      root.setEnabled(!this.inside&&Math.hypot(p.x-x,p.z-z)<550);}
+      root.setEnabled(!this.inside&&Math.hypot(p.x+this.offset.x-x,p.z+this.offset.z-z)<550);}
     if(this.lamp)this.lamp.position.set(x,y+4,z);
     this.time+=Math.min(dt,.1);this.focus.x=x;this.focus.y=y;this.focus.z=z;
     const player=this.playerCollider;

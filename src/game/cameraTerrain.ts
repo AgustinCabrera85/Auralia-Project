@@ -1,5 +1,9 @@
 export type CameraPoint = {x:number;y:number;z:number};
 
+/** Shared physical framing for the game and terrain comparison tool. */
+export const THIRD_PERSON_CAMERA={distance:11.5,minDistance:5.5,maxDistance:28,
+  targetHeight:2.05,sprintDistance:2.5,alpha:-Math.PI/2,beta:1.22,fov:.8} as const;
+
 /** A diver's orbit follows the body, staying under the surface once submerged.
  * Terrain clearance is still resolved separately along this orbit. */
 export function swimmingCameraOrbit(targetY:number,waterY:number|null,beta:number,radius:number){

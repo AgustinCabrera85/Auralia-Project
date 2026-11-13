@@ -1,0 +1,111 @@
+{
+  "start": {
+    "x": -1390,
+    "y": 41.3944047494602,
+    "z": 2070
+  },
+  "maxSupportError": 0,
+  "missingNearFrames": 0,
+  "maxResidentTiles": 6,
+  "frames": 330,
+  "end": {
+    "x": -1500.0028954202487,
+    "y": 41.4766609955037,
+    "z": 2070.001100034417
+  },
+  "measurement": {
+    "schema": "auralia-geographic-validation-v1",
+    "source": "worldstudio-hybrid-v1",
+    "view": "borde",
+    "timestamp": "2026-11-13T02:17:56.248Z",
+    "camera": [
+      -1500.0028954202487,
+      43.2266609955037,
+      2070.001100034417
+    ],
+    "cameraForward": [
+      0.9999999999499996,
+      0,
+      -0.000010000049769087342
+    ],
+    "viewport": [
+      1200,
+      675
+    ],
+    "samples": 300,
+    "frameMs": {
+      "median": 34.69999999552965,
+      "p95": 35
+    },
+    "fps": 30.00000000000005,
+    "cpuRenderMs": {
+      "median": 0.8000000044703484,
+      "p95": 2.2000000029802322
+    },
+    "gpuMs": {
+      "median": 1.173504,
+      "p95": 1.590272
+    },
+    "gpuSamples": 165,
+    "generationMs": {
+      "median": 0.10000000149011612,
+      "p95": 16.30000000447035,
+      "max": 16.30000000447035
+    },
+    "firstReadyMs": 24.100000001490116,
+    "startupReadyMs": 9369.20000000298,
+    "terrain": {
+      "near": {
+        "resident": 72,
+        "enabled": 72,
+        "vertices": 12168,
+        "triangles": 20736,
+        "spacing": 6,
+        "visibleTriangles": 7488
+      },
+      "mid": {
+        "resident": 128,
+        "enabled": 110,
+        "vertices": 18560,
+        "triangles": 24576,
+        "spacing": 18,
+        "visibleTriangles": 5760
+      },
+      "far": {
+        "resident": 132,
+        "enabled": 97,
+        "vertices": 31812,
+        "triangles": 38016,
+        "spacing": 36,
+        "visibleTriangles": 6912
+      }
+    },
+    "geometryBytes": 3501536,
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 12.700000002980232,
+      "totalLoaded": 6,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25
+    },
+    "jsHeapBytes": 111510229,
+    "graphics": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+    },
+    "visibleSceneTriangles": 20172,
+    "controller": {
+      "mode": "grounded",
+      "feetY": 41.4766609955037,
+      "surfaceY": 41.4766609955037
+    },
+    "authorityCount": 1,
+    "pending": 0,
+    "failure": null
+  },
+  "crossedR16Boundary": true,
+  "horizontalMetres": 110.0028954257489
+}

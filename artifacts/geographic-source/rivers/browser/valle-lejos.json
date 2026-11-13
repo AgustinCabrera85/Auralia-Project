@@ -1,0 +1,90 @@
+{
+  "id": "valle-lejos",
+  "loading": false,
+  "failure": null,
+  "source": "worldstudio-playable-v1",
+  "ready": true,
+  "position": {
+    "x": -2309,
+    "y": -1.2304547352072275,
+    "z": 1706
+  },
+  "mode": "grounded",
+  "terrain": {
+    "near": {
+      "resident": 64,
+      "enabled": 64,
+      "vertices": 10816,
+      "triangles": 18432
+    },
+    "mid": {
+      "resident": 128,
+      "enabled": 112,
+      "vertices": 26687,
+      "triangles": 40830
+    },
+    "far": {
+      "resident": 131,
+      "enabled": 99,
+      "vertices": 60830,
+      "triangles": 96246
+    }
+  },
+  "sourceData": {
+    "residentTiles": 9,
+    "maxResidentTiles": 9,
+    "heightBytes": 7372800,
+    "lastLoadMs": 32.600000001490116,
+    "totalLoaded": 18,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  },
+  "avatarReady": true,
+  "vegetation": 415,
+  "grass": 1732,
+  "resources": 2,
+  "waterChunks": 91,
+  "lagoonInside": false,
+  "hydrology": 1.00875,
+  "fps": 29.99999999999998,
+  "heap": 306126908,
+  "terrainBytes": 5799416,
+  "river": {
+    "x": -2297.011110573498,
+    "z": 1710.5557592917762,
+    "level": 1,
+    "width": 11,
+    "dx": -0.35521883271241667,
+    "dz": 0.9347831731938847,
+    "along": 2701.4290040356586,
+    "distance": 12.825303598959783
+  },
+  "centerDepth": 5.76,
+  "water": {
+    "meshes": 91,
+    "vertices": 39775,
+    "triangles": 68267,
+    "clear": true
+  },
+  "camera": {
+    "alpha": 5.04,
+    "beta": 1.22,
+    "radius": 11.5
+  }
+}

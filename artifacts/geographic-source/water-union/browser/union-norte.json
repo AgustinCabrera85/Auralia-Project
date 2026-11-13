@@ -1,0 +1,77 @@
+{
+  "loading": false,
+  "failure": null,
+  "source": "worldstudio-playable-v1",
+  "ready": true,
+  "position": {
+    "x": -914,
+    "y": -0.6502654150295798,
+    "z": 2335
+  },
+  "mode": "swimming",
+  "terrain": {
+    "near": {
+      "resident": 68,
+      "enabled": 68,
+      "vertices": 11492,
+      "triangles": 19584
+    },
+    "mid": {
+      "resident": 128,
+      "enabled": 111,
+      "vertices": 26336,
+      "triangles": 40128
+    },
+    "far": {
+      "resident": 134,
+      "enabled": 102,
+      "vertices": 58454,
+      "triangles": 90912
+    }
+  },
+  "sourceData": {
+    "residentTiles": 9,
+    "maxResidentTiles": 9,
+    "heightBytes": 7372800,
+    "lastLoadMs": 130.20000000298023,
+    "totalLoaded": 18,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  },
+  "avatarReady": true,
+  "vegetation": 381,
+  "grass": 1388,
+  "resources": 0,
+  "waterChunks": 95,
+  "lagoonInside": false,
+  "hydrology": 1.00875,
+  "river": {
+    "x": -909.3127664856654,
+    "z": 2334.2399244734747,
+    "level": 1,
+    "width": 11,
+    "dx": 0.16006859905552023,
+    "dz": 0.9871058927979324,
+    "along": 5454.102377143879,
+    "distance": 4.74846004762855
+  },
+  "depth": 5.76,
+  "oceanExcluded": 1,
+  "waterMeshes": 95
+}

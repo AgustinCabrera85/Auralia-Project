@@ -1,0 +1,40 @@
+{
+  "schema": "auralia-worldstudio-material-weights-v1",
+  "source": "public/auralia-preview/data/WorldStudio_v3_6_fuente.ptrterrain",
+  "sourceSha256": "cf8643d2738b615e476030a8c434b02e2a8f099286834e6a24d4c4e654bf1af7",
+  "resolution": 320,
+  "originXZ": [
+    -7000.0,
+    -7000.0
+  ],
+  "spanXZ": [
+    14000,
+    14000
+  ],
+  "orientation": "columns +X east; rows +Z south; row 0 is the northern edge",
+  "encoding": "interleaved unsigned RGBA8; channels 0-3 in weightsA, 4-6 in weightsB, channel 7 unused",
+  "channelCount": 7,
+  "files": {
+    "weightsA": {
+      "path": "/auralia-preview/data/weightsA.rgba",
+      "sha256": "6c4d973f861b2bef1a47043cff435cdd5628ea21f17d783ac3e89b8b1b767e6c",
+      "bytes": 409600
+    },
+    "weightsB": {
+      "path": "/auralia-preview/data/weightsB.rgba",
+      "sha256": "22e36dda397d6700f296217f405cf26eb96073f26b2018d2f71d631dc86f9685",
+      "bytes": 409600
+    }
+  },
+  "nonzeroPixels": [
+    59308,
+    55694,
+    40429,
+    10826,
+    46874,
+    20574,
+    10136
+  ],
+  "channelNames": null,
+  "note": "The project serializes weights but not channel names or original PBR textures. Babylon preview maps each original channel to a shared Auralia 1K visual approximation."
+}

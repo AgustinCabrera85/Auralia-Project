@@ -20,15 +20,21 @@ export async function verifySlopingWater(){
   data.uvs2=[0,1,0,1,0,1,0,1];data.colors=Array(4).fill([0,0,0,1]).flat();
   data.applyToMesh(mesh);mesh.material=mat;
   try{
-    for(let i=0;i<30;i++){
+    // Parallel shader compilation can outlast 300 ms while the game streams.
+    // Await readiness rather than interpreting a pending compile as failure.
+    for(let i=0;i<1000;i++){
       updateWorldWaterMaterial(mat,'river',scene,0);scene.render();
       await new Promise(r=>setTimeout(r,10));
+      if(i>=2&&mat.isReady(mesh,false,mesh.subMeshes[0]))break;
     }
     if(!mat.isReady(mesh,false,mesh.subMeshes[0]))throw Error('sloping water shader did not compile');
+    // Read the completed shader's draw, not the clear frame preceding readiness.
+    scene.render();scene.render();
     const gl=engine._gl,pixel=y=>{
       const p=new Uint8Array(4);gl.readPixels(128,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return [...p].slice(0,3);
     };
     const upper=pixel(134),lower=pixel(122);
+    if(upper.every((v,i)=>Math.abs(v-[153,128,102][i])<=1))throw Error('sloping surface was not drawn');
     if(upper.some((v,i)=>Math.abs(v-lower[i])>6))throw Error(`false horizontal waterline: ${upper} / ${lower}`);
     if(upper[0]<130||lower[0]<130)throw Error('underside became an opaque ceiling');
     return {upper,lower};
@@ -78,6 +84,38 @@ export async function verifyWaterBoundary(){
     check(!effect.active&&scene.customRenderTargets.length===0,'no water rendering pass on dry land');
     check(recovered.above.every((v,i)=>Math.abs(v-air.above[i])<=1),'colours recover after leaving water');
     return {air,split,submerged,recovered,resourcesStable:true};
+  }finally{effect.dispose();scene.dispose();engine.dispose();}
+}
+
+/** Dry banks below a high spring's infinite tangent plane must stay dry. */
+export async function verifyFiniteWater(){
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+  const engine=new Engine(canvas,false,{preserveDrawingBuffer:true}),scene=new Scene(engine);
+  const camera=new FreeCamera('finite-water-probe',new Vector3(0,2,-10),scene);
+  camera.minZ=.1;camera.maxZ=200;camera.setTarget(new Vector3(0,2,0));
+  const land=MeshBuilder.CreatePlane('bank',{width:30,height:30},scene),mat=new StandardMaterial('warm-bank',scene);
+  mat.disableLighting=true;mat.emissiveColor=new Color3(.72,.5,.32);land.material=mat;
+  const water=MeshBuilder.CreateGround('finite-river',{width:4,height:14},scene),clear=new StandardMaterial('invisible-colour-water',scene);
+  clear.alpha=0;clear.backFaceCulling=false;water.material=clear;water.metadata={inlandWater:true};
+  const effect=new SpeedMotionBlur(camera,engine),gl=engine._gl;
+  const pixel=(x,y)=>{const p=new Uint8Array(4);gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return [...p].slice(0,3);};
+  try{
+    for(let i=0;i<1000;i++){
+      effect.update(.02,false);effect.updateWaterSurface(.02,0,0,0,0,0,true);scene.render();await new Promise(r=>setTimeout(r,10));
+      if(i>20&&effect.optics.surfaceReady&&effect.optics.ready&&effect.postProcess.isReady())break;
+    }
+    scene.render();scene.render();
+    const wet=pixel(128,44),dry=pixel(30,44);
+    if(dry[0]<175||wet[0]>=dry[0]-15){
+      const samples=await effect.optics.surfaceDepth.getDepthMap().readPixels();
+      throw Error('finite water floods dry bank or misses river: '+JSON.stringify({wet,dry,surfaceReady:effect.optics.surfaceReady,wetDepth:samples[(44*256+128)*4],dryDepth:samples[(44*256+30)*4]}));
+    }
+    const count=scene.textures.length;
+    effect.updateWaterSurface(.1,null);scene.render();
+    if(scene.customRenderTargets.length)throw Error('interface pass remains active on dry land');
+    effect.updateWaterSurface(.1,0,0,0,0,0,true);scene.render();
+    if(scene.textures.length!==count)throw Error('interface target recreated on reentry');
+    return {wet,dry,resourcesStable:true};
   }finally{effect.dispose();scene.dispose();engine.dispose();}
 }
 

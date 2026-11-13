@@ -1,0 +1,62 @@
+[
+    {
+        "check":  "stream",
+        "code":  1
+    },
+    {
+        "check":  "grass",
+        "code":  0
+    },
+    {
+        "check":  "vegetation",
+        "code":  0
+    },
+    {
+        "check":  "forest",
+        "code":  0
+    },
+    {
+        "check":  "expansion",
+        "code":  0
+    },
+    {
+        "check":  "telemetry",
+        "code":  0
+    },
+    {
+        "check":  "foliage-shader",
+        "code":  0
+    },
+    {
+        "check":  "features",
+        "code":  1
+    },
+    {
+        "check":  "props",
+        "code":  0
+    },
+    {
+        "check":  "traversal",
+        "code":  0
+    },
+    {
+        "check":  "biomes",
+        "code":  0
+    },
+    {
+        "check":  "routes",
+        "code":  0
+    },
+    {
+        "check":  "physics",
+        "code":  0
+    },
+    {
+        "check":  "lagoon",
+        "code":  0
+    },
+    {
+        "check":  "geographic-source",
+        "code":  0
+    }
+]

@@ -1,0 +1,149 @@
+{
+  "schema": "auralia-preview-measurement-v1",
+  "mode": "baseline geometry",
+  "view": "ladera",
+  "timestamp": "2026-11-13T01:46:39.807Z",
+  "camera": [
+    2600,
+    1338.0375200641872,
+    -3500
+  ],
+  "cameraForward": [
+    0.5144957378967482,
+    0,
+    0.8574929362310107
+  ],
+  "eyeHeight": 1.75,
+  "quality": "balanced",
+  "viewport": [
+    1200,
+    675
+  ],
+  "samples": 300,
+  "frameMs": {
+    "median": 34.69999999552965,
+    "p95": 35.100000001490116
+  },
+  "cpuRenderMs": {
+    "median": 0.6999999955296516,
+    "p95": 1.1000000014901161
+  },
+  "gpuMs": {
+    "median": 2.335744,
+    "p95": 2.373632
+  },
+  "jsHeapBytes": 187936619,
+  "gpuSamples": 268,
+  "graphics": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "processMemoryBytes": null,
+  "terrain": {
+    "far": {
+      "spacing": 29.166666666666668,
+      "resident": 25,
+      "visible": 9,
+      "vertices": 235225,
+      "triangles": 460800,
+      "visibleTriangles": 165888,
+      "geometryBytes": 12115900
+    },
+    "near": {
+      "spacing": 7.291666666666667,
+      "resident": 2,
+      "visible": 2,
+      "vertices": 296450,
+      "triangles": 589824,
+      "visibleTriangles": 589824,
+      "geometryBytes": 15378488
+    }
+  },
+  "visibleSceneTriangles": 761006,
+  "processMemory": [
+    {
+      "Id": 5092,
+      "WorkingSet64": 43618304,
+      "PrivateMemorySize64": 19894272,
+      "PeakWorkingSet64": 50118656
+    },
+    {
+      "Id": 17848,
+      "WorkingSet64": 18440192,
+      "PrivateMemorySize64": 9035776,
+      "PeakWorkingSet64": 18489344
+    },
+    {
+      "Id": 19564,
+      "WorkingSet64": 34635776,
+      "PrivateMemorySize64": 20545536,
+      "PeakWorkingSet64": 34639872
+    },
+    {
+      "Id": 26512,
+      "WorkingSet64": 67313664,
+      "PrivateMemorySize64": 29880320,
+      "PeakWorkingSet64": 69562368
+    },
+    {
+      "Id": 28020,
+      "WorkingSet64": 411971584,
+      "PrivateMemorySize64": 280358912,
+      "PeakWorkingSet64": 614178816
+    },
+    {
+      "Id": 30904,
+      "WorkingSet64": 225611776,
+      "PrivateMemorySize64": 432144384,
+      "PeakWorkingSet64": 362295296
+    },
+    {
+      "Id": 30980,
+      "WorkingSet64": 173207552,
+      "PrivateMemorySize64": 74579968,
+      "PeakWorkingSet64": 183021568
+    },
+    {
+      "Id": 33188,
+      "WorkingSet64": 41000960,
+      "PrivateMemorySize64": 17297408,
+      "PeakWorkingSet64": 41418752
+    }
+  ],
+  "processTypes": [
+    {
+      "id": 30980,
+      "type": "browser"
+    },
+    {
+      "id": 19564,
+      "type": "renderer"
+    },
+    {
+      "id": 28020,
+      "type": "renderer"
+    },
+    {
+      "id": 33188,
+      "type": "renderer"
+    },
+    {
+      "id": 26512,
+      "type": "renderer"
+    },
+    {
+      "id": 30904,
+      "type": "GPU"
+    },
+    {
+      "id": 5092,
+      "type": "network.mojom.NetworkService"
+    },
+    {
+      "id": 17848,
+      "type": "storage.mojom.StorageService"
+    }
+  ],
+  "processMemoryScope": "All processes of this isolated Chrome instance; working set/private bytes, not dedicated VRAM."
+}

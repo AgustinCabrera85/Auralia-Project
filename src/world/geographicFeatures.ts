@@ -1,4 +1,5 @@
 import { CASCADE_LAGOON, lagoonWaterAt, lagoonChannelAt } from './lagoonData';
+import { activeGeography } from './geography/ActiveGeography';
 /** Stable geographic definitions and samplers shared by terrain, streaming, collision and maps. */
 export type WaterPoint={x:number;z:number;level:number;width:number};
 export type LakeDefinition={name:string;x:number;z:number;radiusX:number;radiusZ:number;level:number;depth:number};
@@ -90,6 +91,7 @@ export function streamSample(x:number,z:number):{distance:number;level:number;wi
 }
 
 export function waterSurfaceAt(x:number,z:number):WaterSample|null{
+  const active=activeGeography();if(active)return active.waterAt(x,z);
   const watershed=lagoonWaterAt(x,z);if(watershed)return watershed;
   const river=riverSample(x,z),stream=streamSample(x,z);
   let result:WaterSample|null=river.distance<river.width?{
@@ -177,6 +179,7 @@ export function isInlandWater(x:number,z:number,ground:number):boolean{
 
 /** Cheap broad-phase for a 72 m terrain cell. */
 export function waterNearChunk(cx:number,cz:number,size:number):boolean{
+  const active=activeGeography();if(active)return active.waterNear(cx,cz,size);
   const x=(cx+.5)*size,z=(cz+.5)*size,r=size*.72+35;
   if(Math.abs(x-CASCADE_LAGOON.x)<CASCADE_LAGOON.radiusX+r&&
     Math.abs(z-CASCADE_LAGOON.z)<CASCADE_LAGOON.radiusZ+r||lagoonChannelAt(x,z).distance<r)return true;

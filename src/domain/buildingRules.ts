@@ -2,7 +2,9 @@ import type { BuildAnchor, BuildType, Structure } from './types';
 
 export const BUILD_GRID=4;
 export const BUILD_LEVEL_HEIGHT=3.5;
-export const BUILD_PLOT={x:-29,z:18,halfSize:17} as const;
+export const BUILD_PLOT={x:-29,z:18,halfSize:17};
+/** The save namespace fixes this origin for the lifetime of a game session. */
+export function configureBuildPlot(x=-29,z=18):void{BUILD_PLOT.x=x;BUILD_PLOT.z=z;}
 export const WALL_TYPES:readonly BuildType[]=['wall','stone-wall','metal-wall','door-wall','window-wall'];
 export type BuildObstacle={x:number;z:number;radius:number;kind:'tree'|'resource'|'rock'|'house'};
 export type BuildEnvironment={

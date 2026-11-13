@@ -9,6 +9,10 @@ import { getWorldDocument } from './editor/WorldEditState';
 import { nearTerrainHeightAt } from './terrainLod';
 import { riverSample, streamSample, waterNearChunk, waterSurfaceAt } from './geographicFeatures';
 import { lagoonWaterAt, ownsLagoonWater, LAGOON_FALLS } from './lagoonData';
+import { activeGeography } from './geography/ActiveGeography';
+import { CLEAR_RIVER_PROFILE } from './water/RiverProfile';
+import { clippedWaterSurface } from './water/ClippedWaterSurface';
+const ownsWater=(x:number,z:number)=>activeGeography()?.ownsLagoon(x,z)??ownsLagoonWater(x,z);
 
 type Cell={cx:number;cz:number};
 type WaterJob=Cell&{lod:'near'|'far'};
@@ -37,14 +41,16 @@ export class GeographyStream {
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode){
     this.waterMasks=loadWaterMasks(scene);
-    this.material=createWorldWaterMaterial(scene,'river',this.waterMasks);
-    this.poolMaterial=createWorldWaterMaterial(scene,'pool',this.waterMasks);
+    this.material=createWorldWaterMaterial(scene,'river',this.waterMasks,activeGeography()?{
+      ...CLEAR_RIVER_PROFILE,uDeepColor:'#214d50',uShallowColor:'#6a9b90'}:{});
+    this.poolMaterial=createWorldWaterMaterial(scene,'pool',this.waterMasks,activeGeography()?{uClearWater:1,uWaveAmp:.08,
+      uWaveSpeed:.6,uCaustics:.7,uDeepColor:'#103f46',uShallowColor:'#4b9987',uFoamIntensity:.35,uContactFoam:.85}:{});
   }
 
   setActiveChunks(cells:readonly Cell[],x:number,z:number):void{
     const size=MAINLAND.chunkSize;
     const hasWater=(cx:number,cz:number):boolean=>
-      waterNearChunk(cx,cz,size)||(
+      waterNearChunk(cx,cz,size)||(!activeGeography()&&
         cz*size<=-1060&&(cz+1)*size>=-1800&&
         // The upper visual bank can extend to the valley wall, so retain
         // chunks whose corners may contain that bank even if the center is dry.
@@ -63,7 +69,7 @@ export class GeographyStream {
       if(Math.hypot(dx,dz)>FAR_WATER_RADIUS||!hasWater(cx,cz))continue;
       far.push({cx,cz});farKeys.add(key);
     }
-    const waterfallVisible=[...desired,...far].some(cell=>
+    const waterfallVisible=!activeGeography()&&[...desired,...far].some(cell=>
       waterfallCutTouchesChunk(cell.cx,cell.cz,size));
     if(waterfallVisible&&!this.waterfall&&!this.usesAuthoredFall())
       this.waterfall=new WaterfallSurface(this.scene,this.parent,this.waterMasks);
@@ -104,7 +110,7 @@ export class GeographyStream {
     }
     this.time+=Math.min(.10,Math.max(0,dt));
     updateWorldWaterMaterial(this.material,'river',this.scene,this.time);
-    updateWorldWaterMaterial(this.poolMaterial,'pool',this.scene,this.time,{impactEnabled:true,
+    updateWorldWaterMaterial(this.poolMaterial,'pool',this.scene,this.time,{impactEnabled:!activeGeography(),
       impactA:this.impacts[0],impactB:this.impacts[1]});
     this.poolMaterial.setVector4('uImpactC',this.impacts[2]);
     this.waterfall?.update(this.time);
@@ -113,7 +119,7 @@ export class GeographyStream {
     while((this.activeBuild||this.pending.length)&&completed<2){
       if(!this.activeBuild){
         const job=this.pending.shift()!;
-        this.activeBuild={job,steps:this.createWater(job.cx,job.cz,job.lod==='near'?1.5:3,job.lod)};
+        this.activeBuild={job,steps:this.createWater(job.cx,job.cz,activeGeography()?(job.lod==='near'?3:12):(job.lod==='near'?1.5:3),job.lod)};
       }
       const {job,steps}=this.activeBuild;
       const result=steps.next();
@@ -148,6 +154,8 @@ export class GeographyStream {
   }
 
   private *createWater(cx:number,cz:number,step:number,lod:'near'|'far'):Generator<void,Mesh|null,void>{
+    const active=activeGeography();
+    if(active?.waterFieldAt)return yield* clippedWaterSurface(this.scene,this.parent,active,cx,cz,lod,this.material,this.poolMaterial);
     const size=MAINLAND.chunkSize;
     const positions:number[]=[],normals:number[]=[],colors:number[]=[],uvs:number[]=[],uv2:number[]=[],indices:number[]=[];
     let poolQuads=0,riverQuads=0;
@@ -167,16 +175,17 @@ export class GeographyStream {
       if(!point){
         const px=cx*size+ix*step,pz=cz*size+iz*step;
         const renderedGround=nearTerrainHeightAt(px,pz,terrainAtGrid);
-        const ground=Math.max(waterfallGroundAt(px,pz),renderedGround);
-        point={surface:ownsLagoonWater(px,pz)?null:visualWaterSurfaceAt(px,pz,ground),ground,renderedGround};
+        const ground=activeGeography()?renderedGround:Math.max(waterfallGroundAt(px,pz),renderedGround);
+        let surface=ownsWater(px,pz)?null:visualWaterSurfaceAt(px,pz,ground);
+        point={surface,ground,renderedGround};
         cornerCache.set(key,point);
       }
       return point;
     };
     const emitQuad=(ix:number,iz:number,scale:number):void=>{
       const x=cx*size+ix*step,z=cz*size+iz*step;
-      if(ownsLagoonWater(x+step*scale*.5,z+step*scale*.5))return;
-      if(waterfallCutContainsCell(x,z,step*scale))return;
+      if(ownsWater(x+step*scale*.5,z+step*scale*.5))return;
+      if(!activeGeography()&&waterfallCutContainsCell(x,z,step*scale))return;
       const corners:[[number,number],[number,number],[number,number],[number,number]]=[
         [ix,iz],[ix+scale,iz],[ix+scale,iz+scale],[ix,iz+scale]
       ];
@@ -201,7 +210,7 @@ export class GeographyStream {
         // adjacent water quad emitted it. This closes seams at route bends.
         // Keep dry water vertices below both the waterline and the actual
         // terrain triangle. Otherwise they climb the bank into blue spikes.
-        const dryLevel=lagoonWaterAt(px,pz)?level:surface.kind==='river'?Math.min(level,riverSample(px,pz).level):
+        const dryLevel=activeGeography()||lagoonWaterAt(px,pz)?level:surface.kind==='river'?Math.min(level,riverSample(px,pz).level):
           surface.kind==='stream'?Math.min(level,streamSample(px,pz).level):level;
         positions.push(px,wet?level+.035:dryWaterHeight(ground,renderedGround,dryLevel),pz);
         normals.push(0,1,0);
@@ -216,8 +225,8 @@ export class GeographyStream {
     };
     for(let iz=0;iz<size/step;iz++)for(let ix=0;ix<size/step;ix++){
       yield;
-      if(ownsLagoonWater(cx*size+(ix+.5)*step,cz*size+(iz+.5)*step))continue;
-      if(waterfallCutContainsCell(cx*size+ix*step,cz*size+iz*step,step))continue;
+      if(ownsWater(cx*size+(ix+.5)*step,cz*size+(iz+.5)*step))continue;
+      if(!activeGeography()&&waterfallCutContainsCell(cx*size+ix*step,cz*size+iz*step,step))continue;
       const points=[cornerAt(ix,iz),cornerAt(ix+1,iz),cornerAt(ix+1,iz+1),cornerAt(ix,iz+1)];
       const x=cx*size+(ix+.5)*step,z=cz*size+(iz+.5)*step;
       const wetPoint=points.find(point=>point.surface&&point.ground<point.surface.level-.035);

@@ -10,14 +10,14 @@ export interface SaveRepository {
 }
 
 export class LocalStorageSaveRepository implements SaveRepository {
-  private readonly key = 'auralia:poc:save:v1';
+  constructor(private readonly key = 'auralia:poc:save:v1',private readonly initial:()=>SaveGameV1=newGame){}
 
   load(): SaveGameV1 {
     try {
       const raw = localStorage.getItem(this.key);
-      if (!raw) return newGame();
+      if (!raw) return this.initial();
       const parsed: unknown = JSON.parse(raw);
-      if (!this.isValidSave(parsed)) return newGame();
+      if (!this.isValidSave(parsed)) return this.initial();
       const inventory={...emptyInventory(),...parsed.inventory};
       const selected=parsed.equippedItem;
       const equippedItem=selected&&EQUIPMENT_IDS.some(item=>item===selected)&&
@@ -48,7 +48,7 @@ export class LocalStorageSaveRepository implements SaveRepository {
       };
     } catch (error) {
       console.warn('[Auralia] El guardado no pudo leerse.', error);
-      return newGame();
+      return this.initial();
     }
   }
 
@@ -75,6 +75,7 @@ export class LocalStorageSaveRepository implements SaveRepository {
     if (obj.structures.length > 2000) return false;
     if (obj.playerPosition !== undefined) {
       const p=obj.playerPosition;
+      if(p?.realm!==undefined&&!['albor','umbrael'].includes(p.realm))return false;
       if (!p || (p.zone!=='brisalia'&&p.zone!=='luciernagas') ||
           !Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>10000||Math.abs(p.z)>10000) return false;
     }

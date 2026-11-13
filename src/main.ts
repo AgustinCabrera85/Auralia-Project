@@ -5,12 +5,21 @@ import { LocalStorageSaveRepository } from './persistence/SaveRepository';
 import { WorldView } from './game/WorldView';
 import { Hud } from './ui/Hud';
 import { loadFoliageForestAssets } from './world/foliageForestData';
+import { PlayableWorld } from './world/geography/PlayableWorld';
+import { setActiveGeography } from './world/geography/ActiveGeography';
+import { configureBuildPlot } from './domain/buildingRules';
+import { newGame } from './domain/types';
 
 async function start():Promise<void> {
+const useStudio=new URLSearchParams(location.search).get('world')==='worldstudio';
+const geographicWorld=useStudio?await PlayableWorld.load():null;
+setActiveGeography(geographicWorld);
+configureBuildPlot(-29+(geographicWorld?.town.x??0),18+(geographicWorld?.town.z??0));
 // Authored world data is separate from per-player savegame data.
 try{
-  const r=await fetch('/world/auralia-world.json',{cache:'no-store'});
-  setWorldDocument(r.ok?await r.json():emptyWorldDocument());
+  if(geographicWorld)setWorldDocument(emptyWorldDocument());
+  else {const r=await fetch('/world/auralia-world.json',{cache:'no-store'});
+    setWorldDocument(r.ok?await r.json():emptyWorldDocument());}
 }catch(e){
   console.warn('[Auralia] World editor data unavailable:',e);
   setWorldDocument(emptyWorldDocument());
@@ -20,7 +29,10 @@ try {
 } catch (error) {
   console.warn('[Auralia] No se pudo cargar el Bosque Ilustrado:', error);
 }
-const store = new GameStore(new LocalStorageSaveRepository());
+const repository=new LocalStorageSaveRepository(geographicWorld?'auralia:worldstudio-playable-v1:save:v1':undefined,()=>{
+  const save=newGame();if(geographicWorld)save.playerPosition={zone:'brisalia',...geographicWorld.spawn};return save;
+});
+const store = new GameStore(repository);
 let world: WorldView;
 
 const hud = new Hud(store, {
@@ -51,7 +63,21 @@ try {
       if (store.milestone === 'sail') hud.notify('¡Tu hogar ya tiene sus primeras piezas! Buscá el muelle al sur.');
     },
     onStructureSelected:structure=>hud.setSelectedStructure(structure)
-  }, () => hud.isModalOpen);
+  }, () => hud.isModalOpen,geographicWorld);
+  const navigation=document.createElement('div');navigation.className='world-source-switch';
+  navigation.style.cssText='position:fixed;left:12px;bottom:72px;z-index:25;display:flex;gap:6px;padding:8px;background:#142333e8;border-radius:8px;color:white;font:13px sans-serif;max-width:90vw;flex-wrap:wrap';
+  const source=document.createElement('select');source.ariaLabel='Mundo';
+  source.innerHTML='<option value="legacy">Mundo actual</option><option value="worldstudio">Nuevo continente</option>';
+  source.value=useStudio?'worldstudio':'legacy';source.onchange=()=>{const url=new URL(location.href);url.search='';if(source.value==='worldstudio')url.searchParams.set('world','worldstudio');location.assign(url);};navigation.append(source);
+  if(geographicWorld){
+    const destinations=geographicWorld.destinations;
+    const places=document.createElement('select');places.ariaLabel='Destino del nuevo continente';
+    for(const p of destinations){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;places.append(o);}
+    const visit=document.createElement('button');visit.textContent='Viajar';visit.onclick=()=>{const p=destinations.find(p=>p.id===places.value)!;world.teleportToLandmark(p.id);};
+    const slot=document.createElement('span');slot.textContent='Partida del nuevo continente';navigation.append(places,visit,slot);
+  }
+  document.body.append(navigation);
+  if(new URLSearchParams(location.search).has('qa'))Object.assign(window,{__auraliaGame:{world,store,repository,hud}});
   window.setTimeout(() => hud.notify('¡Bienvenido a Auralia! Buscá materiales, conocé Brisalia y construí tu hogar.'), 800);
 } catch (error) {
   console.error('No se pudo iniciar Auralia', error);
@@ -62,4 +88,4 @@ try {
 }
 }
 
-void start();
+void start().catch(error=>{console.error(error);const panel=document.createElement('p');panel.className='fatal-error';panel.textContent=`No se pudo preparar el mundo: ${String(error)}`;document.body.append(panel);});

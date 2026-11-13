@@ -15,6 +15,7 @@ import { type VegetationExclusion } from './vegetationData';
 import { CRYSTAL_KINDS, GEOLOGY_ASSET_KINDS, PROP_CONFIG, PROP_KINDS, propsForChunk,
   SPECIAL_ASSETS, type PropKind, type PropPlacement } from './worldPropsData';
 import { ForgeFire } from './ForgeFire';
+import { activeGeography } from './geography/ActiveGeography';
 
 type Cell={cx:number;cz:number};
 type CrystalKind='cristalAzul'|'cristalCeleste'|'cristalFuego';
@@ -51,6 +52,7 @@ export class WorldPropSystem {
   private geologyAdjusted=true;
   private clock=0;
   private respawnCheck=0;
+  private readonly specialHeights=new Map<string,number>();
   get activeChunkCount():number{return this.chunks.size;}
   get visibleDecorationCount():number{return this.allPlacements().filter(p=>!isCrystal(p.kind)&&this.sources.has(p.kind)).length;}
   get activeFormationCount():number{return this.formations.size;}
@@ -65,6 +67,10 @@ export class WorldPropSystem {
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,private readonly store:GameStore,
     private readonly exclusions:()=>readonly VegetationExclusion[],private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){
     this.rockColliders=new RockColliderSystem(kind=>this.sources.get(kind));
+    const active=activeGeography();
+    for(const special of SPECIAL_ASSETS)if(!active||special.kind==='crisolHerrero'){
+      this.specialHeights.set(special.id,sampleMainlandHeight(special.x+(active?.town.x??0),special.z+(active?.town.z??0))+special.yOffset);
+    }
   }
 
   /** Every GLB is fetched once. Multi-mesh packs retain all of their primitives and materials. */
@@ -126,7 +132,7 @@ export class WorldPropSystem {
     await this.loadCliffLod();
     if(this.disposed)return;
     this.ready=true;
-    for(const special of SPECIAL_ASSETS)this.createSpecial(special);
+    for(const special of SPECIAL_ASSETS)if(!activeGeography()||special.kind==='crisolHerrero')this.createSpecial(special);
     this.refreshDecoration();
     this.syncRockColliders();
   }
@@ -168,7 +174,8 @@ export class WorldPropSystem {
     if(!this.sources.has(special.kind))return;
     const root=new TransformNode(special.id,this.scene);
     root.parent=this.parent;
-    root.position.set(special.x,sampleMainlandHeight(special.x,special.z)+special.yOffset,special.z);
+    const active=activeGeography(),x=special.x+(active?.town.x??0),z=special.z+(active?.town.z??0);
+    root.position.set(x,this.specialHeights.get(special.id)!,z);
     this.cloneModel(special.kind,special.id,root,ASSET_CATALOG[special.kind].referenceScale);
     if(special.kind==='crisolHerrero')this.forgeFire=new ForgeFire(this.scene,root);
     this.specialRoots.push(root);
@@ -202,7 +209,7 @@ export class WorldPropSystem {
       }
       this.chunks.delete(key);changed=true;
     }
-    for(const composition of GEOLOGY_COMPOSITIONS){
+    for(const composition of activeGeography()?[]:GEOLOGY_COMPOSITIONS){
       const active=composition.pieces.some(piece=>Math.hypot(piece.x-x,piece.z-z)<
         TERRAIN_LOD_CONFIG.farRadius+160)||desired.some(cell=>
           geologyIntersectsChunk(composition.formation,cell.cx,cell.cz,MAINLAND.chunkSize));

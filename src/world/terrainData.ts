@@ -4,6 +4,7 @@
  *  Funciones PURAS: el atlas, las colisiones y el render comparten esta geografía.
  */
 import { applyHeightEdits } from './editor/WorldEditState';
+import { activeGeography } from './geography/ActiveGeography';
 import { applyGeographicRelief, LAKE_RESERVATIONS, RIVER_RESERVATION } from './geographicFeatures';
 import { applyGeologyRelief } from './geologyData';
 import { FOLIAGE_FOREST } from './foliageForestConfig';
@@ -101,6 +102,7 @@ function distanceToRoute(x:number,z:number,points:readonly (readonly [number,num
 }
 /** Continuous masks shared by relief, vegetation and the map. */
 export function geographyMasks(x:number,z:number):{lake:number;river:number;road:number;existingRoadClearance:number}{
+  const active=activeGeography();if(active)return active.masks(x,z);
   let lake=0;
   for(const p of LAKE_RESERVATIONS)lake=Math.max(lake,gaussian(x,z,p.x,p.z,p.radiusX,p.radiusZ));
   const river=1-smooth(TERRAIN_CONFIG.reservations.riverHalfWidth,TERRAIN_CONFIG.reservations.riverHalfWidth+TERRAIN_CONFIG.reservations.riverBlend,distanceToRoute(x,z,RIVER_RESERVATION));
@@ -116,6 +118,7 @@ export function geographyMasks(x:number,z:number):{lake:number;river:number;road
 
 /** Blend regional influences before applying relief; no biome boundary changes height abruptly. */
 export function biomeWeightsAt(x:number,z:number):Readonly<Record<Biome,number>>{
+  const active=activeGeography();if(active)return active.biomeWeights(x,z);
   const {radial,coast}=radialPosition(x,z);
   const shoreDistance=Math.abs(coast-radial)*MAINLAND.radiusZ;
   const starter=1-smooth(150,230,Math.hypot(x,z));
@@ -153,6 +156,7 @@ function legacyHeight(x:number,z:number):number {
 }
 
 export function sampleMainlandHeight(x:number,z:number):number {
+  const active=activeGeography();if(active)return active.source.heightAt(x,z);
   const masks=geographyMasks(x,z);
   const oldRadial=Math.hypot((x-LEGACY.centerX)/LEGACY.radiusX,(z-LEGACY.centerZ)/LEGACY.radiusZ);
   const preserve=Math.max(1-smooth(.72,1.02,oldRadial),1-smooth(155,240,Math.hypot(x,z)));
@@ -188,7 +192,7 @@ export function sampleMainlandHeight(x:number,z:number):number {
       applyRegionalRelief(x,z,compatible,masks.road),masks.road,masks.existingRoadClearance)),masks.road)));
 }
 export function isLand(x:number,z:number):boolean {
-  return sampleMainlandHeight(x,z) > MAINLAND.waterLevel + 0.6;
+  return sampleMainlandHeight(x,z) > (activeGeography()?.source.seaLevel??MAINLAND.waterLevel) + 0.6;
 }
 export function biomeAt(x:number,z:number):Biome {
   const weights=biomeWeightsAt(x,z);
@@ -220,6 +224,7 @@ export function desiredChunks(x:number,z:number,radius:number=MAINLAND.visibleRa
   return found;
 }
 export function isStarterArea(x:number,z:number):boolean {
+  const active=activeGeography();if(active){x-=active.town.x;z-=active.town.z;}
   // Reservar la aldea, la parcela y las rutas inmediatas libres de bosque procedural.
   return Math.abs(x)<125 && z>-125 && z<170;
 }

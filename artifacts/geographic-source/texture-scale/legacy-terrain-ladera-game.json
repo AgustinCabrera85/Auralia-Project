@@ -1,0 +1,196 @@
+{
+  "schema": "auralia-geographic-validation-v1",
+  "source": "legacy",
+  "view": "ladera",
+  "timestamp": "2026-11-13T04:03:29.342Z",
+  "camera": [
+    306.5740403465768,
+    176.16857376253364,
+    -1305.454935119606
+  ],
+  "cameraForward": [
+    0,
+    -0.3436457652247515,
+    -0.9390993493997827
+  ],
+  "viewport": [
+    1600,
+    900
+  ],
+  "framing": {
+    "mode": "game",
+    "fov": 0.8,
+    "eyeHeight": 6.001926082634554,
+    "orbitRadius": 11.5,
+    "resolution": 1,
+    "referenceHeight": 1.75
+  },
+  "textureScale": {
+    "projection": "world metres; triplanar rock",
+    "layers": [
+      {
+        "id": "alpino_roca_nieve",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "badlands_arcilla_roja",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "bosque_templado_suelo",
+        "metresPerRepeat": 7.692307692307692
+      },
+      {
+        "id": "costa_playa",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "desierto_arena",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "estepa_seca",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "orilla_rio_fangosa",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "pantano_humedo",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "pradera_templada",
+        "metresPerRepeat": 5.555555555555555
+      },
+      {
+        "id": "selva_humeda",
+        "metresPerRepeat": 7.692307692307692
+      },
+      {
+        "id": "sierra_grava_pasto",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "tierra_maldita",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "valle_cultivo_tierra_fertil",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "volcanico_basalto",
+        "metresPerRepeat": 9.090909090909092
+      },
+      {
+        "id": "rock",
+        "metresPerRepeat": 8.695652173913043
+      },
+      {
+        "id": "snow",
+        "metresPerRepeat": 8.695652173913043
+      },
+      {
+        "id": "lava",
+        "metresPerRepeat": 8.695652173913043
+      }
+    ]
+  },
+  "samples": 241,
+  "frameMs": {
+    "median": 34.69999999552965,
+    "p95": 35
+  },
+  "fps": 30.00300030007472,
+  "cpuRenderMs": {
+    "median": 1.1000000014901161,
+    "p95": 2
+  },
+  "gpuMs": {
+    "median": 2.108416,
+    "p95": 6.09792
+  },
+  "gpuSamples": 121,
+  "generationMs": {
+    "median": 10.5,
+    "p95": 17.200000002980232,
+    "max": 23.399999998509884
+  },
+  "firstReadyMs": 5497.10000000149,
+  "startupReadyMs": 8649.19999999553,
+  "terrain": {
+    "near": {
+      "resident": 64,
+      "enabled": 64,
+      "vertices": 10816,
+      "triangles": 18432,
+      "spacing": 6,
+      "visibleTriangles": 5184
+    },
+    "mid": {
+      "resident": 120,
+      "enabled": 104,
+      "vertices": 17400,
+      "triangles": 23040,
+      "spacing": 18,
+      "visibleTriangles": 5376
+    },
+    "far": {
+      "resident": 224,
+      "enabled": 101,
+      "vertices": 53984,
+      "triangles": 64512,
+      "spacing": 36,
+      "visibleTriangles": 7488
+    }
+  },
+  "geometryBytes": 4559808,
+  "sourceData": null,
+  "jsHeapBytes": 141701056,
+  "graphics": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "visibleSceneTriangles": 18384,
+  "controller": {
+    "mode": "airborne",
+    "feetY": 170.16664767989909,
+    "surfaceY": 170.14664767989908
+  },
+  "authorityCount": 1,
+  "pending": 0,
+  "failure": null,
+  "material": {
+    "name": "auralia-biome-terrain",
+    "status": "ready",
+    "textures": [
+      {
+        "name": "biome-albedos-shared",
+        "size": {
+          "width": 512,
+          "height": 512
+        },
+        "anisotropy": 4
+      },
+      {
+        "name": "biome-normals-shared",
+        "size": {
+          "width": 512,
+          "height": 512
+        },
+        "anisotropy": 4
+      },
+      {
+        "name": "/assets/water/caustics-refractive-1k.png",
+        "size": {
+          "width": 1024,
+          "height": 1024
+        },
+        "anisotropy": 4
+      }
+    ]
+  }
+}

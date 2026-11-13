@@ -46,7 +46,7 @@ import { CharacterTraversalController, type ActionMotionKind,
   type TraversalWorld } from './CharacterTraversalController';
 import { TRAVERSAL } from './traversalRules';
 import { terrainWallAt } from './TerrainTraversal';
-import { CAMERA_TERRAIN, cameraTerrainView, swimmingCameraOrbit } from './cameraTerrain';
+import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, cameraTerrainView, swimmingCameraOrbit } from './cameraTerrain';
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
 import { SantiCharacter } from './SantiCharacter';
@@ -54,6 +54,8 @@ import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCa
 import { DoubleTapSprint } from './DoubleTapSprint';
 import { SpeedMotionBlur } from './SpeedMotionBlur';
 import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQuality } from './renderResolution';
+import { PlayableWorld, regionPoint } from '../world/geography/PlayableWorld';
+import { FloatingKingdoms } from '../world/geography/FloatingKingdoms';
 
 export type Interactable = {
   id: string;
@@ -99,11 +101,10 @@ type WorldCallbacks = {
 
 const TOWN_OFFSET = { x: 0, z: 0 };
 const ISLAND_OFFSET = { x: -210, z: 420 };
-const THIRD_PERSON_CAMERA={distance:11.5,minDistance:5.5,maxDistance:28,
-  targetHeight:2.05,sprintDistance:2.5} as const;
 
 /** Vista del mundo con terreno por chunks y vegetación GLB compartida. */
 export class WorldView {
+  private floating:FloatingKingdoms|null=null;
   private ocean: OceanWater | null = null;
   readonly engine: Engine;
   readonly scene: Scene;
@@ -164,17 +165,23 @@ export class WorldView {
   private cameraOcclusionDistance=Infinity;
   private cameraFrameDt=0;
   private renderQuality=readRenderQuality();
+  private placingMainland=false;
+  private geographyLoading=false;
+  private geographyFailure:string|null=null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly store: GameStore,
     private readonly callbacks: WorldCallbacks,
-    private readonly blocked: () => boolean
+    private readonly blocked: () => boolean,
+    readonly geographicWorld:PlayableWorld|null=null
   ) {
-    installExpansionBiomeAssets();
+    if(!geographicWorld)installExpansionBiomeAssets();
+    if(geographicWorld){this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;}
     // Resolution is managed explicitly, including browser zoom / monitor DPR
     // changes, so Babylon must not apply a second device-ratio adjustment.
     this.engine = new Engine(canvas, true, { antialias: true, adaptToDeviceRatio: false });
+    if(geographicWorld)this.engine.maxFPS=this.renderQuality==='performance'?30:60;
     this.resize();
     this.scene = new Scene(this.engine);
     applyLandscapeAtmosphere(this.scene);
@@ -186,8 +193,9 @@ export class WorldView {
     sun.intensity = 1.35;
     sun.diffuse = new Color3(1, 0.91, 0.76);
 
-    this.camera = new ArcRotateCamera('camara-aventura', -Math.PI / 2, 1.22,
+    this.camera = new ArcRotateCamera('camara-aventura', THIRD_PERSON_CAMERA.alpha, THIRD_PERSON_CAMERA.beta,
       THIRD_PERSON_CAMERA.distance, new Vector3(0, 3, 0), this.scene);
+    this.camera.fov = THIRD_PERSON_CAMERA.fov;
     // Occlusion may need to pull the camera closer than the player's zoom limit.
     this.camera.lowerRadiusLimit = .25;
     this.camera.upperRadiusLimit = THIRD_PERSON_CAMERA.maxDistance;
@@ -212,21 +220,33 @@ export class WorldView {
     continentRoot.position.set(TOWN_OFFSET.x,0,TOWN_OFFSET.z);
     this.zones.set('brisalia',{
       id:'brisalia',root:continentRoot,terrain:null,offset:new Vector3(0,0,0),
-      radiusX:MAINLAND.radiusX,radiusZ:MAINLAND.radiusZ,spawn:{x:1,z:10},nodes:[]
+      radiusX:MAINLAND.radiusX,radiusZ:MAINLAND.radiusZ,spawn:geographicWorld?.spawn??{x:1,z:10},nodes:[]
     });
-    this.mainland=new TerrainStream(this.scene,continentRoot);
+    this.mainland=new TerrainStream(this.scene,continentRoot,{},geographicWorld??undefined);
     this.geography=new GeographyStream(this.scene,continentRoot);
     this.mountainPasses=new MountainPassSystem(this.scene,continentRoot,
-      (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight));
+      (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.town);
     this.lagoon=new LagoonSystem(this.scene,continentRoot,
-      (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight));
-    this.createZone('luciernagas', new Vector3(ISLAND_OFFSET.x, 0, ISLAND_OFFSET.z), 78, 65, { x: -3, z: -20 });
+      (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.lagoon);
+    const islandOffset=geographicWorld?.firefly??ISLAND_OFFSET;
+    this.createZone('luciernagas', new Vector3(islandOffset.x, 0, islandOffset.z), 78, 65, { x: -3, z: -20 });
+    this.placingMainland=!!geographicWorld;
+    // Population functions retain local content coordinates and gameplay IDs.
+    // The construction plot is already world-space; convert it just for authoring.
+    if(geographicWorld){this.plot.x-=geographicWorld.town.x;this.plot.z-=geographicWorld.town.z;}
     this.populateMainland();
+    if(geographicWorld){
+      for(const node of this.zones.get('brisalia')!.nodes){node.localPosition.x+=geographicWorld.town.x;node.localPosition.z+=geographicWorld.town.z;}
+      for(const e of this.vegetationExclusions){e.x+=geographicWorld.town.x;e.z+=geographicWorld.town.z;}
+      this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;
+    }
+    this.placingMainland=false;
     this.populateFireflyIsland();
     this.createPlayer();
-    this.buildVisuals=new BuildVisuals(this.scene,continentRoot,sampleMainlandHeight);
+    const buildHeight=(x:number,z:number)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z);
+    this.buildVisuals=new BuildVisuals(this.scene,continentRoot,buildHeight);
     this.buildObstacles.push(...this.collectBuildObstacles());
-    this.store.setBuildEnvironment(()=>({heightAt:sampleMainlandHeight,
+    this.store.setBuildEnvironment(()=>({heightAt:buildHeight,
       obstacles:this.buildObstacles,player:this.traversal.position}));
 
     for (const s of store.state.structures) this.drawStructure(s,false);
@@ -282,6 +302,7 @@ export class WorldView {
     window.addEventListener('resize', this.resize);
     canvas.addEventListener('pointerdown', this.onPointerDown);
     this.scene.onBeforeRenderObservable.add(()=>{
+      if(this.geographyLoading||this.geographyFailure)return;
       const start=this.telemetry?.recording?performance.now():0;
       this.updateCameraOcclusion(this.cameraFrameDt,this.zones.get(this.store.state.zone)!);
       // Evaluate immersion after the orbit/occlusion has placed the active camera.
@@ -299,7 +320,8 @@ export class WorldView {
         (waterSurfaceAt(eye.x,eye.z-1)?.level??water!))*.5:0;
       this.lagoon.updateView(eye,this.player.position,water??null,this.player);
       this.speedMotionBlur.updateWaterSurface(this.cameraFrameDt,water??null,
-        flow?flow.directionX*flow.velocity:0,flow?flow.directionZ*flow.velocity:0,slopeX,slopeZ);
+        flow?flow.directionX*flow.velocity:0,flow?flow.directionZ*flow.velocity:0,slopeX,slopeZ,
+        !!this.geographicWorld&&!this.lagoon.inside&&!!this.geographicWorld.waterFieldAt(eye.x,eye.z));
       if(start)this.telemetry?.recordCamera(performance.now()-start);
     },-1,true); // Other materials consume the resolved atmosphere this frame.
     this.engine.runRenderLoop(() => {
@@ -320,6 +342,7 @@ export class WorldView {
 
   setRenderQuality(quality:RenderQuality):void{
     this.renderQuality=quality;
+    if(this.geographicWorld)this.engine.maxFPS=quality==='performance'?30:60;
     saveRenderQuality(quality);
     this.resize();
   }
@@ -477,11 +500,15 @@ export class WorldView {
     mesh.isPickable = true;
   }
 
-  private y(zone: IslandInfo, x: number, z: number): number { return this.terrainHeight(x, z, zone); }
+  private y(zone: IslandInfo, x: number, z: number): number {
+    if(this.placingMainland&&zone.id==='brisalia'){x+=this.geographicWorld!.town.x;z+=this.geographicWorld!.town.z;}
+    return this.terrainHeight(x, z, zone);
+  }
   private host(zone: IslandInfo, name: string, x: number, z: number): TransformNode {
     const root = new TransformNode(name, this.scene);
     root.parent = zone.root;
-    root.position.set(x, this.y(zone, x, z), z);
+    const offset=this.placingMainland&&zone.id==='brisalia'?this.geographicWorld!.town:{x:0,z:0};
+    root.position.set(x+offset.x, this.y(zone, x, z), z+offset.z);
     return root;
   }
 
@@ -632,6 +659,7 @@ export class WorldView {
   }
 
   private dock(zone: IslandInfo, x: number, z: number, destination: ZoneId, label: string): void {
+    if(this.placingMainland&&this.geographicWorld){x=this.geographicWorld.dock.x-this.geographicWorld.town.x;z=this.geographicWorld.dock.z-this.geographicWorld.town.z;}
     const root = this.host(zone, 'muelle', x, z);
     const wood = this.mat('madera-muelle', '#a87844');
     for (let i = 0; i < 5; i++) {
@@ -735,7 +763,8 @@ export class WorldView {
         nearPlot(node.localPosition.x,node.localPosition.z))
         result.push({x:node.localPosition.x,z:node.localPosition.z,radius:1.1,
           kind:'resource'});
-    for(const cx of [-1,0])for(const cz of [0]){
+    const plotCell=chunkOf(this.plot.x,this.plot.z);
+    for(const cx of [plotCell.cx-1,plotCell.cx,plotCell.cx+1])for(const cz of [plotCell.cz-1,plotCell.cz,plotCell.cz+1]){
       for(const tree of vegetationForChunk(cx,cz,this.vegetationExclusions))
         if(tree.obstacleRadius&&nearPlot(tree.x,tree.z))
           result.push({x:tree.x,z:tree.z,radius:tree.obstacleRadius,kind:'tree'});
@@ -749,6 +778,7 @@ export class WorldView {
 
   private populatePointsOfInterest(zone:IslandInfo):void {
     for(const place of POINTS_OF_INTEREST){
+      if(this.geographicWorld&&(place.kind==='waterfall'||place.id.startsWith('gruta-')))continue;
       if(place.kind==='dock')continue; // El muelle jugable ya existe y conserva su viaje.
       const visual=['laguna-tres-vertientes','gruta-mirador','gruta-bosque'].includes(place.id)
         ?new TransformNode(place.id,this.scene):this.mountainPasses.visualFor(place.id)??
@@ -861,6 +891,15 @@ export class WorldView {
   }
 
   activateZone(id: ZoneId): void {
+    if(this.floating?.id&&(id!=='brisalia'||!this.store.state.playerPosition?.realm))this.floating.clear();
+    if(this.geographicWorld&&id==='brisalia'){
+      const saved=this.store.state.playerPosition;
+      if(saved?.realm&&this.floating?.id!==saved.realm){void this.travelFloating(saved.realm).catch(()=>{});return;}
+      const p=saved?.zone==='brisalia'?saved:this.geographicWorld.spawn;
+      if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))){
+        void this.prepareGeography(p.x,p.z).then(()=>this.activateZone(id)).catch(()=>{});return;
+      }
+    }
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
     if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
     for(const zone of this.zones.values())zone.root.setEnabled(zone.id===id);
@@ -869,7 +908,11 @@ export class WorldView {
     const previous=this.store.state.playerPosition;
     const saved=previous?.zone===id ? previous : null;
     const start=saved&&id==='brisalia'?this.safeSavedStart(saved.x,saved.z):saved??zone.spawn;
-    const terrainY=id==='brisalia'?this.walkHeightAt(start.x,start.z):this.y(zone,start.x,start.z);
+    let terrainY=id==='brisalia'?this.walkHeightAt(start.x,start.z):this.y(zone,start.x,start.z);
+    if(this.geographicWorld&&id==='brisalia'&&!this.floating?.id){
+      const water=waterSurfaceAt(start.x,start.z)?.level??this.geographicWorld.seaLevel;
+      terrainY=Math.max(terrainY,water-1.25);
+    }
     const floorY=id==='brisalia'?buildingFloorAt(start.x,start.z,terrainY+1,
       this.store.state.structures):null;
     this.player.position.set(zone.offset.x+start.x,Math.max(terrainY,floorY??terrainY),
@@ -893,6 +936,7 @@ export class WorldView {
 
   /** Old saves have only X/Z; keep a saved foot out of a newly generated rock base. */
   private safeSavedStart(x:number,z:number):{x:number;z:number}{
+    if(this.geographicWorld)return {x,z};
     // Saves store X/Z only. A saved position on the exposed rock face would
     // otherwise respawn at the terrain height, underneath the visible mesh.
     for(const formation of GEOLOGY_FORMATIONS){
@@ -931,8 +975,72 @@ export class WorldView {
     return {x,z};
   }
 
+  private async prepareGeography(x:number,z:number):Promise<void>{
+    if(!this.geographicWorld)return;
+    this.geographyLoading=true;this.geographyFailure=null;
+    this.callbacks.hint('Cargando la región…');
+    try{await this.geographicWorld.prepareAround(x,z);}
+    catch(error){this.geographyFailure=String(error);this.callbacks.notify(`No se pudo cargar la región: ${String(error)}`);throw error;}
+    finally{this.geographyLoading=false;this.previousHint='';}
+  }
+
+  async travelGeographic(x:number,z:number,name='Nueva región'):Promise<void>{
+    if(!this.geographicWorld)return;
+    if(this.geographyLoading)return;
+    this.cancelPlacement();this.pressed.clear();this.floating?.clear();
+    if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
+    if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
+    await this.prepareGeography(x,z);
+    if(this.store.state.zone!=='brisalia')this.store.travel('brisalia');
+    this.store.setPlayerPosition('brisalia',x,z);
+    this.activateZone('brisalia');
+    this.callbacks.notify(`Explorando: ${name}`);
+  }
+
+  async travelFloating(id:string):Promise<void>{
+    if(!this.geographicWorld||this.geographyLoading)return;
+    const place=this.geographicWorld.destinations.find(p=>p.floating===id);if(!place)return;
+    const saved=this.store.state.playerPosition;
+    await this.travelGeographic(place.x,place.z,place.name);
+    this.geographyLoading=true;
+    try{
+      this.floating??=new FloatingKingdoms(this.scene);
+      const p=await this.floating.load(id);
+      if(saved?.realm===id){
+        const support=this.floating.colliders.queryGround(saved.x,saved.z,5000,10000,.33);
+        if(support){p.x=saved.x;p.z=saved.z;p.y=support.height;}
+      }
+      await this.geographicWorld.prepareAround(p.x,p.z);
+      this.store.setPlayerPosition('brisalia',p.x,p.z,id);
+      this.activateZone('brisalia');
+      this.traversal.teleport(p.x,p.y,p.z);this.player.position.set(p.x,p.y,p.z);
+      this.camera.setTarget(this.player.position.add(new Vector3(0,2.05,0)),false,false,true);
+      this.camera.alpha=-Math.PI/2;this.camera.beta=1.15;this.camera.radius=THIRD_PERSON_CAMERA.distance;
+      this.cameraPreferredRadius=this.cameraAppliedRadius=THIRD_PERSON_CAMERA.distance;
+    }catch(error){this.geographyFailure=String(error);this.callbacks.notify(String(error));throw error;}
+    finally{this.geographyLoading=false;this.previousHint='';}
+  }
+
+  get geographicStatus(){return {loading:this.geographyLoading,failure:this.geographyFailure,
+    source:this.geographicWorld?.id??'legacy',ready:!this.geographyLoading&&!this.geographyFailure&&this.mainland.pendingCount===0,
+    position:{...this.traversal.position},mode:this.traversal.mode,terrain:this.mainland.statistics,
+    sourceData:this.geographicWorld?.stats,avatarReady:this.santi?.isReady,vegetation:this.vegetation.instanceCount,grass:this.grass.instanceCount,
+    resources:this.props.activeCrystalCount,waterChunks:this.geography.activeCount+this.geography.farActiveCount,
+    lagoonInside:this.lagoon.inside,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity};}
+
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
   teleportToLandmark(id:string):void {
+    if(this.geographicWorld){
+      const destination=this.geographicWorld.destinations.find(p=>p.id===id);
+      if(destination){void (destination.floating?this.travelFloating(destination.floating):
+        this.travelGeographic(destination.x,destination.z,destination.name)).catch(()=>{});return;}
+      const old=LANDMARKS.find(p=>p.id===id)??pointOfInterest(id);
+      const special=id==='laguna-tres-vertientes'?regionPoint(this.geographicWorld.lagoon,-160,-650):
+        id==='nacar'?{x:400,z:-400}:null;
+      if(special||old){const point=special??{x:old!.x+this.geographicWorld.town.x,z:old!.z+this.geographicWorld.town.z};
+        void this.travelGeographic(point.x,point.z,old?.name??id).catch(()=>{});}
+      return;
+    }
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
     if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
     const point=LANDMARKS.find(p=>p.id===id)??pointOfInterest(id);
@@ -959,20 +1067,36 @@ export class WorldView {
     const zone=this.zones.get(this.store.state.zone)!;
     const x=this.player.position.x-zone.offset.x,z=this.player.position.z-zone.offset.z;
     const name=this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
-      zone.id==='brisalia'?landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)]):'Isla de las Luciérnagas';
+      zone.id==='brisalia'?(this.geographicWorld?
+        this.geographicWorld.destinations.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b).name:
+        landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)])):'Isla de las Luciérnagas';
     if(this.lastBiome!==name){this.lastBiome=name;}
     this.callbacks.onExplore(x,z,name,zone.id==='brisalia'?this.mainland.activeCount:1);
-    if(zone.id==='brisalia')for(const place of POINTS_OF_INTEREST){
+    if(zone.id==='brisalia'&&!this.insideUnderground)for(const place of this.geographicWorld?
+      this.geographicWorld.destinations.map(d=>({...d,discoverRadius:120})):POINTS_OF_INTEREST){
       if(Math.hypot(x-place.x,z-place.z)<place.discoverRadius)this.store.discoverPlace(place.id);
     }
   }
 
   private walkHeightAt(x:number,z:number):number {
+    if(this.floating?.id){const hit=this.floating.colliders.queryGround(x,z,5000,10000,.33);if(hit)return hit.height;}
+    if(this.placingMainland){x+=this.geographicWorld!.town.x;z+=this.geographicWorld!.town.z;}
     return bridgeSurfaceAt(this.mountainPasses.bridges,x,z)?.height??
-      bridgeDeckAt(x,z)??nearTerrainHeightAt(x,z,sampleMainlandHeight);
+      (this.geographicWorld?null:bridgeDeckAt(x,z))??nearTerrainHeightAt(x,z,sampleMainlandHeight);
   }
 
   private traversalWorld(zone:IslandInfo):TraversalWorld{
+    if(this.floating?.id){
+      const c=this.floating.colliders;
+      return {
+        ground:(x,z,origin,max,radius)=>{const h=c.queryGround(x,z,origin,max,radius);return h?{height:h.height,normalY:h.normal.y,rockId:h.rockId}:null;},
+        wall:(x,y,z,dx,dz,reach)=>{const h=c.queryWall(x,y,z,dx,dz,reach);return h?{pointX:h.point.x,pointY:h.point.y,pointZ:h.point.z,distance:h.distance,normalX:h.normal.x,normalY:h.normal.y,normalZ:h.normal.z,rockId:h.rockId,climbable:h.climbable}:null;},
+        solidTop:(x,z,origin,max,id)=>{const h=c.querySolidTop(x,z,origin,max,id);return h?{height:h.height,normalX:h.normal.x,normalZ:h.normal.z,rockId:h.rockId,centerX:h.centerX,centerZ:h.centerZ}:null;},
+        headroom:(x,y,z,h,id)=>c.hasOverheadClearance(x,y,z,h,id),
+        canMove:(x,z)=>!!c.queryGround(x,z,this.traversal.position.y+3,12,.33),
+        fallbackHeight:()=>this.traversal.position.y
+      };
+    }
     const generated=this.lagoon.rockColliders;
     const generatedWall:TraversalWorld['wall']=(x,y,z,dx,dz,reach)=>{
       const hit=generated.queryWall(x,y,z,dx,dz,reach);
@@ -1023,13 +1147,14 @@ export class WorldView {
     const trailDeck=(x:number,z:number)=>isMainland?
       mountainTrailSurfaceAt(this.mountainPasses.trails,x,z,this.traversal.position.y+2):null;
     const height=(x:number,z:number)=>isMainland?
-      routeDeck(x,z)?.height??trailDeck(x,z)?.height??bridgeDeckAt(x,z)??wallHeight(x,z):this.y(zone,x,z);
+      routeDeck(x,z)?.height??trailDeck(x,z)?.height??(this.geographicWorld?null:bridgeDeckAt(x,z))??wallHeight(x,z):this.y(zone,x,z);
     return {
-      waterLevel:(x,z)=>isMainland?lagoonWaterAt(x,z)?.level??null:null,
+      waterLevel:(x,z)=>isMainland?(this.geographicWorld?waterSurfaceAt(x,z)?.level??
+        (wallHeight(x,z)<this.geographicWorld.seaLevel?this.geographicWorld.seaLevel:null):lagoonWaterAt(x,z)?.level??null):null,
       ground:(x,z,originY,maxDistance,footRadius)=>{
         const terrainY=height(x,z);
         const newDeck=routeDeck(x,z)??trailDeck(x,z);
-        const deck=newDeck?.height??(isMainland?bridgeDeckAt(x,z):null);
+        const deck=newDeck?.height??(isMainland&&!this.geographicWorld?bridgeDeckAt(x,z):null);
         const d=.55;
         const surface=isMainland&&deck===null?nearTerrainSurfaceAt(x,z,gridHeight):null;
         const slope=deck!==null?newDeck?.normalY??1:surface?1/Math.hypot(1,surface.slopeX,surface.slopeZ):
@@ -1081,6 +1206,7 @@ export class WorldView {
         buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
       canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
+        if(this.geographicWorld&&isMainland&&(!this.geographicWorld.isReady([nextX-12,nextZ-12,nextX+12,nextZ+12])||this.mainland.coverageAt(nextX,nextZ)!=='near'))return false;
         const oldDeck=routeDeck(fromX,fromZ),nextDeck=routeDeck(nextX,nextZ);
         if(oldDeck&&!nextDeck&&feetY<oldDeck.height+1.8&&
           bridgeRailBlocks(oldDeck.route,nextX,nextZ))return false;
@@ -1088,14 +1214,14 @@ export class WorldView {
         const elevated=feetY>height(fromX,fromZ)+4;
         const coastalRock=isMainland&&elevated&&!isLand(nextX,nextZ)
           ?this.props.queryRockGround(nextX,nextZ,feetY+1.8,3,.33):null;
-        const canWalk=isMainland?(isLand(nextX,nextZ)||
+        const canWalk=isMainland&&this.geographicWorld?true:isMainland?(isLand(nextX,nextZ)||
           !!coastalRock&&coastalRock.height>MAINLAND.waterLevel+1)&&
           (elevated||!!lagoonWaterAt(nextX,nextZ)||!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ))):
           Math.sqrt((nextX/zone.radiusX)**2+(nextZ/zone.radiusZ)**2)<.80;
         const houses=isMainland&&!elevated&&[
           {x:-8,z:-32,r:6},{x:9,z:-33,r:5.5},{x:24,z:-22,r:5},
           {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
-        ].some(ob=>Math.hypot(ob.x-nextX,ob.z-nextZ)<ob.r);
+        ].some(ob=>Math.hypot(ob.x+(this.geographicWorld?.town.x??0)-nextX,ob.z+(this.geographicWorld?.town.z??0)-nextZ)<ob.r);
         return canWalk&&!houses&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
           (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
           (!isMainland||!buildingBlocksMove(fromX,fromZ,nextX,nextZ,feetY,
@@ -1108,9 +1234,11 @@ export class WorldView {
   private streamMainland(x:number,z:number):void {
     this.grass.setFocus(x,z);
     const view=this.camera.getTarget().subtract(this.camera.position);
+    if(this.geographicWorld)this.vegetation.setViewDirection(view.x,view.z);
     const changed=this.mainland.update(x,z,view.x,view.z);
     const cell=chunkOf(x,z);
     const center=`${cell.cx}:${cell.cz}`;
+    if(this.geographicWorld&&!changed&&center===this.vegetationCenter)this.vegetation.setActiveChunks([],x,z);
     if(changed||center!==this.vegetationCenter){
       this.vegetationCenter=center;
       const cells=this.mainland.activeCells;
@@ -1121,6 +1249,7 @@ export class WorldView {
   }
 
   private exitEmbeddedGeology(x:number,y:number,z:number):{x:number;y:number;z:number}|null{
+    if(this.geographicWorld)return null;
     for(const formation of GEOLOGY_FORMATIONS){
       const local=geologyLocal(formation,x,z);
       if(Math.abs(local.along)>formation.length*.5+8||local.across<=-34||local.across>=30)
@@ -1146,6 +1275,11 @@ export class WorldView {
   }
 
   private update(dt: number): void {
+    if(this.geographyLoading||this.geographyFailure)return;
+    if(this.geographicWorld&&this.store.state.zone==='brisalia'&&!this.insideUnderground){
+      const p=this.traversal.position;
+      if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))){void this.prepareGeography(p.x,p.z).catch(()=>{});return;}
+    }
     this.lagoon.restoreAtmosphere();
     const climateFrame=this.climate.update(dt);
     this.telemetry?.mark('clima');
@@ -1309,7 +1443,7 @@ export class WorldView {
     this.saveTimer+=dt;
     if(this.exploreTimer>0.26){this.sendLocation();this.exploreTimer=0;}
     if(this.saveTimer>4 && walking&&!this.insideUnderground){
-      this.store.setPlayerPosition(zone.id,this.lastSafePosition.x,this.lastSafePosition.z);this.saveTimer=0;
+      this.store.setPlayerPosition(zone.id,this.lastSafePosition.x,this.lastSafePosition.z,this.floating?.id??undefined);this.saveTimer=0;
     }
     this.findNearest();
     if(this.placement)this.refreshPreview();
@@ -1320,7 +1454,8 @@ export class WorldView {
     const swimming=this.traversal.mode==='swimming';
     let preferred=this.cameraPreferredRadius;
     if(swimming){
-      const p=this.player.position,water=this.lagoon.inside?GROTTO_WATER:lagoonWaterAt(p.x,p.z)?.level??null;
+      const p=this.player.position,water=this.lagoon.inside?GROTTO_WATER:this.geographicWorld?
+        waterSurfaceAt(p.x,p.z)?.level??this.geographicWorld.seaLevel:lagoonWaterAt(p.x,p.z)?.level??null;
       const orbit=swimmingCameraOrbit(this.camera.getTarget().y,water,this.camera.beta,preferred);
       preferred=orbit.radius;this.camera.beta=orbit.beta;
     }
@@ -1434,7 +1569,7 @@ export class WorldView {
     this.interactTarget = this.traversal.canInteract?nearest:null;
     let label=nearest&&this.traversal.canInteract?`E  ·  ${nearest.verb}`:
       'WASD mover · Espacio salto ×2 · Q combo / patada aérea · F barrida · R roll · V equipo · E usar';
-    if(this.traversal.mode==='swimming')label=`WASD nadar · Shift rápido · Espacio ${this.traversal.swimSubmerged?'volver a la superficie':'sumergirse'}`;
+    if(this.traversal.mode==='swimming')label=`WASD nadar · Shift rápido · Espacio ${this.traversal.swimSubmerged?'volver a la superficie':'sumergirse'}${this.geographicWorld?' · Ctrl descender':''}`;
     else if(this.traversal.mode==='climbing')label='W/S trepar · A/D moverse · Espacio soltarse';
     else if(this.traversal.mode==='mantling')label='Subiendo al borde...';
     else if(zone.id==='brisalia'&&this.traversal.mode==='grounded'){
@@ -1465,7 +1600,8 @@ export class WorldView {
           this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
           this.camera.setTarget(next.add(new Vector3(0,2.05,0)));
           this.callbacks.notify(entering?'Gruta de las Vertientes: atravesá el sifón y buscá las dos salidas.':portal.name);
-          if(!portal.submerged){this.lastSafePosition={x:portal.x,z:portal.z};this.store.setPlayerPosition('brisalia',portal.x,portal.z);}
+          if(!portal.submerged){const exit=this.geographicWorld?regionPoint(this.geographicWorld.lagoon,portal.x,portal.z):portal;
+            this.lastSafePosition={x:exit.x,z:exit.z};this.store.setPlayerPosition('brisalia',exit.x,exit.z);}
         }return;
       }
     }
@@ -1479,8 +1615,9 @@ export class WorldView {
           this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
           this.camera.setTarget(next.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)));
           this.store.discoverPlace(portal.id);
-          this.store.setPlayerPosition('brisalia',portal.x,portal.z);
-          this.lastSafePosition={x:portal.x,z:portal.z};this.sendLocation();
+          const exit={x:portal.x+(this.geographicWorld?.town.x??0),z:portal.z+(this.geographicWorld?.town.z??0)};
+          this.store.setPlayerPosition('brisalia',exit.x,exit.z);
+          this.lastSafePosition=exit;this.sendLocation();
           this.callbacks.notify(entering?'Entraste en las Galerías de Ferragrís. Buscá sus otras salidas.':portal.name);
         }return;
       }
@@ -1560,12 +1697,15 @@ export class WorldView {
   }
 
   beginPlacement(type: BuildType): void {
+    if(this.geographicWorld&&(this.geographyLoading||this.floating?.id||
+      !this.geographicWorld.isReady([this.plot.x-40,this.plot.z-40,this.plot.x+40,this.plot.z+40]))){
+      this.callbacks.notify('Viajá al Claro del Hogar en Brisalia para construir.');return;}
     if(this.insideUnderground){this.callbacks.notify('La parcela de construcción está en Brisalia.');return;}
     if(!this.traversal.canBuild)return;
     this.cancelPlacement();
     const x=this.plot.x,z=this.plot.z;
     const ghost=this.buildVisuals.create(type,{x,z,rotation:0,
-      anchor:anchorFor(type,x,z),baseY:sampleMainlandHeight(x,z)},undefined,true);
+      anchor:anchorFor(type,x,z),baseY:this.geographicWorld?nearTerrainHeightAt(x,z,sampleMainlandHeight):sampleMainlandHeight(x,z)},undefined,true);
     this.placement = { type, rotation: 0, ghost };
     this.buildVisuals.setGridVisible(true);
     this.selectedStructureId=null;
@@ -1614,7 +1754,7 @@ export class WorldView {
     const rotation=isEdge?(nearestEdgeSide(x,z)+placing.rotation)%4:placing.rotation;
     const allowed = this.store.canBuild(placing.type, x, z, rotation);
     const plan=allowed.plan??{x,z,rotation,anchor:anchorFor(placing.type,x,z,rotation),
-      baseY:sampleMainlandHeight(x,z)};
+      baseY:this.geographicWorld?nearTerrainHeightAt(x,z,sampleMainlandHeight):sampleMainlandHeight(x,z)};
     placing.ghost.setEnabled(true);
     placing.ghost.position.set(plan.x,plan.baseY,plan.z);
     placing.ghost.rotation.y=plan.rotation*Math.PI/2;
@@ -1703,6 +1843,7 @@ export class WorldView {
   }
 
   dispose(): void {
+    this.floating?.dispose();this.geographicWorld?.dispose();
     this.engine.stopRenderLoop();
     this.speedMotionBlur.dispose();
     this.santi?.dispose();

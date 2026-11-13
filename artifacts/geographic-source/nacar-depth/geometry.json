@@ -1,0 +1,252 @@
+{
+  "sampleStep": 24,
+  "waterLevel": 1,
+  "samples": 7277,
+  "protectedSamples": 339,
+  "drySamples": 222,
+  "depthBefore": {
+    "n": 7055,
+    "min": 0.01872091316439395,
+    "median": 11.305285988002936,
+    "p90": 20.197607447500065,
+    "max": 20.411355983145935,
+    "over40": 0,
+    "over60": 0
+  },
+  "depthAfter": {
+    "n": 7055,
+    "min": 0.01872091316439395,
+    "median": 24.069715004244593,
+    "p90": 72.17151195862432,
+    "max": 79.4761477366358,
+    "over40": 2436,
+    "over60": 1422
+  },
+  "max": {
+    "x": 312,
+    "z": -768,
+    "depth": 79.4761477366358
+  },
+  "points": [
+    {
+      "x": 1580,
+      "z": -688,
+      "before": 6.0052311995764045,
+      "after": 6.810611752697994,
+      "shoreDistance": 47.17549611451011
+    },
+    {
+      "x": 1373,
+      "z": -438,
+      "before": -64.83877092048536,
+      "after": -64.83877092048536,
+      "shoreDistance": 0
+    },
+    {
+      "x": 400,
+      "z": -400,
+      "before": 13.808204664797707,
+      "after": 42.044465389698516,
+      "shoreDistance": 197.1931078431783
+    },
+    {
+      "x": 1700,
+      "z": -1000,
+      "before": 20.411355983145935,
+      "after": 73.03637468274424,
+      "shoreDistance": 377.3613132569967
+    },
+    {
+      "x": 2200,
+      "z": -600,
+      "before": 8.003234370071901,
+      "after": 12.697945336521022,
+      "shoreDistance": 84.76149150101523
+    },
+    {
+      "x": 1710,
+      "z": -1340,
+      "before": 9.148324915237353,
+      "after": 16.10537878000602,
+      "shoreDistance": 103.23749150101523
+    }
+  ],
+  "lod": [
+    {
+      "x": 1580,
+      "z": -688,
+      "lod": "near",
+      "error": 1.4210854715202004e-14,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 12.481300000000374
+    },
+    {
+      "x": 1580,
+      "z": -688,
+      "lod": "mid",
+      "error": 0.0003140020385359321,
+      "vertices": 145,
+      "triangles": 192,
+      "generationMs": 4.979800000000068
+    },
+    {
+      "x": 1580,
+      "z": -688,
+      "lod": "far",
+      "error": 0.09512092701179142,
+      "vertices": 241,
+      "triangles": 288,
+      "generationMs": 6.549600000000282
+    },
+    {
+      "x": 400,
+      "z": -400,
+      "lod": "near",
+      "error": 1.4210854715202004e-14,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 5.611499999999978
+    },
+    {
+      "x": 400,
+      "z": -400,
+      "lod": "mid",
+      "error": 0.014320590002213862,
+      "vertices": 145,
+      "triangles": 192,
+      "generationMs": 4.499300000000403
+    },
+    {
+      "x": 400,
+      "z": -400,
+      "lod": "far",
+      "error": 0.0043692244691300175,
+      "vertices": 241,
+      "triangles": 288,
+      "generationMs": 6.687399999999798
+    },
+    {
+      "x": 1700,
+      "z": -1000,
+      "lod": "near",
+      "error": 1.4210854715202004e-14,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 5.121399999999994
+    },
+    {
+      "x": 1700,
+      "z": -1000,
+      "lod": "mid",
+      "error": 0.016224517279241013,
+      "vertices": 145,
+      "triangles": 192,
+      "generationMs": 3.1548000000002503
+    },
+    {
+      "x": 1700,
+      "z": -1000,
+      "lod": "far",
+      "error": 0.04758992388947547,
+      "vertices": 241,
+      "triangles": 288,
+      "generationMs": 5.916199999999662
+    },
+    {
+      "x": 2200,
+      "z": -600,
+      "lod": "near",
+      "error": 1.9539925233402755e-14,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 4.018200000000434
+    },
+    {
+      "x": 2200,
+      "z": -600,
+      "lod": "mid",
+      "error": 0.021525938951119983,
+      "vertices": 145,
+      "triangles": 192,
+      "generationMs": 4.987199999999575
+    },
+    {
+      "x": 2200,
+      "z": -600,
+      "lod": "far",
+      "error": 0.2219702136144175,
+      "vertices": 241,
+      "triangles": 288,
+      "generationMs": 5.284899999999652
+    },
+    {
+      "x": 1710,
+      "z": -1340,
+      "lod": "near",
+      "error": 1.7763568394002505e-15,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 4.670899999999165
+    },
+    {
+      "x": 1710,
+      "z": -1340,
+      "lod": "mid",
+      "error": 1.7763568394002505e-15,
+      "vertices": 392,
+      "triangles": 686,
+      "generationMs": 7.147799999999734
+    },
+    {
+      "x": 1710,
+      "z": -1340,
+      "lod": "far",
+      "error": 1.7763568394002505e-15,
+      "vertices": 548,
+      "triangles": 902,
+      "generationMs": 7.161999999999352
+    },
+    {
+      "x": 312,
+      "z": -768,
+      "lod": "near",
+      "error": 2.842170943040401e-14,
+      "vertices": 169,
+      "triangles": 288,
+      "generationMs": 3.9036999999998443
+    },
+    {
+      "x": 312,
+      "z": -768,
+      "lod": "mid",
+      "error": 0.020649543977327767,
+      "vertices": 145,
+      "triangles": 192,
+      "generationMs": 5.455699999999524
+    },
+    {
+      "x": 312,
+      "z": -768,
+      "lod": "far",
+      "error": 0.09001235122690332,
+      "vertices": 241,
+      "triangles": 288,
+      "generationMs": 3.876299999999901
+    }
+  ],
+  "mask": {
+    "bytes": 373500,
+    "gridSpacing": 8,
+    "buildMs": 55.33349999999973,
+    "targetMaximumDepth": 80
+  },
+  "shoreTriangles": 2074,
+  "swimming": {
+    "bed": -78.4761477366358,
+    "bottom": -78.1761477366358,
+    "resurfaced": -0.650000014048909,
+    "mode": "swimming"
+  },
+  "residentTiles": 4
+}

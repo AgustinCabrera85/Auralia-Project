@@ -1,0 +1,119 @@
+{
+  "source": "legacy",
+  "viewport": [
+    1600,
+    900
+  ],
+  "camera": {
+    "radius": 11.5,
+    "alpha": 1.5707963267948966,
+    "beta": 1.22,
+    "targetHeight": 2.0500000000000007
+  },
+  "fps": 30.003000299851188,
+  "frameMs": {
+    "n": 301,
+    "mean": 33.30598006645013,
+    "p50": 34.29999999701977,
+    "p95": 38.69999999552965,
+    "max": 53.600000001490116
+  },
+  "cpuFrameMs": {
+    "n": 301,
+    "mean": 12.326910299097383,
+    "p50": 11.299999997019768,
+    "p95": 17.5,
+    "max": 31
+  },
+  "generationMs": {
+    "n": 180,
+    "mean": 13.016111111185618,
+    "p50": 10.800000004470348,
+    "p95": 27.100000001490116,
+    "max": 44.100000001490116
+  },
+  "heapBytes": 397769107,
+  "terrainGeometryBytes": 4624640,
+  "triangles": 939705,
+  "status": {
+    "loading": false,
+    "failure": null,
+    "source": "legacy",
+    "ready": true,
+    "position": {
+      "x": 1,
+      "y": 8.573716889632468,
+      "z": 10
+    },
+    "mode": "grounded",
+    "terrain": {
+      "near": {
+        "resident": 64,
+        "enabled": 64,
+        "vertices": 10816,
+        "triangles": 18432
+      },
+      "mid": {
+        "resident": 128,
+        "enabled": 112,
+        "vertices": 18560,
+        "triangles": 24576
+      },
+      "far": {
+        "resident": 224,
+        "enabled": 70,
+        "vertices": 53984,
+        "triangles": 64512
+      }
+    },
+    "avatarReady": true,
+    "vegetation": 109,
+    "grass": 5934,
+    "resources": 0,
+    "waterChunks": 33,
+    "lagoonInside": false,
+    "hydrology": 1.00875
+  },
+  "processes": [
+    {
+      "Id": 6908,
+      "WorkingSet64": 136695808,
+      "PrivateMemorySize64": 50249728
+    },
+    {
+      "Id": 11392,
+      "WorkingSet64": 45760512,
+      "PrivateMemorySize64": 21270528
+    },
+    {
+      "Id": 28260,
+      "WorkingSet64": 39415808,
+      "PrivateMemorySize64": 16384000
+    },
+    {
+      "Id": 30048,
+      "WorkingSet64": 18153472,
+      "PrivateMemorySize64": 7995392
+    },
+    {
+      "Id": 30756,
+      "WorkingSet64": 354828288,
+      "PrivateMemorySize64": 704548864
+    },
+    {
+      "Id": 31652,
+      "WorkingSet64": 730959872,
+      "PrivateMemorySize64": 621998080
+    },
+    {
+      "Id": 31868,
+      "WorkingSet64": 32268288,
+      "PrivateMemorySize64": 20230144
+    },
+    {
+      "Id": 34780,
+      "WorkingSet64": 62881792,
+      "PrivateMemorySize64": 25268224
+    }
+  ]
+}

@@ -51,3 +51,38 @@ export function terrainTileTopology(lod:TerrainLod):TileTopology{
   topologies.set(lod,topology);
   return topology;
 }
+
+/** Keep only feature-crossed coarse cells at the playable resolution. Fine edge
+ * vertices are shared with adjacent coarse cells and all tile perimeters. */
+export function featureTerrainTopology(lod:TerrainLod,refine:(x:number,z:number,size:number)=>boolean):TileTopology{
+  if(lod==='near')return terrainTileTopology(lod);
+  const config=TERRAIN_LOD_CONFIG,size=config[`${lod}Size`],count=config[`${lod}Subdivisions`];
+  const unit=config.nearSize/config.nearSubdivisions,step=size/count,ratio=step/unit;
+  const fine=Array.from({length:count*count},(_,i)=>refine(i%count*step,Math.floor(i/count)*step,step));
+  if(!fine.some(Boolean))return terrainTileTopology(lod);
+  const offsets:Array<readonly [number,number]>=[],indices:number[]=[],vertices=new Map<string,number>();
+  const vertex=(x:number,z:number)=>{const key=`${x}:${z}`,found=vertices.get(key);if(found!==undefined)return found;
+    const i=offsets.length;offsets.push([x,z]);vertices.set(key,i);return i;};
+  const isFine=(x:number,z:number)=>x<0||z<0||x>=count||z>=count||fine[z*count+x];
+  for(let z=0;z<count;z++)for(let x=0;x<count;x++){
+    const x0=x*step,z0=z*step;
+    if(fine[z*count+x]){
+      for(let iz=0;iz<ratio;iz++)for(let ix=0;ix<ratio;ix++){
+        const xx=x0+ix*unit,zz=z0+iz*unit;
+        const a=vertex(xx,zz),b=vertex(xx+unit,zz),c=vertex(xx,zz+unit),d=vertex(xx+unit,zz+unit);
+        indices.push(a,b,c,b,d,c);
+      }continue;
+    }
+    const top=isFine(x,z-1),right=isFine(x+1,z),bottom=isFine(x,z+1),left=isFine(x-1,z);
+    const a=vertex(x0,z0),b=vertex(x0+step,z0),c=vertex(x0,z0+step),d=vertex(x0+step,z0+step);
+    if(!(top||right||bottom||left)){indices.push(a,b,c,b,d,c);continue;}
+    const outline=[a];
+    if(top)for(let i=1;i<ratio;i++)outline.push(vertex(x0+i*unit,z0));outline.push(b);
+    if(right)for(let i=1;i<ratio;i++)outline.push(vertex(x0+step,z0+i*unit));outline.push(d);
+    if(bottom)for(let i=ratio-1;i>0;i--)outline.push(vertex(x0+i*unit,z0+step));outline.push(c);
+    if(left)for(let i=ratio-1;i>0;i--)outline.push(vertex(x0,z0+i*unit));
+    const center=vertex(x0+step/2,z0+step/2);
+    for(let i=0;i<outline.length;i++)indices.push(center,outline[i],outline[(i+1)%outline.length]);
+  }
+  return {size,offsets,indices};
+}

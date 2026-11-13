@@ -9,6 +9,7 @@ import type { VegetationExclusion } from '../vegetationData';
 import { GrassWindPlugin } from './GrassWindPlugin';
 import { insideFoliageForest } from '../foliageForestConfig';
 import { getAuraliaWind } from '../AuraliaWindSystem';
+import { activeGeography } from '../geography/ActiveGeography';
 
 export const GRASS_GLB='/assets/grass/grass_tufts.glb';
 const SECTOR_SIZE=MAINLAND.chunkSize;
@@ -112,14 +113,25 @@ export class GrassSectorSystem {
       if(height===undefined){height=sampleMainlandHeight(x,z);grid.set(key,height);}
       return height;
     };
-    for(const bake of getWorldDocument().grassBakes){
+    const active=activeGeography();
+    const bakes=active?[...this.activeKeys].map(key=>{
+      const [cx,cz]=key.split(':').map(Number),placements:number[]=[];
+      for(let i=0;i<96;i++){
+        const x=(cx+hash01(cx,cz,901+i*3))*SECTOR_SIZE,z=(cz+hash01(cx,cz,902+i*3))*SECTOR_SIZE;
+        const y=nearTerrainHeightAt(x,z,heightAtGrid),water=active.waterAt(x,z);
+        if(y<=active.source.seaLevel+4||water&&y<=water.level+.4)continue;
+        placements.push(x,y,z,hash01(cx,cz,903+i*3)*Math.PI*2,.8,1,1,1,1,i%47===0?1:0);
+      }
+      return {px:cx,pz:cz,placements};
+    }):getWorldDocument().grassBakes;
+    for(const bake of bakes){
       const packed=bake.placements;
       for(let offset=0;offset+PACKED_STRIDE<=packed.length;offset+=PACKED_STRIDE){
         const x=packed[offset],z=packed[offset+2],yaw=packed[offset+3];
         const width=packed[offset+4],height=packed[offset+5];
         if(!Number.isFinite(x+z+yaw+width+height)||width<=0||height<=0||
-          insideFoliageForest(x,z))continue;
-        if(hash01(Math.floor(x*10),Math.floor(z*10),558)>=landscapeVegetation(x,z).grass)continue;
+          (!active&&insideFoliageForest(x,z)))continue;
+        if(!active&&hash01(Math.floor(x*10),Math.floor(z*10),558)>=landscapeVegetation(x,z).grass)continue;
         const variant=grassVariant(bake.px,bake.pz,offset/PACKED_STRIDE,packed[offset+9]);
         const surface=nearTerrainSurfaceAt(x,z,heightAtGrid);
         if(Math.hypot(surface.slopeX,surface.slopeZ)>.7)continue;
@@ -156,6 +168,7 @@ export class GrassSectorSystem {
     for(let dz=-SECTOR_REACH;dz<=SECTOR_REACH;dz++)
       for(let dx=-SECTOR_REACH;dx<=SECTOR_REACH;dx++)
         this.activeKeys.add(sectorKey(cx+dx,cz+dz));
+    if(activeGeography()&&this.sources.size===VARIANTS.length)this.rebuildSectors();
     this.dirty=true;
   }
 

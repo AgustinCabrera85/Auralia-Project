@@ -1,0 +1,192 @@
+{
+  "start": {
+    "x": -1390,
+    "y": 41.3944047494602,
+    "z": 2070
+  },
+  "maxSupportError": 0,
+  "missingNearFrames": 0,
+  "maxResidentTiles": 6,
+  "frames": 330,
+  "end": {
+    "x": -1500.0006956807379,
+    "y": 41.47661824122877,
+    "z": 2070.001100017965
+  },
+  "measurement": {
+    "schema": "auralia-geographic-validation-v1",
+    "source": "worldstudio-hybrid-v1",
+    "view": "borde",
+    "timestamp": "2026-11-13T04:04:25.319Z",
+    "camera": [
+      -1500.0006956807379,
+      43.22661824122877,
+      2070.001100017965
+    ],
+    "cameraForward": [
+      0.9999999999499991,
+      0,
+      -0.000010000099791295933
+    ],
+    "viewport": [
+      1600,
+      900
+    ],
+    "framing": {
+      "mode": "walk",
+      "fov": 0.8,
+      "eyeHeight": 1.75,
+      "orbitRadius": null,
+      "resolution": 1,
+      "referenceHeight": 1.75
+    },
+    "textureScale": {
+      "projection": "world metres; triplanar rock",
+      "layers": [
+        {
+          "id": "alpino_roca_nieve",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "badlands_arcilla_roja",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "bosque_templado_suelo",
+          "metresPerRepeat": 7.692307692307692
+        },
+        {
+          "id": "costa_playa",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "desierto_arena",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "estepa_seca",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "orilla_rio_fangosa",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "pantano_humedo",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "pradera_templada",
+          "metresPerRepeat": 5.555555555555555
+        },
+        {
+          "id": "selva_humeda",
+          "metresPerRepeat": 7.692307692307692
+        },
+        {
+          "id": "sierra_grava_pasto",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "tierra_maldita",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "valle_cultivo_tierra_fertil",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "volcanico_basalto",
+          "metresPerRepeat": 9.090909090909092
+        },
+        {
+          "id": "rock",
+          "metresPerRepeat": 8.695652173913043
+        },
+        {
+          "id": "snow",
+          "metresPerRepeat": 8.695652173913043
+        },
+        {
+          "id": "lava",
+          "metresPerRepeat": 8.695652173913043
+        }
+      ]
+    },
+    "samples": 300,
+    "frameMs": {
+      "median": 34.70000000298023,
+      "p95": 35
+    },
+    "fps": 29.99700029992535,
+    "cpuRenderMs": {
+      "median": 1.2999999970197678,
+      "p95": 2.2000000029802322
+    },
+    "gpuMs": {
+      "median": 1.37216,
+      "p95": 4.451328
+    },
+    "gpuSamples": 300,
+    "generationMs": {
+      "median": 7.300000004470348,
+      "p95": 13,
+      "max": 17.599999994039536
+    },
+    "firstReadyMs": 10218.5,
+    "startupReadyMs": 10488.79999999702,
+    "terrain": {
+      "near": {
+        "resident": 72,
+        "enabled": 72,
+        "vertices": 12168,
+        "triangles": 20736,
+        "spacing": 6,
+        "visibleTriangles": 7488
+      },
+      "mid": {
+        "resident": 128,
+        "enabled": 110,
+        "vertices": 18560,
+        "triangles": 24576,
+        "spacing": 18,
+        "visibleTriangles": 5760
+      },
+      "far": {
+        "resident": 132,
+        "enabled": 97,
+        "vertices": 31812,
+        "triangles": 38016,
+        "spacing": 36,
+        "visibleTriangles": 6912
+      }
+    },
+    "geometryBytes": 3501536,
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 34.899999998509884,
+      "totalLoaded": 14,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25
+    },
+    "jsHeapBytes": 119440645,
+    "graphics": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+    },
+    "visibleSceneTriangles": 20172,
+    "controller": {
+      "mode": "grounded",
+      "feetY": 41.47661824122877,
+      "surfaceY": 41.47661824122877
+    },
+    "authorityCount": 1,
+    "pending": 0,
+    "failure": null
+  },
+  "crossedR16Boundary": true,
+  "horizontalMetres": 110.00069568623799
+}

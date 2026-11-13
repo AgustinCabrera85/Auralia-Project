@@ -47,6 +47,7 @@ uniform vec3 fogColor;
 uniform float fogDensity;
 uniform float macroStrength;
 uniform float waterTime;
+uniform float legacyGeography;
 vec3 geometricNormal,dpdx,dpdy;
 float bumpFade;
 struct Surface {vec3 color;vec3 normal;float roughness;};
@@ -109,6 +110,7 @@ void main(){
   bumpFade=1.0-smoothstep(70.0,240.0,distanceToCamera);
   vec2 p=vWorldPos.xz;
   ${regionsGLSL}
+  if(legacyGeography<.5){forest=wetland=lake=steppe=sierra=alpine=desert=volcanic=cursed=jungle=0.0;}
   wetland=max(wetland,lake);
   vec4 weights=max(vWeights,vec4(0.0));vec2 extra=max(vExtras,vec2(0.0));
   float total=max(dot(weights,vec4(1.0))+extra.x+extra.y,.00001);
@@ -174,7 +176,7 @@ void main(){
   float basinRadius=length((p-vec2(${CASCADE_LAGOON.x}.0,${CASCADE_LAGOON.z}.0))/
     vec2(${CASCADE_LAGOON.radiusX}.0,${CASCADE_LAGOON.radiusZ}.0));
   float waterDepth=max(0.0,${CASCADE_LAGOON.level}.0-vWorldPos.y);
-  float wetBed=(1.0-smoothstep(.98,1.03,basinRadius))*smoothstep(.1,1.5,waterDepth);
+  float wetBed=(1.0-smoothstep(.98,1.03,basinRadius))*smoothstep(.1,1.5,waterDepth)*legacyGeography;
   if(wetBed>.001){
     vec2 q=p*.065+vec2(sin(p.y*.12+waterTime*.25),cos(p.x*.15-waterTime*.22))*.06;
     float caustic=smoothstep(.3,.9,texture2D(bedCaustics,q+vec2(waterTime*.008,-waterTime*.006)).r);
@@ -186,7 +188,7 @@ void main(){
   gl_FragColor=vec4(mix(lit,fogColor,clamp(fog,0.0,1.0)),1.0);
 }`;
 
-export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
+export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,useLegacyGeography=true):
   {material:ShaderMaterial;dispose:()=>void}{
   // WebGL1 and non-browser tests retain the established 8-sampler material.
   const legacy=typeof location!=='undefined'&&new URLSearchParams(location.search).get('terrainMaterials')==='legacy';
@@ -196,7 +198,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   const textures=createBiomeTextureArrays(scene);
   const material=new ShaderMaterial('auralia-biome-terrain',scene,{vertex:SHADER,fragment:SHADER},{
     attributes:['position','normal','color','uv'],
-    uniforms:['world','worldViewProjection','surfaceParams','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime'],
+    uniforms:['world','worldViewProjection','surfaceParams','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime','legacyGeography'],
     samplers:['biomeAlbedos','biomeNormals','bedCaustics']});
   material.backFaceCulling=false;
   material.setTexture('biomeAlbedos',textures.albedo);material.setTexture('biomeNormals',textures.normal);
@@ -205,6 +207,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   caustics.wrapU=caustics.wrapV=Texture.WRAP_ADDRESSMODE;material.setTexture('bedCaustics',caustics);
   material.setArray3('surfaceParams',BIOME_MATERIALS.flatMap(m=>[m.scale,m.normalStrength,m.roughness]));
   material.setFloat('macroStrength',config.macroStrength);
+  material.setFloat('legacyGeography',useLegacyGeography?1:0);
   material.metadata={biomeMaterials:{status:'loading',layers:BIOME_MATERIALS.length,
     samplers:3,gpuBytes:BIOME_TEXTURE_GPU_BYTES,sharedWaterMask:true,sourceSize:1024,runtimeSize:512}};
   void textures.ready.then(()=>{material.metadata.biomeMaterials.status='ready';}).catch(error=>{

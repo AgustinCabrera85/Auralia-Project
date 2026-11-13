@@ -1,15 +1,16 @@
 import { Mesh, Scene, ShaderMaterial, TransformNode, VertexData } from '@babylonjs/core';
 import { surfaceWeightsAt } from './editor/WorldEditState';
-import { MAINLAND, sampleMainlandHeight } from './terrainData';
+import { MAINLAND } from './terrainData';
+import { legacyGeography, type GeographicSource } from './geography/GeographicSource';
 import { terrainMaterialWeightsAt, TERRAIN_MATERIAL_CONFIG,
   type TerrainMaterialConfig } from './materials/TerrainMaterial';
 import { createTerrainMaterial } from './materials/TerrainBiomeMaterial';
-import { terrainTileTopology } from './terrainTileTopology';
+import { featureTerrainTopology, terrainTileTopology } from './terrainTileTopology';
 import { cellAt, childrenOf, lodKey, parentOf, selectGroups, tileDistance,
   TERRAIN_LOD_CONFIG, type TerrainCell, type TerrainLod } from './terrainLod';
 
 type Tile={cell:TerrainCell;mesh:Mesh};
-type Job={lod:'near'|'mid';cell:TerrainCell};
+type Job={lod:TerrainLod;cell:TerrainCell};
 const sameSet=(a:Set<string>,b:Set<string>):boolean=>
   a.size===b.size&&[...a].every(key=>b.has(key));
 
@@ -19,8 +20,10 @@ export class TerrainStream {
   private readonly mid=new Map<string,Tile>();
   private readonly far=new Map<string,Tile>();
   private readonly pending=new Map<string,Job>();
+  private activeBuild:{key:string;work:Generator<void,Mesh,void>}|null=null;
   private readonly desiredNear=new Set<string>();
   private readonly desiredMid=new Set<string>();
+  private readonly desiredFar=new Set<string>();
   private readonly heightCache=new Map<string,number>();
   private readonly material:ShaderMaterial;
   private readonly disposeMaterial:()=>void;
@@ -44,6 +47,12 @@ export class TerrainStream {
   get generationMs():number{return this.lastGenerationMs;}
   get visibleLayer():TerrainLod|'all'{return this.debugLayer;}
   get activeCells():TerrainCell[]{return [...this.visibleNear].map(key=>this.near.get(key)!.cell);}
+  get statistics(){
+    return Object.fromEntries(([['near',this.near],['mid',this.mid],['far',this.far]] as const).map(([lod,group])=>[
+      lod,{resident:group.size,enabled:[...group.values()].filter(t=>t.mesh.isEnabled()).length,
+        vertices:[...group.values()].reduce((n,t)=>n+t.mesh.getTotalVertices(),0),
+        triangles:[...group.values()].reduce((n,t)=>n+t.mesh.getTotalIndices()/3,0)}]));
+  }
   coverageAt(x:number,z:number):TerrainLod|null{
     const near=this.near.get(lodKey(cellAt(x,z,TERRAIN_LOD_CONFIG.nearSize)))?.mesh;
     if(near?.isEnabled())return 'near';
@@ -60,19 +69,19 @@ export class TerrainStream {
   }
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
-    materialOptions:Partial<TerrainMaterialConfig>={}){
+    materialOptions:Partial<TerrainMaterialConfig>={},readonly source:GeographicSource=legacyGeography){
     this.materialConfig={...TERRAIN_MATERIAL_CONFIG,...materialOptions};
-    const terrain=createTerrainMaterial(scene,this.materialConfig);
+    const terrain=createTerrainMaterial(scene,this.materialConfig,!source.streamed);
     this.material=terrain.material;
     this.disposeMaterial=terrain.dispose;
-    this.createResidentCoverage();
+    if(!source.streamed)this.createResidentCoverage();
     this.heightCache.clear();
   }
 
   private height(x:number,z:number):number{
     const key=`${x}:${z}`;
     let value=this.heightCache.get(key);
-    if(value===undefined){value=sampleMainlandHeight(x,z);this.heightCache.set(key,value);}
+    if(value===undefined){value=this.source.heightAt(x,z);this.heightCache.set(key,value);}
     return value;
   }
 
@@ -90,12 +99,24 @@ export class TerrainStream {
   }
 
   private createTile(lod:TerrainLod,cell:TerrainCell):Mesh{
-    const {size,offsets,indices}=terrainTileTopology(lod);
+    const work=this.buildTile(lod,cell);
+    let result;do{result=work.next();}while(!result.done);
+    return result.value;
+  }
+
+  private *buildTile(lod:TerrainLod,cell:TerrainCell):Generator<void,Mesh,void>{
+    const tileSize=TERRAIN_LOD_CONFIG[`${lod}Size`],preserve=this.source.preserveDetail;
+    const {size,offsets,indices}=preserve?featureTerrainTopology(lod,(x,z,s)=>
+      preserve.call(this.source,[cell.cx*tileSize+x,cell.cz*tileSize+z,cell.cx*tileSize+x+s,cell.cz*tileSize+z+s])):terrainTileTopology(lod);
     const centerX=(cell.cx+.5)*size,centerZ=(cell.cz+.5)*size;
     // Half a canonical cell also reuses derivative samples along fine edges.
     const eps=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions/2;
     const positions:number[]=[],normals:number[]=[],colors:number[]=[],extras:number[]=[];
+    let sampled=0;
     for(const [dx,dz] of offsets){
+      // Refined river tiles can be much denser than ordinary far tiles. Yield
+      // before another batch; publish the mesh only when all buffers are ready.
+      if(sampled++%16===0)yield;
       const x=cell.cx*size+dx,z=cell.cz*size+dz;
       // A shared point must have identical slope, lighting and biome weights
       // in all three LODs, independently of the interior triangle spacing.
@@ -105,8 +126,9 @@ export class TerrainStream {
       const length=Math.hypot(nx,2*eps,nz);
       positions.push(x-centerX,h,z-centerZ);
       normals.push(nx/length,2*eps/length,nz/length);
-      const weights=surfaceWeightsAt(x,z,terrainMaterialWeightsAt(x,z,h,
-        Math.hypot(nx,nz)/(2*eps),this.materialConfig));
+      const slope=Math.hypot(nx,nz)/(2*eps);
+      const weights=this.source.weightsAt?.(x,z,h,slope)??surfaceWeightsAt(x,z,
+        terrainMaterialWeightsAt(x,z,h,slope,this.materialConfig));
       colors.push(...weights.slice(0,4));
       extras.push(weights[4],weights[5]);
     }
@@ -120,22 +142,32 @@ export class TerrainStream {
     mesh.useVertexColors=true;
     mesh.isPickable=lod==='near';
     mesh.checkCollisions=false; // The canonical height sampler drives player collision.
-    mesh.metadata={terrainChunk:lod==='near',terrainLod:lod,cx:cell.cx,cz:cell.cz};
+    mesh.metadata={terrainChunk:lod==='near',terrainLod:lod,cx:cell.cx,cz:cell.cz,geographicSource:this.source.id};
     mesh.freezeWorldMatrix();
     return mesh;
   }
 
   private preloadAt(x:number,z:number):void{
     const farCell=cellAt(x,z,TERRAIN_LOD_CONFIG.farSize);
+    if(this.source.streamed&&!this.far.has(lodKey(farCell))&&this.validCell('far',farCell))
+      this.far.set(lodKey(farCell),{cell:farCell,mesh:this.createTile('far',farCell)});
     for(const cell of childrenOf(farCell)){
+      if(!this.validCell('mid',cell))continue;
       const key=lodKey(cell);
       if(!this.mid.has(key))this.mid.set(key,{cell,mesh:this.createTile('mid',cell)});
     }
     const midCell=cellAt(x,z,TERRAIN_LOD_CONFIG.midSize);
     for(const cell of childrenOf(midCell)){
+      if(!this.validCell('near',cell))continue;
       const key=lodKey(cell);
       if(!this.near.has(key))this.near.set(key,{cell,mesh:this.createTile('near',cell)});
     }
+  }
+
+  private validCell(lod:TerrainLod,cell:TerrainCell):boolean{
+    if(!this.source.streamed)return true;
+    const size=terrainTileTopology(lod).size,b=this.source.bounds;
+    return cell.cx*size>=b[0]&&cell.cz*size>=b[1]&&(cell.cx+1)*size<=b[2]&&(cell.cz+1)*size<=b[3];
   }
 
   private refreshTargets(x:number,z:number):void{
@@ -143,17 +175,28 @@ export class TerrainStream {
     this.desiredMid.clear();this.desiredNear.clear();
     for(const parent of selectGroups(x,z,TERRAIN_LOD_CONFIG.midRadius,
       TERRAIN_LOD_CONFIG.farSize))
-      for(const cell of childrenOf(parent))this.desiredMid.add(lodKey(cell));
+      for(const cell of childrenOf(parent))if(this.validCell('mid',cell))this.desiredMid.add(lodKey(cell));
     for(const parent of selectGroups(x,z,TERRAIN_LOD_CONFIG.nearRadius,
       TERRAIN_LOD_CONFIG.midSize))
-      for(const cell of childrenOf(parent))this.desiredNear.add(lodKey(cell));
+      for(const cell of childrenOf(parent))if(this.validCell('near',cell))this.desiredNear.add(lodKey(cell));
+    if(this.source.streamed){
+      this.desiredFar.clear();
+      for(const cell of selectGroups(x,z,TERRAIN_LOD_CONFIG.farRadius,TERRAIN_LOD_CONFIG.farSize))
+        if(this.validCell('far',cell))this.desiredFar.add(lodKey(cell));
+      for(const [key,tile] of this.far)if(!this.desiredFar.has(key)){
+        tile.mesh.dispose(false,false);this.far.delete(key);
+      }
+      for(const key of this.desiredFar)if(!this.far.has(key)){
+        const [cx,cz]=key.split(':').map(Number);this.pending.set(`far:${key}`,{lod:'far',cell:{cx,cz}});
+      }
+    }
     for(const [key,tile] of this.near)if(!this.desiredNear.has(key)){
       tile.mesh.dispose(false,false);this.near.delete(key);
     }
     for(const [key,tile] of this.mid)if(!this.desiredMid.has(key)){
       tile.mesh.dispose(false,false);this.mid.delete(key);
     }
-    for(const [key,job] of this.pending)if(!(job.lod==='near'?this.desiredNear:this.desiredMid)
+    for(const [key,job] of this.pending)if(!(job.lod==='near'?this.desiredNear:job.lod==='mid'?this.desiredMid:this.desiredFar)
       .has(lodKey(job.cell)))this.pending.delete(key);
     for(const key of this.desiredMid)if(!this.mid.has(key)){
       const [cx,cz]=key.split(':').map(Number);
@@ -163,9 +206,16 @@ export class TerrainStream {
       const [cx,cz]=key.split(':').map(Number);
       this.pending.set(`near:${key}`,{lod:'near',cell:{cx,cz}});
     }
+    if(this.activeBuild&&!this.pending.has(this.activeBuild.key))this.cancelBuild();
+  }
+
+  private cancelBuild():void{
+    this.activeBuild?.work.return(undefined as never);
+    this.activeBuild=null;
   }
 
   private jobScore(job:Job,x:number,z:number,forwardX:number,forwardZ:number):number{
+    if(job.lod==='far')return 400+tileDistance(job.cell,TERRAIN_LOD_CONFIG.farSize,x,z);
     const size=job.lod==='near'?TERRAIN_LOD_CONFIG.nearSize:TERRAIN_LOD_CONFIG.midSize;
     const mx=(job.cell.cx+.5)*size-x,mz=(job.cell.cz+.5)*size-z;
     const distance=Math.hypot(mx,mz);
@@ -183,6 +233,12 @@ export class TerrainStream {
   }
 
   update(x:number,z:number,forwardX=0,forwardZ=0):boolean{
+    // The caller prepares a bounded geographic window before moving the player.
+    // Never substitute legacy/zero heights when an R16 sector is unavailable.
+    if(this.source.streamed){
+      const r=TERRAIN_LOD_CONFIG.farRadius+TERRAIN_LOD_CONFIG.farSize+6;
+      if(!this.source.isReady([x-r,z-r,x+r,z+r]))return false;
+    }
     // Visibility depends on position and completed tiles, not camera heading.
     // Keep idle frames from rebuilding hundreds of temporary LOD groups/sets.
     // Pending refinement must still advance while the player stands still.
@@ -203,12 +259,22 @@ export class TerrainStream {
     let generated=0;
     while(this.pending.size&&generated<TERRAIN_LOD_CONFIG.maxGeneratedPerFrame&&
       (generated===0||performance.now()-start<TERRAIN_LOD_CONFIG.generationBudgetMs)){
-      const job=[...this.pending.values()].sort((a,b)=>
+      const job=this.activeBuild?this.pending.get(this.activeBuild.key)!:[...this.pending.values()].sort((a,b)=>
         this.jobScore(a,x,z,forwardX,forwardZ)-this.jobScore(b,x,z,forwardX,forwardZ))[0];
-      this.pending.delete(`${job.lod}:${lodKey(job.cell)}`);
-      const target=job.lod==='near'?this.near:this.mid;
+      const jobKey=`${job.lod}:${lodKey(job.cell)}`;
+      const target=job.lod==='near'?this.near:job.lod==='mid'?this.mid:this.far;
       const key=lodKey(job.cell);
-      if(!target.has(key))target.set(key,{cell:job.cell,mesh:this.createTile(job.lod,job.cell)});
+      if(!target.has(key)){
+        if(this.source.preserveDetail){
+          this.activeBuild??={key:jobKey,work:this.buildTile(job.lod,job.cell)};
+          let result;
+          do{result=this.activeBuild.work.next();}
+          while(!result.done&&performance.now()-start<TERRAIN_LOD_CONFIG.generationBudgetMs);
+          if(!result.done)break;
+          target.set(key,{cell:job.cell,mesh:result.value});this.activeBuild=null;
+        }else target.set(key,{cell:job.cell,mesh:this.createTile(job.lod,job.cell)});
+      }else this.cancelBuild();
+      this.pending.delete(jobKey);
       generated++;
       this.lodVisibilityDirty=true;
     }
@@ -270,6 +336,7 @@ export class TerrainStream {
 
   /** Updates only edited patches at every LOD, including the permanent far coverage. */
   invalidateRegion(x:number,z:number,radius:number):void {
+    this.cancelBuild();
     this.heightCache.clear();
     for(const [lod,group] of [
       ['near',this.near],['mid',this.mid],['far',this.far]
@@ -291,6 +358,7 @@ export class TerrainStream {
 
   /** Called after importing a complete world file or performing undo/redo. */
   reloadEdits():void {
+    this.cancelBuild();
     this.heightCache.clear();
     for(const [lod,group] of [
       ['near',this.near],['mid',this.mid],['far',this.far]
@@ -313,6 +381,7 @@ export class TerrainStream {
   }
 
   dispose():void{
+    this.cancelBuild();
     this.pending.clear();this.heightCache.clear();
     for(const group of [this.near,this.mid,this.far]){
       for(const tile of group.values())tile.mesh.dispose(false,false);

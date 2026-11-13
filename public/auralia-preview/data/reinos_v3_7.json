@@ -1,0 +1,577 @@
+{
+  "schema": "auralia-kingdom-site-decisions-v1",
+  "designVersion": "v3.7",
+  "state": "decision-de-diseno; NO implementado en mallas flotantes ni juego",
+  "referenceProject": "Auralia_V3_6_CONTINENTE_CASCADA_ALTA.ptrterrain",
+  "referenceSiteCatalog": "Auralia_V35_REINOS_Y_PARCELAS.json",
+  "groundPreservation": "No alterar la v3.6 ni sus cotas hasta generar mallas y emplazamientos independientes para los dos reinos flotantes.",
+  "floatingKingdomIds": [
+    "MAL",
+    "ALB"
+  ],
+  "floatingRules": {
+    "terrainSource": "malla 3D independiente por isla; heightmap 2.5D continental no permite cara inferior ni voladizos",
+    "siteTopology": "una isla principal con castillo + islas satelites con aldea y recursos; caminos/puentes/portales verificables",
+    "coordinates": "XZ son anclas de referencia. Y se define tras medir el relieve, limites de camara y seguridad de colisiones",
+    "streaming": "activar por distancia/sistema de regiones; LOD visual y colision separados",
+    "materials": "texturas 1K de identidad de reino + rocas propias en mallas, diferenciadas del terreno continental",
+    "noTerrainMutationUntilReview": true
+  },
+  "floatingKingdoms": {
+    "MAL": {
+      "name": "Umbrael",
+      "region": "Tierras Malditas",
+      "visual": "islas desgarradas suspendidas, basalto negro, obsidiana, suelo fracturado, nieblas y cristales violaceos",
+      "structure": "fortaleza central en masa principal; aldea/ruinas en una o mas islas satelite; rutas escalonadas mediante puentes, plataformas o portales",
+      "groundRole": "superficie inferior como zona de acceso/contraste, no reubicar el reino al suelo"
+    },
+    "ALB": {
+      "name": "Albor",
+      "region": "Cumbres del Primer Amanecer",
+      "visual": "islas claras suspendidas sobre cumbres, roca alpina, nieve selectiva, cristales luminosos y arquitectura elevada",
+      "structure": "ciudadela principal sobre isla estable; aldea en mesetas satelite; paso desde las montanas mediante rutas verticales y puentes",
+      "groundRole": "cumbres como entrada y referencia visual; no trasladar la ciudadela al heightmap de las cumbres"
+    }
+  },
+  "kingdoms": [
+    {
+      "id": "VAL",
+      "reino": "Valdoria",
+      "region": "Valle de los Faroles",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -1250,
+        1600
+      ],
+      "sitios": [
+        {
+          "id": "val-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -2220.0,
+            1380.0
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "val-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -1250.0,
+            1920.0
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 170,
+        "rock": 30,
+        "sand": 20,
+        "snow": 0,
+        "mud": 20,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "OCC",
+      "reino": "Valdemonte",
+      "region": "Valles Occidentales",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -4300,
+        1120
+      ],
+      "sitios": [
+        {
+          "id": "occ-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -4420.0,
+            1220.0
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "occ-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -4370.0,
+            1406.67
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 170,
+        "rock": 35,
+        "sand": 35,
+        "snow": 0,
+        "mud": 15,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "ECO",
+      "reino": "Sylvarin",
+      "region": "Bosque de los Ecos",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -4670,
+        -1600
+      ],
+      "sitios": [
+        {
+          "id": "eco-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -4670.0,
+            -1633.33
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "eco-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -4743.33,
+            -986.67
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 185,
+        "rock": 35,
+        "sand": 0,
+        "snow": 0,
+        "mud": 40,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "SIE",
+      "reino": "Ferragrís",
+      "region": "Sierras de los Engranajes",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -2850,
+        -3150
+      ],
+      "sitios": [
+        {
+          "id": "sie-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -2560,
+            -2760
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "terraza-terminada",
+          "edificioConstruido": false
+        },
+        {
+          "id": "sie-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -2700,
+            -1670
+          ],
+          "radioReserva_m": 115,
+          "estadoActual": "terraza-terminada",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 30,
+        "rock": 155,
+        "sand": 20,
+        "snow": 0,
+        "mud": 45,
+        "volcanic": 25,
+        "alien": 0
+      }
+    },
+    {
+      "id": "CRI",
+      "reino": "Ignaria",
+      "region": "Cordillera del Crisol",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        50,
+        -4700
+      ],
+      "sitios": [
+        {
+          "id": "cri-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -790.0,
+            -4593.33
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "cri-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -1030.0,
+            -3710.0
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 5,
+        "rock": 105,
+        "sand": 10,
+        "snow": 20,
+        "mud": 0,
+        "volcanic": 160,
+        "alien": 0
+      }
+    },
+    {
+      "id": "ALB",
+      "reino": "Albor",
+      "region": "Cumbres del Primer Amanecer",
+      "tipoGeograficoObjetivo": "flotante",
+      "centroRegionalXZ_m": [
+        2380,
+        -3650
+      ],
+      "sitios": [
+        {
+          "id": "alb-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            2433.33,
+            -2466.67
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false,
+          "estadoObjetivo": "isla-flotante-3D-por-construir",
+          "geom3DIndependiente": true,
+          "alturaY_m": null,
+          "nota": "Posicion horizontal orientativa; no corresponde a plataforma flotante ya construida."
+        },
+        {
+          "id": "alb-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            2656.67,
+            -1910.0
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false,
+          "estadoObjetivo": "isla-flotante-3D-por-construir",
+          "geom3DIndependiente": true,
+          "alturaY_m": null,
+          "nota": "Posicion horizontal orientativa; no corresponde a plataforma flotante ya construida."
+        }
+      ],
+      "materialesActuales": {
+        "grass": 25,
+        "rock": 105,
+        "sand": 0,
+        "snow": 130,
+        "mud": 0,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "DES",
+      "reino": "Solhar",
+      "region": "Desierto del Ocaso",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -5180,
+        -4600
+      ],
+      "sitios": [
+        {
+          "id": "des-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -5306.67,
+            -4480.0
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "des-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -5860.0,
+            -3896.67
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 5,
+        "rock": 35,
+        "sand": 200,
+        "snow": 0,
+        "mud": 0,
+        "volcanic": 25,
+        "alien": 0
+      }
+    },
+    {
+      "id": "MAL",
+      "reino": "Umbrael",
+      "region": "Tierras Malditas",
+      "tipoGeograficoObjetivo": "flotante",
+      "centroRegionalXZ_m": [
+        5250,
+        -4320
+      ],
+      "sitios": [
+        {
+          "id": "mal-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            5610.0,
+            -4246.67
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false,
+          "estadoObjetivo": "isla-flotante-3D-por-construir",
+          "geom3DIndependiente": true,
+          "alturaY_m": null,
+          "nota": "Posicion horizontal orientativa; no corresponde a plataforma flotante ya construida."
+        },
+        {
+          "id": "mal-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            5213.33,
+            -3683.33
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false,
+          "estadoObjetivo": "isla-flotante-3D-por-construir",
+          "geom3DIndependiente": true,
+          "alturaY_m": null,
+          "nota": "Posicion horizontal orientativa; no corresponde a plataforma flotante ya construida."
+        }
+      ],
+      "materialesActuales": {
+        "grass": 5,
+        "rock": 65,
+        "sand": 0,
+        "snow": 0,
+        "mud": 0,
+        "volcanic": 85,
+        "alien": 135
+      }
+    },
+    {
+      "id": "NAC",
+      "reino": "Las Dos Orillas",
+      "region": "Lago de Nácar",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        1190,
+        -480
+      ],
+      "sitios": [
+        {
+          "id": "nac-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            1450,
+            -520
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "emplazamiento-terrestre-aprobado",
+          "edificioConstruido": false
+        },
+        {
+          "id": "nac-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            2730,
+            40
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "emplazamiento-terrestre-aprobado",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 95,
+        "rock": 20,
+        "sand": 20,
+        "snow": 0,
+        "mud": 165,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "SEL",
+      "reino": "Viridara",
+      "region": "Selva de las Mil Cascadas",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        4750,
+        720
+      ],
+      "sitios": [
+        {
+          "id": "sel-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            5180.0,
+            573.33
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "sel-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            4646.67,
+            1370.0
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 140,
+        "rock": 25,
+        "sand": 0,
+        "snow": 0,
+        "mud": 120,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "LLA",
+      "reino": "Doravena",
+      "region": "Llanuras del Sur",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        -1370,
+        3340
+      ],
+      "sitios": [
+        {
+          "id": "lla-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            -1343.33,
+            2893.33
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "lla-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            -1020.0,
+            3743.33
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 190,
+        "rock": 15,
+        "sand": 60,
+        "snow": 0,
+        "mud": 10,
+        "volcanic": 0,
+        "alien": 0
+      }
+    },
+    {
+      "id": "COS",
+      "reino": "Thalamar",
+      "region": "Costas de los Faros",
+      "tipoGeograficoObjetivo": "terrestre",
+      "centroRegionalXZ_m": [
+        3700,
+        3400
+      ],
+      "sitios": [
+        {
+          "id": "cos-castle",
+          "tipo": "castillo",
+          "proyeccionXZ_m": [
+            3863.33,
+            2963.33
+          ],
+          "radioReserva_m": 110,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        },
+        {
+          "id": "cos-village",
+          "tipo": "aldea",
+          "proyeccionXZ_m": [
+            4103.33,
+            3290.0
+          ],
+          "radioReserva_m": 170,
+          "estadoActual": "reserva-sin-acondicionar",
+          "edificioConstruido": false
+        }
+      ],
+      "materialesActuales": {
+        "grass": 65,
+        "rock": 50,
+        "sand": 135,
+        "snow": 0,
+        "mud": 10,
+        "volcanic": 0,
+        "alien": 0
+      }
+    }
+  ],
+  "validationCriteria": [
+    "ambos reinos tienen castillo y aldea sobre geometria 3D flotante real, no etiquetas sobre heightmap",
+    "plataformas no colisionan con la cordillera ni generan suelos flotantes invisibles",
+    "existe acceso jugable de ida y vuelta a cada reino",
+    "nuevas mallas mantienen LOD, colision y streaming separables",
+    "no se alteran las alturas ya aprobadas de Nacar, Tres Vertientes y Ferragris"
+  ]
+}

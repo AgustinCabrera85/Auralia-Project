@@ -1,6 +1,7 @@
 import { LAKE_RESERVATIONS, LAGOONS, MAIN_RIVER, STREAMS, WATERFALL, riverSample, streamSample, waterSurfaceAt, type WaterPoint, type WaterSample } from '../geographicFeatures';
 import { sampleMainlandHeight } from '../terrainData';
 import { lagoonWaterAt, lagoonChannelAt } from '../lagoonData';
+import { activeGeography } from '../geography/ActiveGeography';
 
 export type FlowSample = Readonly<{
   directionX: number;
@@ -84,6 +85,7 @@ function upperRiverSurfaceAt(x:number,z:number,ground:number,
 
 /** Cover the already-carved, submerged bank without changing gameplay geography. */
 export function visualWaterSurfaceAt(x:number,z:number,ground:number):WaterSample|null{
+  const active=activeGeography();if(active)return active.waterAt(x,z);
   const canonical=waterSurfaceAt(x,z);
   if(canonical)return canonical;
   const river=riverSample(x,z),stream=streamSample(x,z);
@@ -126,6 +128,7 @@ function lakeApproach(x:number,z:number):number{
 
 /** Smooth only the rendered river-to-lake join; canonical water levels stay intact. */
 export function visualWaterLevel(x:number,z:number,surface:WaterSample):number{
+  if(activeGeography())return surface.level;
   if(lagoonWaterAt(x,z))return surface.level;
   if(surface.kind==='lake'||surface.kind==='lagoon')return surface.level;
   let level=surface.level;
@@ -142,6 +145,7 @@ export function visualWaterLevel(x:number,z:number,surface:WaterSample):number{
 
 /** Deterministic direction/velocity field driven by the actual river or stream route. */
 export function sampleRiverFlow(x: number, z: number, kind: WaterSample['kind']): FlowSample {
+  const active=activeGeography();if(active)return active.flowAt(x,z);
   if (kind === 'lake' || kind === 'lagoon') return calm;
   const watershed=lagoonWaterAt(x,z);
   if(watershed){const c=lagoonChannelAt(x,z);return {directionX:c.dx,directionZ:c.dz,

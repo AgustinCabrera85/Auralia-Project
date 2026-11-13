@@ -1,0 +1,5 @@
+# Raw terrain samples and packed texture channels must remain byte-identical.
+*.r16 binary
+*.f32 binary
+*.rgb binary
+*.rgba binary

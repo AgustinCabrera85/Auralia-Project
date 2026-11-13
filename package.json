@@ -9,6 +9,12 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "check": "tsc --noEmit",
+    "test:lake-shore": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts && node tests/setup-cjs.cjs && node tests/lake-water-domain.test.cjs",
+    "test:world-forest": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/VegetationSystem.ts && node tests/setup-cjs.cjs && node tests/world-forest.test.cjs",
+    "test:nacar": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/TerrainStream.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/nacar-bathymetry.test.cjs",
+    "test:hydrology-integration": "node scripts/bake-studio-river-levels.mjs --check && tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/GeographyStream.ts src/world/water/OceanWater.ts && node tests/setup-cjs.cjs && node tests/hydrology-integration.test.cjs",
+    "test:studio-rivers": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts src/world/geography/PlayableWorld.ts src/world/GeographyStream.ts && node tests/setup-cjs.cjs && node tests/studio-rivers.test.cjs",
+    "test:geographic-source": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts src/world/geography/WorldStudioSource.ts src/world/geography/GeographicTraversal.ts && node tests/setup-cjs.cjs && node tests/geographic-source.test.cjs",
     "test:domain": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/domain/GameStore.ts src/persistence/SaveRepository.ts && node tests/setup-cjs.cjs && node tests/domain.test.cjs",
     "test:atlas": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/data/world.ts && node tests/setup-cjs.cjs && node tests/atlas.test.cjs",
     "map:static": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/data/world.ts && node tests/setup-cjs.cjs && node scripts/make-map.cjs",
@@ -36,7 +42,8 @@
     "test:physics": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/physics/ChainDynamics.ts src/physics/ChainCurve.ts src/world/HangingLanterns.ts src/world/TreeColliderSystem.ts && node tests/setup-cjs.cjs && node tests/physics.test.cjs",
     "bench:physics": "npm run test:physics && node scripts/bench-chain-dynamics.cjs && node scripts/bench-segment-pairs.cjs && node scripts/bench-tree-collisions.cjs artifacts/physics/tree-baseline-repeat.json --legacy && node scripts/bench-tree-collisions.cjs artifacts/physics/tree-after.json",
     "test:lagoon": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/LagoonSystem.ts src/world/terrainData.ts src/world/expansionBiomeData.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/lagoon.test.cjs && node tests/watershed.test.cjs",
-    "watershed:bake": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WatershedHydrology.ts src/world/terrainData.ts && node tests/setup-cjs.cjs && node scripts/bake-watershed.cjs"
+    "watershed:bake": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/WatershedHydrology.ts src/world/terrainData.ts && node tests/setup-cjs.cjs && node scripts/bake-watershed.cjs",
+    "test:playable-world": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/TerrainStream.ts src/domain/GameStore.ts src/persistence/SaveRepository.ts && node tests/setup-cjs.cjs && node tests/playable-world.test.cjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.32.0",

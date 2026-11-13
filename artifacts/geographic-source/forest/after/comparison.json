@@ -1,0 +1,503 @@
+[
+  {
+    "id": "nacar-isla",
+    "position": {
+      "x": 1524,
+      "y": 65.83798448783801,
+      "z": -434
+    },
+    "viewport": [
+      1600,
+      900
+    ],
+    "camera": {
+      "alpha": -2.2,
+      "beta": 1.35,
+      "radius": 11.5
+    },
+    "vegetation": {
+      "chunks": 1565,
+      "instances": 1309,
+      "farInstances": 36,
+      "canopyInstances": 1085,
+      "near": [
+        {
+          "kind": "arbolito2",
+          "triangles": 5358,
+          "instances": 35,
+          "materials": 9
+        },
+        {
+          "kind": "tronco1",
+          "triangles": 478,
+          "instances": 45,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 5314,
+          "instances": 55,
+          "materials": 9
+        },
+        {
+          "kind": "plantitas1",
+          "triangles": 5938,
+          "instances": 29,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4622,
+          "instances": 20,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 4678,
+          "instances": 4,
+          "materials": 9
+        }
+      ],
+      "far": [
+        {
+          "kind": "arbolito1",
+          "triangles": 3802,
+          "instances": 16,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito2",
+          "triangles": 3274,
+          "instances": 14,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4318,
+          "instances": 4,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 3282,
+          "instances": 2,
+          "materials": 9
+        }
+      ],
+      "canopy": [
+        {
+          "kind": "arbolito2",
+          "triangles": 2,
+          "instances": 416,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 2,
+          "instances": 478,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 2,
+          "instances": 133,
+          "materials": 1
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 2,
+          "instances": 58,
+          "materials": 1
+        }
+      ],
+      "colliders": 6,
+      "stats": {
+        "chunks": 1565,
+        "pending": 0,
+        "bufferBuildMs": 3.399999998509884,
+        "placementMs": 2.1999999955296516,
+        "matrixBytes": 83776,
+        "canopyTriangles": 8,
+        "fullTrees": 114,
+        "mediumTrees": 36,
+        "canopyTrees": 1085,
+        "frontTrees": 64,
+        "spriteTextureBytes": 11184811
+      }
+    },
+    "frameMs": {
+      "mean": 33.36333333332505,
+      "p95": 37.600000001490116
+    },
+    "fps": 29.99700029992531,
+    "heapBytes": 463970989,
+    "heapAfterGC": false,
+    "sceneTriangles": 923661,
+    "source": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 18.399999998509884,
+      "totalLoaded": 17,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 97.79999999701977,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "heapBytesAfterGC": 315725551
+  },
+  {
+    "id": "nacar-frente",
+    "position": {
+      "x": 1430,
+      "y": 65.99899995874907,
+      "z": -414
+    },
+    "viewport": [
+      1600,
+      900
+    ],
+    "camera": {
+      "alpha": -1.3788,
+      "beta": 1.35,
+      "radius": 11.5
+    },
+    "vegetation": {
+      "chunks": 1565,
+      "instances": 1337,
+      "farInstances": 33,
+      "canopyInstances": 1088,
+      "near": [
+        {
+          "kind": "arbolito2",
+          "triangles": 5358,
+          "instances": 46,
+          "materials": 9
+        },
+        {
+          "kind": "tronco1",
+          "triangles": 478,
+          "instances": 50,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 5314,
+          "instances": 63,
+          "materials": 9
+        },
+        {
+          "kind": "plantitas1",
+          "triangles": 5938,
+          "instances": 28,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4622,
+          "instances": 23,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 4678,
+          "instances": 6,
+          "materials": 9
+        }
+      ],
+      "far": [
+        {
+          "kind": "arbolito1",
+          "triangles": 3802,
+          "instances": 16,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito2",
+          "triangles": 3274,
+          "instances": 11,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4318,
+          "instances": 4,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 3282,
+          "instances": 2,
+          "materials": 9
+        }
+      ],
+      "canopy": [
+        {
+          "kind": "arbolito2",
+          "triangles": 2,
+          "instances": 420,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 2,
+          "instances": 479,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 2,
+          "instances": 135,
+          "materials": 1
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 2,
+          "instances": 54,
+          "materials": 1
+        }
+      ],
+      "colliders": 8,
+      "stats": {
+        "chunks": 1565,
+        "pending": 0,
+        "bufferBuildMs": 4.200000002980232,
+        "placementMs": 3.1999999955296516,
+        "matrixBytes": 85568,
+        "canopyTriangles": 8,
+        "fullTrees": 138,
+        "mediumTrees": 33,
+        "canopyTrees": 1088,
+        "frontTrees": 85,
+        "spriteTextureBytes": 11184811
+      }
+    },
+    "frameMs": {
+      "mean": 33.33611111111111,
+      "p95": 39.5
+    },
+    "fps": 30.003000300074763,
+    "heapBytes": 334727864,
+    "heapAfterGC": false,
+    "sceneTriangles": 1089665,
+    "source": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 18.399999998509884,
+      "totalLoaded": 17,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 97.79999999701977,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "heapBytesAfterGC": 313554879
+  },
+  {
+    "id": "brisalia",
+    "position": {
+      "x": -1249,
+      "y": 11.04876628796277,
+      "z": 1953
+    },
+    "viewport": [
+      1600,
+      900
+    ],
+    "camera": {
+      "alpha": -2.2,
+      "beta": 1.35,
+      "radius": 11.5
+    },
+    "vegetation": {
+      "chunks": 1565,
+      "instances": 5700,
+      "farInstances": 240,
+      "canopyInstances": 5207,
+      "near": [
+        {
+          "kind": "arbolito2",
+          "triangles": 5358,
+          "instances": 35,
+          "materials": 9
+        },
+        {
+          "kind": "tronco1",
+          "triangles": 478,
+          "instances": 149,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 5314,
+          "instances": 46,
+          "materials": 9
+        },
+        {
+          "kind": "plantitas1",
+          "triangles": 5938,
+          "instances": 7,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4622,
+          "instances": 11,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 4678,
+          "instances": 5,
+          "materials": 9
+        }
+      ],
+      "far": [
+        {
+          "kind": "arbolito1",
+          "triangles": 3802,
+          "instances": 123,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito2",
+          "triangles": 3274,
+          "instances": 78,
+          "materials": 9
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 4318,
+          "instances": 25,
+          "materials": 9
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 3282,
+          "instances": 14,
+          "materials": 9
+        }
+      ],
+      "canopy": [
+        {
+          "kind": "arbolito2",
+          "triangles": 2,
+          "instances": 1856,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito1",
+          "triangles": 2,
+          "instances": 2437,
+          "materials": 1
+        },
+        {
+          "kind": "arbolito3",
+          "triangles": 2,
+          "instances": 588,
+          "materials": 1
+        },
+        {
+          "kind": "arbolitoSeco",
+          "triangles": 2,
+          "instances": 326,
+          "materials": 1
+        }
+      ],
+      "colliders": 0,
+      "stats": {
+        "chunks": 1565,
+        "pending": 0,
+        "bufferBuildMs": 9.099999994039536,
+        "placementMs": 3.2999999970197678,
+        "matrixBytes": 364800,
+        "canopyTriangles": 8,
+        "fullTrees": 97,
+        "mediumTrees": 240,
+        "canopyTrees": 5207,
+        "frontTrees": 96,
+        "spriteTextureBytes": 11184811
+      }
+    },
+    "frameMs": {
+      "mean": 33.29777777778606,
+      "p95": 38.100000001490116
+    },
+    "fps": 30.00300030007469,
+    "heapBytes": 308156889,
+    "heapAfterGC": false,
+    "sceneTriangles": 1657657,
+    "source": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 18.600000001490116,
+      "totalLoaded": 21,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 97.79999999701977,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "heapBytesAfterGC": 282519237
+  }
+]

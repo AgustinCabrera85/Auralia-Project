@@ -1,0 +1,16 @@
+[
+  {
+    "method": "Log.entryAdded",
+    "params": {
+      "entry": {
+        "source": "network",
+        "level": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "timestamp": 1794533960172.987,
+        "url": "http://127.0.0.1:5173/favicon.ico",
+        "networkRequestId": "27928.736"
+      }
+    },
+    "sessionId": "B88336B81878A53AF3D219C2B83B572A"
+  }
+]

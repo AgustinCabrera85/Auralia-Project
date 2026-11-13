@@ -1,0 +1,460 @@
+{
+  "schema": "auralia-preview-geometry-audit-v1",
+  "method": "Topology counts and planner, NOT GPU/process memory or measured frame times",
+  "terrainBufferBudgetBytes": 29360128,
+  "mainTopology": {
+    "near": {
+      "spacing": 6,
+      "vertices": 169,
+      "triangles": 288
+    },
+    "mid": {
+      "spacing": 18,
+      "vertices": 145,
+      "triangles": 192
+    },
+    "far": {
+      "spacing": 36,
+      "vertices": 241,
+      "triangles": 288
+    }
+  },
+  "sourceR16Spacing": 4.381846635367762,
+  "views": [
+    {
+      "name": "costa",
+      "x": 1373,
+      "z": -438,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 21,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 259434,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 36,
+          "enabled": 32,
+          "visible": null,
+          "vertices": 207072,
+          "triangles": 383400,
+          "enabledTriangles": 340800,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 8098416,
+          "samplerHeightBytes": 828288
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 36,
+          "enabled": 36,
+          "visible": null,
+          "vertices": 186624,
+          "triangles": 362952,
+          "enabledTriangles": 362952,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7403184,
+          "samplerHeightBytes": 746496
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 20022,
+          "medianM": 0.006408847726540046,
+          "p95M": 0.5314470463839669,
+          "maxM": 35.628528095399524,
+          "rmsM": 1.6255512222106387
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    },
+    {
+      "name": "isla",
+      "x": 1369,
+      "z": -303,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 21,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 259434,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 36,
+          "enabled": 32,
+          "visible": null,
+          "vertices": 207072,
+          "triangles": 383400,
+          "enabledTriangles": 340800,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 8098416,
+          "samplerHeightBytes": 828288
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 36,
+          "enabled": 36,
+          "visible": null,
+          "vertices": 186624,
+          "triangles": 362952,
+          "enabledTriangles": 362952,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7403184,
+          "samplerHeightBytes": 746496
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 20022,
+          "medianM": 0.006394689086716809,
+          "p95M": 0.36982655622641936,
+          "maxM": 35.628528095399524,
+          "rmsM": 1.2721527855070929
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    },
+    {
+      "name": "ladera",
+      "x": 2500,
+      "z": -3500,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 22,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 271788,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 27,
+          "enabled": 23,
+          "visible": null,
+          "vertices": 155304,
+          "triangles": 287550,
+          "enabledTriangles": 244950,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 6073812,
+          "samplerHeightBytes": 621216
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 36,
+          "enabled": 36,
+          "visible": null,
+          "vertices": 186624,
+          "triangles": 362952,
+          "enabledTriangles": 362952,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7403184,
+          "samplerHeightBytes": 746496
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 19881,
+          "medianM": 0.212800429644858,
+          "p95M": 0.9674926867232898,
+          "maxM": 13.719742734078409,
+          "rmsM": 0.707345692513624
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    },
+    {
+      "name": "vegetacion",
+      "x": -1250,
+      "z": 1920,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 21,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 259434,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 36,
+          "enabled": 33,
+          "visible": null,
+          "vertices": 207072,
+          "triangles": 383400,
+          "enabledTriangles": 351450,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 8098416,
+          "samplerHeightBytes": 828288
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 27,
+          "enabled": 27,
+          "visible": null,
+          "vertices": 139968,
+          "triangles": 272214,
+          "enabledTriangles": 272214,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 5552388,
+          "samplerHeightBytes": 559872
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 20022,
+          "medianM": 0.03968991181045567,
+          "p95M": 0.5822743138996778,
+          "maxM": 4.955990914619509,
+          "rmsM": 0.3905220190340915
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    },
+    {
+      "name": "nacimiento",
+      "x": -3095.236343417621,
+      "z": -3402.6171024906066,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 23,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 284142,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 18,
+          "enabled": 14,
+          "visible": null,
+          "vertices": 103536,
+          "triangles": 191700,
+          "enabledTriangles": 149100,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 4049208,
+          "samplerHeightBytes": 414144
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 36,
+          "enabled": 36,
+          "visible": null,
+          "vertices": 186624,
+          "triangles": 362952,
+          "enabledTriangles": 362952,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7403184,
+          "samplerHeightBytes": 746496
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 19881,
+          "medianM": 0.22022213400339297,
+          "p95M": 0.7834380482761389,
+          "maxM": 2.3703093298159956,
+          "rmsM": 0.3818006334174062
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    },
+    {
+      "name": "desembocadura",
+      "x": -2793.7587790087914,
+      "z": -1216.6058255773446,
+      "lods": {
+        "far": {
+          "spacing": 39.43661971830986,
+          "resident": 25,
+          "enabled": 23,
+          "visible": null,
+          "vertices": 186400,
+          "triangles": 308850,
+          "enabledTriangles": 284142,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 7072300,
+          "samplerHeightBytes": 745600
+        },
+        "mid": {
+          "spacing": 13.145539906103288,
+          "resident": 18,
+          "enabled": 16,
+          "visible": null,
+          "vertices": 103536,
+          "triangles": 191700,
+          "enabledTriangles": 170400,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 4049208,
+          "samplerHeightBytes": 414144
+        },
+        "near": {
+          "spacing": 4.381846635367762,
+          "resident": 18,
+          "enabled": 18,
+          "visible": null,
+          "vertices": 93312,
+          "triangles": 181476,
+          "enabledTriangles": 181476,
+          "visibleTriangles": null,
+          "gpuBufferBytes": 3701592,
+          "samplerHeightBytes": 373248
+        }
+      },
+      "baseline": {
+        "nearTiles": 2,
+        "residentVertices": 531675,
+        "residentTriangles": 1050624,
+        "gpuBufferBytes": 25367688,
+        "errorAtR16Vertices": {
+          "samples": 19881,
+          "medianM": 0.02027353087657957,
+          "p95M": 1.9025598026069765,
+          "maxM": 15.796683090651413,
+          "rmsM": 1.0967329162187578
+        }
+      },
+      "newNearErrorAtR16VerticesM": 0
+    }
+  ],
+  "riverProfileAudit": [
+    {
+      "id": "rv-ferragris",
+      "samples": 288,
+      "submergedCenterSamples": 158,
+      "dryCenterSamples": 130,
+      "minCenterDepthM": -28.574950471499903
+    },
+    {
+      "id": "rv-velo",
+      "samples": 204,
+      "submergedCenterSamples": 108,
+      "dryCenterSamples": 96,
+      "minCenterDepthM": -27.148710084657182
+    },
+    {
+      "id": "rv-gemelas",
+      "samples": 225,
+      "submergedCenterSamples": 201,
+      "dryCenterSamples": 24,
+      "minCenterDepthM": -4.968839849553296
+    },
+    {
+      "id": "rv-salida-vertientes",
+      "samples": 624,
+      "submergedCenterSamples": 596,
+      "dryCenterSamples": 28,
+      "minCenterDepthM": -15.947783975495902
+    },
+    {
+      "id": "rv-cumbres-nacar",
+      "samples": 316,
+      "submergedCenterSamples": 272,
+      "dryCenterSamples": 44,
+      "minCenterDepthM": -13.612874740157281
+    },
+    {
+      "id": "rv-sierra-nacar",
+      "samples": 309,
+      "submergedCenterSamples": 309,
+      "dryCenterSamples": 0,
+      "minCenterDepthM": 1.6252304733075547
+    },
+    {
+      "id": "rv-nacar-costas",
+      "samples": 575,
+      "submergedCenterSamples": 575,
+      "dryCenterSamples": 0,
+      "minCenterDepthM": 0.6185197029326104
+    },
+    {
+      "id": "rv-valle",
+      "samples": 869,
+      "submergedCenterSamples": 857,
+      "dryCenterSamples": 12,
+      "minCenterDepthM": -4.7933198516688105
+    },
+    {
+      "id": "rv-selva",
+      "samples": 617,
+      "submergedCenterSamples": 339,
+      "dryCenterSamples": 278,
+      "minCenterDepthM": -9.11639804067849
+    },
+    {
+      "id": "rv-prado",
+      "samples": 253,
+      "submergedCenterSamples": 247,
+      "dryCenterSamples": 6,
+      "minCenterDepthM": -2.6897681713786668
+    },
+    {
+      "id": "canal-hidraulico-ferragris",
+      "samples": 70,
+      "submergedCenterSamples": 24,
+      "dryCenterSamples": 46,
+      "minCenterDepthM": -12.135499900593004
+    },
+    {
+      "id": "catarata-alta-altaluz",
+      "samples": 91,
+      "submergedCenterSamples": 56,
+      "dryCenterSamples": 35,
+      "minCenterDepthM": -15.715710259341222
+    },
+    {
+      "id": "arroyo-ingenieros-ferragris",
+      "samples": 106,
+      "submergedCenterSamples": 40,
+      "dryCenterSamples": 66,
+      "minCenterDepthM": -9.3003926634849
+    }
+  ]
+}

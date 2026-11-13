@@ -90,7 +90,7 @@ export class SpeedMotionBlur {
     Effect.ShadersStore[`${SHADER_NAME}FragmentShader`]=FRAGMENT_SHADER;
     this.postProcess=new PostProcess('desenfoque-de-impulso',SHADER_NAME,
       ['blurAmount','immersion','waterDepth','waterTime','waterOpticsWeight','waterLevel',
-        'waterEye','waterInverseViewProjection','waterFlow','waterSlope'],['waterSceneDepth'],1,null,Texture.BILINEAR_SAMPLINGMODE,engine);
+        'waterEye','waterInverseViewProjection','waterFlow','waterSlope','waterSurfaceMode'],['waterSceneDepth','waterSurfaceDepth'],1,null,Texture.BILINEAR_SAMPLINGMODE,engine);
     this.postProcess.onApply=effect=>{
       effect.setFloat('blurAmount',this.amount);effect.setFloat('immersion',this.immersion);
       effect.setFloat('waterDepth',this.waterDepth);
@@ -110,8 +110,8 @@ export class SpeedMotionBlur {
   }
 
   /** Called after camera collision/orbit resolution, together with water fog. */
-  updateWaterSurface(dt:number,level:number|null,flowX=0,flowZ=0,slopeX=0,slopeZ=0):void{
-    this.optics.update(level,flowX,flowZ,slopeX,slopeZ);
+  updateWaterSurface(dt:number,level:number|null,flowX=0,flowZ=0,slopeX=0,slopeZ=0,useSurfaceDepth=false):void{
+    this.optics.update(level,flowX,flowZ,slopeX,slopeZ,useSurfaceDepth);
     this.updateUnderwater(dt,level===null?0:Math.max(0,level-this.camera.globalPosition.y));
   }
 

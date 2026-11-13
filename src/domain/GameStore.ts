@@ -1,6 +1,6 @@
 import type { ZoneId } from '../data/world';
 import { BUILD_CATALOG, RECIPES, hasCost } from './recipes';
-import { newGame, type BuildType, type EquipmentId, type ItemId, type MaterialId,
+import { type BuildType, type EquipmentId, type ItemId, type MaterialId,
   type SaveGameV1, type Structure } from './types';
 import { canReplaceWall, planBuild, removalProblem, wallReplacementProblem, type BuildEnvironment } from './buildingRules';
 import { sampleMainlandHeight } from '../world/terrainData';
@@ -161,11 +161,11 @@ export class GameStore {
     return this.removeStructure(this.lastPlacedId);
   }
 
-  setPlayerPosition(zone:ZoneId,x:number,z:number):void {
+  setPlayerPosition(zone:ZoneId,x:number,z:number,realm?:string):void {
     if(this.data.zone!==zone||!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>10000||Math.abs(z)>10000)return;
     const old=this.data.playerPosition;
-    if(old?.zone===zone && Math.hypot(old.x-x,old.z-z)<1.5)return;
-    this.data.playerPosition={zone,x,z};
+    if(old?.zone===zone && old.realm===realm && Math.hypot(old.x-x,old.z-z)<1.5)return;
+    this.data.playerPosition={zone,x,z,...(realm?{realm}:{})};
     this.commit();
   }
 
@@ -194,7 +194,7 @@ export class GameStore {
 
   reset(): void {
     this.repository.clear();
-    this.data = newGame();
+    this.data = this.repository.load();
     this.nextId = 0;
     this.lastPlacedId=null;
     this.commit();

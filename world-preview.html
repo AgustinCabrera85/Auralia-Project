@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>Auralia · Prueba del Mundo Definido v3.6</title>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="loading">Preparando el mundo de Auralia...</div>
+  <section id="ui" aria-label="Controles de la vista previa">
+    <h1>Auralia · Mapa Maestro</h1>
+    <p>Vista 3D de prueba: terreno v3.6 (14 × 14 km de superficie de autoría, 25 sectores), Albor flotante al oeste y Umbrael al este.</p>
+    <label for="landmarks">Ir a una región o un río</label>
+    <select id="landmarks"><option value="">Cargando regiones...</option></select>
+    <div class="buttons">
+      <button id="visit" type="button">Visitar</button>
+      <button id="mode" type="button">Vuelo libre (WASD)</button>
+      <button id="walk" type="button">Caminar (WASD)</button>
+      <button id="guides" type="button">Mostrar guías</button>
+      <button id="zoomIn" type="button">Acercar</button>
+      <button id="zoomOut" type="button">Alejar</button>
+      <button id="reset" type="button">Vista general</button>
+    </div>
+    <label for="quality">Rendimiento gráfico</label>
+    <select id="quality">
+      <option value="balanced">Equilibrado · 30 FPS · 75 % de resolución</option>
+      <option value="saving">Ahorro · 20 FPS · 60 % de resolución</option>
+      <option value="high">Alta calidad · 60 FPS · resolución completa</option>
+    </select>
+    <small id="detail">Detalle dinámico por sector</small>
+    <p>Orbital: arrastrar para rotar, clic derecho para desplazar, rueda para zoom. Vuelo: WASD + mouse, Q/E baja/sube.</p>
+    <p>Elegí un río y acercate para inspeccionar su superficie. Las guías azules se activan por separado. El agua es visual y sus niveles siguen siendo provisionales.</p>
+    <p>Colores de World Studio y siete capas pintadas sobre texturas 1K de Auralia.</p>
+    <p>Este modo no carga guardados, construcciones ni simulaciones de caudal. La geografía jugable original sigue intacta.</p>
+    <a href="/">Volver al juego actual</a>
+  </section>
+  <div id="status" role="status">Cargando...</div>
+  <div id="coords">–</div>
+  <script type="module" src="/src/auralia-preview/entry.js"></script>
+</body>
+</html>

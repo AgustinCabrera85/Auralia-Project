@@ -10,6 +10,7 @@ import { MAIN_RIVER, LAKE_RESERVATIONS, STREAMS } from '../world/geographicFeatu
 import { LANDSCAPE_LANDFORMS } from '../world/landscapeRelief';
 import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
 import { mapPercent } from '../world/mapProjection';
+import { activeGeography } from '../world/geography/ActiveGeography';
 import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
 import { SEASON_LABELS, WEATHER_ICONS, WEATHER_LABELS, type ClimateFrame } from '../world/climate/ClimateModel';
 import { readRenderQuality, RENDER_QUALITIES, type RenderQuality } from '../game/renderResolution';
@@ -291,6 +292,13 @@ export class Hud {
   }
 
   private mapMarkup(): string {
+    const geography=activeGeography();
+    if(geography){const p=this.projectPosition();return `<p class="panel-lead">Nuevo continente · Brisalia y sus sistemas trasladados. Elegí un destino para explorar.</p>
+      <div class="map-layout regional-layout"><div class="map-board regional-map-board">${geography.mapMarkup()}
+      <span id="map-player" class="player-map-marker" style="left:${p.left}%;top:${p.top}%">✦</span></div>
+      <div class="map-details"><h3>${this.local.region}</h3><p>X ${Math.round(this.local.x)} · Z ${Math.round(this.local.z)}</p>
+      <div class="landmark-list">${geography.destinations.map(d=>`<button data-landmark="${d.id}"><strong>${d.name}</strong></button>`).join('')}</div>
+      <p>Los traslados de esta rama de pruebas conservan las misiones. Esta partida es independiente del mundo actual.</p></div></div>`;}
     const tabs=`<div class="map-tabs"><button data-map-view="regional" class="${this.mapView==='regional'?'current':''}">🧭 Mapa del terreno jugable</button><button data-map-view="illustrated" class="${this.mapView==='illustrated'?'current':''}">🗺️ Atlas ilustrado de Auralia</button></div>`;
     if(this.mapView==='regional'){
       const pos=this.projectPosition();
@@ -370,6 +378,8 @@ export class Hud {
   }
 
   private projectPosition():{left:number;top:number}{
+    const geography=activeGeography();if(geography){const island=this.store.state.zone==='luciernagas'?geography.firefly:{x:0,z:0};
+      return {left:(this.local.x+island.x+7000)/140,top:(this.local.z+island.z+7000)/140};}
     const z=this.store.state.zone==='luciernagas'?this.local.z+420:this.local.z;
     const x=this.store.state.zone==='luciernagas'?this.local.x-210:this.local.x;
     return mapPercent(x,z);

@@ -1,0 +1,136 @@
+{
+  "lodChecks": 78,
+  "maxLodHeightError": 1.865174681370263e-14,
+  "sections": [
+    {
+      "point": {
+        "x": -1501,
+        "z": 1584
+      },
+      "center": {
+        "x": -1513.6078890232814,
+        "z": 1590.4654496613318
+      },
+      "level": 2.192091,
+      "depth": 5.747788414312394,
+      "lod": [
+        {
+          "lod": "near",
+          "vertices": 169,
+          "triangles": 288
+        },
+        {
+          "lod": "mid",
+          "vertices": 533,
+          "triangles": 968
+        },
+        {
+          "lod": "far",
+          "vertices": 1428,
+          "triangles": 2662
+        }
+      ]
+    },
+    {
+      "point": {
+        "x": -2309,
+        "z": 1706
+      },
+      "center": {
+        "x": -2297.011110573498,
+        "z": 1710.5557592917762
+      },
+      "level": 1,
+      "depth": 5.76,
+      "lod": [
+        {
+          "lod": "near",
+          "vertices": 169,
+          "triangles": 288
+        },
+        {
+          "lod": "mid",
+          "vertices": 475,
+          "triangles": 852
+        },
+        {
+          "lod": "far",
+          "vertices": 1243,
+          "triangles": 2292
+        }
+      ]
+    },
+    {
+      "point": {
+        "x": -2351,
+        "z": 1817
+      },
+      "center": {
+        "x": -2339.1355844116597,
+        "z": 1821.490231375814
+      },
+      "level": 1,
+      "depth": 5.76,
+      "lod": [
+        {
+          "lod": "near",
+          "vertices": 169,
+          "triangles": 288
+        },
+        {
+          "lod": "mid",
+          "vertices": 475,
+          "triangles": 852
+        },
+        {
+          "lod": "far",
+          "vertices": 1208,
+          "triangles": 2222
+        }
+      ]
+    }
+  ],
+  "topology": [
+    {
+      "lod": "mid",
+      "vertices": 381,
+      "triangles": 664
+    },
+    {
+      "lod": "far",
+      "vertices": 648,
+      "triangles": 1102
+    }
+  ],
+  "water": {
+    "vertices": 502,
+    "triangles": 182,
+    "clear": true,
+    "verticalCurtains": false
+  },
+  "source": {
+    "residentTiles": 6,
+    "maxResidentTiles": 9,
+    "heightBytes": 4915200,
+    "lastLoadMs": 29.61120000000028,
+    "totalLoaded": 24,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  }
+}

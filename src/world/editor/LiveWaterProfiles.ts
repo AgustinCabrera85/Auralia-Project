@@ -23,7 +23,7 @@ function replaceOnce(source:string,search:string,replacement:string):string {
 }
 
 /** Keep the laboratory lighting and motion while respecting the existing world masks. */
-function worldShader(profile:WaterProfile,localFallUV=false,clearWater=false):{vertex:string;fragment:string} {
+function worldShader(profile:WaterProfile,localFallUV=false,clearWater=false,excludeInland=false):{vertex:string;fragment:string} {
   const original=WATER_PROFILES[profile];
   const ocean=profile==='ocean',fall=profile==='fall';
   let vertex=replaceOnce(original.vertex,'attribute vec2 uv;',
@@ -69,6 +69,8 @@ uniform float uNearPatch;`:'';
 varying vec4 vWorldWaterInfo;
 uniform vec3 uFogColor;
 uniform float uFogDensity;${oceanUniforms}`);
+  if(ocean&&excludeInland)fragment=fragment.replace('uniform float uNearPatch;',
+    'uniform float uNearPatch; uniform sampler2D uInlandMask; uniform vec4 uInlandBounds;');
   if(fall||clearWater){
     // Light the actual rounded lip/curtain/apron, not a single fixed +Z plane.
     fragment=replaceOnce(fragment,'vec3 V = normalize(uCameraPos - vWorldPos);',`
@@ -129,7 +131,8 @@ void main(void) {`);
   foam=max(foam,rockFoam*uContactFoam);`);
   }
   fragment=replaceOnce(fragment,'  float t = uTime;',ocean
-    ?`  if(uNearPatch<.5 && length(vWorldPos.xz-uPatchCenter)<uPatchRadius*.975) discard;
+    ?`  ${excludeInland?'if(texture2D(uInlandMask,(vWorldPos.xz-uInlandBounds.xy)/uInlandBounds.zw).r>.5) discard;':''}
+  if(uNearPatch<.5 && length(vWorldPos.xz-uPatchCenter)<uPatchRadius*.975) discard;
   float t = uTime;`
     :`  if(vWorldWaterInfo.r>.96) discard;
   float t = uTime;`);
@@ -197,12 +200,12 @@ export function createWorldWaterMaterial(scene:Scene,profile:WaterProfile,masks:
     config:WaterConfig={}):ShaderMaterial {
   const preset=getWorldDocument().waterPresets[profile];
   const clearWater=config.uClearWater===1;
-  const source=worldShader(profile,config.uLocalFallUV===1,clearWater);
+  const source=worldShader(profile,config.uLocalFallUV===1,clearWater,config.uExcludeInland===1);
   return createAuraliaWater(scene,profile,masks,undefined,{...preset?.params,...config},
     source,
     {attributes:['position','uv','color',...(profile==='river'?['uv2']:[])],
       uniforms:['uFogColor','uFogDensity',...(['river','pool'].includes(profile)?['uWaterContacts','uWaterContactInfo']:[]),...(profile==='pool'?['uImpactC']:[]),...(profile==='ocean'
-        ?['uPatchCenter','uPatchRadius','uNearPatch']:[])],
+        ?['uPatchCenter','uPatchRadius','uNearPatch','uInlandBounds']:[])],
       needAlphaBlending:clearWater||profile==='fall'});
 }
 

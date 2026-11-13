@@ -42,7 +42,7 @@ export type SaveGameV1 = {
   /** Global clock; optional so existing v1 saves remain readable. */
   environment?: { elapsedHours:number };
   /** Opcional para abrir guardados v0.1 sin migración destructiva. */
-  playerPosition?: {zone: ZoneId; x: number; z: number};
+  playerPosition?: {zone: ZoneId; x: number; z: number; realm?:string};
   createdAt: string;
   updatedAt: string;
 };

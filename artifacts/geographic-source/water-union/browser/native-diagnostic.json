@@ -1,0 +1,258 @@
+{
+  "eye": [
+    -3890.775390625,
+    128.74005126953125,
+    -2594.137451171875
+  ],
+  "field": {
+    "level": 127,
+    "kind": "stream",
+    "distance": 3.5038693809713872,
+    "edge": 1
+  },
+  "optics": {
+    "weight": 1,
+    "slope": [
+      0,
+      0
+    ]
+  },
+  "nearby": [
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "techo-cuatro-aguas",
+      "vertices": 22
+    },
+    {
+      "name": "agua-far-unica--44--22",
+      "vertices": 884
+    },
+    {
+      "name": "agua-far-unica--46--21",
+      "vertices": 66
+    },
+    {
+      "name": "agua-far-unica--45--22",
+      "vertices": 3034
+    },
+    {
+      "name": "agua-far-unica--46--22",
+      "vertices": 2513
+    },
+    {
+      "name": "agua-far-unica--45--23",
+      "vertices": 292
+    },
+    {
+      "name": "agua-far-unica--47--22",
+      "vertices": 47
+    },
+    {
+      "name": "agua-far-unica--41--25",
+      "vertices": 990
+    },
+    {
+      "name": "agua-far-unica--46--23",
+      "vertices": 3016
+    },
+    {
+      "name": "agua-far-unica--47--23",
+      "vertices": 1964
+    },
+    {
+      "name": "agua-far-unica--46--24",
+      "vertices": 576
+    },
+    {
+      "name": "agua-far-unica--41--26",
+      "vertices": 1131
+    },
+    {
+      "name": "agua-far-unica--47--24",
+      "vertices": 3265
+    },
+    {
+      "name": "agua-far-unica--41--27",
+      "vertices": 75
+    },
+    {
+      "name": "agua-far-unica--48--24",
+      "vertices": 1340
+    },
+    {
+      "name": "agua-far-unica--47--25",
+      "vertices": 963
+    },
+    {
+      "name": "agua-near-unica--55--36",
+      "vertices": 1572
+    },
+    {
+      "name": "agua-near-unica--55--35",
+      "vertices": 792
+    },
+    {
+      "name": "agua-near-unica--55--37",
+      "vertices": 773
+    },
+    {
+      "name": "agua-near-unica--54--37",
+      "vertices": 712
+    },
+    {
+      "name": "agua-near-unica--54--36",
+      "vertices": 2154
+    },
+    {
+      "name": "agua-near-unica--54--35",
+      "vertices": 2981
+    },
+    {
+      "name": "agua-near-unica--55--34",
+      "vertices": 93
+    },
+    {
+      "name": "agua-near-unica--54--34",
+      "vertices": 3382
+    },
+    {
+      "name": "agua-near-unica--53--34",
+      "vertices": 352
+    },
+    {
+      "name": "agua-near-unica--54--33",
+      "vertices": 2699
+    },
+    {
+      "name": "agua-near-unica--53--33",
+      "vertices": 1182
+    },
+    {
+      "name": "agua-far-unica--54--32",
+      "vertices": 1938
+    },
+    {
+      "name": "agua-far-unica--53--32",
+      "vertices": 2010
+    },
+    {
+      "name": "agua-far-unica--54--31",
+      "vertices": 1157
+    },
+    {
+      "name": "agua-far-unica--53--31",
+      "vertices": 2944
+    },
+    {
+      "name": "agua-far-unica--52--31",
+      "vertices": 98
+    },
+    {
+      "name": "agua-far-unica--54--30",
+      "vertices": 173
+    },
+    {
+      "name": "agua-far-unica--53--30",
+      "vertices": 2770
+    },
+    {
+      "name": "agua-far-unica--52--30",
+      "vertices": 2399
+    },
+    {
+      "name": "agua-far-unica--51--30",
+      "vertices": 66
+    },
+    {
+      "name": "agua-far-unica--53--29",
+      "vertices": 255
+    },
+    {
+      "name": "agua-far-unica--52--29",
+      "vertices": 2858
+    },
+    {
+      "name": "agua-far-unica--51--29",
+      "vertices": 2263
+    },
+    {
+      "name": "agua-far-unica--50--29",
+      "vertices": 40
+    },
+    {
+      "name": "agua-far-unica--52--28",
+      "vertices": 286
+    },
+    {
+      "name": "agua-far-unica--51--28",
+      "vertices": 2911
+    },
+    {
+      "name": "agua-far-unica--50--28",
+      "vertices": 2133
+    },
+    {
+      "name": "agua-far-unica--51--27",
+      "vertices": 348
+    },
+    {
+      "name": "agua-far-unica--49--28",
+      "vertices": 20
+    },
+    {
+      "name": "agua-far-unica--50--27",
+      "vertices": 2945
+    },
+    {
+      "name": "agua-far-unica--49--27",
+      "vertices": 1917
+    },
+    {
+      "name": "agua-far-unica--50--26",
+      "vertices": 429
+    },
+    {
+      "name": "agua-far-unica--49--26",
+      "vertices": 3160
+    },
+    {
+      "name": "agua-far-unica--48--26",
+      "vertices": 1444
+    },
+    {
+      "name": "agua-far-unica--49--25",
+      "vertices": 803
+    },
+    {
+      "name": "agua-far-unica--48--25",
+      "vertices": 3327
+    }
+  ]
+}

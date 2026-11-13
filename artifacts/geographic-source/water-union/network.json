@@ -1,0 +1,293 @@
+{
+  "routes": [
+    {
+      "id": "rv-salida-vertientes",
+      "samples": 217,
+      "watershed": 0,
+      "lake": 0,
+      "platform": 0,
+      "minDepth": 5.742031803381213,
+      "maxDepth": 8.464274637052002,
+      "maxLevelJump": 0
+    },
+    {
+      "id": "rv-cumbres-nacar",
+      "samples": 135,
+      "watershed": 0,
+      "lake": 7,
+      "platform": 0,
+      "minDepth": 4.87790336914918,
+      "maxDepth": 17.98770521771928,
+      "maxLevelJump": 3.9441120058708066
+    },
+    {
+      "id": "rv-sierra-nacar",
+      "samples": 132,
+      "watershed": 0,
+      "lake": 11,
+      "platform": 0,
+      "minDepth": 5.71856533997253,
+      "maxDepth": 5.776137886449387,
+      "maxLevelJump": 0.19238739881182454
+    },
+    {
+      "id": "rv-nacar-costas",
+      "samples": 246,
+      "watershed": 0,
+      "lake": 5,
+      "platform": 0,
+      "minDepth": 5.724623047024921,
+      "maxDepth": 5.76,
+      "maxLevelJump": 0
+    },
+    {
+      "id": "rv-valle",
+      "samples": 372,
+      "watershed": 0,
+      "lake": 0,
+      "platform": 0,
+      "minDepth": 5.712807033370242,
+      "maxDepth": 9.266992915898943,
+      "maxLevelJump": 0.8720495915658013
+    },
+    {
+      "id": "rv-selva",
+      "samples": 264,
+      "watershed": 0,
+      "lake": 0,
+      "platform": 0,
+      "minDepth": 5.685542409771244,
+      "maxDepth": 6.811875857890543,
+      "maxLevelJump": 0.8648906786768507
+    },
+    {
+      "id": "rv-prado",
+      "samples": 138,
+      "watershed": 0,
+      "lake": 0,
+      "platform": 0,
+      "minDepth": 5.716598962415757,
+      "maxDepth": 5.7600294065877415,
+      "maxLevelJump": 0.02459850811574671
+    }
+  ],
+  "migratedRoutes": [
+    "rv-ferragris",
+    "rv-velo",
+    "rv-gemelas",
+    "canal-hidraulico-ferragris",
+    "arroyo-ingenieros-ferragris"
+  ],
+  "featureOverlays": {
+    "catarata-alta-altaluz": "rv-cumbres-nacar"
+  },
+  "nativeRoutes": [
+    {
+      "route": 0,
+      "samples": 280,
+      "minDepth": 3.4834545663403995,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 1,
+      "samples": 41,
+      "minDepth": 3.4998289550866986,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 2,
+      "samples": 80,
+      "minDepth": 3.4998978284092743,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 3,
+      "samples": 165,
+      "minDepth": 1.9132804503124363,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 4,
+      "samples": 49,
+      "minDepth": 1.8894908853155243,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 5,
+      "samples": 42,
+      "minDepth": 1.947060231808777,
+      "maxLevelJump": 0
+    },
+    {
+      "route": 6,
+      "samples": 65,
+      "minDepth": 1.9241473148447596,
+      "maxLevelJump": 0
+    }
+  ],
+  "regressions": [
+    {
+      "x": -1596,
+      "z": 1429,
+      "lod": "near",
+      "triangles": 629,
+      "vertices": 1765,
+      "maxWarp": 1.3877787807814457e-16,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -1596,
+      "z": 1429,
+      "lod": "far",
+      "triangles": 629,
+      "vertices": 1765,
+      "maxWarp": 1.3877787807814457e-16,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -1501,
+      "z": 1584,
+      "lod": "near",
+      "triangles": 593,
+      "vertices": 1677,
+      "maxWarp": 1.3877787807814457e-16,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -1501,
+      "z": 1584,
+      "lod": "far",
+      "triangles": 593,
+      "vertices": 1677,
+      "maxWarp": 1.3877787807814457e-16,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -1004,
+      "z": 2165,
+      "lod": "near",
+      "triangles": 927,
+      "vertices": 2629,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -1004,
+      "z": 2165,
+      "lod": "far",
+      "triangles": 927,
+      "vertices": 2629,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -931,
+      "z": 2282,
+      "lod": "near",
+      "triangles": 574,
+      "vertices": 1666,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -931,
+      "z": 2282,
+      "lod": "far",
+      "triangles": 574,
+      "vertices": 1666,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -914,
+      "z": 2335,
+      "lod": "near",
+      "triangles": 764,
+      "vertices": 2236,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -914,
+      "z": 2335,
+      "lod": "far",
+      "triangles": 764,
+      "vertices": 2236,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -2309,
+      "z": 1706,
+      "lod": "near",
+      "triangles": 112,
+      "vertices": 308,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -2309,
+      "z": 1706,
+      "lod": "far",
+      "triangles": 112,
+      "vertices": 308,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -2351,
+      "z": 1817,
+      "lod": "near",
+      "triangles": 642,
+      "vertices": 1830,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    },
+    {
+      "x": -2351,
+      "z": 1817,
+      "lod": "far",
+      "triangles": 642,
+      "vertices": 1830,
+      "maxWarp": 8.326672684688674e-17,
+      "overlapChecks": 1156
+    }
+  ],
+  "issues": [],
+  "minDepth": 4.87790336914918,
+  "maxLevelJump": 3.9441120058708066,
+  "axisSamples": 1504,
+  "excavationSamples": 7382,
+  "maskBytes": 4194304,
+  "resident": {
+    "residentTiles": 9,
+    "maxResidentTiles": 9,
+    "heightBytes": 7372800,
+    "lastLoadMs": 8.591300000000047,
+    "totalLoaded": 58,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "nacarBathymetry": {
+      "bytes": 373500,
+      "gridSpacing": 8,
+      "buildMs": 59.28790000000026,
+      "targetMaximumDepth": 80
+    },
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  }
+}

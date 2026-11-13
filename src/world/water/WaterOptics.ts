@@ -8,17 +8,19 @@ import '@babylonjs/core/Shaders/depth.fragment.js';
  * water and spray stay out of that pass, so they cannot hide the swimmer. */
 export const WATER_OPTICS_GLSL=`
 uniform sampler2D waterSceneDepth;
+uniform sampler2D waterSurfaceDepth;
+uniform float waterSurfaceMode;
 uniform mat4 waterInverseViewProjection;
 uniform vec3 waterEye;
 uniform float waterLevel;
 uniform float waterOpticsWeight;
 uniform vec2 waterFlow;
 uniform vec2 waterSlope;
-vec3 waterWorldPosition(vec2 uv){
-  float z=texture2D(waterSceneDepth,uv).r;
+vec3 waterPositionAtDepth(vec2 uv,float z){
   vec4 p=waterInverseViewProjection*vec4(uv*2.0-1.0,z*2.0-1.0,1.0);
   return p.xyz/p.w;
 }
+vec3 waterWorldPosition(vec2 uv){return waterPositionAtDepth(uv,texture2D(waterSceneDepth,uv).r);}
 vec2 waterRefractedUV(vec2 uv){
   if(waterOpticsWeight<=0.0)return uv;
   vec3 end=waterWorldPosition(uv);
@@ -28,6 +30,12 @@ vec2 waterRefractedUV(vec2 uv){
   // characters keep their silhouette; scenery beyond the surface undulates.
   if(a<=0.0||b>=0.0)return uv;
   vec3 hit=mix(waterEye,end,a/max(a-b,.00001));
+  if(waterSurfaceMode>.5){
+    float surface=texture2D(waterSurfaceDepth,uv).r;
+    if(surface>=.999999)return uv;
+    hit=waterPositionAtDepth(uv,surface);
+    if(length(hit-waterEye)>=length(end-waterEye))return uv;
+  }
   vec2 p=hit.xz*.35-waterFlow*waterTime*.3;
   vec2 ripple=vec2(sin(p.y*1.7+p.x*.6+waterTime*.7),sin(p.x*1.3-p.y*.4-waterTime*.6));
   float strength=smoothstep(0.0,.6,a)*smoothstep(0.0,.6,-b)*waterOpticsWeight;
@@ -45,6 +53,17 @@ vec3 throughWater(vec3 colour,vec2 uv){
   else if(a>0.0)wet=a/max(a-b,.00001);
   else if(b>0.0)wet=b/max(b-a,.00001);
   float metres=min(90.0,length(end-waterEye)*wet);
+  if(waterSurfaceMode>.5){
+    // Use the streamed water's actual footprint and descending profile. An
+    // infinite tangent plane floods distant dry banks at elevated springs.
+    float surface=texture2D(waterSurfaceDepth,uv).r;
+    float total=length(end-waterEye),path=0.0;
+    if(surface<.999999){
+      float crossing=length(waterPositionAtDepth(uv,surface)-waterEye);
+      path=a>0.0?min(total,crossing):max(0.0,total-crossing);
+    }else if(a>0.0)path=total;
+    metres=min(90.0,path);
+  }
   vec3 transmission=exp(-vec3(.095,.035,.022)*metres);
   vec3 scattering=vec3(.035,.22,.25);
   // Moving refracted light is projected onto submerged geometry, not onto a
@@ -63,6 +82,10 @@ vec3 throughWater(vec3 colour,vec2 uv){
 
 export class WaterOptics {
   private depth:DepthRenderer|null=null;
+  private surfaceDepth:DepthRenderer|null=null;
+  private surfaceMode=false;
+  private surfaceReady=false;
+  private readonly surfaces:AbstractMesh[]=[];
   private readonly inverse=Matrix.Identity();
   private level=0;
   private weight=0;
@@ -74,7 +97,7 @@ export class WaterOptics {
   private particleTexture:DynamicTexture|null=null;
   constructor(private readonly camera:Camera){}
   get active():boolean{return this.weight>0;}
-  update(level:number|null,flowX=0,flowZ=0,slopeX=0,slopeZ=0):void{
+  update(level:number|null,flowX=0,flowZ=0,slopeX=0,slopeZ=0,useSurfaceDepth=false):void{
     const eye=this.camera.globalPosition;
     const above=level===null?Infinity:eye.y-level;
     const t=Math.min(1,Math.max(0,(above-4)/4));
@@ -82,6 +105,7 @@ export class WaterOptics {
     this.level=level??0;
     this.flow.set(flowX,flowZ);
     this.slope.set(slopeX,slopeZ);
+    this.surfaceMode=useSurfaceDepth&&this.active;
     if(this.active&&!this.depth){
       // One R32F target, allocated once and reused. No reflection scene copy,
       // colour target, blur pyramid or CPU mesh copies are needed.
@@ -107,6 +131,26 @@ export class WaterOptics {
     }
     if(!this.depth)return;
     const scene=this.camera.getScene(),map=this.depth.getDepthMap();
+    if(this.surfaceMode&&!this.surfaceDepth){
+      this.surfaceDepth=new DepthRenderer(scene,1,this.camera,true,Texture.NEAREST_SAMPLINGMODE,false,'agua-interfaz-optica');
+      this.surfaceDepth.forceDepthWriteTransparentMeshes=true;
+      this.surfaceDepth.getDepthMap().getCustomRenderList=(_layer,list,length)=>{
+        this.surfaces.length=0;
+        if(list)for(let i=0;i<length;i++)if(list[i].metadata?.inlandWater)this.surfaces.push(list[i]);
+        return this.surfaces;
+      };
+    }
+    if(this.surfaceDepth){
+      const surface=this.surfaceDepth.getDepthMap(),index=scene.customRenderTargets.indexOf(surface);
+      if(this.surfaceMode&&index<0)scene.customRenderTargets.push(surface);
+      else if(!this.surfaceMode&&index>=0)scene.customRenderTargets.splice(index,1);
+      const engine=scene.getEngine();
+      if(this.surfaceMode&&(surface.getSize().width!==engine.getRenderWidth()||surface.getSize().height!==engine.getRenderHeight()))
+        surface.resize({width:engine.getRenderWidth(),height:engine.getRenderHeight()});
+      // Readiness can bind another GL program. Never do it inside bind(),
+      // between setting post-process uniforms: that corrupts cached uniforms.
+      if(this.surfaceMode&&!this.surfaceReady)this.surfaceReady=surface.isReadyForRendering();
+    }
     this.depth.enabled=this.active;
     if(this.active){
       if(!this.ready)this.ready=map.isReadyForRendering();
@@ -124,10 +168,14 @@ export class WaterOptics {
     effect.setMatrix('waterInverseViewProjection',this.inverse);
     effect.setVector2('waterFlow',this.flow);
     effect.setVector2('waterSlope',this.slope);
+    effect.setFloat('waterSurfaceMode',this.surfaceMode&&this.surfaceReady?1:0);
+    if(this.surfaceMode&&!this.surfaceReady)effect.setFloat('waterOpticsWeight',0);
+    if(this.surfaceDepth)effect.setTexture('waterSurfaceDepth',this.surfaceDepth.getDepthMap());
+    else if(this.depth)effect.setTexture('waterSurfaceDepth',this.depth.getDepthMap());
     if(this.depth)effect.setTexture('waterSceneDepth',this.depth.getDepthMap());
   }
   dispose():void{
-    this.update(null);this.depth?.dispose();this.depth=null;
+    this.update(null);this.surfaceDepth?.dispose();this.surfaceDepth=null;this.depth?.dispose();this.depth=null;
     this.particles?.dispose(false);this.particleTexture?.dispose();
   }
 

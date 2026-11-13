@@ -81,7 +81,7 @@ export function ownsLagoonWater(x:number,z:number):boolean{
 }
 /** This final local pass creates broad banks, an incised river and a deep basin.
  * Falls spill over shelves with a recess behind the falling sheet, never uphill. */
-export function applyLagoonRelief(x:number,z:number,base:number):number{
+export function applyLagoonRelief(x:number,z:number,base:number,waterFloor=-Infinity):number{
   if(!inLagoonRegion(x,z))return base;
   let h=applyHeadwaterRelief(x,z,base);const r=lagoonRadius(x,z),l=CASCADE_LAGOON;
   if(r<1.6){
@@ -99,7 +99,7 @@ export function applyLagoonRelief(x:number,z:number,base:number):number{
     const d=Math.hypot((x-f.x)/(f.width+10),(z-f.z-f.run)/24);
     if(d<1.3)h+=(Math.min(h,l.level-7)-h)*(1-smooth(.6,1.3,d));
   }
-  const c=lagoonChannelAt(x,z);
+  const sampled=lagoonChannelAt(x,z),c={...sampled,level:Math.max(waterFloor,sampled.level)};
   const beforeChannel=h,endFade=1-smooth(0,12+Math.min(100,Math.max(0,c.distance-c.pastEnd-c.width)*2),c.pastEnd);
   if(c.distance<c.width+120){
     // Keep a dry shoulder above the water even where the original valley is

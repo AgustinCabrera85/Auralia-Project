@@ -1,10 +1,11 @@
 import {
-  Mesh, MeshBuilder, Scene, ShaderMaterial, VertexBuffer, Vector2, Vector3,
+  Mesh, MeshBuilder, Scene, ShaderMaterial, VertexBuffer, Vector2, Vector3, Vector4, RawTexture, Texture,
 } from '@babylonjs/core';
 import { MAINLAND, sampleMainlandHeight } from '../terrainData';
 import { waterSurfaceAt } from '../geographicFeatures';
 import { loadWaterMasks, WATER_PROFILES } from '../editor/AuraliaWaterProfiles';
 import { createWorldWaterMaterial, updateWorldWaterMaterial } from '../editor/LiveWaterProfiles';
+import { activeGeography } from '../geography/ActiveGeography';
 
 export type OceanWaterOptions = {
   /** In-world meters, not UV coordinates. */
@@ -43,18 +44,24 @@ export class OceanWater {
   private lastX = Infinity;
   private lastZ = Infinity;
   private readonly level: number;
+  private readonly inlandMask:RawTexture|null;
 
   constructor(private readonly scene: Scene, options: OceanWaterOptions = {}) {
     this.masks = loadWaterMasks(scene);
-    this.level = MAINLAND.waterLevel;
+    const geography=activeGeography();
+    const exclusion=geography?.oceanExclusion;
+    // CreateRTexture defaults to FLOAT; the ownership buffer is UNSIGNED_BYTE.
+    this.inlandMask=exclusion?RawTexture.CreateRTexture(exclusion.data,exclusion.size,exclusion.size,scene,false,false,Texture.BILINEAR_SAMPLINGMODE,0):null;
+    if(this.inlandMask){this.inlandMask.wrapU=Texture.CLAMP_ADDRESSMODE;this.inlandMask.wrapV=Texture.CLAMP_ADDRESSMODE;}
+    this.level = geography?.source.seaLevel??MAINLAND.waterLevel;
     const size = options.nearSize ?? 480;
     const subdivisions = options.nearSubdivisions ?? 120;
     this.halfSize = size / 2;
     this.far = MeshBuilder.CreateGround('auralia-ocean-far', {
-      width: options.farWidth ?? 6500, height: options.farHeight ?? 6200,
+      width: options.farWidth ?? (geography?16000:6500), height: options.farHeight ?? (geography?16000:6200),
       subdivisions: 1,
     }, scene);
-    this.far.position.set(MAINLAND.centerX,this.level - .035, MAINLAND.centerZ);
+    this.far.position.set(geography?0:MAINLAND.centerX,this.level - .035, geography?0:MAINLAND.centerZ);
     this.near = MeshBuilder.CreateGround('auralia-ocean-near', {
       width: size, height: size, subdivisions,
     }, scene);
@@ -69,11 +76,18 @@ export class OceanWater {
     this.nearMaterial=createWorldWaterMaterial(scene,'ocean',this.masks,{
       uWaveAmp:waveAmp*(options.waveStrength??1),
       uNormalStrength:options.normalStrength??1,
+      uExcludeInland:exclusion?1:0,
     });
     this.farMaterial=createWorldWaterMaterial(scene,'ocean',this.masks,{
       uWaveAmp:waveAmp*(options.waveStrength??1),
       uNormalStrength:(options.normalStrength??1)*.65,
+      uExcludeInland:exclusion?1:0,
     });
+    if(exclusion&&this.inlandMask)for(const material of [this.nearMaterial,this.farMaterial]){
+      material.setTexture('uInlandMask',this.inlandMask);
+      material.setVector4('uInlandBounds',new Vector4(exclusion.bounds[0],exclusion.bounds[1],
+        exclusion.bounds[2]-exclusion.bounds[0],exclusion.bounds[3]-exclusion.bounds[1]));
+    }
     this.nearMaterial.setFloat('uPatchRadius',this.halfSize);
     this.farMaterial.setFloat('uPatchRadius',0);
     this.nearMaterial.setVector2('uPatchCenter',this.patchCenter);
@@ -204,5 +218,6 @@ export class OceanWater {
     this.farMaterial.dispose(false,false);
     this.masks.caustics.dispose();
     this.masks.waterfall.dispose();
+    this.inlandMask?.dispose();
   }
 }

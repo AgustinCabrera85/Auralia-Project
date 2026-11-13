@@ -1,0 +1,125 @@
+[
+  {
+    "name": "walking",
+    "ok": true,
+    "detail": {
+      "x": -1453.0932194557897,
+      "y": 14.724336760856191,
+      "z": 1559.4329295885393
+    }
+  },
+  {
+    "name": "jump",
+    "ok": true,
+    "detail": "airborne"
+  },
+  {
+    "name": "resource interaction",
+    "ok": true
+  },
+  {
+    "name": "craft hammer through HUD",
+    "ok": true,
+    "detail": 1
+  },
+  {
+    "name": "build floor 0",
+    "ok": true,
+    "detail": {
+      "count": 1,
+      "preview": "Ese punto de encastre ya está ocupado."
+    }
+  },
+  {
+    "name": "build wall 1",
+    "ok": true,
+    "detail": {
+      "count": 2,
+      "preview": "Ese punto de encastre ya está ocupado."
+    }
+  },
+  {
+    "name": "build wall 0",
+    "ok": true,
+    "detail": {
+      "count": 3,
+      "preview": "Ese punto de encastre ya está ocupado."
+    }
+  },
+  {
+    "name": "quest reaches sailing",
+    "ok": true
+  },
+  {
+    "name": "persisted construction and isolated saves",
+    "ok": true,
+    "detail": {
+      "structures": 3,
+      "old": "legacy-isolation-sentinel"
+    }
+  },
+  {
+    "name": "boat to firefly island",
+    "ok": true
+  },
+  {
+    "name": "lantern and complete quest",
+    "ok": true,
+    "detail": {
+      "lantern": 1,
+      "milestone": "complete"
+    }
+  },
+  {
+    "name": "boat return",
+    "ok": true
+  },
+  {
+    "name": "grotto enter",
+    "ok": true
+  },
+  {
+    "name": "grotto exit",
+    "ok": true
+  },
+  {
+    "name": "swimming",
+    "ok": true
+  },
+  {
+    "name": "mountain tunnel enter",
+    "ok": true
+  },
+  {
+    "name": "mountain tunnel exit",
+    "ok": true
+  },
+  {
+    "name": "visit albor",
+    "ok": true,
+    "detail": {
+      "position": {
+        "x": -4750,
+        "y": 1354.5003225737262,
+        "z": -3500
+      },
+      "mode": "grounded"
+    }
+  },
+  {
+    "name": "visit umbrael",
+    "ok": true,
+    "detail": {
+      "position": {
+        "x": 5200,
+        "y": 1204.5001267836474,
+        "z": -3700
+      },
+      "mode": "grounded"
+    }
+  },
+  {
+    "name": "legacy save untouched after journey",
+    "ok": true
+  }
+]

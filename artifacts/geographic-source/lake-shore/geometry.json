@@ -1,0 +1,71 @@
+{
+  "lakes": [
+    {
+      "id": "nacar",
+      "bytes": 190784,
+      "step": 8,
+      "boundaryContacts": 0,
+      "wet": 28471,
+      "fringe": 233
+    },
+    {
+      "id": "gemelas-alta",
+      "bytes": 29913,
+      "step": 8,
+      "boundaryContacts": 0,
+      "wet": 1880,
+      "fringe": 1362
+    }
+  ],
+  "points": [
+    {
+      "x": 1760,
+      "z": -1460,
+      "height": 0.8830965948552154,
+      "water": {
+        "kind": "lake",
+        "level": 1,
+        "distance": 0,
+        "edge": 0.23380681028956918
+      },
+      "mask": 1
+    },
+    {
+      "x": 1770,
+      "z": -1460,
+      "height": 0.9323353335258302,
+      "water": {
+        "kind": "lake",
+        "level": 1,
+        "distance": 0,
+        "edge": 0.1353293329483396
+      },
+      "mask": 1
+    },
+    {
+      "x": 1780,
+      "z": -1460,
+      "height": 0.7854488201738052,
+      "water": {
+        "kind": "lake",
+        "level": 1,
+        "distance": 0,
+        "edge": 0.4291023596523895
+      },
+      "mask": 1
+    },
+    {
+      "x": 1800,
+      "z": -1450,
+      "height": -0.4821623983695933,
+      "water": {
+        "kind": "lake",
+        "level": 1,
+        "distance": 0,
+        "edge": 1
+      },
+      "mask": 1
+    }
+  ],
+  "checked": 32676
+}

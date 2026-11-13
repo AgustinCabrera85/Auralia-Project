@@ -7,6 +7,8 @@ import { landscapeVegetation } from './landscapeRegions';
 import { regionalAssetAllowed } from './RegionCatalog';
 import { mountainRouteExcludes } from './mountainRoutes';
 import { nearTerrainSurfaceAt, terrainFootprintAt } from './terrainLod';
+import { activeGeography } from './geography/ActiveGeography';
+import { worldForestCandidates, worldForestCover, worldForestEnabled } from './geography/WorldForest';
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
@@ -82,13 +84,14 @@ function densityAt(kind:VegetationKind,x:number,z:number,wetness:number,cluster:
   }
   const grouping=kind==='plantitas1'||kind==='tronco1' ? .42+.58*cluster : .12+.88*cluster;
   const moisture=kind==='plantitas1'||kind==='tronco1' ? .72+.65*wetness : 1-.48*wetness;
-  const landscape=landscapeVegetation(x,z);
+  const landscape=activeGeography()?{grass:1,trees:1}:landscapeVegetation(x,z);
   return clamp01(probability*grouping*moisture*(kind==='plantitas1'?landscape.grass:landscape.trees));
 }
 
 /** Pure per-chunk distribution. Never reads the current player or load order. */
 export function vegetationForChunk(cx:number,cz:number,exclusions:readonly VegetationExclusion[]=[]):VegetationPlacement[]{
   const size=MAINLAND.chunkSize,placements:VegetationPlacement[]=[];
+  const forest=worldForestEnabled(),forestCandidates=forest?worldForestCandidates(cx,cz):[];
   const grid=new Map<string,number>();
   const gridHeight=(x:number,z:number):number=>{
     const key=`${x}:${z}`;
@@ -97,17 +100,20 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
     return h;
   };
   for(const kind of kinds){
-    const count=VEGETATION_CONFIG.candidatesPerChunk[kind];
+    const newTrees=forest&&kind!=='plantitas1'&&kind!=='tronco1';
+    const candidates=newTrees?forestCandidates.filter(p=>p.kind===kind):[];
+    const count=newTrees?candidates.length:VEGETATION_CONFIG.candidatesPerChunk[kind];
     for(let i=0;i<count;i++){
       const seed=VEGETATION_CONFIG.seed+i*17+kinds.indexOf(kind)*1009;
-      const x=(cx+hash01(cx,cz,seed+1))*size;
-      const z=(cz+hash01(cx,cz,seed+2))*size;
-      if(isStarterArea(x,z)||geologyFaceExcludes(x,z)||insideFoliageForest(x,z)||
-        mountainRouteExcludes(x,z)||!regionalAssetAllowed(kind,x,z))continue;
-      const water=MAINLAND.waterLevel;
+      const candidate=candidates[i];
+      const x=candidate?.x??(cx+hash01(cx,cz,seed+1))*size;
+      const z=candidate?.z??(cz+hash01(cx,cz,seed+2))*size;
+      if(isStarterArea(x,z)||(!activeGeography()&&(geologyFaceExcludes(x,z)||insideFoliageForest(x,z)||
+        mountainRouteExcludes(x,z)||!regionalAssetAllowed(kind,x,z))))continue;
+      const water=activeGeography()?.source.seaLevel??MAINLAND.waterLevel;
       const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height;
       const tree=kind!=='plantitas1'&&kind!=='tronco1';
-      const variation=1+VEGETATION_CONFIG.scaleVariation*(2*hash01(cx,cz,seed+4)-1);
+      const variation=1+VEGETATION_CONFIG.scaleVariation*(2*(candidate?.variation??hash01(cx,cz,seed+4))-1);
       const scale=VEGETATION_CONFIG.baseScale[kind]*variation;
       const crownRadius=VEGETATION_CONFIG.crownRadius[kind]*scale;
       if(h<water+(tree?VEGETATION_CONFIG.minHeightAboveWater.trees:VEGETATION_CONFIG.minHeightAboveWater.plants))continue;
@@ -119,7 +125,8 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const cluster=clusterAt(x,z);
       const w=biomeWeightsAt(x,z);
       const wetness=clamp01(masks.lake*.7+masks.river*.55+w.nacar*.65);
-      if(hash01(cx,cz,seed+3)>=densityAt(kind,x,z,wetness,cluster))continue;
+      const probability=newTrees?(.06+.88*worldForestCover(x,z))*(.6+.4*cluster)*(1-.8*w.cumbres-.35*w.sierras):densityAt(kind,x,z,wetness,cluster);
+      if((candidate?.chance??hash01(cx,cz,seed+3))>=probability)continue;
       const radius=tree?VEGETATION_CONFIG.obstacleRadius[kind as keyof typeof VEGETATION_CONFIG.obstacleRadius]*variation:kind==='tronco1'?.7*variation:0;
       const support=terrainFootprintAt(x,z,tree?Math.max(.6,radius*.65):kind==='tronco1'?1.5:.35,gridHeight);
       if(support.maxSlope>(tree?VEGETATION_CONFIG.maxSlope.trees:VEGETATION_CONFIG.maxSlope.plants)||
@@ -127,10 +134,10 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const clearance=Math.max(tree?5:2.5,crownRadius);
       if([[-clearance,0],[clearance,0],[0,-clearance],[0,clearance]].some(([dx,dz])=>sampleMainlandHeight(x+dx,z+dz)<=water+.2))continue;
       if(tree&&placements.some(p=>p.obstacleRadius>0&&Math.hypot(p.x-x,p.z-z)<.6*(VEGETATION_CONFIG.crownRadius[p.kind]*p.scale+crownRadius)))continue;
-      placements.push({kind,x,y:support.minHeight-.03,z,scale,yaw:hash01(cx,cz,seed+5)*Math.PI*2,obstacleRadius:radius});
+      placements.push({kind,x,y:support.minHeight-.03,z,scale,yaw:(candidate?.yaw??hash01(cx,cz,seed+5))*Math.PI*2,obstacleRadius:radius});
     }
   }
-  for(const formation of GEOLOGY_FORMATIONS)for(let i=-1;i<=1;i++){
+  for(const formation of activeGeography()?[]:GEOLOGY_FORMATIONS)for(let i=-1;i<=1;i++){
     const across=formation.kind==='canyon'?68+(i===0?8:0):51+(i===0?8:0);
     const point=geologyPoint(formation,i*22,across);
     const cell=chunkOf(point.x,point.z);

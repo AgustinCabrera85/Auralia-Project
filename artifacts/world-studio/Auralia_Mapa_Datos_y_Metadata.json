@@ -1,0 +1,1011 @@
+{
+  "format": "auralia-world-geo",
+  "version": 1,
+  "source": {
+    "gitRevision": null,
+    "dirtyWorkingTree": null,
+    "files": {
+      "terrain": {
+        "path": "src/world/terrainData.ts",
+        "sha256": "510326eeebf06c86289028c1d142583376584ec24e88dbc031cf21a5e8460b45"
+      },
+      "water": {
+        "path": "src/world/geographicFeatures.ts",
+        "sha256": "3f84eec6bc6f23730c2817afec102144e619f2c89bd2a885580df146351ad358"
+      },
+      "regions": {
+        "path": "src/world/RegionCatalog.ts",
+        "sha256": "33b3ebed9e161fbcf0d3583f50e529154287593615c339d7bb87c54e1cabc012"
+      },
+      "edits": {
+        "path": "src/world/editor/WorldEditState.ts",
+        "sha256": "1c5649b512b70dd3c964cf1c57f64f78ffbdb558430a882727b87f9df47796c5"
+      },
+      "landscape": {
+        "path": "src/world/landscapeRelief.ts",
+        "sha256": "f48bf8030b574a98c8997d2149020a3a759417e94a1a5c0247a7e347c402eb7b"
+      }
+    }
+  },
+  "coordinateSystem": {
+    "unit": "metres",
+    "x": "east",
+    "z": "south",
+    "y": "up"
+  },
+  "bounds": {
+    "minX": -2880,
+    "maxX": 2880,
+    "minZ": -2880,
+    "maxZ": 960
+  },
+  "resolution": {
+    "x": 640,
+    "z": 640
+  },
+  "studio": {
+    "tiles": [
+      {
+        "cx": -1,
+        "cz": -1
+      },
+      {
+        "cx": 0,
+        "cz": -1
+      },
+      {
+        "cx": 1,
+        "cz": -1
+      },
+      {
+        "cx": -1,
+        "cz": 0
+      },
+      {
+        "cx": 0,
+        "cz": 0
+      },
+      {
+        "cx": 1,
+        "cz": 0
+      }
+    ],
+    "cellSize": 1920,
+    "studioHeightLiftMeters": 77,
+    "seaLevelMeters": 76.85
+  },
+  "game": {
+    "seaLevelMeters": -0.15,
+    "mainland": {
+      "centerX": 0,
+      "centerZ": -1130,
+      "radiusX": 2000,
+      "radiusZ": 1500,
+      "waterLevel": -0.15,
+      "chunkSize": 72,
+      "visibleRadius": 4,
+      "terrainSubdivisions": 12,
+      "chunksPerFrame": 1
+    }
+  },
+  "regions": [
+    {
+      "id": "VAL",
+      "name": "Valle de los Faroles",
+      "center": [
+        0,
+        -130
+      ],
+      "polygon": [
+        [
+          -320,
+          180
+        ],
+        [
+          -480,
+          -200
+        ],
+        [
+          -260,
+          -430
+        ],
+        [
+          80,
+          -480
+        ],
+        [
+          180,
+          -290
+        ],
+        [
+          170,
+          100
+        ]
+      ],
+      "landforms": [
+        "cuenca templada",
+        "lomas de cerezos",
+        "garganta",
+        "meseta de fortaleza"
+      ]
+    },
+    {
+      "id": "OCC",
+      "name": "Valles Occidentales",
+      "center": [
+        -1240,
+        -450
+      ],
+      "polygon": [
+        [
+          -2000,
+          -150
+        ],
+        [
+          -1800,
+          -740
+        ],
+        [
+          -1100,
+          -750
+        ],
+        [
+          -820,
+          -570
+        ],
+        [
+          -480,
+          -200
+        ],
+        [
+          -320,
+          180
+        ],
+        [
+          -1000,
+          260
+        ]
+      ],
+      "landforms": [
+        "valles encajados",
+        "terrazas agrícolas",
+        "promontorios"
+      ]
+    },
+    {
+      "id": "ECO",
+      "name": "Bosque de los Ecos",
+      "center": [
+        -680,
+        -470
+      ],
+      "polygon": [
+        [
+          -1100,
+          -750
+        ],
+        [
+          -900,
+          -950
+        ],
+        [
+          -530,
+          -860
+        ],
+        [
+          -260,
+          -430
+        ],
+        [
+          -480,
+          -200
+        ],
+        [
+          -820,
+          -570
+        ]
+      ],
+      "landforms": [
+        "bosque en barrancos",
+        "claros",
+        "raíces y cuevas"
+      ]
+    },
+    {
+      "id": "SIE",
+      "name": "Sierras de los Engranajes",
+      "center": [
+        -650,
+        -1100
+      ],
+      "polygon": [
+        [
+          -1100,
+          -750
+        ],
+        [
+          -1250,
+          -1340
+        ],
+        [
+          -700,
+          -1520
+        ],
+        [
+          -260,
+          -1500
+        ],
+        [
+          -100,
+          -1060
+        ],
+        [
+          80,
+          -480
+        ],
+        [
+          -260,
+          -430
+        ],
+        [
+          -530,
+          -860
+        ],
+        [
+          -900,
+          -950
+        ]
+      ],
+      "landforms": [
+        "crestas ramificadas",
+        "pasos altos",
+        "galerías mineras",
+        "viaductos"
+      ]
+    },
+    {
+      "id": "CRI",
+      "name": "Cordillera del Crisol",
+      "center": [
+        -170,
+        -1840
+      ],
+      "polygon": [
+        [
+          -700,
+          -1520
+        ],
+        [
+          -780,
+          -2400
+        ],
+        [
+          200,
+          -2630
+        ],
+        [
+          570,
+          -2100
+        ],
+        [
+          500,
+          -1550
+        ],
+        [
+          -260,
+          -1500
+        ]
+      ],
+      "landforms": [
+        "cono volcánico",
+        "caldera",
+        "contrafuertes",
+        "tubos de lava"
+      ]
+    },
+    {
+      "id": "ALB",
+      "name": "Cumbres del Primer Amanecer",
+      "center": [
+        400,
+        -1260
+      ],
+      "polygon": [
+        [
+          -260,
+          -1500
+        ],
+        [
+          500,
+          -1550
+        ],
+        [
+          900,
+          -1400
+        ],
+        [
+          900,
+          -850
+        ],
+        [
+          450,
+          -550
+        ],
+        [
+          80,
+          -480
+        ],
+        [
+          -100,
+          -1060
+        ]
+      ],
+      "landforms": [
+        "aristas alpinas",
+        "circos glaciares",
+        "repisas nevadas",
+        "puentes de altura"
+      ]
+    },
+    {
+      "id": "DES",
+      "name": "Desierto del Ocaso",
+      "center": [
+        -1400,
+        -1800
+      ],
+      "polygon": [
+        [
+          -1800,
+          -740
+        ],
+        [
+          -2000,
+          -2000
+        ],
+        [
+          -780,
+          -2630
+        ],
+        [
+          -780,
+          -2400
+        ],
+        [
+          -700,
+          -1520
+        ],
+        [
+          -1250,
+          -1340
+        ],
+        [
+          -1100,
+          -750
+        ]
+      ],
+      "landforms": [
+        "mesas de arenisca",
+        "cañones",
+        "dunas",
+        "oasis"
+      ]
+    },
+    {
+      "id": "MAL",
+      "name": "Tierras Malditas",
+      "center": [
+        1160,
+        -1920
+      ],
+      "polygon": [
+        [
+          570,
+          -2100
+        ],
+        [
+          200,
+          -2630
+        ],
+        [
+          1800,
+          -2400
+        ],
+        [
+          2000,
+          -1480
+        ],
+        [
+          900,
+          -1400
+        ],
+        [
+          500,
+          -1550
+        ]
+      ],
+      "landforms": [
+        "mesetas fracturadas",
+        "lagunas oscuras",
+        "bosques marchitos"
+      ]
+    },
+    {
+      "id": "NAC",
+      "name": "Lago de Nácar",
+      "center": [
+        500,
+        -350
+      ],
+      "polygon": [
+        [
+          180,
+          -290
+        ],
+        [
+          80,
+          -480
+        ],
+        [
+          450,
+          -550
+        ],
+        [
+          900,
+          -850
+        ],
+        [
+          1050,
+          -400
+        ],
+        [
+          770,
+          -40
+        ],
+        [
+          170,
+          100
+        ]
+      ],
+      "landforms": [
+        "cuenca lacustre",
+        "deltas",
+        "isletas",
+        "riberas"
+      ]
+    },
+    {
+      "id": "SEL",
+      "name": "Selva de las Mil Cascadas",
+      "center": [
+        1420,
+        -660
+      ],
+      "polygon": [
+        [
+          900,
+          -1400
+        ],
+        [
+          2000,
+          -1480
+        ],
+        [
+          2000,
+          -130
+        ],
+        [
+          1370,
+          0
+        ],
+        [
+          770,
+          -40
+        ],
+        [
+          1050,
+          -400
+        ],
+        [
+          900,
+          -850
+        ]
+      ],
+      "landforms": [
+        "gargantas húmedas",
+        "cascadas escalonadas",
+        "mesetas selváticas"
+      ]
+    },
+    {
+      "id": "LLA",
+      "name": "Llanuras del Sur",
+      "center": [
+        -500,
+        280
+      ],
+      "polygon": [
+        [
+          -1000,
+          260
+        ],
+        [
+          -320,
+          180
+        ],
+        [
+          170,
+          100
+        ],
+        [
+          360,
+          290
+        ],
+        [
+          -700,
+          370
+        ]
+      ],
+      "landforms": [
+        "colinas bajas",
+        "llanuras cultivables",
+        "cursos lentos"
+      ]
+    },
+    {
+      "id": "COS",
+      "name": "Costas de los Faros",
+      "center": [
+        700,
+        160
+      ],
+      "polygon": [
+        [
+          170,
+          100
+        ],
+        [
+          770,
+          -40
+        ],
+        [
+          1370,
+          0
+        ],
+        [
+          2000,
+          -130
+        ],
+        [
+          1450,
+          340
+        ],
+        [
+          360,
+          290
+        ]
+      ],
+      "landforms": [
+        "acantilados marinos",
+        "ensenadas",
+        "cabos",
+        "archipiélagos"
+      ]
+    }
+  ],
+  "water": {
+    "mainRiver": [
+      {
+        "x": 450,
+        "z": -1800,
+        "level": 96,
+        "width": 10
+      },
+      {
+        "x": 520,
+        "z": -1500,
+        "level": 80,
+        "width": 11
+      },
+      {
+        "x": 520,
+        "z": -1200,
+        "level": 55,
+        "width": 12
+      },
+      {
+        "x": 500,
+        "z": -1060,
+        "level": 24,
+        "width": 13
+      },
+      {
+        "x": 500,
+        "z": -1010,
+        "level": 18,
+        "width": 13
+      },
+      {
+        "x": 500,
+        "z": -1007,
+        "level": 18,
+        "width": 13
+      },
+      {
+        "x": 502,
+        "z": -1001,
+        "level": 10,
+        "width": 13
+      },
+      {
+        "x": 500,
+        "z": -900,
+        "level": 8,
+        "width": 14
+      },
+      {
+        "x": 430,
+        "z": -680,
+        "level": 5,
+        "width": 15
+      },
+      {
+        "x": 450,
+        "z": -500,
+        "level": 3,
+        "width": 16
+      },
+      {
+        "x": 450,
+        "z": -380,
+        "level": 1.9,
+        "width": 16
+      },
+      {
+        "x": 500,
+        "z": -320,
+        "level": 1.4,
+        "width": 17
+      },
+      {
+        "x": 385,
+        "z": -270,
+        "level": 0.8,
+        "width": 19
+      },
+      {
+        "x": 390,
+        "z": -100,
+        "level": 0.6,
+        "width": 18
+      },
+      {
+        "x": 330,
+        "z": -47.05882352941177,
+        "level": 0.5117647058823529,
+        "width": 18
+      },
+      {
+        "x": 220,
+        "z": 50,
+        "level": 0.35,
+        "width": 18
+      },
+      {
+        "x": 150,
+        "z": 200,
+        "level": 0.05,
+        "width": 20
+      },
+      {
+        "x": 120,
+        "z": 250,
+        "level": -0.15,
+        "width": 23
+      },
+      {
+        "x": 120,
+        "z": 290,
+        "level": -0.15,
+        "width": 26
+      }
+    ],
+    "streams": [
+      {
+        "name": "Arroyo del Prado",
+        "points": [
+          {
+            "x": 110,
+            "z": -340,
+            "level": 10,
+            "width": 4
+          },
+          {
+            "x": 130,
+            "z": -235,
+            "level": 7,
+            "width": 5
+          },
+          {
+            "x": 155,
+            "z": -125,
+            "level": 4,
+            "width": 5
+          },
+          {
+            "x": 230,
+            "z": -100,
+            "level": 1.5,
+            "width": 6
+          },
+          {
+            "x": 330,
+            "z": -47.05882352941177,
+            "level": 0.5117647058823529,
+            "width": 7
+          }
+        ]
+      }
+    ],
+    "lakes": [
+      {
+        "name": "Lago de Nácar",
+        "x": 335,
+        "z": -255,
+        "radiusX": 160,
+        "radiusZ": 132,
+        "level": 0.75,
+        "depth": 7
+      },
+      {
+        "name": "Cuenca de los Humedales",
+        "x": 800,
+        "z": -610,
+        "radiusX": 245,
+        "radiusZ": 190,
+        "level": 0.3,
+        "depth": 3.5
+      }
+    ],
+    "lagunas": [
+      {
+        "name": "Laguna del Juncal",
+        "x": 1050,
+        "z": -365,
+        "radiusX": 48,
+        "radiusZ": 39,
+        "level": 0.35,
+        "depth": 2.2
+      },
+      {
+        "name": "Laguna de las Garzas",
+        "x": 1080,
+        "z": -710,
+        "radiusX": 43,
+        "radiusZ": 35,
+        "level": 0.25,
+        "depth": 2
+      }
+    ],
+    "waterfall": {
+      "x": 501,
+      "z": -1004,
+      "topZ": -1007,
+      "bottomZ": -1001,
+      "top": 18,
+      "bottom": 10,
+      "width": 23
+    }
+  },
+  "landforms": [
+    {
+      "id": "paredes-occidentales",
+      "x": -1040,
+      "z": -840,
+      "rx": 350,
+      "rz": 290,
+      "rise": 145,
+      "kind": "ridge"
+    },
+    {
+      "id": "cordon-engranajes",
+      "x": -740,
+      "z": -1180,
+      "rx": 420,
+      "rz": 380,
+      "rise": 200,
+      "kind": "ridge"
+    },
+    {
+      "id": "agujas-amanecer",
+      "x": 235,
+      "z": -850,
+      "rx": 290,
+      "rz": 290,
+      "rise": 235,
+      "kind": "ridge"
+    },
+    {
+      "id": "macizo-amanecer",
+      "x": 275,
+      "z": -1310,
+      "rx": 390,
+      "rz": 420,
+      "rise": 300,
+      "kind": "ridge"
+    },
+    {
+      "id": "crisol",
+      "x": -180,
+      "z": -1640,
+      "rx": 440,
+      "rz": 470,
+      "rise": 420,
+      "kind": "volcano"
+    },
+    {
+      "id": "mesas-ocaso",
+      "x": -1330,
+      "z": -1690,
+      "rx": 480,
+      "rz": 580,
+      "rise": 125,
+      "kind": "mesa"
+    },
+    {
+      "id": "escarpes-malditos",
+      "x": 1050,
+      "z": -1790,
+      "rx": 380,
+      "rz": 460,
+      "rise": 190,
+      "kind": "ridge"
+    },
+    {
+      "id": "pared-cascadas",
+      "x": 1220,
+      "z": -910,
+      "rx": 300,
+      "rz": 270,
+      "rise": 135,
+      "kind": "mesa"
+    },
+    {
+      "id": "colinas-del-sur",
+      "x": -510,
+      "z": 30,
+      "rx": 300,
+      "rz": 170,
+      "rise": 62,
+      "kind": "hills"
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "brisalia",
+      "name": "Brisalia",
+      "x": 0,
+      "z": -23,
+      "sourceMeters": 8.4,
+      "gridMeters": 8.42,
+      "deltaMeters": 0.01,
+      "nearestGridHeightMeters": 8.49
+    },
+    {
+      "id": "hogar",
+      "name": "Claro del Hogar",
+      "x": -29,
+      "z": 18,
+      "sourceMeters": 7.6,
+      "gridMeters": 7.62,
+      "deltaMeters": 0.02,
+      "nearestGridHeightMeters": 7.56
+    },
+    {
+      "id": "puerto",
+      "name": "Puerto del Arroyo",
+      "x": 33,
+      "z": 120,
+      "sourceMeters": 1.41,
+      "gridMeters": 1.41,
+      "deltaMeters": 0,
+      "nearestGridHeightMeters": 2.34
+    },
+    {
+      "id": "lindebrumas",
+      "name": "Umbral de Lindebrumas",
+      "x": -350,
+      "z": -285,
+      "sourceMeters": 17.35,
+      "gridMeters": 17.35,
+      "deltaMeters": 0,
+      "nearestGridHeightMeters": 17.42
+    },
+    {
+      "id": "altapiedra",
+      "name": "Paso de Altapiedra",
+      "x": -275,
+      "z": -535,
+      "sourceMeters": 42.67,
+      "gridMeters": 42.66,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 42.65
+    },
+    {
+      "id": "nacar",
+      "name": "Orilla de Nácar",
+      "x": 245,
+      "z": -250,
+      "sourceMeters": 5.03,
+      "gridMeters": 5.02,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 4.62
+    },
+    {
+      "id": "altaluz",
+      "name": "Mirador de Altaluz",
+      "x": 200,
+      "z": -660,
+      "sourceMeters": 50.08,
+      "gridMeters": 50.07,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 49.96
+    },
+    {
+      "id": "crisol",
+      "name": "Volcán Ígneo",
+      "x": -180,
+      "z": -1640,
+      "sourceMeters": 357.65,
+      "gridMeters": 357.52,
+      "deltaMeters": -0.13,
+      "nearestGridHeightMeters": 364.88
+    },
+    {
+      "id": "valle",
+      "name": "Valle de los Faroles",
+      "x": 0,
+      "z": -130,
+      "sourceMeters": 10.67,
+      "gridMeters": 10.65,
+      "deltaMeters": -0.02,
+      "nearestGridHeightMeters": 10.47
+    }
+  ],
+  "artifacts": {
+    "project": "Auralia_Canonico_Automatico.json",
+    "raw": "Auralia_Altura_Real_Metros.f32",
+    "preview": "Auralia_Vista_Previa_Datos_Reales.png",
+    "regionalMask": "Auralia_Regiones_Referencia.png",
+    "waterMask": "Auralia_Mascara_Agua_Referencia.png"
+  },
+  "maskLegend": {
+    "regions": {
+      "VAL": 1,
+      "OCC": 2,
+      "ECO": 3,
+      "SIE": 4,
+      "CRI": 5,
+      "ALB": 6,
+      "DES": 7,
+      "MAL": 8,
+      "NAC": 9,
+      "SEL": 10,
+      "LLA": 11,
+      "COS": 12
+    },
+    "water": {
+      "ocean": 1,
+      "river": 2,
+      "stream": 3,
+      "lake": 4,
+      "lagoon": 5
+    }
+  },
+  "warnings": [
+    "El agua interior debe generarse aparte; el editor muestra un único plano de mar.",
+    "Si usás World Editor con ediciones locales, exportá antes su documento y pasalo con --edits.",
+    "El color de la vista previa PNG es una clasificación de QA; no reproduce los shaders de World Studio.",
+    "No se actualizaron saves, colisiones, agua o vegetación del juego."
+  ]
+}

@@ -1,0 +1,294 @@
+[
+  {
+    "loading": false,
+    "failure": null,
+    "source": "worldstudio-playable-v1",
+    "ready": true,
+    "position": {
+      "x": 1762,
+      "y": 3.3221209654164667,
+      "z": -1466
+    },
+    "mode": "grounded",
+    "terrain": {
+      "near": {
+        "resident": 64,
+        "enabled": 64,
+        "vertices": 10816,
+        "triangles": 18432
+      },
+      "mid": {
+        "resident": 128,
+        "enabled": 112,
+        "vertices": 22107,
+        "triangles": 31670
+      },
+      "far": {
+        "resident": 132,
+        "enabled": 100,
+        "vertices": 50712,
+        "triangles": 75816
+      }
+    },
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 27.899999998509884,
+      "totalLoaded": 18,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 79.70000000298023,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "avatarReady": true,
+    "vegetation": 850,
+    "grass": 595,
+    "resources": 1,
+    "waterChunks": 471,
+    "lagoonInside": false,
+    "hydrology": 1.00875,
+    "eye": [
+      1752.1986083984375,
+      10.58846378326416,
+      -1468.9954833984375
+    ],
+    "lakeDomains": [
+      {
+        "id": "nacar",
+        "domain": {
+          "bytes": 190784,
+          "step": 8,
+          "boundaryContacts": 0
+        }
+      },
+      {
+        "id": "tres-vertientes"
+      },
+      {
+        "id": "gemelas-alta",
+        "domain": {
+          "bytes": 29913,
+          "step": 8,
+          "boundaryContacts": 0
+        }
+      }
+    ],
+    "samples": [
+      {
+        "x": 1760,
+        "z": -1460,
+        "ground": 0.8830965948552154,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1770,
+        "z": -1460,
+        "ground": 0.9323353335258302,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1780,
+        "z": -1460,
+        "ground": 0.7854488201738052,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1800,
+        "z": -1450,
+        "ground": -0.4821623983695933,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      }
+    ]
+  },
+  {
+    "loading": false,
+    "failure": null,
+    "source": "worldstudio-playable-v1",
+    "ready": true,
+    "position": {
+      "x": 1770,
+      "y": 3.219346430559874,
+      "z": -1464
+    },
+    "mode": "grounded",
+    "terrain": {
+      "near": {
+        "resident": 64,
+        "enabled": 64,
+        "vertices": 10816,
+        "triangles": 18432
+      },
+      "mid": {
+        "resident": 128,
+        "enabled": 112,
+        "vertices": 22107,
+        "triangles": 31670
+      },
+      "far": {
+        "resident": 132,
+        "enabled": 99,
+        "vertices": 50712,
+        "triangles": 75816
+      }
+    },
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 27.899999998509884,
+      "totalLoaded": 18,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 79.70000000298023,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "avatarReady": true,
+    "vegetation": 872,
+    "grass": 595,
+    "resources": 1,
+    "waterChunks": 471,
+    "lagoonInside": false,
+    "hydrology": 1.00875,
+    "eye": [
+      1780.2098388671875,
+      10.485677719116211,
+      -1463.1063232421875
+    ],
+    "lakeDomains": [
+      {
+        "id": "nacar",
+        "domain": {
+          "bytes": 190784,
+          "step": 8,
+          "boundaryContacts": 0
+        }
+      },
+      {
+        "id": "tres-vertientes"
+      },
+      {
+        "id": "gemelas-alta",
+        "domain": {
+          "bytes": 29913,
+          "step": 8,
+          "boundaryContacts": 0
+        }
+      }
+    ],
+    "samples": [
+      {
+        "x": 1760,
+        "z": -1460,
+        "ground": 0.8830965948552154,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1770,
+        "z": -1460,
+        "ground": 0.9323353335258302,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1780,
+        "z": -1460,
+        "ground": 0.7854488201738052,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      },
+      {
+        "x": 1800,
+        "z": -1450,
+        "ground": -0.4821623983695933,
+        "water": {
+          "kind": "lake",
+          "level": 1,
+          "distance": 0,
+          "edge": 1
+        },
+        "mask": 1
+      }
+    ]
+  }
+]

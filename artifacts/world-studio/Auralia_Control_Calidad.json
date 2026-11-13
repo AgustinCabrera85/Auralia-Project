@@ -1,0 +1,173 @@
+{
+  "status": "generated_and_data_checked",
+  "notBrowserValidated": true,
+  "sourceRevision": null,
+  "dirtyWorkingTree": null,
+  "sourceContainsIntegratedLandscape": true,
+  "resolution": 640,
+  "samples": 409600,
+  "bounds": {
+    "minX": -2880,
+    "maxX": 2880,
+    "minZ": -2880,
+    "maxZ": 960
+  },
+  "summary": {
+    "minimumMeters": -44.622,
+    "maximumMeters": 428.972,
+    "rangeMeters": 473.594,
+    "standardDeviationMeters": 62.524,
+    "landFraction": 0.4003,
+    "negativeHeightSamples": 246281
+  },
+  "regionSamples": {
+    "DES": 73516,
+    "CRI": 30800,
+    "MAL": 62784,
+    "SEL": 69401,
+    "ALB": 16647,
+    "SIE": 14840,
+    "OCC": 64347,
+    "ECO": 5422,
+    "NAC": 9548,
+    "VAL": 6673,
+    "COS": 31822,
+    "LLA": 23800
+  },
+  "waterSamples": {
+    "ocean": 245634,
+    "lake": 57,
+    "lagoon": 1363,
+    "river": 718,
+    "stream": 958
+  },
+  "anchors": [
+    {
+      "id": "brisalia",
+      "name": "Brisalia",
+      "x": 0,
+      "z": -23,
+      "sourceMeters": 8.4,
+      "gridMeters": 8.42,
+      "deltaMeters": 0.01,
+      "nearestGridHeightMeters": 8.49
+    },
+    {
+      "id": "hogar",
+      "name": "Claro del Hogar",
+      "x": -29,
+      "z": 18,
+      "sourceMeters": 7.6,
+      "gridMeters": 7.62,
+      "deltaMeters": 0.02,
+      "nearestGridHeightMeters": 7.56
+    },
+    {
+      "id": "puerto",
+      "name": "Puerto del Arroyo",
+      "x": 33,
+      "z": 120,
+      "sourceMeters": 1.41,
+      "gridMeters": 1.41,
+      "deltaMeters": 0,
+      "nearestGridHeightMeters": 2.34
+    },
+    {
+      "id": "lindebrumas",
+      "name": "Umbral de Lindebrumas",
+      "x": -350,
+      "z": -285,
+      "sourceMeters": 17.35,
+      "gridMeters": 17.35,
+      "deltaMeters": 0,
+      "nearestGridHeightMeters": 17.42
+    },
+    {
+      "id": "altapiedra",
+      "name": "Paso de Altapiedra",
+      "x": -275,
+      "z": -535,
+      "sourceMeters": 42.67,
+      "gridMeters": 42.66,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 42.65
+    },
+    {
+      "id": "nacar",
+      "name": "Orilla de Nácar",
+      "x": 245,
+      "z": -250,
+      "sourceMeters": 5.03,
+      "gridMeters": 5.02,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 4.62
+    },
+    {
+      "id": "altaluz",
+      "name": "Mirador de Altaluz",
+      "x": 200,
+      "z": -660,
+      "sourceMeters": 50.08,
+      "gridMeters": 50.07,
+      "deltaMeters": -0.01,
+      "nearestGridHeightMeters": 49.96
+    },
+    {
+      "id": "crisol",
+      "name": "Volcán Ígneo",
+      "x": -180,
+      "z": -1640,
+      "sourceMeters": 357.65,
+      "gridMeters": 357.52,
+      "deltaMeters": -0.13,
+      "nearestGridHeightMeters": 364.88
+    },
+    {
+      "id": "valle",
+      "name": "Valle de los Faroles",
+      "x": 0,
+      "z": -130,
+      "sourceMeters": 10.67,
+      "gridMeters": 10.65,
+      "deltaMeters": -0.02,
+      "nearestGridHeightMeters": 10.47
+    }
+  ],
+  "worldEditorEditsIncluded": false,
+  "artifacts": {
+    "Auralia_Canonico_Automatico.json": {
+      "bytes": 2187689,
+      "sha256": "fe74134040994c58911d6f5db20576b710ae1c2c4498b16d85ff017ab4625093"
+    },
+    "Auralia_Canonico_Automatico.ptrterrain": {
+      "bytes": 2187689,
+      "sha256": "fe74134040994c58911d6f5db20576b710ae1c2c4498b16d85ff017ab4625093"
+    },
+    "Auralia_Altura_Real_Metros.f32": {
+      "bytes": 1638400,
+      "sha256": "59377036a7ccac36c0a43bbb443f18e2796172896284967faaaa50a719cf0870"
+    },
+    "Auralia_Vista_Previa_Datos_Reales.png": {
+      "bytes": 288991,
+      "sha256": "2702910df5cffc669bb6a1511dc096ee1e92ff481b3e7cd7180442f1e367f1c1"
+    },
+    "Auralia_Regiones_Referencia.png": {
+      "bytes": 8365,
+      "sha256": "cfa6a84100c9d6991bf28ac7552c8a2220c1906c7e8372908e1bc5fe8b9ef8e2"
+    },
+    "Auralia_Mascara_Agua_Referencia.png": {
+      "bytes": 10258,
+      "sha256": "414f7070cfcf5da8658fd18fe4ca2e8ef6d87ab12a5d4402353d2e8a3e75e4dc"
+    },
+    "Auralia_Mapa_Datos_y_Metadata.json": {
+      "bytes": 17280,
+      "sha256": "c3285f3bbdae420dd83761cce85af0d66e574da08d368078ba2bd6ac6617f656"
+    }
+  },
+  "warnings": [
+    "El agua interior debe generarse aparte; el editor muestra un único plano de mar.",
+    "Si usás World Editor con ediciones locales, exportá antes su documento y pasalo con --edits.",
+    "El color de la vista previa PNG es una clasificación de QA; no reproduce los shaders de World Studio.",
+    "No se actualizaron saves, colisiones, agua o vegetación del juego."
+  ]
+}

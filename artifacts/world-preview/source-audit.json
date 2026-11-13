@@ -1,0 +1,295 @@
+{
+  "schema": "auralia-preview-source-audit-v1",
+  "sourceSculptResolution": [
+    640,
+    640
+  ],
+  "sourceSculptSpanM": 14000,
+  "sourceSculptSpacingM": 21.90923317683881,
+  "r16SpacingM": 4.381846635367762,
+  "r16TotalBytes": 20480000,
+  "sourceBilinearResidualRmsM": 1.2347838740695487,
+  "sourceBilinearResidualAbsPercentilesM": {
+    "50": 0.033960734057572495,
+    "95": 1.8193414182042835,
+    "99": 4.563375357545759,
+    "100": 44.4049305264185
+  },
+  "tiles": [
+    {
+      "id": "CX-2_CZ-2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "3f5edfd7236ef07bc2915799032becb73b6c6ec311af78b946686bce27159f91",
+      "sourceBilinearResidualRmsM": 1.007297022147827,
+      "sourceBilinearResidualMaxM": 24.855904944773577
+    },
+    {
+      "id": "CX-1_CZ-2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "0b09477b02aff92ab87aed7e989f21b96d342817b613b05b352dcca7bc79e4ab",
+      "sourceBilinearResidualRmsM": 1.2468614456878735,
+      "sourceBilinearResidualMaxM": 30.189656165476336
+    },
+    {
+      "id": "CX+0_CZ-2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "2f08aae7edc0d8450d9b283058eb9216c9d130bd6fcc7386dc0632d43b50ff46",
+      "sourceBilinearResidualRmsM": 1.5788349290607355,
+      "sourceBilinearResidualMaxM": 31.337249225753645
+    },
+    {
+      "id": "CX+1_CZ-2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "84aeb5c56182c41a46f969cab3b79664c0c470587f723eb5335afe2189044a57",
+      "sourceBilinearResidualRmsM": 1.3608760365285055,
+      "sourceBilinearResidualMaxM": 26.674470299146734
+    },
+    {
+      "id": "CX+2_CZ-2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "44959e62351ada518fc77af70a73bea1c06fcdb00b750f0c396ea600c778aed7",
+      "sourceBilinearResidualRmsM": 1.000741943069803,
+      "sourceBilinearResidualMaxM": 26.377581348020623
+    },
+    {
+      "id": "CX-2_CZ-1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "d488f793b8bdb14f325f321281dfbc8484fbead0ddeef8d23a15ac1ee65a3542",
+      "sourceBilinearResidualRmsM": 1.386417753064202,
+      "sourceBilinearResidualMaxM": 24.586351907894382
+    },
+    {
+      "id": "CX-1_CZ-1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "d29f360770a69bdaab32104c50a522089ae92f7246a2bbc62509148709253456",
+      "sourceBilinearResidualRmsM": 1.7652940549634848,
+      "sourceBilinearResidualMaxM": 44.4049305264185
+    },
+    {
+      "id": "CX+0_CZ-1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "79840fb3d673fe5a6b70c3ab04310d0bb436d9db7a690a034089ec87c5138d0c",
+      "sourceBilinearResidualRmsM": 1.1509977821599162,
+      "sourceBilinearResidualMaxM": 8.9701710763228
+    },
+    {
+      "id": "CX+1_CZ-1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "cff7cba5951b52f49d010f95478b0a50dc0a4e09df681b774c3a563a62bc1643",
+      "sourceBilinearResidualRmsM": 2.0750206690835835,
+      "sourceBilinearResidualMaxM": 33.45989157153588
+    },
+    {
+      "id": "CX+2_CZ-1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "15ce55f2097ee8378e6c0726b6f9a83693ea3d120ba2a360ba03c059ae9c4039",
+      "sourceBilinearResidualRmsM": 1.3257268610457351,
+      "sourceBilinearResidualMaxM": 26.534902022711275
+    },
+    {
+      "id": "CX-2_CZ+0",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "9c0bcfce25d816dfb0bf20550dcc4503c1b779730f570b118fcabbaecca5f5a9",
+      "sourceBilinearResidualRmsM": 1.0695248120597716,
+      "sourceBilinearResidualMaxM": 26.941797202464237
+    },
+    {
+      "id": "CX-1_CZ+0",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "74f86d49b5ab56622fdd35bdcd0282bfede1a49b7b39c30d9b394d170c3d5ad1",
+      "sourceBilinearResidualRmsM": 0.6635645939269024,
+      "sourceBilinearResidualMaxM": 23.69583754170788
+    },
+    {
+      "id": "CX+0_CZ+0",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "81b1e0607da3c83c1e190b156cf784814632258bb9d040f9a51d11942957d398",
+      "sourceBilinearResidualRmsM": 0.40189859236989633,
+      "sourceBilinearResidualMaxM": 36.58228916288363
+    },
+    {
+      "id": "CX+1_CZ+0",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "ca27d4bdfc04c46f4d3a4e6581e8ce5806a4ebd82f54867f71387c767daeb348",
+      "sourceBilinearResidualRmsM": 0.8701361923154454,
+      "sourceBilinearResidualMaxM": 39.45738133894631
+    },
+    {
+      "id": "CX+2_CZ+0",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "ce2a5f4b95576151fa67df7e29d3d5235d3942dd92c28fd9f6377337be2e1e8c",
+      "sourceBilinearResidualRmsM": 1.1460296998918769,
+      "sourceBilinearResidualMaxM": 25.53221033417865
+    },
+    {
+      "id": "CX-2_CZ+1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "94241c3b67772a03c37451ae8631ec854e8ed40ef08098e83527e15077d4b399",
+      "sourceBilinearResidualRmsM": 1.0918517789016504,
+      "sourceBilinearResidualMaxM": 24.736052056093232
+    },
+    {
+      "id": "CX-1_CZ+1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "5cef745b0566506c5ddfba05639507da8acde95ed3bb15072db082a77e165d47",
+      "sourceBilinearResidualRmsM": 0.8957387380450186,
+      "sourceBilinearResidualMaxM": 25.067821120611207
+    },
+    {
+      "id": "CX+0_CZ+1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "4d79ff50605bbee1d4dd67859ebc609d9085484d7792e11513afcc8827f81b08",
+      "sourceBilinearResidualRmsM": 0.525000739573361,
+      "sourceBilinearResidualMaxM": 24.383997796413112
+    },
+    {
+      "id": "CX+1_CZ+1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "11346bc7d8225a93e1eaa3c3f6e5dbccb1d089a9b416ac24fc59e0e155f70e0a",
+      "sourceBilinearResidualRmsM": 0.8438889327449116,
+      "sourceBilinearResidualMaxM": 27.25561012291291
+    },
+    {
+      "id": "CX+2_CZ+1",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "3b7048c53aa1790d65a24506b6dba8a73e3249a075ea9bade075618fa5b26ec7",
+      "sourceBilinearResidualRmsM": 1.152830890141424,
+      "sourceBilinearResidualMaxM": 25.2887169416979
+    },
+    {
+      "id": "CX-2_CZ+2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "64c7de2ff564c8af3d12d7f4a0ce8636913c3be7795f203456efcb9400461ed8",
+      "sourceBilinearResidualRmsM": 1.5671748458522679,
+      "sourceBilinearResidualMaxM": 29.7510974101406
+    },
+    {
+      "id": "CX-1_CZ+2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "4fe356c6bfc35049f180e58ba77d220eca62799edd09e294b901e2f83a959ab4",
+      "sourceBilinearResidualRmsM": 1.0260482905511958,
+      "sourceBilinearResidualMaxM": 25.70325456642455
+    },
+    {
+      "id": "CX+0_CZ+2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "0092bc64f1f58f42021e64f48ae63be193082e8ae36b4f57044c82478db79151",
+      "sourceBilinearResidualRmsM": 1.7143004351835054,
+      "sourceBilinearResidualMaxM": 27.097301374034107
+    },
+    {
+      "id": "CX+1_CZ+2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "92ba1942daba8adc94a48136d46895de6d36331b7100b7f100f065be3269c4ac",
+      "sourceBilinearResidualRmsM": 0.9708215169718357,
+      "sourceBilinearResidualMaxM": 31.892210361967653
+    },
+    {
+      "id": "CX+2_CZ+2",
+      "resolution": [
+        640,
+        640
+      ],
+      "bytes": 819200,
+      "sha256": "3c41344759c2694cd60268a11c2fc8095f7bf26552b97af4e6d8c95483d26bd6",
+      "sourceBilinearResidualRmsM": 1.5025469436751813,
+      "sourceBilinearResidualMaxM": 32.34655513051828
+    }
+  ]
+}
