@@ -87,7 +87,13 @@ export function applyLagoonRelief(x:number,z:number,base:number,waterFloor=-Infi
   if(r<1.6){
     const bed=l.level-l.depth*(1-smooth(.25,1.025,r));
     const bank=l.level+1.5+Math.max(0,r-1.06)*16;
-    const target=r<1.025?bed:bank;
+    // Cross the waterline with a finite slope. The former flat bed followed
+    // by a 1.5 m step turned the six-metre triangles into saw-toothed banks.
+    // Keep the deep basin, shoreline radius and outer hillside unchanged.
+    const original=r<1.025?bed:bank;
+    const shore=l.level+(r-1.025)*24;
+    const blend=smooth(.8,.98,r)*(1-smooth(1.08,1.18,r));
+    const target=original+(shore-original)*blend;
     h+=(target-h)*(1-smooth(1.18,1.6,r));
   }
   for(const f of LAGOON_FALLS){

@@ -56,6 +56,7 @@ import { SpeedMotionBlur } from './SpeedMotionBlur';
 import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQuality } from './renderResolution';
 import { PlayableWorld, regionPoint } from '../world/geography/PlayableWorld';
 import { FloatingKingdoms } from '../world/geography/FloatingKingdoms';
+import { LagoonVegetation } from '../world/geography/LagoonVegetation';
 
 export type Interactable = {
   id: string;
@@ -142,6 +143,7 @@ export class WorldView {
   private readonly props: WorldPropSystem;
   private readonly authoredWater:AuthoredWater;
   private readonly authoredAssets:AuthoredAssets;
+  private readonly lagoonVegetation:LagoonVegetation|null;
   private readonly traversal=new CharacterTraversalController();
   private jumpRequested=false;
   private airKickRequested=false;
@@ -269,6 +271,7 @@ export class WorldView {
     this.authoredWater=new AuthoredWater(this.scene,continentRoot);
     this.authoredWater.sync();
     this.authoredAssets=new AuthoredAssets(this.scene,continentRoot);
+    this.lagoonVegetation=geographicWorld?new LagoonVegetation(geographicWorld):null;
     void this.authoredAssets.sync();
     if(new URLSearchParams(window.location.search).has('landscapeDebug'))
       this.landscapeDebug=new LandscapeDebug(this.scene,this.engine,this.mainland,
@@ -1232,6 +1235,7 @@ export class WorldView {
   }
 
   private streamMainland(x:number,z:number):void {
+    if(this.lagoonVegetation?.ensure(x,z))this.authoredAssets.markDirty();
     this.grass.setFocus(x,z);
     const view=this.camera.getTarget().subtract(this.camera.position);
     if(this.geographicWorld)this.vegetation.setViewDirection(view.x,view.z);

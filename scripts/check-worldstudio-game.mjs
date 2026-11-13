@@ -1,4 +1,4 @@
-﻿import {checkPlayableGame} from './worldstudio-functional.mjs';
+import {checkPlayableGame} from './worldstudio-functional.mjs';
 import {checkStudioRivers,checkRiverTraversal} from './worldstudio-river-check.mjs';
 import {checkWaterUnion} from './worldstudio-water-union-check.mjs';
 import {checkNacar} from './worldstudio-nacar-check.mjs';
@@ -7,6 +7,7 @@ import {checkLakeShore} from './worldstudio-lake-shore-check.mjs';
 import {checkWaterEntry} from './worldstudio-water-entry-check.mjs';
 import {checkMainSource} from './worldstudio-main-source-check.mjs';
 import {checkCascade} from './worldstudio-cascade-check.mjs';
+import {checkLagoonShore} from './worldstudio-lagoon-shore-check.mjs';
 /** Authorized integration test in a disposable Chrome profile; no user saves. */
 import {spawn,execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
@@ -21,8 +22,9 @@ const lakeShore=process.argv.includes('--lake-shore');
 const waterEntry=process.argv.includes('--water-entry'),waterEntryBefore=process.argv.includes('--water-entry-before');
 const mainSource=process.argv.includes('--main-source');
 const cascade=process.argv.includes('--cascade');
+const lagoonShore=process.argv.includes('--lagoon-shore');
 const riverMetrics=process.argv.includes('--river-metrics'),nativeOnly=process.argv.includes('--water-native'),waterUnion=process.argv.includes('--water-union')||nativeOnly||!!views,waterMovement=process.argv.includes('--water-movement');
-const root=process.cwd(),legacy=process.argv.includes('--legacy'),metrics=process.argv.includes('--metrics')||riverMetrics,riverReview=process.argv.includes('--rivers'),persistenceOnly=process.argv.includes('--persistence-only'),out=path.join(root,cascade?'artifacts/geographic-source/cascade/'+(process.argv.includes('--before')?'before':'after'):mainSource?'artifacts/geographic-source/main-promotion':waterEntry?'artifacts/geographic-source/water-entry/'+(waterEntryBefore?'before':'after'):lakeShore?'artifacts/geographic-source/lake-shore/'+(process.argv.includes('--lake-shore-before')?'before':'after'):forest?'artifacts/geographic-source/forest/'+(forestBefore?'before':'after'):nacar?'artifacts/geographic-source/nacar-depth/browser':(waterUnion||waterMovement)?'artifacts/geographic-source/water-union/browser':riverReview?'artifacts/geographic-source/rivers/browser':riverMetrics?'artifacts/geographic-source/rivers/performance':persistenceOnly?'artifacts/geographic-source/realm-persistence':metrics?'artifacts/geographic-source/comparison/'+(legacy?'legacy':'worldstudio'):'artifacts/geographic-source/game');await mkdir(out,{recursive:true});
+const root=process.cwd(),legacy=process.argv.includes('--legacy'),metrics=process.argv.includes('--metrics')||riverMetrics,riverReview=process.argv.includes('--rivers'),persistenceOnly=process.argv.includes('--persistence-only'),out=path.join(root,lagoonShore?'artifacts/geographic-source/lagoon-shore/'+(process.argv.includes('--before')?'before':'after'):cascade?'artifacts/geographic-source/cascade/'+(process.argv.includes('--before')?'before':'after'):mainSource?'artifacts/geographic-source/main-promotion':waterEntry?'artifacts/geographic-source/water-entry/'+(waterEntryBefore?'before':'after'):lakeShore?'artifacts/geographic-source/lake-shore/'+(process.argv.includes('--lake-shore-before')?'before':'after'):forest?'artifacts/geographic-source/forest/'+(forestBefore?'before':'after'):nacar?'artifacts/geographic-source/nacar-depth/browser':(waterUnion||waterMovement)?'artifacts/geographic-source/water-union/browser':riverReview?'artifacts/geographic-source/rivers/browser':riverMetrics?'artifacts/geographic-source/rivers/performance':persistenceOnly?'artifacts/geographic-source/realm-persistence':metrics?'artifacts/geographic-source/comparison/'+(legacy?'legacy':'worldstudio'):'artifacts/geographic-source/game');await mkdir(out,{recursive:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,ms=150000){const start=Date.now();for(;;){const v=await fn();if(v)return v;if(Date.now()-start>ms)throw new Error('Readiness timed out');await delay(250);}}
 class CDP{
@@ -89,6 +91,8 @@ try{
     (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)));
   if(waterEntry)await checkWaterEntry(expression=>cdp.evaluate(expression,sessionId),capture,
     (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)),waterEntryBefore);
+  if(lagoonShore)await checkLagoonShore(expression=>cdp.evaluate(expression,sessionId),capture,
+    (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)));
   if(cascade)await checkCascade(expression=>cdp.evaluate(expression,sessionId),capture,
     (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)));
   if(mainSource)await checkMainSource(expression=>cdp.evaluate(expression,sessionId),capture,

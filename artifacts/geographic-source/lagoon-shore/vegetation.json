@@ -1,0 +1,16 @@
+{
+  "placements": 449,
+  "counts": {
+    "v3WetlandIrisYellow": 84,
+    "v3WetlandTotoraTall": 101,
+    "v3WetlandJuncosDense": 75,
+    "v3WetlandBankFlowers": 69,
+    "v3WetlandFern": 67,
+    "v3WetlandLilyWhite": 53
+  },
+  "generationMs": 52.00169999999889,
+  "maxRenderDistance": 167,
+  "lodDistance": 65,
+  "extraR16Loads": 0,
+  "metadataBytes": 88212
+}

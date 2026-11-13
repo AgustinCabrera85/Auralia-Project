@@ -35,16 +35,24 @@ export class GeographyStream {
   }
   private time=0;
   private readonly impacts=LAGOON_FALLS.map(f=>new Vector4(f.x,f.z+f.run,f.width*.5,1));
+  private readonly impactEnabled:boolean;
 
   get activeCount():number{return [...this.meshes.values()].filter(Boolean).length;}
   get farActiveCount():number{return [...this.farMeshes.values()].filter(Boolean).length;}
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode){
+    const impacts=activeGeography()?.waterImpacts;
+    this.impactEnabled=!activeGeography()||!!impacts?.length;
+    if(impacts)for(let i=0;i<this.impacts.length;i++){
+      const p=impacts[i];this.impacts[i].set(p?.x??0,p?.z??0,p?.radius??0,p?.strength??0);
+    }
     this.waterMasks=loadWaterMasks(scene);
     this.material=createWorldWaterMaterial(scene,'river',this.waterMasks,activeGeography()?{
       ...CLEAR_RIVER_PROFILE,uDeepColor:'#214d50',uShallowColor:'#6a9b90'}:{});
-    this.poolMaterial=createWorldWaterMaterial(scene,'pool',this.waterMasks,activeGeography()?{uClearWater:1,uWaveAmp:.08,
-      uWaveSpeed:.6,uCaustics:.7,uDeepColor:'#103f46',uShallowColor:'#4b9987',uFoamIntensity:.35,uContactFoam:.85}:{});
+    this.poolMaterial=createWorldWaterMaterial(scene,'pool',this.waterMasks,activeGeography()?{uClearWater:1,uWaveAmp:.28,
+      uWaveSpeed:1.1,uNormalStrength:.9,uCaustics:.4,uDeepColor:'#103f46',uShallowColor:'#4b9987',
+      uFoamIntensity:.85,uFoamWidth:2.1,uFoamBreakup:.65,uContactFoam:.85,
+      uImpactWidth:5.5,uImpactFoam:1.2,uImpactRipples:1,uImpactTurbulence:1.1}:{});
   }
 
   setActiveChunks(cells:readonly Cell[],x:number,z:number):void{
@@ -110,7 +118,7 @@ export class GeographyStream {
     }
     this.time+=Math.min(.10,Math.max(0,dt));
     updateWorldWaterMaterial(this.material,'river',this.scene,this.time);
-    updateWorldWaterMaterial(this.poolMaterial,'pool',this.scene,this.time,{impactEnabled:!activeGeography(),
+    updateWorldWaterMaterial(this.poolMaterial,'pool',this.scene,this.time,{impactEnabled:this.impactEnabled,
       impactA:this.impacts[0],impactB:this.impacts[1]});
     this.poolMaterial.setVector4('uImpactC',this.impacts[2]);
     this.waterfall?.update(this.time);

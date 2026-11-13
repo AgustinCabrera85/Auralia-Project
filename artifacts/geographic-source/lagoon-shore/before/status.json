@@ -1,0 +1,116 @@
+{
+  "loading": false,
+  "failure": null,
+  "source": "worldstudio-playable-v1",
+  "ready": true,
+  "position": {
+    "x": -2936,
+    "y": 1.5065759344609464,
+    "z": -827
+  },
+  "mode": "grounded",
+  "terrain": {
+    "near": {
+      "resident": 72,
+      "enabled": 72,
+      "vertices": 12168,
+      "triangles": 20736
+    },
+    "mid": {
+      "resident": 128,
+      "enabled": 110,
+      "vertices": 29530,
+      "triangles": 46516
+    },
+    "far": {
+      "resident": 134,
+      "enabled": 102,
+      "vertices": 63107,
+      "triangles": 100218
+    }
+  },
+  "sourceData": {
+    "residentTiles": 9,
+    "maxResidentTiles": 9,
+    "heightBytes": 7372800,
+    "lastLoadMs": 36.19999999552965,
+    "totalLoaded": 18,
+    "sourceSpacing": 4.381846635367762,
+    "detailAmplitudeBound": 1.25,
+    "worldId": "worldstudio-playable-v1",
+    "townHeight": 11.04876628796277,
+    "nacarBathymetry": {
+      "bytes": 373500,
+      "gridSpacing": 8,
+      "buildMs": 68.69999999552965,
+      "targetMaximumDepth": 80
+    },
+    "waterLevels": [
+      {
+        "id": "nacar",
+        "level": 1
+      },
+      {
+        "id": "tres-vertientes",
+        "level": 1
+      },
+      {
+        "id": "gemelas-alta",
+        "level": 1
+      }
+    ]
+  },
+  "avatarReady": true,
+  "vegetation": 2285,
+  "grass": 845,
+  "resources": 0,
+  "waterChunks": 188,
+  "lagoonInside": false,
+  "hydrology": 1.00875,
+  "eye": [
+    -2931.507080078125,
+    8.772891998291016,
+    -817.7883911132812
+  ],
+  "fps": 30.202355783615126,
+  "terrainBytes": 6201840,
+  "triangles": 1979452,
+  "lagoon": {
+    "x": -2318.2239246364525,
+    "z": 735.3694479205121,
+    "y": -23,
+    "scale": 2.2,
+    "waterFloor": 24,
+    "streamWater": true
+  },
+  "samples": [
+    {
+      "x": -2936,
+      "z": -827,
+      "ground": 1.5065759344609464,
+      "water": null,
+      "oceanMask": 0
+    },
+    {
+      "x": -2940,
+      "z": -820,
+      "ground": 2.5000310195771718,
+      "water": null,
+      "oceanMask": 0
+    },
+    {
+      "x": -2948,
+      "z": -812,
+      "ground": 2.8892550965182338,
+      "water": null,
+      "oceanMask": 0
+    },
+    {
+      "x": -2928,
+      "z": -824,
+      "ground": 1.0460775808130987,
+      "water": null,
+      "oceanMask": 0.25
+    }
+  ]
+}

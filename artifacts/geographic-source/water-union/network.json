@@ -103,7 +103,7 @@
     {
       "route": 3,
       "samples": 165,
-      "minDepth": 1.9132804503124363,
+      "minDepth": 2.6114991959633933,
       "maxLevelJump": 0
     },
     {
@@ -263,7 +263,7 @@
     "residentTiles": 9,
     "maxResidentTiles": 9,
     "heightBytes": 7372800,
-    "lastLoadMs": 6.279199999999946,
+    "lastLoadMs": 6.826999999999316,
     "totalLoaded": 58,
     "sourceSpacing": 4.381846635367762,
     "detailAmplitudeBound": 1.25,
@@ -272,7 +272,7 @@
     "nacarBathymetry": {
       "bytes": 373500,
       "gridSpacing": 8,
-      "buildMs": 49.516399999999976,
+      "buildMs": 93.4994999999999,
       "targetMaximumDepth": 80
     },
     "waterLevels": [

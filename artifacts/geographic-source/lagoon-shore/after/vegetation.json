@@ -1,0 +1,62 @@
+{
+  "placements": 449,
+  "generationMs": 414.2000000104308,
+  "visiblePlacements": 167,
+  "visibleBatches": 10,
+  "errors": [],
+  "triangles": 263738,
+  "instanceBufferBytes": 13184,
+  "heapBytes": 357596416,
+  "batches": [
+    {
+      "name": "auralia-authored-v3WetlandIrisYellow-0",
+      "instances": 33,
+      "triangles": 1048
+    },
+    {
+      "name": "auralia-authored-v3WetlandTotoraTall-0",
+      "instances": 20,
+      "triangles": 1330
+    },
+    {
+      "name": "auralia-authored-v3WetlandTotoraTall-1",
+      "instances": 20,
+      "triangles": 1568
+    },
+    {
+      "name": "auralia-authored-v3WetlandBankFlowers-0",
+      "instances": 25,
+      "triangles": 2646
+    },
+    {
+      "name": "auralia-authored-v3WetlandFern-0",
+      "instances": 27,
+      "triangles": 1008
+    },
+    {
+      "name": "auralia-authored-v3WetlandLilyWhite-0",
+      "instances": 20,
+      "triangles": 488
+    },
+    {
+      "name": "auralia-authored-v3WetlandJuncosDense-0",
+      "instances": 13,
+      "triangles": 2630
+    },
+    {
+      "name": "auralia-authored-v3WetlandJuncosDense-lod-0",
+      "instances": 10,
+      "triangles": 1066
+    },
+    {
+      "name": "auralia-authored-v3WetlandTotoraTall-lod-0",
+      "instances": 19,
+      "triangles": 550
+    },
+    {
+      "name": "auralia-authored-v3WetlandTotoraTall-lod-1",
+      "instances": 19,
+      "triangles": 672
+    }
+  ]
+}

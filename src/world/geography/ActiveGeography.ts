@@ -18,6 +18,8 @@ export interface ActiveWorldGeography {
   /** Metadata waterline, including dry banks; mesh clipping uses real terrain. */
   waterFieldAt?(x:number,z:number):WaterSample|null;
   oceanExclusion?:InlandWaterMask;
+  /** World-space waterfall footprints consumed by the streamed pool material. */
+  readonly waterImpacts?:readonly {x:number;z:number;radius:number;strength:number}[];
   /** Conservative inland-water mask; must not require resident height sectors. */
   waterMaskAt?(x:number,z:number):boolean;
   flowAt(x:number,z:number):FlowSample;

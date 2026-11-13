@@ -42,7 +42,7 @@ export function* clippedWaterSurface(scene:Scene,parent:TransformNode,g:ActiveWo
     for(const p of polygon){
       const flow=p.pool?{directionX:0,directionZ:0,velocity:0,turbulence:.02}:g.flowAt(p.x,p.z),depth=Math.max(0,p.depth);
       positions.push(p.x,p.level+.035,p.z);normals.push(0,1,0);uvs.push(p.x/16,p.z/16);uv2.push(flow.directionX,flow.directionZ);
-      colors.push(1-Math.min(1,depth/.5),Math.min(1,flow.velocity/4),flow.turbulence,Math.min(1,depth/5));
+      colors.push(1-Math.min(1,depth/(p.pool?.8:.5)),Math.min(1,flow.velocity/4),flow.turbulence,Math.min(1,depth/5));
       if(p.pool)pool++;else river++;
     }
     for(let i=1;i<polygon.length-1;i++)indices.push(start,start+i,start+i+1);

@@ -76,7 +76,7 @@ uniform float uFogDensity;${oceanUniforms}`);
     fragment=replaceOnce(fragment,'vec3 V = normalize(uCameraPos - vWorldPos);',`
   vec3 face=normalize(cross(dFdx(vWorldPos),dFdy(vWorldPos)));
   ${fall?'if(dot(face,uCameraPos-vWorldPos)<0.0)face=-face;':'if(face.y<0.0)face=-face;'}
-  N=normalize(face+vec3(slope.x,0.0,slope.y)*.16);
+  N=normalize(face+${profile==='pool'?'vec3(-slope.x-(nA-.5)*.12,0.0,-slope.y-(nB-.5)*.12)*uNormalStrength*.45':'vec3(slope.x,0.0,slope.y)*.16'});
   vec3 V = normalize(uCameraPos - vWorldPos);`);
   }
   if(profile==='river'){

@@ -3,7 +3,7 @@ import { GeographicSurface, type GeographicBounds, type GeographicSource } from 
 import type { ActiveWorldGeography } from './ActiveGeography';
 import type { WaterSample } from '../geographicFeatures';
 import type { FlowSample } from '../water/riverFlow';
-import { applyLagoonRelief, CASCADE_LAGOON, lagoonWaterAt, lagoonChannelAt, ownsLagoonWater, inLagoonRegion, LAGOON_CHANNELS, watershedDistance } from '../lagoonData';
+import { applyLagoonRelief, CASCADE_LAGOON, lagoonRadius, lagoonWaterAt, lagoonChannelAt, ownsLagoonWater, inLagoonRegion, LAGOON_CHANNELS, LAGOON_FALLS, watershedDistance } from '../lagoonData';
 import { StudioRivers } from './StudioRivers';
 import { InlandWaterMask } from '../water/InlandWaterMask';
 import { settlementRiverBypass } from './SettlementRiverBypass';
@@ -127,6 +127,10 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   waterFieldAt(x:number,z:number):WaterSample|null{
     const p=regionLocal(this.lagoon,x,z),local=lagoonWaterAt(p.x,p.z);
     if(local)return {...local,level:Math.max(this.seaLevel,local.level+this.lagoon.y)};
+    // Ownership extends under the dry bank. Actual six-metre terrain clips
+    // the waterline; neither the 8 m ocean mask nor an ellipse clips the shore.
+    if(lagoonRadius(p.x,p.z)<1.12)
+      return {kind:'lagoon',level:CASCADE_LAGOON.level+this.lagoon.y,distance:0,edge:1};
     const lake=this.lakeAt(x,z);if(lake)return {kind:'lake',level:lake.level,distance:0,edge:1};
     if(!ownsLagoonWater(p.x,p.z)){
       const r=this.rivers.at(x,z);
@@ -147,7 +151,7 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   }
   private riverWaterMaskAt(x:number,z:number):boolean{
     const p=regionLocal(this.lagoon,x,z);
-    if(lagoonWaterAt(p.x,p.z)||this.lakeAt(x,z))return true;
+    if(lagoonRadius(p.x,p.z)<1.12||lagoonWaterAt(p.x,p.z)||this.lakeAt(x,z))return true;
     const r=this.rivers.at(x,z);
     return !!r&&r.distance<r.width+14;
   }
@@ -177,8 +181,11 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
     if(this.rivers.touches(bounds,26))return true;
     const x=(bounds[0]+bounds[2])/2,z=(bounds[1]+bounds[3])/2,p=regionLocal(this.lagoon,x,z);
     const c=lagoonChannelAt(p.x,p.z),radius=Math.hypot(bounds[2]-bounds[0],bounds[3]-bounds[1])/2;
+    const r=lagoonRadius(p.x,p.z),margin=radius/(CASCADE_LAGOON.radiusZ*this.lagoon.scale);
+    if(r+margin>.88&&r-margin<1.14)return true;
     return c.distance*this.lagoon.scale<c.width*this.lagoon.scale+26*this.lagoon.scale+radius;
   }
+  get waterImpacts(){return LAGOON_FALLS.map(f=>({...regionPoint(this.lagoon,f.x,f.z+f.run),radius:f.width*.64*this.lagoon.scale,strength:1}));}
   waterNear(cx:number,cz:number,size:number):boolean{
     const x=cx*size,z=cz*size,p=regionLocal(this.lagoon,x+size/2,z+size/2);
     return watershedDistance(p.x,p.z)*this.lagoon.scale<size*.72+130||this.rivers.near(x,z,size)||this.lakes.some(l=>l.domain?.touches([x,z,x+size,z+size]));

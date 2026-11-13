@@ -18,6 +18,7 @@ const placementVariation=(id:string):number=>{
 };
 type RenderDefinition=Pick<AssetDefinition,'path'|'referenceScale'>&Partial<AssetDefinition>;
 const renderDistanceFor=(p:PlacedAsset,catalog:RenderDefinition|undefined):number=>
+  p.id.startsWith('lagoon-shore-v1-')?(catalog?.renderDistance??155)+(placementVariation(p.id)-.5)*24:
   p.assetId.startsWith('v3Wetland')&&lagoonRadius(p.x,p.z)<1.6
     ?280:catalog?.renderDistance??1100;
 
@@ -33,6 +34,7 @@ export class AuthoredAssets {
   private readonly terrainGrid=new Map<string,number>();
   private lastFocus={x:Infinity,z:Infinity};
   private dirty=true;
+  private wetlandFocus=false;
   private disposed=false;
   private readonly failures=new Set<string>();
   private readonly foliageWind:AuraliaFoliageWind;
@@ -193,9 +195,10 @@ export class AuthoredAssets {
   update(x:number,z:number):void{
     if(this.disposed)return;
     const moved=Math.hypot(x-this.lastFocus.x,z-this.lastFocus.z);
-    if(!this.dirty&&moved<(Math.hypot(x-FOLIAGE_FOREST.x,z-FOLIAGE_FOREST.z)<400?10:36))return;
+    if(!this.dirty&&moved<(this.wetlandFocus?8:Math.hypot(x-FOLIAGE_FOREST.x,z-FOLIAGE_FOREST.z)<400?10:36))return;
     this.dirty=false;this.lastFocus={x,z};
     const placements=getWorldDocument().assets;
+    this.wetlandFocus=placements.some(p=>p.id.startsWith('lagoon-shore-v1-')&&Math.hypot(p.x-x,p.z-z)<200);
     void this.sync(x,z);
     this.idsByMesh.clear();
     for(const [id,parts] of this.sources){
@@ -208,7 +211,7 @@ export class AuthoredAssets {
       const lodParts=this.lodSources.get(id);
       const lodDistance=lodParts?catalog?.lodDistance:undefined;
       const nearLimit=(p:PlacedAsset):number=>(lodDistance??Infinity)+
-        (distantGround?(placementVariation(p.id)-.5)*32:0);
+        (distantGround?(placementVariation(p.id)-.5)*32:p.id.startsWith('lagoon-shore-v1-')?(placementVariation(p.id)-.5)*12:0);
       const near=lodDistance===undefined?nearby:nearby.filter(p=>Math.hypot(p.x-x,p.z-z)<nearLimit(p));
       const far=lodDistance===undefined?[]:nearby.filter(p=>Math.hypot(p.x-x,p.z-z)>=nearLimit(p));
       const fill=(batch:Mesh[],items:PlacedAsset[]):void=>{
