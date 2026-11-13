@@ -1,0 +1,36 @@
+{
+  "lagoonGreenPlacements": 2179,
+  "noExtraR16Loads": 0,
+  "height": {
+    "min": 1.9,
+    "max": 2.8499999999999996
+  },
+  "santiHeight": 3.8,
+  "limits": {
+    "size": 24,
+    "spacing": 1.5,
+    "nearStart": 30,
+    "nearEnd": 46,
+    "fadeStart": 86,
+    "farEnd": 108,
+    "maxNear": 4096,
+    "maxSprites": 12288,
+    "budgetMs": 2.5,
+    "refreshDistance": 6
+  },
+  "checks": [
+    "determinism",
+    "green material only",
+    "sand/rock/water/cliff/path exclusion",
+    "root height",
+    "50–75% of Santi height, normalized variants",
+    "budgeted queue",
+    "unready sectors retry",
+    "obstacles",
+    "LOD caps",
+    "revisit",
+    "deactivate",
+    "shader focus/contact",
+    "alpha test, no blend, no stipple"
+  ]
+}

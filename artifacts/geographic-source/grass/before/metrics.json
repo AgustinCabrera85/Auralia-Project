@@ -1,0 +1,93 @@
+{
+  "fps": 29.997000299925407,
+  "frameMs": {
+    "n": 300,
+    "mean": 33.3343333333234,
+    "p50": 34.19999999552965,
+    "p95": 40.5
+  },
+  "cpuFrameMs": {
+    "n": 301,
+    "mean": 9.613621262344608,
+    "p50": 8.800000004470348,
+    "p95": 17.19999999552965
+  },
+  "heapBytes": 333623003,
+  "sceneTriangles": 798329,
+  "grass": {
+    "instances": 809,
+    "triangles": 14826,
+    "draws": 4,
+    "sectors": 13
+  },
+  "status": {
+    "loading": false,
+    "failure": null,
+    "source": "worldstudio-playable-v1",
+    "ready": true,
+    "position": {
+      "x": 2121,
+      "y": 7.390276152188631,
+      "z": -1211
+    },
+    "mode": "grounded",
+    "terrain": {
+      "near": {
+        "resident": 76,
+        "enabled": 76,
+        "vertices": 12844,
+        "triangles": 21888
+      },
+      "mid": {
+        "resident": 124,
+        "enabled": 105,
+        "vertices": 20580,
+        "triangles": 29008
+      },
+      "far": {
+        "resident": 135,
+        "enabled": 104,
+        "vertices": 47040,
+        "triangles": 67890
+      }
+    },
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 29.399999998509884,
+      "totalLoaded": 18,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 74,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "avatarReady": true,
+    "vegetation": 845,
+    "grass": 809,
+    "resources": 0,
+    "waterChunks": 487,
+    "lagoonInside": false,
+    "hydrology": 1.00875
+  }
+}

@@ -1236,7 +1236,9 @@ export class WorldView {
 
   private streamMainland(x:number,z:number):void {
     if(this.lagoonVegetation?.ensure(x,z))this.authoredAssets.markDirty();
-    this.grass.setFocus(x,z);
+    if(this.floating?.id){
+      if(this.grass.activeSectorCount||this.grass.pendingCount)this.grass.deactivate();
+    }else this.grass.setFocus(x,z);
     const view=this.camera.getTarget().subtract(this.camera.position);
     if(this.geographicWorld)this.vegetation.setViewDirection(view.x,view.z);
     const changed=this.mainland.update(x,z,view.x,view.z);

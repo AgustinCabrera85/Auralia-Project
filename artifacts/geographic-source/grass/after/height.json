@@ -1,0 +1,30 @@
+[
+  {
+    "variant": "flower",
+    "geometryHeight": 1,
+    "instances": 10,
+    "min": 1.9148987531661987,
+    "max": 2.774087429046631
+  },
+  {
+    "variant": "medium",
+    "geometryHeight": 1,
+    "instances": 226,
+    "min": 1.9097102880477905,
+    "max": 2.8491454124450684
+  },
+  {
+    "variant": "short",
+    "geometryHeight": 1,
+    "instances": 217,
+    "min": 1.9046412706375122,
+    "max": 2.8489818572998047
+  },
+  {
+    "variant": "tall",
+    "geometryHeight": 1,
+    "instances": 209,
+    "min": 1.9055746793746948,
+    "max": 2.848571300506592
+  }
+]

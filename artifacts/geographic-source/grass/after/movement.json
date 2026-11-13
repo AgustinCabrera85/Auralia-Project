@@ -1,0 +1,20 @@
+{
+  "position": {
+    "x": 2150.6470864337302,
+    "y": 11.830890491715245,
+    "z": -1204.1081191254552
+  },
+  "grass": {
+    "near": 1253,
+    "sprites": 2921,
+    "residentPatches": 91,
+    "residentPlacements": 3806,
+    "bufferBytes": 267136,
+    "atlasBytes": 1398102,
+    "generatedPatches": 197,
+    "generationTotalMs": 540.499999910593,
+    "maxPatchMs": 7.800000004470348,
+    "refreshMaxMs": 55.79999999701977,
+    "pending": 0
+  }
+}

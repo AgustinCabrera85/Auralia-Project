@@ -9,6 +9,7 @@ import type { VegetationExclusion } from '../vegetationData';
 import { GrassWindPlugin } from './GrassWindPlugin';
 import { insideFoliageForest } from '../foliageForestConfig';
 import { getAuraliaWind } from '../AuraliaWindSystem';
+import { GrassPatchStream } from './GrassPatchStream';
 import { activeGeography } from '../geography/ActiveGeography';
 
 export const GRASS_GLB='/assets/grass/grass_tufts.glb';
@@ -30,6 +31,7 @@ const grassVariant=(px:number,pz:number,index:number,flower:number):Variant=>{
 
 /** Immutable world-space grass placements batched by sector and GLB mesh. */
 export class GrassSectorSystem {
+  private geographic:GrassPatchStream|null=null;
   private readonly sources=new Map<Variant,Mesh>();
   private readonly bases=new Map<Variant,readonly [number,number][]>();
   private readonly sectors=new Map<string,Map<Variant,Instance[]>>();
@@ -43,12 +45,15 @@ export class GrassSectorSystem {
   private triangles=0;
   private draws=0;
 
-  get instanceCount():number{return this.drawn;}
-  get triangleCount():number{return this.triangles;}
-  get drawCallsEstimate():number{return this.draws;}
+  get instanceCount():number{return this.geographic?.instanceCount??this.drawn;}
+  get triangleCount():number{return this.geographic?.triangleCount??this.triangles;}
+  get drawCallsEstimate():number{return this.geographic?.drawCallsEstimate??this.draws;}
   get activeSectorCount():number{
+    if(this.geographic)return this.geographic.activeSectorCount;
     return [...this.activeKeys].filter(key=>this.sectors.has(key)).length;
   }
+  get metrics(){return this.geographic?.metrics;}
+  get pendingCount(){return this.geographic?.pendingCount??0;}
   get whenReady():Promise<void>{return this.loading;}
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
@@ -94,7 +99,9 @@ export class GrassSectorSystem {
       for(const object of imported)if(!selected.has(object as Mesh))object.dispose(false,false);
       for(const variant of VARIANTS)if(!this.sources.has(variant))
         throw new Error(`Falta grass_${variant} en ${GRASS_GLB}`);
-      this.rebuildSectors();
+      const world=activeGeography();
+      if(world){this.geographic=new GrassPatchStream(this.scene,this.parent,this.sources,world,this.exclusions);this.centerKey="";}
+      else this.rebuildSectors();
       this.dirty=true;
     }catch(error){
       console.warn('[Auralia] No se pudo cargar el pasto GLB:',error);
@@ -113,25 +120,15 @@ export class GrassSectorSystem {
       if(height===undefined){height=sampleMainlandHeight(x,z);grid.set(key,height);}
       return height;
     };
-    const active=activeGeography();
-    const bakes=active?[...this.activeKeys].map(key=>{
-      const [cx,cz]=key.split(':').map(Number),placements:number[]=[];
-      for(let i=0;i<96;i++){
-        const x=(cx+hash01(cx,cz,901+i*3))*SECTOR_SIZE,z=(cz+hash01(cx,cz,902+i*3))*SECTOR_SIZE;
-        const y=nearTerrainHeightAt(x,z,heightAtGrid),water=active.waterAt(x,z);
-        if(y<=active.source.seaLevel+4||water&&y<=water.level+.4)continue;
-        placements.push(x,y,z,hash01(cx,cz,903+i*3)*Math.PI*2,.8,1,1,1,1,i%47===0?1:0);
-      }
-      return {px:cx,pz:cz,placements};
-    }):getWorldDocument().grassBakes;
+    const bakes=getWorldDocument().grassBakes;
     for(const bake of bakes){
       const packed=bake.placements;
       for(let offset=0;offset+PACKED_STRIDE<=packed.length;offset+=PACKED_STRIDE){
         const x=packed[offset],z=packed[offset+2],yaw=packed[offset+3];
         const width=packed[offset+4],height=packed[offset+5];
         if(!Number.isFinite(x+z+yaw+width+height)||width<=0||height<=0||
-          (!active&&insideFoliageForest(x,z)))continue;
-        if(!active&&hash01(Math.floor(x*10),Math.floor(z*10),558)>=landscapeVegetation(x,z).grass)continue;
+          insideFoliageForest(x,z))continue;
+        if(hash01(Math.floor(x*10),Math.floor(z*10),558)>=landscapeVegetation(x,z).grass)continue;
         const variant=grassVariant(bake.px,bake.pz,offset/PACKED_STRIDE,packed[offset+9]);
         const surface=nearTerrainSurfaceAt(x,z,heightAtGrid);
         if(Math.hypot(surface.slopeX,surface.slopeZ)>.7)continue;
@@ -160,6 +157,7 @@ export class GrassSectorSystem {
 
   /** Player sector changes only the GPU buffers, never a placement's matrix. */
   setFocus(x:number,z:number):void{
+    if(this.geographic){if(this.enabled)this.geographic.setFocus(x,z);return;}
     const cx=Math.floor(x/SECTOR_SIZE),cz=Math.floor(z/SECTOR_SIZE);
     const center=sectorKey(cx,cz);
     if(center===this.centerKey)return;
@@ -168,22 +166,23 @@ export class GrassSectorSystem {
     for(let dz=-SECTOR_REACH;dz<=SECTOR_REACH;dz++)
       for(let dx=-SECTOR_REACH;dx<=SECTOR_REACH;dx++)
         this.activeKeys.add(sectorKey(cx+dx,cz+dz));
-    if(activeGeography()&&this.sources.size===VARIANTS.length)this.rebuildSectors();
     this.dirty=true;
   }
 
-  update():void{if(this.dirty&&this.sources.size===VARIANTS.length)this.refreshBuffers();}
-  refreshExclusions():void{this.dirty=true;}
+  update():void{if(this.geographic){this.geographic.update();return;}if(this.dirty&&this.sources.size===VARIANTS.length)this.refreshBuffers();}
+  refreshExclusions():void{this.dirty=true;this.geographic?.refreshExclusions();}
   refreshBakedGrass():void{
+    if(this.geographic){this.geographic.refreshTerrain();return;}
     if(this.sources.size===VARIANTS.length)this.rebuildSectors();
     this.dirty=true;
   }
   setEnabled(enabled:boolean):void{
     if(this.enabled===enabled)return;
     this.enabled=enabled;this.dirty=true;
-    if(!enabled)this.refreshBuffers();
+    if(!enabled){if(this.geographic)this.geographic.deactivate();else this.refreshBuffers();}
   }
   deactivate():void{
+    if(this.geographic){this.geographic.deactivate();return;}
     this.activeKeys.clear();this.centerKey='';this.dirty=true;
     if(this.sources.size===VARIANTS.length)this.refreshBuffers();
   }
@@ -229,7 +228,7 @@ export class GrassSectorSystem {
   }
 
   dispose():void{
-    this.disposed=true;
+    this.disposed=true;this.geographic?.dispose();
     for(const source of this.sources.values())source.dispose(false,false);
     this.sources.clear();this.bases.clear();this.sectors.clear();this.activeKeys.clear();
     this.drawn=0;this.triangles=0;this.draws=0;

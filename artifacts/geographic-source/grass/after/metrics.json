@@ -1,0 +1,104 @@
+{
+  "fps": 29.994001199670674,
+  "frameMs": {
+    "n": 300,
+    "mean": 33.325333333313466,
+    "p50": 34.20000000298023,
+    "p95": 39.100000001490116
+  },
+  "cpuFrameMs": {
+    "n": 301,
+    "mean": 10.103322259264926,
+    "p50": 9.5,
+    "p95": 16.700000002980232
+  },
+  "heapBytes": 405478121,
+  "sceneTriangles": 854039,
+  "grass": {
+    "instances": 3251,
+    "triangles": 70536,
+    "draws": 8,
+    "sectors": 94,
+    "near": 662,
+    "sprites": 2589,
+    "residentPatches": 94,
+    "residentPlacements": 3101,
+    "bufferBytes": 208064,
+    "atlasBytes": 1398102,
+    "generatedPatches": 187,
+    "generationTotalMs": 507.4999999254942,
+    "maxPatchMs": 7.800000004470348,
+    "refreshMaxMs": 55.79999999701977,
+    "pending": 0
+  },
+  "status": {
+    "loading": false,
+    "failure": null,
+    "source": "worldstudio-playable-v1",
+    "ready": true,
+    "position": {
+      "x": 2121,
+      "y": 7.390276152188631,
+      "z": -1211
+    },
+    "mode": "grounded",
+    "terrain": {
+      "near": {
+        "resident": 76,
+        "enabled": 76,
+        "vertices": 12844,
+        "triangles": 21888
+      },
+      "mid": {
+        "resident": 124,
+        "enabled": 105,
+        "vertices": 20580,
+        "triangles": 29008
+      },
+      "far": {
+        "resident": 135,
+        "enabled": 104,
+        "vertices": 47040,
+        "triangles": 67890
+      }
+    },
+    "sourceData": {
+      "residentTiles": 6,
+      "maxResidentTiles": 9,
+      "heightBytes": 4915200,
+      "lastLoadMs": 62.5,
+      "totalLoaded": 18,
+      "sourceSpacing": 4.381846635367762,
+      "detailAmplitudeBound": 1.25,
+      "worldId": "worldstudio-playable-v1",
+      "townHeight": 11.04876628796277,
+      "nacarBathymetry": {
+        "bytes": 373500,
+        "gridSpacing": 8,
+        "buildMs": 74.79999999701977,
+        "targetMaximumDepth": 80
+      },
+      "waterLevels": [
+        {
+          "id": "nacar",
+          "level": 1
+        },
+        {
+          "id": "tres-vertientes",
+          "level": 1
+        },
+        {
+          "id": "gemelas-alta",
+          "level": 1
+        }
+      ]
+    },
+    "avatarReady": true,
+    "vegetation": 845,
+    "grass": 3251,
+    "resources": 0,
+    "waterChunks": 487,
+    "lagoonInside": false,
+    "hydrology": 1.00875
+  }
+}

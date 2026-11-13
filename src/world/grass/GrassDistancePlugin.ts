@@ -1,0 +1,38 @@
+import {Material,MaterialPluginBase,type ShaderLanguage,type SubMesh,type UniformBuffer,type Scene,type AbstractEngine} from '@babylonjs/core';
+import {GRASS_PATCH} from './GrassPatchData';
+
+export type GrassFocus={x:number;z:number};
+/** Staggered whole-clump LOD. No pixel stipple, blending or rectangular fade masks. */
+export class GrassDistancePlugin extends MaterialPluginBase{
+ constructor(material:Material,private readonly focus:GrassFocus,private readonly sprite:boolean){
+  super(material,'AuraliaGrassDistance',210,undefined,true,false);this.registerForExtraEvents=true;this._enable(true);
+ }
+ override getUniforms(){return {externalUniforms:['grassFocus']};}
+ override getCustomCode(type:string,_language?:ShaderLanguage):Record<string,string>|null{
+  if(type==='vertex')return {CUSTOM_VERTEX_DEFINITIONS:'varying vec2 grassRoot; uniform vec2 grassFocus;',CUSTOM_VERTEX_UPDATE_WORLDPOS:`
+   grassRoot = finalWorld[3].xz;
+   vec2 grassAway = grassRoot - grassFocus;
+   float grassContactDistance = length(grassAway);
+   float grassContact = 1.0 - smoothstep(0.35, 2.2, grassContactDistance);
+   float grassTip = clamp(position.y / 1.0, 0.0, 1.0);
+   grassTip *= grassTip;
+   worldPos.xz += grassAway / max(grassContactDistance, 0.05) * grassContact * grassTip * 1.25;
+   worldPos.y -= grassContact * grassTip * 0.32;
+   float grassShrink = 1.0 - smoothstep(${GRASS_PATCH.fadeStart}.0, ${GRASS_PATCH.farEnd}.0, distance(grassRoot, grassFocus));
+   worldPos.y = mix(finalWorld[3].y, worldPos.y, grassShrink); vPositionW = worldPos.xyz;
+  `};
+  if(type==='fragment')return {
+   CUSTOM_FRAGMENT_DEFINITIONS:'varying vec2 grassRoot; uniform vec2 grassFocus;',
+   CUSTOM_FRAGMENT_MAIN_BEGIN:`
+    float grassDistance = distance(grassRoot, grassFocus);
+    float grassChoice = fract(sin(dot(grassRoot, vec2(12.9898, 78.233))) * 43758.5453);
+    float grassLod = mix(${GRASS_PATCH.nearStart}.0, ${GRASS_PATCH.nearEnd}.0, grassChoice);
+    ${this.sprite?'if (grassDistance < grassLod) discard;':'if (grassDistance >= grassLod) discard;'}
+    if (grassDistance >= ${GRASS_PATCH.farEnd}.0) discard;
+   `};
+  return null;
+ }
+ override hardBindForSubMesh(_u:UniformBuffer,_s:Scene,_e:AbstractEngine,subMesh:SubMesh):void{
+  subMesh.effect?.setFloat2('grassFocus',this.focus.x,this.focus.z);
+ }
+}
