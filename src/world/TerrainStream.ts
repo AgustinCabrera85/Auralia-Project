@@ -139,6 +139,7 @@ export class TerrainStream {
     mesh.parent=this.parent;
     mesh.position.set(centerX,0,centerZ);
     mesh.material=this.material;
+    mesh.receiveShadows=true;
     mesh.useVertexColors=true;
     mesh.isPickable=lod==='near';
     mesh.checkCollisions=false; // The canonical height sampler drives player collision.

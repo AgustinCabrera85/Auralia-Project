@@ -5,6 +5,7 @@ import { createTerrainMaterial as createLegacyMaterial } from './TerrainMaterial
 import type { TerrainMaterialConfig } from './TerrainMaterial';
 import { LANDSCAPE_REGIONS } from '../landscapeRegions';
 import { CASCADE_LAGOON } from '../lagoonData';
+import { bindCharacterShadow, CHARACTER_SHADOW_GLSL, CHARACTER_SHADOW_UNIFORMS } from './CharacterShadowSampling';
 
 const SHADER='auraliaBiomeTerrain';
 const regionsGLSL=Object.entries(LANDSCAPE_REGIONS).map(([name,r])=>
@@ -48,6 +49,7 @@ uniform float fogDensity;
 uniform float macroStrength;
 uniform float waterTime;
 uniform float legacyGeography;
+${CHARACTER_SHADOW_GLSL}
 vec3 geometricNormal,dpdx,dpdy;
 float bumpFade;
 struct Surface {vec3 color;vec3 normal;float roughness;};
@@ -165,9 +167,10 @@ void main(){
     albedo=mix(albedo,snow.color,snowCover);normal=mix(normal,snow.normal,snowCover);roughness=mix(roughness,.97,snowCover);}
   vec3 N=normalize(normal),L=normalize(sunDirection),V=normalize(cameraPosition-vWorldPos);
   float ambient=clamp(.65+.25*N.y,.36,1.0);
-  vec3 lit=albedo*(vec3(.46,.51,.54)*ambient+sunColor*max(dot(N,L),0.0));
+  float sunVisibility=characterSunVisibility(vWorldPos);
+  vec3 lit=albedo*(vec3(.46,.51,.54)*ambient+sunColor*max(dot(N,L),0.0)*sunVisibility);
   vec3 H=normalize(V+L);
-  lit+=sunColor*pow(max(dot(N,H),0.0),mix(100.0,6.0,roughness))*(1.0-roughness)*.20;
+  lit+=sunColor*pow(max(dot(N,H),0.0),mix(100.0,6.0,roughness))*(1.0-roughness)*.20*sunVisibility;
   float broad=noise(p*.009)*.65+noise(p*.027)*.35;
   lit*=1.0+macroStrength*(broad-.5)*2.0;
   lit+=emission;
@@ -198,8 +201,8 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,u
   const textures=createBiomeTextureArrays(scene);
   const material=new ShaderMaterial('auralia-biome-terrain',scene,{vertex:SHADER,fragment:SHADER},{
     attributes:['position','normal','color','uv'],
-    uniforms:['world','worldViewProjection','surfaceParams','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime','legacyGeography'],
-    samplers:['biomeAlbedos','biomeNormals','bedCaustics']});
+    uniforms:['world','worldViewProjection','surfaceParams','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime','legacyGeography',...CHARACTER_SHADOW_UNIFORMS],
+    samplers:['biomeAlbedos','biomeNormals','bedCaustics','characterShadowMap']});
   material.backFaceCulling=false;
   material.setTexture('biomeAlbedos',textures.albedo);material.setTexture('biomeNormals',textures.normal);
   // Babylon shares the existing water mask's internal GPU texture by URL.
@@ -209,7 +212,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,u
   material.setFloat('macroStrength',config.macroStrength);
   material.setFloat('legacyGeography',useLegacyGeography?1:0);
   material.metadata={biomeMaterials:{status:'loading',layers:BIOME_MATERIALS.length,
-    samplers:3,gpuBytes:BIOME_TEXTURE_GPU_BYTES,sharedWaterMask:true,sourceSize:1024,runtimeSize:512}};
+    samplers:4,gpuBytes:BIOME_TEXTURE_GPU_BYTES,sharedWaterMask:true,sourceSize:1024,runtimeSize:512}};
   void textures.ready.then(()=>{material.metadata.biomeMaterials.status='ready';}).catch(error=>{
     if(error?.name==='AbortError')return;
     material.metadata.biomeMaterials.status='failed';
@@ -218,6 +221,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,u
   const light=scene.lights.find(l=>l instanceof DirectionalLight) as DirectionalLight|undefined;
   const direction=new Vector3(.5,1,-.4),color=new Color3(.88,.82,.72);
   const observer=scene.onBeforeRenderObservable.add(()=>{
+    bindCharacterShadow(material,scene);
     if(light){direction.copyFrom(light.direction).scaleInPlace(-1).normalize();color.copyFrom(light.diffuse).scaleInPlace(light.intensity*.65);}
     material.setVector3('sunDirection',direction);material.setColor3('sunColor',color);
     material.setFloat('waterTime',performance.now()*.001);

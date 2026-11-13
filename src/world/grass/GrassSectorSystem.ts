@@ -169,6 +169,11 @@ export class GrassSectorSystem {
     this.dirty=true;
   }
 
+  setCompanionContact(x:number,z:number,active:boolean):void{
+    if(!this.geographic)return;
+    const focus=this.geographic.focus;
+    focus.companionX=x;focus.companionZ=z;focus.companionRadius=active?1.5:0;
+  }
   update():void{if(this.geographic){this.geographic.update();return;}if(this.dirty&&this.sources.size===VARIANTS.length)this.refreshBuffers();}
   refreshExclusions():void{this.dirty=true;this.geographic?.refreshExclusions();}
   refreshBakedGrass():void{

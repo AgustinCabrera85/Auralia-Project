@@ -50,6 +50,8 @@ import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, cameraTerrainView, swimmingCameraO
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
 import { SantiCharacter } from './SantiCharacter';
+import { DogoCompanion } from './DogoCompanion';
+import { CharacterShadows } from './CharacterShadows';
 import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCatalog';
 import { DoubleTapSprint } from './DoubleTapSprint';
 import { SpeedMotionBlur } from './SpeedMotionBlur';
@@ -125,6 +127,8 @@ export class WorldView {
   private player!: TransformNode;
   private playerBody!: TransformNode;
   private santi:SantiCharacter|null=null;
+  private dogo:DogoCompanion|null=null;
+  private readonly characterShadows:CharacterShadows;
   private attackSerial=0;
   private movementTime = 0;
   private interactTarget: Interactable | null = null;
@@ -194,6 +198,7 @@ export class WorldView {
     const sun = new DirectionalLight('sol', new Vector3(-0.5, -1.3, 0.55), this.scene);
     sun.intensity = 1.35;
     sun.diffuse = new Color3(1, 0.91, 0.76);
+    this.characterShadows=new CharacterShadows(sun);
 
     this.camera = new ArcRotateCamera('camara-aventura', THIRD_PERSON_CAMERA.alpha, THIRD_PERSON_CAMERA.beta,
       THIRD_PERSON_CAMERA.distance, new Vector3(0, 3, 0), this.scene);
@@ -887,9 +892,18 @@ export class WorldView {
     const santi=new SantiCharacter(this.scene,this.player);
     this.santi=santi;
     void santi.load().then(ready=>{
-      if(ready&&this.santi===santi)this.playerBody.setEnabled(false);
+      if(ready&&this.santi===santi){
+        this.playerBody.setEnabled(false);this.characterShadows.add(this.player);
+      }
     }).catch(error=>{
       if(this.santi===santi)console.warn('No se pudo cargar Santi; se conserva el personaje provisional.',error);
+    });
+    const dogo=new DogoCompanion(this.scene);
+    this.dogo=dogo;
+    void dogo.load().then(()=>{
+      if(this.dogo===dogo)this.characterShadows.add(dogo.root);
+    }).catch(error=>{
+      if(this.dogo===dogo){dogo.failure=String(error);console.warn('No se pudo cargar Dogo.',error);}
     });
   }
 
@@ -1029,7 +1043,8 @@ export class WorldView {
     position:{...this.traversal.position},mode:this.traversal.mode,terrain:this.mainland.statistics,
     sourceData:this.geographicWorld?.stats,avatarReady:this.santi?.isReady,vegetation:this.vegetation.instanceCount,grass:this.grass.instanceCount,
     resources:this.props.activeCrystalCount,waterChunks:this.geography.activeCount+this.geography.farActiveCount,
-    lagoonInside:this.lagoon.inside,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity};}
+    lagoonInside:this.lagoon.inside,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity,
+    companion:this.dogo?.status};}
 
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
   teleportToLandmark(id:string):void {
@@ -1088,7 +1103,7 @@ export class WorldView {
       (this.geographicWorld?null:bridgeDeckAt(x,z))??nearTerrainHeightAt(x,z,sampleMainlandHeight);
   }
 
-  private traversalWorld(zone:IslandInfo):TraversalWorld{
+  private traversalWorld(zone:IslandInfo,feetY=this.traversal.position.y):TraversalWorld{
     if(this.floating?.id){
       const c=this.floating.colliders;
       return {
@@ -1096,8 +1111,8 @@ export class WorldView {
         wall:(x,y,z,dx,dz,reach)=>{const h=c.queryWall(x,y,z,dx,dz,reach);return h?{pointX:h.point.x,pointY:h.point.y,pointZ:h.point.z,distance:h.distance,normalX:h.normal.x,normalY:h.normal.y,normalZ:h.normal.z,rockId:h.rockId,climbable:h.climbable}:null;},
         solidTop:(x,z,origin,max,id)=>{const h=c.querySolidTop(x,z,origin,max,id);return h?{height:h.height,normalX:h.normal.x,normalZ:h.normal.z,rockId:h.rockId,centerX:h.centerX,centerZ:h.centerZ}:null;},
         headroom:(x,y,z,h,id)=>c.hasOverheadClearance(x,y,z,h,id),
-        canMove:(x,z)=>!!c.queryGround(x,z,this.traversal.position.y+3,12,.33),
-        fallbackHeight:()=>this.traversal.position.y
+        canMove:(x,z)=>!!c.queryGround(x,z,feetY+3,12,.33),
+        fallbackHeight:()=>feetY
       };
     }
     const generated=this.lagoon.rockColliders;
@@ -1122,7 +1137,7 @@ export class WorldView {
       headroom:(x,y,z,h,id)=>{const s=grottoSurfaceAt(x,z,.5);
         return !!s&&y+h<s.ceiling&&generated.hasOverheadClearance(x,y,z,h,id);},
       canMove:(x,z)=>grottoSurfaceAt(x,z,.6)!==null,
-      fallbackHeight:(x,z)=>grottoSurfaceAt(x,z)?.height??this.traversal.position.y
+      fallbackHeight:(x,z)=>grottoSurfaceAt(x,z)?.height??feetY
     };
     if(this.mountainPasses.inside)return {
       ground:(x,z,origin,max)=>{const s=tunnelSurfaceAt(x,z);
@@ -1130,7 +1145,7 @@ export class WorldView {
       wall:()=>null,solidTop:()=>null,
       headroom:(x,y,z,room)=>{const s=tunnelSurfaceAt(x,z,.5);return !!s&&y+room<s.ceiling;},
       canMove:(x,z)=>tunnelSurfaceAt(x,z,.6)!==null,
-      fallbackHeight:(x,z)=>tunnelSurfaceAt(x,z)?.height??this.traversal.position.y
+      fallbackHeight:(x,z)=>tunnelSurfaceAt(x,z)?.height??feetY
     };
     const isMainland=zone.id==='brisalia';
     // Walk and climb against the same visible near-LOD triangles. Sampling the
@@ -1146,9 +1161,9 @@ export class WorldView {
     };
     const wallHeight=(x:number,z:number)=>nearTerrainHeightAt(x,z,gridHeight);
     const routeDeck=(x:number,z:number)=>isMainland?
-      bridgeSurfaceAt(this.mountainPasses.bridges,x,z,this.traversal.position.y+2):null;
+      bridgeSurfaceAt(this.mountainPasses.bridges,x,z,feetY+2):null;
     const trailDeck=(x:number,z:number)=>isMainland?
-      mountainTrailSurfaceAt(this.mountainPasses.trails,x,z,this.traversal.position.y+2):null;
+      mountainTrailSurfaceAt(this.mountainPasses.trails,x,z,feetY+2):null;
     const height=(x:number,z:number)=>isMainland?
       routeDeck(x,z)?.height??trailDeck(x,z)?.height??(this.geographicWorld?null:bridgeDeckAt(x,z))??wallHeight(x,z):this.y(zone,x,z);
     return {
@@ -1375,6 +1390,15 @@ export class WorldView {
       this.lastSafePosition={x:localX,z:localZ};
     const doubleJumpStarted=(jumpPressed||airKickPressed)&&jumpsBeforeStep===1&&
       this.traversal.jumpCount===2;
+    this.dogo?.update(dt,{
+      x:localX,y:localY,z:localZ,heading:this.player.rotation.y,
+      supported:this.traversal.mode==='grounded'||this.traversal.mode==='swimming',
+      context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}`
+    },this.traversalWorld(zone,this.dogo.follow.visible?this.dogo.follow.position.y:localY),zone.offset);
+    const dog=this.dogo?.follow;
+    this.characterShadows.update(this.player.position,dog?.visible?this.dogo!.root.position:undefined,!this.insideUnderground);
+    this.grass.setCompanionContact(dog?.position.x??0,dog?.position.z??0,
+      !!dog?.visible&&!this.floating?.id&&!this.insideUnderground&&zone.id==='brisalia');
     if(doubleJumpStarted)this.speedMotionBlur.triggerDoubleJump();
     const sprintVisual=sprinting&&walking&&
       this.traversal.mode==='grounded'&&!actionDriven&&
@@ -1398,6 +1422,7 @@ export class WorldView {
       jumpStarted:groundedBeforeStep&&jumpPressed&&this.traversal.mode==='airborne',
       doubleJumpStarted,airKickStarted:doubleJumpStarted&&airKickPressed
     });
+    this.santi?.updateGroundContact(dt,this.traversal.mode==='grounded',this.traversalWorld(zone),zone.offset);
     if(landing?.kind==='standing')
       this.beginDirectedMotion('landingHold',0,landing.duration-dt);
     else if(landing?.kind==='highFallRoll')
@@ -1853,7 +1878,9 @@ export class WorldView {
     this.engine.stopRenderLoop();
     this.speedMotionBlur.dispose();
     this.santi?.dispose();
+    this.characterShadows.dispose();
     this.santi=null;
+    this.dogo?.dispose();this.dogo=null;
     this.telemetry?.dispose();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);

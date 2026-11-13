@@ -123,13 +123,14 @@ asset.dispose();
 // The temporary ESM copies are TypeScript transpilation only; no browser is needed.
 const runtimeDir=resolve('.test-build');
 mkdirSync(runtimeDir,{recursive:true});
-const modules=['SantiCatalog','traversalRules','SantiCharacter','CharacterTraversalController'];
+const modules=['SantiCatalog','traversalRules','SantiCharacter','CharacterTraversalController','GroundFootPlacement'];
 const runtimeFiles=modules.map(name=>resolve(runtimeDir,`santi-${name}.mjs`));
 for(const [index,name] of modules.entries()){
   const source=readFileSync(new URL(`../src/game/${name}.ts`,import.meta.url),'utf8');
   const javascript=ts.transpileModule(source,{compilerOptions:{
     target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext
   }}).outputText
+    .replace("from './GroundFootPlacement'","from './santi-GroundFootPlacement.mjs'")
     .replace("from './traversalRules'","from './santi-traversalRules.mjs'")
     .replace("from './SantiCatalog'","from './santi-SantiCatalog.mjs'");
   writeFileSync(runtimeFiles[index],javascript);

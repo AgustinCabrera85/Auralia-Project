@@ -63,6 +63,7 @@ export class BuildVisuals {
     const mesh=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},this.scene);
     mesh.parent=root;mesh.position.set(x,y,z);mesh.material=material;
     mesh.isPickable=!ghost;
+    mesh.receiveShadows=!ghost;
     mesh.metadata=id?{structureId:id}:undefined;
     return mesh;
   }

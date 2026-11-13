@@ -9,6 +9,8 @@ import { Color3, DirectionalLight, Effect, Scene, ShaderMaterial, Texture, Vecto
 import type { TerrainMaterialConfig } from './TerrainMaterial';
 import { FOLIAGE_FOREST } from '../foliageForestConfig';
 
+import { bindCharacterShadow, CHARACTER_SHADOW_GLSL, CHARACTER_SHADOW_UNIFORMS } from './CharacterShadowSampling';
+
 const SHADER = 'auraliaTerrainDistinctLayersV2';
 
 Effect.ShadersStore[`${SHADER}VertexShader`] = `
@@ -40,6 +42,11 @@ varying vec3 vWorldPos;
 varying vec3 vNormal;
 varying vec4 vBaseWeights;
 varying vec2 vExtraWeights;
+#ifdef CHARACTER_SHADOWS
+${CHARACTER_SHADOW_GLSL}
+#else
+float characterSunVisibility(vec3 p){return 1.0;}
+#endif
 uniform vec3 cameraPosition;
 uniform vec3 sunDirection;
 uniform vec3 sunColor;
@@ -149,13 +156,14 @@ void main(void) {
   vec3 N=normalize(geometricNormal+bump);
 
   vec3 L=normalize(sunDirection);
-  float light=max(dot(N,L),0.0);
+  float visibility=characterSunVisibility(vWorldPos);
+  float light=max(dot(N,L),0.0)*visibility;
   float ambient=clamp(.65+.25*N.y,.36,1.0);
   vec3 lit=albedo*(vec3(.46,.51,.54)*ambient+sunColor*light);
   vec3 V=normalize(cameraPosition-vWorldPos);
   vec3 H=normalize(V+L);
   float highlight=pow(max(dot(N,H),0.0),mix(100.0,6.0,roughness));
-  lit+=sunColor*highlight*(1.0-roughness)*.20;
+  lit+=sunColor*highlight*(1.0-roughness)*.20*visibility;
   lit*=1.0+macroStrength*broad*mix(1.0,.5,forestMask*w0.x)+
     .023*sin(p.x*.137)*cos(p.y*.119);
   // Emission follows the lava texture's molten fissures, not an orange tint.
@@ -171,14 +179,16 @@ const SURFACES=['grass','soil','rock','sand','snow','lava'] as const;
 
 export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   {material:ShaderMaterial;dispose:()=>void}{
+  const shadows=scene.getEngine().getCaps().maxTexturesImageUnits>8;
   const material=new ShaderMaterial('auralia-terrain-six-textures-v2',scene,
     {vertex:SHADER,fragment:SHADER},
     {attributes:['position','normal','color','uv'],
+     defines:shadows?['#define CHARACTER_SHADOWS']:[],
      uniforms:['world','worldViewProjection','cameraPosition','sunDirection','sunColor',
        'fogColor','fogDensity','macroStrength','macroScale','layerScale',
-       'forestCenter','forestRadii'],
+       'forestCenter','forestRadii',...CHARACTER_SHADOW_UNIFORMS],
      samplers:[...SURFACES.map(s=>`tex${s[0].toUpperCase()}${s.slice(1)}`),
-       'normAtlas0','normAtlas1']});
+       'normAtlas0','normAtlas1',...(shadows?['characterShadowMap']:[])]});
   material.backFaceCulling=false;
   const light=scene.lights.find(l=>l instanceof DirectionalLight) as DirectionalLight|undefined;
   material.setVector3('sunDirection',light?light.direction.scale(-1).normalize():new Vector3(.5,1,-.4).normalize());
@@ -209,6 +219,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   }
   const lightDirection=new Vector3(),lightColor=new Color3();
   const observer=scene.onBeforeRenderObservable.add(()=>{
+    if(shadows)bindCharacterShadow(material,scene);
     // Vegetation already follows the live climate lights; keep the floor in
     // the same daylight rather than the light captured when the map loaded.
     if(light){

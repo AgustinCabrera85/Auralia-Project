@@ -201,6 +201,7 @@ export class MountainPassSystem {
     const mesh=new Mesh('tablero-'+route.id,this.scene),data=new VertexData();
     VertexData.ComputeNormals(positions,indices,normals);Object.assign(data,{positions,indices,normals,uvs});data.applyToMesh(mesh);
     mesh.material=this.deck;mesh.parent=root;mesh.isPickable=false;
+    mesh.receiveShadows=true;
     for(const side of [-1,1]){
       const a=route.points[0],b=route.points.at(-1)!,len=Math.hypot(b.x-a.x,b.z-a.z);
       const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len;

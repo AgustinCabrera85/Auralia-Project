@@ -20,6 +20,7 @@ export class FloatingKingdoms {
     root.computeWorldMatrix(true);
     for(const node of root.getDescendants())node.computeWorldMatrix(true);
     for(const mesh of result.meshes)if(mesh instanceof Mesh&&mesh.getTotalVertices()){
+      mesh.receiveShadows=true;
       // These source GLBs omit NORMAL. Picking can hit them but the native
       // ground collider rejects a hit without a normal. Derive it in memory.
       if(!mesh.isVerticesDataPresent(VertexBuffer.NormalKind)){

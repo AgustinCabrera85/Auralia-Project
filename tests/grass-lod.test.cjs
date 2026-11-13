@@ -50,7 +50,12 @@ function loader(scene){const material=new PBRMaterial('test-grass',scene);return
  system.setFocus(0,0);settle();system.setEnabled(false);assert.equal(system.instanceCount,0);system.setEnabled(true);system.setFocus(0,0);settle();assert.ok(system.instanceCount>0);
  const mat=scene.getMaterialByName('grass-sprite-cutout');assert.ok(mat instanceof PBRMaterial,'same linear lighting as near grass');assert.equal(mat.needAlphaTesting(),true);assert.equal(mat.needAlphaBlending(),false);
  const plugin=mat.pluginManager.getPlugin('AuraliaGrassDistance'),code=plugin.getCustomCode('vertex').CUSTOM_VERTEX_UPDATE_WORLDPOS;
- const uniforms={};plugin.hardBindForSubMesh(null,null,null,{effect:{setFloat2:(name,a,b)=>uniforms[name]=[a,b]}});assert.deepEqual(uniforms.grassFocus,[0,0]);
+ const uniforms={};plugin.hardBindForSubMesh(null,null,null,{effect:{setFloat2:(name,a,b)=>uniforms[name]=[a,b],setFloat3:(name,a,b,c)=>uniforms[name]=[a,b,c]}});assert.deepEqual(uniforms.grassFocus,[0,0]);
+ assert.deepEqual(uniforms.grassCompanion,[0,0,0]);
+ system.setCompanionContact(3,4,true);plugin.hardBindForSubMesh(null,null,null,{effect:{setFloat2:()=>{},setFloat3:(name,a,b,c)=>uniforms[name]=[a,b,c]}});
+ assert.deepEqual(uniforms.grassCompanion,[3,4,1.5]);
+ system.setCompanionContact(3,4,false);plugin.hardBindForSubMesh(null,null,null,{effect:{setFloat2:()=>{},setFloat3:(name,a,b,c)=>uniforms[name]=[a,b,c]}});
+ assert.equal(uniforms.grassCompanion[2],0,'inactive companion leaves grass untouched');
  assert.match(code,/grassContact/);assert.match(code,/grassTip \*= grassTip/);assert.doesNotMatch(plugin.getCustomCode('fragment').CUSTOM_FRAGMENT_MAIN_BEGIN,/gl_FragCoord/);
  system.dispose();scene.dispose();engine.dispose();setActiveGeography(null);
  const [manifest,splines,hydrology]=await Promise.all(['manifest','splines','hidrologia_v3_6'].map(async n=>JSON.parse(await fs.readFile(`public/auralia-preview/data/${n}.json`))));

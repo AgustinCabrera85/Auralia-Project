@@ -9,7 +9,7 @@ import {makeGrassClump} from './GrassClumpGeometry';
 
 /** Geographic streaming backend of GrassSectorSystem. Source GLBs are shared with it. */
 export class GrassPatchStream{
- readonly focus={x:0,z:0};
+ readonly focus={x:0,z:0,companionX:0,companionZ:0,companionRadius:0};
  private readonly patches=new Map<string,GrassPlacement[]>();
  private readonly patchExclusions=new Map<string,readonly VegetationExclusion[]>();
  private readonly sprites=new Map<GrassVariant,Mesh>();

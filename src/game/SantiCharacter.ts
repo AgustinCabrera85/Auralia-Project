@@ -5,6 +5,8 @@ import {
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
 import { TRAVERSAL, type LocomotionMode } from './traversalRules';
+import { GroundFootPlacement } from './GroundFootPlacement';
+import type { TraversalWorld } from './CharacterTraversalController';
 import type { EquipmentId } from '../domain/types';
 import {
   SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_LOCOMOTION, SANTI_NLA_ACTIONS,
@@ -96,6 +98,8 @@ export class SantiCharacter {
   private visualOrientation:TransformNode|null=null;
   private slopeOrientation:TransformNode|null=null;
   private groundIncline=0;
+  private feet:GroundFootPlacement|null=null;
+  private contactRoot:TransformNode|null=null;
   private ascendingSlope=false;
   private climbContact:ClimbContact|null=null;
   private contactObserver:Observer<Scene>|null=null;
@@ -237,7 +241,11 @@ export class SantiCharacter {
     this.slopeOrientation=new TransformNode('santi-slope-orientation',this.scene);
     this.slopeOrientation.parent=this.parent;
     this.visualOrientation.parent=this.slopeOrientation;
-    root.parent=this.visualOrientation;
+    this.contactRoot=new TransformNode('santi-foot-support',this.scene);
+    this.contactRoot.parent=this.visualOrientation;root.parent=this.contactRoot;
+    this.feet=new GroundFootPlacement(this.scene,this.parent,this.contactRoot,result.transformNodes,
+      [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot'],
+       ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot']],.55);
     this.contactHands=result.transformNodes.filter(node=>
       node.name==='mixamorig:LeftHand'||node.name==='mixamorig:RightHand');
     this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>this.alignClimbContact());
@@ -248,6 +256,12 @@ export class SantiCharacter {
     if(new URLSearchParams(window.location.search).has('santiDebug'))this.createDebugPanel();
     return true;
   }
+
+  updateGroundContact(dt:number,grounded:boolean,world:TraversalWorld,offset:{x:number;z:number}):void{
+    this.feet?.update(dt,grounded&&!this.combat&&this.actionLockSeconds<=0&&
+      this.overrideSeconds<=0&&this.landingRecoverySeconds<=0,world,offset);
+  }
+  get footContact(){return this.feet?.status;}
 
   get actionNames():readonly SantiActionName[]{return SANTI_NLA_ACTIONS;}
   get expressionNames():readonly SantiExpressionName[]{return SANTI_EXPRESSIONS;}
@@ -625,6 +639,7 @@ export class SantiCharacter {
     this.airKickAnimation?.dispose();this.airKickAnimation=null;
     this.scene.onAfterAnimationsObservable.remove(this.contactObserver);
     this.contactObserver=null;this.contactHands=[];this.climbContact=null;
+    this.feet?.dispose();this.feet=null;
     if(this.loaded)this.disposeResult(this.loaded);
     this.visualOrientation?.dispose();this.visualOrientation=null;
     this.slopeOrientation?.dispose();this.slopeOrientation=null;
