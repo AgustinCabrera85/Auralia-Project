@@ -46,6 +46,17 @@ vec3 throughWater(vec3 colour,vec2 uv){
   vec3 end=waterWorldPosition(uv);
   float a=waterLevel-waterEye.y;
   float b=waterLevel+dot(end.xz-waterEye.xz,waterSlope)-end.y;
+  float localWeight=waterOpticsWeight;
+  if(waterSurfaceMode>.5&&a<=0.0){
+    // The opaque-depth pass is local (100 m), while the interface pass also
+    // contains distant rivers. Its clear depth is missing information, not a
+    // deep water column. Leave those pixels to the water material and fog.
+    if(texture2D(waterSceneDepth,uv).r>=.999999)return colour;
+    // Fade before the depth culling boundary, including large terrain tiles
+    // whose bounds intersect the pass but extend beyond its useful range.
+    localWeight*=1.0-smoothstep(60.0,90.0,length(end-waterEye));
+    if(localWeight<=0.0)return colour;
+  }
   // Intersect the view segment with the surface. The air part never acquires
   // the same fog as the submerged part, even in a split-level view.
   float wet=0.0;
@@ -75,8 +86,8 @@ vec3 throughWater(vec3 colour,vec2 uv){
   vec3 face=cross(dFdx(end),dFdy(end));
   float facing=abs(face.y)/max(length(face),.00001);
   float lit=smoothstep(0.0,.25,b)*exp(-max(0.0,b)*.09)*facing;
-  colour*=1.0+caustic*lit*.16;
-  return mix(colour,colour*transmission+scattering*(1.0-transmission),waterOpticsWeight);
+  colour*=1.0+caustic*lit*.16*localWeight;
+  return mix(colour,colour*transmission+scattering*(1.0-transmission),localWeight);
 }
 `;
 

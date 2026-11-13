@@ -1,0 +1,80 @@
+{
+  "sloping": {
+    "upper": [
+      146,
+      126,
+      103
+    ],
+    "lower": [
+      146,
+      126,
+      103
+    ]
+  },
+  "boundary": {
+    "air": {
+      "above": [
+        184,
+        127,
+        82
+      ],
+      "below": [
+        184,
+        127,
+        82
+      ]
+    },
+    "split": {
+      "above": [
+        184,
+        127,
+        82
+      ],
+      "below": [
+        74,
+        105,
+        78
+      ],
+      "depthProbe": 0.9904953241348267
+    },
+    "submerged": {
+      "above": [
+        95,
+        111,
+        79
+      ],
+      "below": [
+        74,
+        105,
+        78
+      ],
+      "depthProbe": 0.9904953241348267
+    },
+    "recovered": {
+      "above": [
+        184,
+        127,
+        82
+      ],
+      "below": [
+        184,
+        127,
+        82
+      ]
+    },
+    "resourcesStable": true
+  },
+  "finite": {
+    "wet": [
+      142,
+      120,
+      81
+    ],
+    "dry": [
+      184,
+      127,
+      82
+    ],
+    "resourcesStable": true
+  }
+}

@@ -297,3 +297,11 @@ Validación con `npm run test:lake-shore`: 32.676 muestras de propiedad comparti
 Los dos dominios añaden 220.697 bytes y la máscara CPU que conserva el dominio fluvial añade 4.194.304 bytes: aproximadamente 4,21 MiB adicionales a las mediciones de vegetación anteriores. No se añade una textura GPU: el océano conserva su única máscara de 4 MiB. Continúa el límite de nueve R16 residentes y las celdas secas se descartan del streaming de agua.
 
 Capturas comparables antes/después y diagnóstico sin océano: `artifacts/geographic-source/lake-shore/`. La prueba `node scripts/check-worldstudio-game.mjs --run --lake-shore` terminó sin errores de navegador y las capturas finales muestran una sola superficie transparente hasta la orilla. Persiste el facetado propio de la malla del terreno a 6 m; esta corrección no altera esa geometría.
+
+## Color del río al entrar al agua
+
+Se reprodujo el cambio brusco entre X 1842, Z −1735 (óptica desactivada) y X 1841, Z −1736 (activada). El pase de profundidad opaca sólo incluye objetos próximos a 100 m, pero el pase de interfaces incluye los ríos lejanos. Desde el aire, el shader interpretaba la profundidad vacía como una columna de agua de hasta 90 m: el cauce distante se volvía azul y perdía su niebla al activarse el efecto local.
+
+`WaterOptics` conserva el material y la niebla originales cuando falta profundidad opaca. Con la cámara sobre el agua, la contribución óptica local se desvanece entre 60 y 90 m, antes del límite de descarte; también atenúa las cáusticas. Bajo el agua se mantiene el cálculo de absorción existente. No se amplía el pase de profundidad ni se añaden texturas, geometría o recursos residentes.
+
+Validación: `node scripts/check-worldstudio-game.mjs --run --water-entry` recorre orilla, agua y regreso con el controlador real, comprueba la activación 0 → 1 → 0 y ejecuta regresiones GPU de superficie inclinada, vista parcialmente sumergida, huella finita y agua distante. La nueva prueba falla antes de corregir el shader: a 110 y 200 m, RGB [184,127,82] pasaba a [9,59,66]. Después conserva [184,127,82] a 95, 110 y 200 m; a 12 m mantiene la absorción [141,120,81] y a 80 m transiciona a [173,125,82]. Cuatro ciclos adicionales no acumulan recursos y al salir se recupera el color original. Evidencias antes/después en `artifacts/geographic-source/water-entry/`.

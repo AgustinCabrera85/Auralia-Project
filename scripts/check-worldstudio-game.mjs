@@ -4,6 +4,7 @@ import {checkWaterUnion} from './worldstudio-water-union-check.mjs';
 import {checkNacar} from './worldstudio-nacar-check.mjs';
 import {checkForest} from './worldstudio-forest-check.mjs';
 import {checkLakeShore} from './worldstudio-lake-shore-check.mjs';
+import {checkWaterEntry} from './worldstudio-water-entry-check.mjs';
 /** Authorized integration test in a disposable Chrome profile; no user saves. */
 import {spawn,execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
@@ -14,8 +15,9 @@ const nacar=process.argv.includes('--nacar');
 const forest=process.argv.includes('--forest'),forestBefore=process.argv.includes('--forest-before');
 const bakeSprites=process.argv.includes('--bake-tree-sprites');
 const lakeShore=process.argv.includes('--lake-shore');
+const waterEntry=process.argv.includes('--water-entry'),waterEntryBefore=process.argv.includes('--water-entry-before');
 const riverMetrics=process.argv.includes('--river-metrics'),nativeOnly=process.argv.includes('--water-native'),waterUnion=process.argv.includes('--water-union')||nativeOnly||!!views,waterMovement=process.argv.includes('--water-movement');
-const root=process.cwd(),legacy=process.argv.includes('--legacy'),metrics=process.argv.includes('--metrics')||riverMetrics,riverReview=process.argv.includes('--rivers'),persistenceOnly=process.argv.includes('--persistence-only'),out=path.join(root,lakeShore?'artifacts/geographic-source/lake-shore/'+(process.argv.includes('--lake-shore-before')?'before':'after'):forest?'artifacts/geographic-source/forest/'+(forestBefore?'before':'after'):nacar?'artifacts/geographic-source/nacar-depth/browser':(waterUnion||waterMovement)?'artifacts/geographic-source/water-union/browser':riverReview?'artifacts/geographic-source/rivers/browser':riverMetrics?'artifacts/geographic-source/rivers/performance':persistenceOnly?'artifacts/geographic-source/realm-persistence':metrics?'artifacts/geographic-source/comparison/'+(legacy?'legacy':'worldstudio'):'artifacts/geographic-source/game');await mkdir(out,{recursive:true});
+const root=process.cwd(),legacy=process.argv.includes('--legacy'),metrics=process.argv.includes('--metrics')||riverMetrics,riverReview=process.argv.includes('--rivers'),persistenceOnly=process.argv.includes('--persistence-only'),out=path.join(root,waterEntry?'artifacts/geographic-source/water-entry/'+(waterEntryBefore?'before':'after'):lakeShore?'artifacts/geographic-source/lake-shore/'+(process.argv.includes('--lake-shore-before')?'before':'after'):forest?'artifacts/geographic-source/forest/'+(forestBefore?'before':'after'):nacar?'artifacts/geographic-source/nacar-depth/browser':(waterUnion||waterMovement)?'artifacts/geographic-source/water-union/browser':riverReview?'artifacts/geographic-source/rivers/browser':riverMetrics?'artifacts/geographic-source/rivers/performance':persistenceOnly?'artifacts/geographic-source/realm-persistence':metrics?'artifacts/geographic-source/comparison/'+(legacy?'legacy':'worldstudio'):'artifacts/geographic-source/game');await mkdir(out,{recursive:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,ms=150000){const start=Date.now();for(;;){const v=await fn();if(v)return v;if(Date.now()-start>ms)throw new Error('Readiness timed out');await delay(250);}}
 class CDP{
@@ -80,6 +82,8 @@ try{
     (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)),()=>cdp.send('HeapProfiler.collectGarbage',{},sessionId));
   if(lakeShore)await checkLakeShore(expression=>cdp.evaluate(expression,sessionId),capture,
     (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)));
+  if(waterEntry)await checkWaterEntry(expression=>cdp.evaluate(expression,sessionId),capture,
+    (name,result)=>writeFile(path.join(out,name+'.json'),JSON.stringify(result,null,2)),waterEntryBefore);
   if(process.argv.includes('--realms')){
     for(const id of ['albor','umbrael']){await cdp.evaluate(`window.__auraliaGame.world.travelFloating('${id}')`,sessionId);await delay(3500);console.log(id,await cdp.evaluate('window.__auraliaGame.world.geographicStatus',sessionId));await capture(id);}
     let savedRealm;

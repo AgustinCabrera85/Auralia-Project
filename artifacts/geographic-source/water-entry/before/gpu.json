@@ -1,0 +1,4 @@
+{
+  "ok": false,
+  "error": "Error: Distant water changes when local optics activates: [{\"distance\":200,\"air\":[184,127,82],\"optics\":[9,59,66]},{\"distance\":110,\"air\":[184,127,82],\"optics\":[9,59,66]},{\"distance\":95,\"air\":[184,127,82],\"optics\":[140,120,81]},{\"distance\":80,\"air\":[184,127,82],\"optics\":[141,120,81]},{\"distance\":60,\"air\":[184,127,82],\"optics\":[141,120,81]},{\"distance\":12,\"air\":[184,127,82],\"optics\":[141,120,81]}]"
+}

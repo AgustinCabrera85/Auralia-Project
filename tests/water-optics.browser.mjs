@@ -119,6 +119,50 @@ export async function verifyFiniteWater(){
   }finally{effect.dispose();scene.dispose();engine.dispose();}
 }
 
+/** The local depth pass deliberately omits distant opaque geometry. A distant
+ * river/waterfall must not interpret that missing depth as a deep blue column. */
+export async function verifyDistantWater(){
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+  const engine=new Engine(canvas,false,{preserveDrawingBuffer:true}),scene=new Scene(engine);
+  scene.clearColor=new Color4(.6,.5,.4,1);
+  const camera=new FreeCamera('distant-water-probe',new Vector3(0,2,0),scene);
+  camera.minZ=.1;camera.maxZ=800;camera.setTarget(new Vector3(0,2,10));
+  const land=MeshBuilder.CreatePlane('opaque-bed',{size:20},scene),mat=new StandardMaterial('warm-distant-bed',scene);
+  mat.disableLighting=true;mat.emissiveColor=new Color3(.72,.5,.32);land.material=mat;land.position.y=2;
+  const water=MeshBuilder.CreatePlane('finite-waterfall',{size:20},scene),clear=new StandardMaterial('transparent-interface',scene);
+  clear.alpha=0;clear.backFaceCulling=false;water.material=clear;water.metadata={inlandWater:true};water.position.y=2;
+  const effect=new SpeedMotionBlur(camera,engine),gl=engine._gl;
+  const sample=async level=>{
+    for(let i=0;i<1000;i++){
+      effect.update(.02,false);effect.updateWaterSurface(.02,level,0,0,0,0,true);scene.render();
+      await new Promise(r=>setTimeout(r,10));
+      if(i>6&&(level===null||effect.optics.surfaceReady&&effect.optics.ready&&effect.postProcess.isReady()))break;
+      if(i===999)throw Error('distant water shader did not become ready');
+    }
+    scene.render();scene.render();const p=new Uint8Array(4);gl.readPixels(128,128,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);
+    if(gl.getError()!==gl.NO_ERROR)throw Error('WebGL error in distant water regression');
+    return [...p].slice(0,3);
+  };
+  try{
+    const results=[];
+    for(const distance of [200,110,95,80,60,12]){
+      land.position.z=distance;water.position.z=distance-3;
+      results.push({distance,air:await sample(null),optics:await sample(0)});
+    }
+    const failures=results.filter(r=>r.distance>=90&&r.optics.some((v,i)=>Math.abs(v-r.air[i])>1));
+    if(failures.length)throw Error('Distant water changes when local optics activates: '+JSON.stringify(results));
+    const near=results.at(-1);
+    if(near.optics[0]>=near.air[0]-10)throw Error('Near-water absorption was lost: '+JSON.stringify(near));
+    const counts=()=>[scene.textures.length,scene.postProcesses.length],resources=counts();
+    for(let i=0;i<4;i++){await sample(null);await sample(0);}
+    if(JSON.stringify(resources)!==JSON.stringify(counts()))throw Error('Reentry leaks optical resources');
+    const recovered=await sample(null);
+    if(recovered.some((v,i)=>Math.abs(v-near.air[i])>1)||scene.customRenderTargets.length)
+      throw Error('Leaving water does not restore the dry render');
+    return {results,recovered,resourcesStable:true};
+  }finally{effect.dispose();scene.dispose();engine.dispose();}
+}
+
 export function verifyGenericCascades(){
   const results=[];
   for(const heading of [0,.7,Math.PI/2,Math.PI])for(const height of [3,10,45]){
