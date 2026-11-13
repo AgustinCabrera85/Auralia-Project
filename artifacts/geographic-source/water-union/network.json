@@ -16,9 +16,9 @@
       "watershed": 0,
       "lake": 7,
       "platform": 0,
-      "minDepth": 4.87790336914918,
-      "maxDepth": 17.98770521771928,
-      "maxLevelJump": 3.9441120058708066
+      "minDepth": 5.553528314036612,
+      "maxDepth": 29.191910262027477,
+      "maxLevelJump": 3.247056654258472
     },
     {
       "id": "rv-sierra-nacar",
@@ -27,8 +27,8 @@
       "lake": 11,
       "platform": 0,
       "minDepth": 5.71856533997253,
-      "maxDepth": 5.776137886449387,
-      "maxLevelJump": 0.19238739881182454
+      "maxDepth": 5.776415501761745,
+      "maxLevelJump": 0.1929749331218833
     },
     {
       "id": "rv-nacar-costas",
@@ -46,9 +46,9 @@
       "watershed": 0,
       "lake": 0,
       "platform": 0,
-      "minDepth": 5.712807033370242,
+      "minDepth": 5.638030458180928,
       "maxDepth": 9.266992915898943,
-      "maxLevelJump": 0.8720495915658013
+      "maxLevelJump": 0.8943499703888698
     },
     {
       "id": "rv-selva",
@@ -56,9 +56,9 @@
       "watershed": 0,
       "lake": 0,
       "platform": 0,
-      "minDepth": 5.685542409771244,
-      "maxDepth": 6.811875857890543,
-      "maxLevelJump": 0.8648906786768507
+      "minDepth": 5.542393695879213,
+      "maxDepth": 5.910573309207905,
+      "maxLevelJump": 0.7810112210059259
     },
     {
       "id": "rv-prado",
@@ -254,8 +254,8 @@
     }
   ],
   "issues": [],
-  "minDepth": 4.87790336914918,
-  "maxLevelJump": 3.9441120058708066,
+  "minDepth": 5.542393695879213,
+  "maxLevelJump": 3.247056654258472,
   "axisSamples": 1504,
   "excavationSamples": 7382,
   "maskBytes": 4194304,
@@ -263,7 +263,7 @@
     "residentTiles": 9,
     "maxResidentTiles": 9,
     "heightBytes": 7372800,
-    "lastLoadMs": 8.591300000000047,
+    "lastLoadMs": 6.279199999999946,
     "totalLoaded": 58,
     "sourceSpacing": 4.381846635367762,
     "detailAmplitudeBound": 1.25,
@@ -272,7 +272,7 @@
     "nacarBathymetry": {
       "bytes": 373500,
       "gridSpacing": 8,
-      "buildMs": 59.28790000000026,
+      "buildMs": 49.516399999999976,
       "targetMaximumDepth": 80
     },
     "waterLevels": [

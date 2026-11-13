@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "check": "tsc --noEmit",
+    "test:cascade": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/TerrainStream.ts src/world/geography/PlayableWorld.ts && node tests/setup-cjs.cjs && node tests/cascade-channel.test.cjs",
     "test:lake-shore": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts && node tests/setup-cjs.cjs && node tests/lake-water-domain.test.cjs",
     "test:world-forest": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/VegetationSystem.ts && node tests/setup-cjs.cjs && node tests/world-forest.test.cjs",
     "test:nacar": "tsc --target ES2022 --module CommonJS --moduleResolution Node --skipLibCheck --outDir .test-build --rootDir src src/world/geography/PlayableWorld.ts src/world/TerrainStream.ts src/game/CharacterTraversalController.ts && node tests/setup-cjs.cjs && node tests/nacar-bathymetry.test.cjs",

@@ -1,10 +1,10 @@
 import type { StudioSpline } from './WorldStudioSource';
 import type { GeographicBounds } from './GeographicSource';
 import { STUDIO_RIVER_LEVELS } from './StudioRiverLevels';
-export type RiverStation={x:number;z:number;level:number;width:number;dx:number;dz:number;along:number};
+export type RiverStation={x:number;z:number;level:number;width:number;dx:number;dz:number;along:number;grade:number};
 export type RiverStrip={a:RiverStation;b:RiverStation;capStart:boolean;capEnd:boolean};
 type Segment={route:string;ax:number;az:number;bx:number;bz:number;ay:number;by:number;width:number;length:number;
-  tx0:number;tz0:number;tx1:number;tz1:number;along:number;first:boolean;last:boolean};
+  tx0:number;tz0:number;tx1:number;tz1:number;grade0:number;grade1:number;along:number;first:boolean;last:boolean};
 const smooth=(a:number,b:number,v:number)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
 function intersects(s:Segment,b:GeographicBounds,pad:number):boolean{
   let lo=0,hi=1;
@@ -17,7 +17,7 @@ function intersects(s:Segment,b:GeographicBounds,pad:number):boolean{
 /** Authored axes and monotone levels shared by beds, water, currents and LOD. */
 export class StudioRivers {
   private readonly cells=new Map<string,Segment[]>();
-  constructor(splines:StudioSpline[],sea:number,lakeLevel:(x:number,z:number)=>number|null){
+  constructor(splines:StudioSpline[],private readonly sea:number,lakeLevel:(x:number,z:number)=>number|null){
     for(const spline of splines.filter(s=>s.type==='river')){
       const p=spline.controlPoints;if(p.length<2)continue;
       const baked=spline.resolvedLevels?undefined:STUDIO_RIVER_LEVELS[spline.id];
@@ -25,6 +25,16 @@ export class StudioRivers {
       // Enforce downstream flow; the source profile is an authored guide, not
       // a fluid simulation. Lake mouths share the lake's exact datum.
       for(let i=1;i<levels.length;i++)levels[i]=Math.min(levels[i],levels[i-1]);
+      const lengths=p.slice(1).map((b,i)=>Math.max(.01,Math.hypot(b.x-p[i].x,b.z-p[i].z)));
+      const grades=lengths.map((length,i)=>(levels[i]-levels[i+1])/length);
+      // Monotone Hermite tangents: preserve the authored levels without the
+      // periodic slowing/flattening caused by clamping adjacent projections.
+      const gradeAt=(i:number)=>{
+        if(i===0)return grades[0];if(i===p.length-1)return grades.at(-1)!;
+        const a=grades[i-1],b=grades[i];if(a<=0||b<=0)return 0;
+        const w0=2*lengths[i]+lengths[i-1],w1=lengths[i]+2*lengths[i-1];
+        return (w0+w1)/(w0/a+w1/b);
+      };
       const tangent=(i:number)=>{const a=p[Math.max(0,i-1)],b=p[Math.min(p.length-1,i+1)];
         const l=Math.hypot(b.x-a.x,b.z-a.z)||1;return [(b.x-a.x)/l,(b.z-a.z)/l];};
       let along=0;
@@ -32,7 +42,7 @@ export class StudioRivers {
         const a=p[i-1],b=p[i],length=Math.hypot(b.x-a.x,b.z-a.z);if(length<.01)continue;
         const [tx0,tz0]=tangent(i-1),[tx1,tz1]=tangent(i);
         const s:Segment={route:spline.id,ax:a.x,az:a.z,bx:b.x,bz:b.z,ay:levels[i-1],by:levels[i],width:spline.width/2,
-          length,tx0,tz0,tx1,tz1,along,first:i===1,last:i===p.length-1};along+=length;
+          length,tx0,tz0,tx1,tz1,grade0:gradeAt(i-1),grade1:gradeAt(i),along,first:i===1,last:i===p.length-1};along+=length;
         const pad=s.width+52;
         for(let z=Math.floor((Math.min(a.z,b.z)-pad)/128);z<=Math.floor((Math.max(a.z,b.z)+pad)/128);z++)
           for(let x=Math.floor((Math.min(a.x,b.x)-pad)/128);x<=Math.floor((Math.max(a.x,b.x)+pad)/128);x++){
@@ -41,31 +51,50 @@ export class StudioRivers {
       }
     }
   }
+  private profile(s:Segment,t:number):number{
+    const clamped=Math.max(0,Math.min(1,t)),linear=s.ay+(s.by-s.ay)*clamped;
+    const steep=smooth(.15,.45,(s.ay-s.by)/s.length);if(steep===0)return linear;
+    let curved:number;
+    if(t<0)curved=s.ay-(s.first?0:s.grade0*t*s.length);
+    else if(t>1)curved=s.by-(s.last?0:s.grade1*(t-1)*s.length);
+    else {
+      const t2=t*t,t3=t2*t;
+      curved=(2*t3-3*t2+1)*s.ay+(-2*t3+3*t2)*s.by
+        -(t3-2*t2+t)*s.length*s.grade0-(t3-t2)*s.length*s.grade1;
+    }
+    return Math.max(this.sea,linear+(curved-linear)*steep);
+  }
   private station(s:Segment,t:number):RiverStation{
     const dx=s.tx0+(s.tx1-s.tx0)*t,dz=s.tz0+(s.tz1-s.tz0)*t,l=Math.hypot(dx,dz)||1;
-    return {x:s.ax+(s.bx-s.ax)*t,z:s.az+(s.bz-s.az)*t,level:s.ay+(s.by-s.ay)*t,
-      width:s.width,dx:dx/l,dz:dz/l,along:s.along+s.length*t};
+    return {x:s.ax+(s.bx-s.ax)*t,z:s.az+(s.bz-s.az)*t,level:this.profile(s,t),
+      width:s.width,dx:dx/l,dz:dz/l,along:s.along+s.length*t,grade:(s.ay-s.by)/s.length};
   }
   at(x:number,z:number){
     let best:(RiverStation&{distance:number})|null=null;
-    let weight=0,level=0;
+    let weight=0,level=0,grade=0;
     for(const s of this.cells.get(`${Math.floor(x/128)}:${Math.floor(z/128)}`)??[]){
-      const dx=s.bx-s.ax,dz=s.bz-s.az,t=Math.max(0,Math.min(1,((x-s.ax)*dx+(z-s.az)*dz)/(s.length*s.length)));
+      const dx=s.bx-s.ax,dz=s.bz-s.az,projected=((x-s.ax)*dx+(z-s.az)*dz)/(s.length*s.length);
+      const t=Math.max(0,Math.min(1,projected));
       const d=Math.hypot(x-s.ax-t*dx,z-s.az-t*dz);if(d>s.width+52)continue;
       // Compact, continuous weights include both sides of a bend. Selecting
       // only the nearest segment makes the waterline jump at its bisector.
       const w=(1-smooth(s.width+14,s.width+52,d))**2/(1+(d/s.width)**2);
-      weight+=w;level+=(s.ay+(s.by-s.ay)*t)*w;
+      weight+=w;level+=this.profile(s,projected)*w;grade+=(s.ay-s.by)/s.length*w;
       if(!best||d<best.distance)best={...this.station(s,t),distance:d};
     }
-    if(best&&weight>0)best.level=level/weight;
+    if(best&&weight>0){best.level=level/weight;best.grade=grade/weight;}
     return best;
   }
   /** Incision only. Original terrain is an upper bound, including both banks. */
   bedAt(x:number,z:number,base:number):number{
     const r=this.at(x,z);if(!r)return base;
     const depth=4+r.width*.16,crest=r.level+3+r.width*.12;
-    const bed=r.level-depth,channel=bed+(crest-bed)*smooth(r.width*.45,r.width+14,r.distance);
+    const bed=r.level-depth,bank=bed+(crest-bed)*smooth(r.width*.45,r.width+14,r.distance);
+    // A flat bank crest is appropriate on gentle rivers, but forms repeated
+    // grassy shelves along a cascade. A concave cross-section joins the steep
+    // valley walls without that shelf. Keep the water datum and authored axis.
+    const chute=bed+depth*(r.distance/(r.width+8))**2;
+    const channel=bank+(chute-bank)*smooth(.15,.45,r.grade);
     return Math.min(base,channel+(base-channel)*smooth(r.width+14,r.width+52,r.distance));
   }
   private candidates(bounds:GeographicBounds):Set<Segment>{

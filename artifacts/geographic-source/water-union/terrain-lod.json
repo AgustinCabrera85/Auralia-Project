@@ -112,12 +112,18 @@
     "residentTiles": 6,
     "maxResidentTiles": 9,
     "heightBytes": 4915200,
-    "lastLoadMs": 9.840700000000652,
+    "lastLoadMs": 9.202000000000226,
     "totalLoaded": 24,
     "sourceSpacing": 4.381846635367762,
     "detailAmplitudeBound": 1.25,
     "worldId": "worldstudio-playable-v1",
     "townHeight": 11.04876628796277,
+    "nacarBathymetry": {
+      "bytes": 373500,
+      "gridSpacing": 8,
+      "buildMs": 74.98779999999988,
+      "targetMaximumDepth": 80
+    },
     "waterLevels": [
       {
         "id": "nacar",
