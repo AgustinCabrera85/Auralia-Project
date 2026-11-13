@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "initial": {
+    "source": "worldstudio-playable-v1",
+    "position": {
+      "x": -1249,
+      "y": 11.04876628796277,
+      "z": 1953
+    },
+    "mode": "grounded",
+    "wood": 0,
+    "slot": "auralia:worldstudio-playable-v1:save:v1",
+    "sourceSelector": false,
+    "url": "?qa=1"
+  },
+  "reloaded": {
+    "source": "worldstudio-playable-v1",
+    "position": {
+      "x": -1249,
+      "y": 11.04876628796277,
+      "z": 1953
+    },
+    "mode": "grounded",
+    "wood": 7,
+    "slot": "auralia:worldstudio-playable-v1:save:v1",
+    "sourceSelector": false,
+    "url": "?qa=1"
+  },
+  "obsoleteLink": {
+    "source": "worldstudio-playable-v1",
+    "position": {
+      "x": -1249,
+      "y": 11.04876628796277,
+      "z": 1953
+    },
+    "mode": "grounded",
+    "wood": 7,
+    "slot": "auralia:worldstudio-playable-v1:save:v1",
+    "sourceSelector": false,
+    "url": "?qa=1&world=legacy"
+  },
+  "reset": {
+    "source": "worldstudio-playable-v1",
+    "position": {
+      "x": -1249,
+      "y": 11.04876628796277,
+      "z": 1953
+    },
+    "mode": "grounded",
+    "wood": 0,
+    "slot": "auralia:worldstudio-playable-v1:save:v1",
+    "sourceSelector": false,
+    "url": "?qa=1&world=legacy"
+  },
+  "historicalSaveUntouched": true
+}

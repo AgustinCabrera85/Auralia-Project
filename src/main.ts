@@ -11,26 +11,18 @@ import { configureBuildPlot } from './domain/buildingRules';
 import { newGame } from './domain/types';
 
 async function start():Promise<void> {
-const useStudio=new URLSearchParams(location.search).get('world')==='worldstudio';
-const geographicWorld=useStudio?await PlayableWorld.load():null;
+const geographicWorld=await PlayableWorld.load();
 setActiveGeography(geographicWorld);
-configureBuildPlot(-29+(geographicWorld?.town.x??0),18+(geographicWorld?.town.z??0));
+configureBuildPlot(-29+geographicWorld.town.x,18+geographicWorld.town.z);
 // Authored world data is separate from per-player savegame data.
-try{
-  if(geographicWorld)setWorldDocument(emptyWorldDocument());
-  else {const r=await fetch('/world/auralia-world.json',{cache:'no-store'});
-    setWorldDocument(r.ok?await r.json():emptyWorldDocument());}
-}catch(e){
-  console.warn('[Auralia] World editor data unavailable:',e);
-  setWorldDocument(emptyWorldDocument());
-}
+setWorldDocument(emptyWorldDocument());
 try {
   await loadFoliageForestAssets();
 } catch (error) {
   console.warn('[Auralia] No se pudo cargar el Bosque Ilustrado:', error);
 }
-const repository=new LocalStorageSaveRepository(geographicWorld?'auralia:worldstudio-playable-v1:save:v1':undefined,()=>{
-  const save=newGame();if(geographicWorld)save.playerPosition={zone:'brisalia',...geographicWorld.spawn};return save;
+const repository=new LocalStorageSaveRepository('auralia:worldstudio-playable-v1:save:v1',()=>{
+  const save=newGame();save.playerPosition={zone:'brisalia',...geographicWorld.spawn};return save;
 });
 const store = new GameStore(repository);
 let world: WorldView;
@@ -64,18 +56,13 @@ try {
     },
     onStructureSelected:structure=>hud.setSelectedStructure(structure)
   }, () => hud.isModalOpen,geographicWorld);
-  const navigation=document.createElement('div');navigation.className='world-source-switch';
+  const navigation=document.createElement('div');navigation.className='world-travel';
   navigation.style.cssText='position:fixed;left:12px;bottom:72px;z-index:25;display:flex;gap:6px;padding:8px;background:#142333e8;border-radius:8px;color:white;font:13px sans-serif;max-width:90vw;flex-wrap:wrap';
-  const source=document.createElement('select');source.ariaLabel='Mundo';
-  source.innerHTML='<option value="legacy">Mundo actual</option><option value="worldstudio">Nuevo continente</option>';
-  source.value=useStudio?'worldstudio':'legacy';source.onchange=()=>{const url=new URL(location.href);url.search='';if(source.value==='worldstudio')url.searchParams.set('world','worldstudio');location.assign(url);};navigation.append(source);
-  if(geographicWorld){
     const destinations=geographicWorld.destinations;
-    const places=document.createElement('select');places.ariaLabel='Destino del nuevo continente';
+    const places=document.createElement('select');places.ariaLabel='Destino del continente';
     for(const p of destinations){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;places.append(o);}
     const visit=document.createElement('button');visit.textContent='Viajar';visit.onclick=()=>{const p=destinations.find(p=>p.id===places.value)!;world.teleportToLandmark(p.id);};
-    const slot=document.createElement('span');slot.textContent='Partida del nuevo continente';navigation.append(places,visit,slot);
-  }
+    const slot=document.createElement('span');slot.textContent='Auralia · Continente';navigation.append(places,visit,slot);
   document.body.append(navigation);
   if(new URLSearchParams(location.search).has('qa'))Object.assign(window,{__auraliaGame:{world,store,repository,hud}});
   window.setTimeout(() => hud.notify('¡Bienvenido a Auralia! Buscá materiales, conocé Brisalia y construí tu hogar.'), 800);

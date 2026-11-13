@@ -1,18 +1,18 @@
 # Migración jugable al continente de World Studio
 
-Fecha: 2026-11-13. Rama: `feat/worldstudio-v36-preview`.
+Fecha: 2026-11-13. Integración en `feat/worldstudio-v36-preview`, promovida a `main` por solicitud del usuario.
 Esta etapa sustituye el alcance de «solo validación» descrito en `WORLD_STUDIO_GEOGRAPHIC_SOURCE.md`; conserva aquel informe como registro de la primera implementación.
 
 ## Acceso y separación de partidas
 
-- Juego actual: `http://127.0.0.1:5173/`.
-- Nuevo continente jugable: `http://127.0.0.1:5173/?world=worldstudio`.
-- El selector «Mundo actual / Nuevo continente» recarga la página y elige una sola fuente.
-- Guardado actual: `auralia:poc:save:v1`; nuevo: `auralia:worldstudio-playable-v1:save:v1`.
+- Único continente jugable: `http://127.0.0.1:5173/`; los enlaces anteriores siguen abriendo este continente.
+- El parámetro `world` ya no selecciona otra geografía; incluso `?world=legacy` abre el continente vigente.
+- Se retiró el selector de mundos. Permanece el selector de destinos del continente.
+- Guardado vigente: `auralia:worldstudio-playable-v1:save:v1`; el histórico `auralia:poc:save:v1` queda intacto y no se carga.
 - No se importa, convierte ni copia automáticamente ninguna partida. Reiniciar borra únicamente el slot seleccionado.
 - `/world-preview.html` sigue siendo una herramienta de comparación, independiente de la partida.
 
-La rama `main` permanece en `c72ac2e17e466c4720c3c031baa3489772dd3159`. No se realizó checkout, merge ni escritura de guardados del usuario: la automatización usó perfiles nuevos de Chrome dentro de `.test-build/`.
+La referencia histórica del mapa obsoleto es `c72ac2e17e466c4720c3c031baa3489772dd3159`. Tras la aprobación visual, el usuario autorizó reemplazarlo en `main` y retirarlo como opción jugable. La automatización usa perfiles nuevos de Chrome dentro de `.test-build/` y no escribe guardados del usuario.
 
 ## Implementación
 
@@ -305,3 +305,9 @@ Se reprodujo el cambio brusco entre X 1842, Z −1735 (óptica desactivada) y X 
 `WaterOptics` conserva el material y la niebla originales cuando falta profundidad opaca. Con la cámara sobre el agua, la contribución óptica local se desvanece entre 60 y 90 m, antes del límite de descarte; también atenúa las cáusticas. Bajo el agua se mantiene el cálculo de absorción existente. No se amplía el pase de profundidad ni se añaden texturas, geometría o recursos residentes.
 
 Validación: `node scripts/check-worldstudio-game.mjs --run --water-entry` recorre orilla, agua y regreso con el controlador real, comprueba la activación 0 → 1 → 0 y ejecuta regresiones GPU de superficie inclinada, vista parcialmente sumergida, huella finita y agua distante. La nueva prueba falla antes de corregir el shader: a 110 y 200 m, RGB [184,127,82] pasaba a [9,59,66]. Después conserva [184,127,82] a 95, 110 y 200 m; a 12 m mantiene la absorción [141,120,81] y a 80 m transiciona a [173,125,82]. Cuatro ciclos adicionales no acumulan recursos y al salir se recupera el color original. Evidencias antes/después en `artifacts/geographic-source/water-entry/`.
+
+## Promoción a mundo principal
+
+El arranque carga siempre el continente integrado. Se retiraron la bifurcación hacia el mapa anterior, su carga de datos de autoría y el selector de mundos del juego. Una partida creada durante las pruebas del continente continúa con su progreso en el mismo slot. El guardado histórico no se lee, convierte ni borra. Los informes y comparativas previas conservan su valor como registro de la migración.
+
+Prueba reproducible: `node scripts/check-worldstudio-game.mjs --run --main-source`. Con partidas sintéticas en un perfil descartable, comprueba arranque directo, recarga del progreso, ausencia del selector retirado, apertura de un enlace obsoleto y reinicio exclusivo del continente. El guardado histórico debe permanecer idéntico. Capturas y resultados en `artifacts/geographic-source/main-promotion/`. El arnés rechaza `--legacy` para impedir que una medición nueva se etiquete como mapa anterior; las comparativas históricas utilizan su escena de referencia aislada.
