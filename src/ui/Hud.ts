@@ -2,6 +2,7 @@ import { MAP_LOCATIONS, ZONES, type ZoneId } from '../data/world';
 import { REGIONS, regionAt } from '../world/RegionCatalog';
 import { BRIDGE_DEFINITIONS, TUNNEL_LINKS, TUNNEL_NODES } from '../world/mountainRoutes';
 import { GameStore, type Milestone } from '../domain/GameStore';
+import { nextBrisaliaSwordObjective } from '../domain/brisaliaSword';
 import { BUILD_CATALOG, RECIPES, costAsText, hasCost } from '../domain/recipes';
 import { EQUIPMENT_IDS, ITEM_ICON, ITEM_LABEL, MATERIALS,
   type BuildType, type EquipmentId, type Structure } from '../domain/types';
@@ -237,10 +238,10 @@ export class Hud {
     document.getElementById('quest-progress')!.innerHTML = this.getProgress(stage);
     document.getElementById('inventory')!.innerHTML = MATERIALS.map(item => `
       <div class="inventory-item" title="${ITEM_LABEL[item]}"><div class="inventory-icon">${ITEM_ICON[item]}</div><div><small>${ITEM_LABEL[item]}</small><strong>${state.inventory[item]}</strong></div></div>
-    `).join('') + `${state.inventory.hammer > 0 ? `<div class="inventory-item special" title="Martillo">🔨 <strong>✓</strong></div>` : ''}` + `${state.inventory.lantern > 0 ? `<div class="inventory-item special" title="Linterna mágica">🏮 <strong>✓</strong></div>` : ''}` + `${state.inventory.sword > 0 ? `<div class="inventory-item special" title="Espada de cobre">🗡️ <strong>✓</strong></div>` : ''}`;
+    `).join('') + `${state.inventory.hammer > 0 ? `<div class="inventory-item special" title="Martillo">🔨 <strong>✓</strong></div>` : ''}` + `${state.inventory.lantern > 0 ? `<div class="inventory-item special" title="Linterna mágica">🏮 <strong>✓</strong></div>` : ''}` + `${state.inventory.sword > 0 ? `<div class="inventory-item special" title="Espada del Bosque Encantado · nivel ${this.store.swordLevel}">🗡️ <strong>${this.store.swordLevel}</strong></div>` : ''}`;
     const equipped=state.equippedItem??'unarmed';
     document.getElementById('equipment-status')!.textContent=equipped==='unarmed'
-      ?'✊ Mano limpia':`${ITEM_ICON[equipped]} ${ITEM_LABEL[equipped]}`;
+      ?'✊ Mano limpia':`${ITEM_ICON[equipped]} ${ITEM_LABEL[equipped]}${equipped==='sword'?` · N${this.store.swordLevel}`:''}`;
     if (this.panel === 'craft' || this.panel === 'build' ||
       this.panel === 'map' || this.panel === 'equip') this.renderPanel();
   }
@@ -400,17 +401,20 @@ export class Hud {
   private equipmentMarkup():string{
     const inventory=this.store.state.inventory;
     const equipped=this.store.state.equippedItem??'unarmed';
+    const swordLevel=this.store.swordLevel;
     const groups:{title:string;items:{id:EquipmentId;description:string;key:string}[]}[]=[
       {title:'A mano limpia',items:[
         {id:'unarmed',description:'Q alterna patadas. F ejecuta la barrida.',key:'1'}]},
       {title:'Armas',items:[
-        {id:'sword',description:'Q alterna los ataques de espada.',key:'2'}]},
+        {id:'sword',description:swordLevel>0?
+          `Nivel ${swordLevel}/4 · ${nextBrisaliaSwordObjective(this.store.state)} Q alterna los ataques.`:
+          nextBrisaliaSwordObjective(this.store.state),key:'2'}]},
       {title:'Herramientas',items:[
         {id:'pickaxe',description:'Pico de explorador. Sin ataque de Q asignado.',key:'3'},
         {id:'hammer',description:'Martillo de construcción. Sin ataque de Q asignado.',key:'4'},
         {id:'lantern',description:'Linterna mágica. Sin ataque de Q asignado.',key:'5'}]}
     ];
-    return `<p class="panel-lead">Elegí qué lleva Santi. Fabricar una espada la agrega a la mochila; seleccionarla aquí habilita sus ataques. También podés cambiar con las teclas 1–5. La barrida permanece en F.</p>
+    return `<p class="panel-lead">Elegí qué lleva Santi. La espada del bosque evoluciona del nivel 1 al 4 al cumplir sus objetivos de exploración. Seleccionarla habilita sus ataques. También podés cambiar con las teclas 1–5. La barrida permanece en F.</p>
       ${groups.map(group=>`<h3 class="equipment-group-title">${group.title}</h3>
         <div class="equipment-grid">${group.items.map(item=>{
           const owned=item.id==='unarmed'||inventory[item.id]>0;

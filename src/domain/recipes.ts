@@ -22,8 +22,8 @@ export const RECIPES: readonly Recipe[] = [
     output: 'lantern', requires: { wood: 1, spark: 2 }
   },
   {
-    id:'sword',title:'Espada de cobre',
-    description:'Elegila en Equipo para usar los ataques de espada de Santi.',
+    id:'sword',title:'Espada del Bosque Encantado',
+    description:'Empieza en nivel 1. Evoluciona al explorar el bosque de Brisalia.',
     output:'sword',requires:{wood:2,copper:5,stone:1}
   }
 ];

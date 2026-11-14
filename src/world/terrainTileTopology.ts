@@ -2,6 +2,12 @@ import { TERRAIN_LOD_CONFIG, type TerrainLod } from './terrainLod';
 
 type TileTopology={size:number;offsets:ReadonlyArray<readonly [number,number]>;indices:number[]};
 const topologies=new Map<string,TileTopology>();
+/** The 3 m World Studio source keeps far and middle mountains on one 18 m grid. */
+export function terrainInteriorSubdivisions(lod:TerrainLod,unit:number):number{
+  if(lod==='near')return TERRAIN_LOD_CONFIG.nearSize/unit;
+  if(lod==='far'&&unit<=3)return TERRAIN_LOD_CONFIG.detailedSourceFarSubdivisions;
+  return TERRAIN_LOD_CONFIG[`${lod}Subdivisions`];
+}
 
 /** Coarse interiors meet on the same canonical perimeter at every LOD.
  * Refining only boundary cells avoids T-junctions without overlapping skirts
@@ -11,7 +17,7 @@ export function terrainTileTopology(lod:TerrainLod,unit=TERRAIN_LOD_CONFIG.nearS
   const key=`${lod}:${unit}`,cached=topologies.get(key);
   if(cached)return cached;
   const config=TERRAIN_LOD_CONFIG;
-  const size=config[`${lod}Size`],subdiv=lod==='near'?size/unit:config[`${lod}Subdivisions`];
+  const size=config[`${lod}Size`],subdiv=terrainInteriorSubdivisions(lod,unit);
   const ratio=size/subdiv/unit,stride=subdiv+1;
   const offsets:Array<readonly [number,number]>=[],indices:number[]=[];
   const vertices=new Map<string,number>();
@@ -56,7 +62,7 @@ export function terrainTileTopology(lod:TerrainLod,unit=TERRAIN_LOD_CONFIG.nearS
 export function featureTerrainTopology(lod:TerrainLod,refine:(x:number,z:number,size:number)=>boolean,
   unit=TERRAIN_LOD_CONFIG.nearSize/TERRAIN_LOD_CONFIG.nearSubdivisions):TileTopology{
   if(lod==='near')return terrainTileTopology(lod,unit);
-  const config=TERRAIN_LOD_CONFIG,size=config[`${lod}Size`],count=config[`${lod}Subdivisions`];
+  const config=TERRAIN_LOD_CONFIG,size=config[`${lod}Size`],count=terrainInteriorSubdivisions(lod,unit);
   const step=size/count,ratio=step/unit;
   const fine=Array.from({length:count*count},(_,i)=>refine(i%count*step,Math.floor(i/count)*step,step));
   if(!fine.some(Boolean))return terrainTileTopology(lod,unit);

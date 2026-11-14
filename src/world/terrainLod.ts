@@ -12,6 +12,7 @@ export const TERRAIN_LOD_CONFIG = {
   nearSubdivisions: MAINLAND.terrainSubdivisions,
   midSubdivisions: 8,
   farSubdivisions: 8,
+  detailedSourceFarSubdivisions: 16,
   generationBudgetMs: 4,
   maxGeneratedPerFrame: 2,
   forwardPriority: .35,

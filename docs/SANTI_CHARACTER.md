@@ -31,14 +31,15 @@ Espacio permite un segundo salto en el aire con otro impulso; los dos saltos se
 recargan al aterrizar. El segundo salto reutiliza `Jumping`, ya que el GLB no
 incluye un clip NLA llamado «Double Jump».
 
-`Equipo` (`V`) permite elegir mano limpia, espada de cobre o herramientas;
+`Equipo` (`V`) permite elegir mano limpia, Espada del Bosque Encantado o herramientas;
 las teclas `1`–`5` son accesos directos. La selección se guarda con la partida.
 La espada se fabrica con madera, cobre y piedra, pero fabricarla no la equipa.
 Con mano limpia, `Q` alterna `Kicking` y `Inside Crescent Kick`; con la espada
 seleccionada, alterna `Two Hand Sword Combo` y `Great Sword High Spin Attack`.
 Las herramientas no tienen ataques de `Q` asignados. Las patadas detienen el
-desplazamiento hasta que termina su animación. `Running Slide` solo se ejecuta
-con `F` y también funciona como ataque, sin aparecer en la secuencia de `Q`.
+desplazamiento hasta que termina su animación. `Running Slide` se ejecuta
+como ataque con `F`, sin aparecer en la secuencia de `Q`; el deslizamiento
+cuesta abajo reutiliza una fase sostenida del mismo clip.
 `R` reproduce `Sprinting Forward Roll` durante el juego; al construir, `R`
 gira la pieza seleccionada. Las patadas, la barrida y los rolls bloquean nuevas
 acciones hasta que termina su clip. Una caída de 8 unidades o más desde
@@ -72,7 +73,15 @@ Si se mantienen teclas de movimiento al aterrizar, el salto de pie o doble salto
 enlaza desde la pose de impacto con caminar o correr. Sin movimiento, la
 recuperación visual detiene el traslado hasta que termina para evitar que patine.
 Las cuestas caminables usan `Walking (6)` o `Run`; las animaciones de subir
-escaleras requieren un contexto de escalera explícito.
+escaleras requieren un contexto de escalera explícito. Al correr cuesta arriba,
+el modelo se orienta según el ascenso real para no hundir la cara en la ladera.
+En una pendiente demasiado inclinada, la física comunica la dirección cuesta
+abajo. Santi se orienta hacia ella y recorre una sola vez la fase baja de
+`Running Slide`, más despacio; después sostiene esa pose hasta salir del
+deslizamiento. El modelo se inclina según el desnivel medido para seguir el
+plano de la pendiente; la raíz visual baja hasta apoyar el zapato más cercano
+al terreno, sin desplazar el collider. Al salir recupera suavemente la altura
+y la vertical. El clip no agrega desplazamiento propio ni se reinicia en cada fotograma.
 
 La barrida y el roll fijan su dirección al comenzar y avanzan con velocidad
 decreciente, sin giro libre durante el clip. El roll toma la dirección y velocidad
@@ -112,3 +121,30 @@ de una pose manual y el presupuesto de atributos GPU. No se modifica el GLB.
 La comprobación visual `node scripts/check-worldstudio-game.mjs --run --water-review --blink-only`
 usa un perfil descartable y genera capturas locales de ojos abiertos, cerrados
 y reabiertos en `artifacts/geographic-source/water-review/after/`.
+
+## Espada de Brisalia y colocación de assets
+
+Los cuatro GLB de `public/assets/equipment/brisalia-sword/` representan niveles
+de la misma espada. Al poseerla comienza en nivel 1; cada objetivo descubierto
+añade un nivel, hasta 4: examinar el Arco del Bosque de los Ecos (`hito-ecos`),
+llegar al Bosque Ilustrado y encontrar la Pradera Florida. Se reutilizan los
+descubrimientos guardados, sin otro contador ni migración de la partida.
+
+`BrisaliaSwordVisual` carga únicamente el modelo del nivel equipado y lo une
+a la mano derecha compensando la escala heredada del esqueleto. Los dedos
+copian la pose del ataque de espada mientras el brazo conserva la locomoción.
+La colocación aceptada usa offsets locales de **(-15,5; -1; -10) cm** y rotaciones
+**(38; -1; 10) grados**, añadidos a la alineación del mango con la palma.
+Al correr, `SantiCharacter` aplica un giro de 60° sobre el eje longitudinal
+del antebrazo, con entrada/salida gradual; no dobla la muñeca en otro eje ni
+interfiere con los ataques. Al desequipar se libera el agarre.
+
+`AssetPlacementDebug` es una herramienta reutilizable de desarrollo (`F9`).
+Cada target registra identificador, valores predeterminados y callbacks de
+lectura/aplicación. Ofrece XYZ en centímetros y grados, selección de asset,
+copia de valores y restablecimiento; guarda ajustes por target en localStorage.
+`WorldView` solo la instancia bajo `import.meta.env.DEV`, de modo que los
+ajustes locales y el panel no se activan en producción.
+
+`npm run test:sword` cubre progresión, guardado, carga y sustitución de los
+cuatro modelos; `npm run test:santi` añade agarre, muñeca y deslizamiento.

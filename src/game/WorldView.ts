@@ -1,3 +1,5 @@
+import { BrisaliaVillage } from '../world/BrisaliaVillage';
+import { BRISALIA_BUILDINGS, BRISALIA_ROADS, BRISALIA_SCALE, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
 import {
   ArcRotateCamera, ArcRotateCameraPointersInput, Color3, DirectionalLight, Engine, HemisphericLight,
   Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
@@ -40,7 +42,7 @@ import { bridgeDeckAt, isInlandWater, waterSurfaceAt } from '../world/geographic
 import { sampleRiverFlow } from '../world/water/riverFlow';
 import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
 import { createPointOfInterestView } from '../world/PointOfInterestView';
-import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, ROAD_RESERVATIONS, isLand, sampleMainlandHeight } from '../world/terrainData';
+import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, isLand, sampleMainlandHeight } from '../world/terrainData';
 import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type ActionMotionKind,
   type TraversalWorld } from './CharacterTraversalController';
@@ -50,6 +52,7 @@ import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, cameraTerrainView, swimmingCameraO
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
 import { SantiCharacter } from './SantiCharacter';
+import { AssetPlacementDebug } from './AssetPlacementDebug';
 import { DogoCompanion } from './DogoCompanion';
 import { CharacterShadows } from './CharacterShadows';
 import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCatalog';
@@ -127,6 +130,7 @@ export class WorldView {
   private player!: TransformNode;
   private playerBody!: TransformNode;
   private santi:SantiCharacter|null=null;
+  private readonly assetPlacement=import.meta.env.DEV?new AssetPlacementDebug():null;
   private dogo:DogoCompanion|null=null;
   private readonly characterShadows:CharacterShadows;
   private attackSerial=0;
@@ -172,6 +176,7 @@ export class WorldView {
   private cameraFrameDt=0;
   private renderQuality=readRenderQuality();
   private placingMainland=false;
+  readonly village:BrisaliaVillage;
   private geographyLoading=false;
   private geographyFailure:string|null=null;
 
@@ -248,6 +253,8 @@ export class WorldView {
       this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;
     }
     this.placingMainland=false;
+    this.village=new BrisaliaVillage(this.scene,continentRoot,geographicWorld?.town??{x:0,z:0},
+      (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z));
     this.populateFireflyIsland();
     this.createPlayer();
     const buildHeight=(x:number,z:number)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z);
@@ -264,7 +271,7 @@ export class WorldView {
     ]);
     this.grass=new GrassSectorSystem(this.scene,continentRoot,()=>[
       ...this.vegetationExclusions.filter(e=>
-        !(e.x===this.plot.x&&e.z===this.plot.z&&e.radius===24)),
+        (!geographicWorld||e.excludeGrass!==false)&&!(e.x===this.plot.x&&e.z===this.plot.z&&e.radius===24)),
       ...this.store.state.structures.map(footprint),
       ...authoredAssetExclusions()
     ]);
@@ -370,6 +377,9 @@ export class WorldView {
   private readonly onKeyDown = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     if(key==='f8'){e.preventDefault();if(!e.repeat)this.toggleTelemetry();return;}
+    if(key==='f9'&&this.assetPlacement){
+      e.preventDefault();if(!e.repeat)this.assetPlacement.toggle();return;
+    }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
       e.target instanceof HTMLSelectElement) return;
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright',
@@ -604,31 +614,6 @@ export class WorldView {
     this.cyl('chimenea', root, 1.4, 3.5, 2.1, 8.2, -1.3, timber, 4);
   }
 
-  private path(zone: IslandInfo, coords: readonly (readonly [number, number])[], width = 5): void {
-    const sand = this.mat('sendero', '#82704f');
-    sand.specularColor=Color3.Black();
-    for(let i=1;i<coords.length;i++){
-      const [ax,az]=coords[i-1],[bx,bz]=coords[i];
-      const len=Math.hypot(bx-ax,bz-az);
-      const parts=Math.max(1,Math.ceil(len/10));
-      for(let j=0;j<parts;j++){
-        const t0=j/parts,t1=(j+1)/parts;
-        const x0=ax+(bx-ax)*t0,z0=az+(bz-az)*t0;
-        const x1=ax+(bx-ax)*t1,z1=az+(bz-az)*t1;
-        const x=(x0+x1)/2,z=(z0+z1)/2;
-        const y0=zone.id==='brisalia'?this.walkHeightAt(x0,z0):this.y(zone,x0,z0);
-        const y1=zone.id==='brisalia'?this.walkHeightAt(x1,z1):this.y(zone,x1,z1);
-        if(zone.id==='brisalia' && (y0<.45||y1<.45))continue;
-        const root=this.host(zone,'camino-segmento',x,z);
-        root.position.y=(y0+y1)/2+.1;
-        const distance=Math.hypot(x1-x0,z1-z0);
-        const mesh=this.box('tramo',root,width,.075,distance+.8,0,0,0,sand);
-        mesh.rotation.y=Math.atan2(x1-x0,z1-z0);
-        mesh.rotation.x=-Math.atan2(y1-y0,distance);
-      }
-    }
-  }
-
   private markInteraction(zone: IslandInfo, node: Interactable): void {
     zone.nodes.push(node);
     if(zone.id==='brisalia')this.vegetationExclusions.push({
@@ -645,6 +630,9 @@ export class WorldView {
   }
 
   private resource(zone: IslandInfo, id: string, label: string, resource: MaterialId, amount: number, x: number, z: number): void {
+    // Keep harvest IDs, but leave both parcels and their approach roads clear.
+    if(zone.id==='brisalia')while(inBrisaliaFootprint(x,z,5)||
+      BRISALIA_ROADS.some(road=>distanceToRoad(x,z,road)<road.width/2+5))z+=5;
     const visual = resource === 'wood' ? this.tree(zone, x, z, 0.8,false,true) :
       resource === 'spark' ? this.crystal(zone, x, z) : this.rock(zone, x, z, resource === 'copper');
     this.markInteraction(zone, {
@@ -689,18 +677,14 @@ export class WorldView {
 
   private populateMainland(): void {
     const zone = this.zones.get('brisalia')!;
-    for(const route of ROAD_RESERVATIONS){
-      if(route.existing)this.path(zone,route.points,route.width);
+    for(const b of BRISALIA_BUILDINGS)this.vegetationExclusions.push({x:b.x,z:b.z+b.footprintOffsetZ,radius:Math.hypot(b.width,b.depth)/2+2,excludeGrass:false});
+    for(const r of BRISALIA_ROADS)for(let i=1;i<r.points.length;i++){
+      const [ax,az]=r.points[i-1],[bx,bz]=r.points[i],n=Math.ceil(Math.hypot(bx-ax,bz-az)/3);
+      for(let j=0;j<=n;j++)this.vegetationExclusions.push({x:ax+(bx-ax)*j/n,z:az+(bz-az)*j/n,radius:r.width/2+2,excludeGrass:false});
     }
-    this.home(zone, -8, -32, '#b96550', 1.1);
-    this.home(zone, 9, -33, '#5c90a3', 0.94);
-    this.home(zone, 24, -22, '#a784c2', 0.85);
-    this.home(zone, -25, -27, '#b96550', 0.88);
-    this.home(zone, 9, -12, '#b96550', 0.82);
-
     // Plaza del pueblo.
-    const plaza = this.host(zone, 'plaza', 1, -19);
-    this.vegetationExclusions.push({x:1,z:-19,radius:14});
+    const plaza = this.host(zone, 'plaza', 0, -65*BRISALIA_SCALE);
+    this.vegetationExclusions.push({x:0,z:-65*BRISALIA_SCALE,radius:15*BRISALIA_SCALE,excludeGrass:false});
     this.cyl('estanque', plaza, 5.4, 0.7, 0, 0.3, 0, this.mat('piedra-plaza', '#b2b2a0'));
     this.cyl('fuente', plaza, 3.5, 0.35, 0, 0.72, 0, this.mat('agua-fuente', '#6dbfdd', 0.25));
     this.cyl('obelisco', plaza, 1.1, 3, 0, 2.2, 0, this.mat('cristal-plaza', '#d7c99a'));
@@ -726,6 +710,7 @@ export class WorldView {
       const z = -4 + Math.sin(a) * (11 + (i % 6) * 4);
       if (Math.abs(x + 29) < 19 && Math.abs(z - 18) < 20) continue;
       if ((x/103)**2+(z/87)**2 > 0.6) continue;
+      if(inBrisaliaFootprint(x,z,4)||BRISALIA_ROADS.some(r=>distanceToRoad(x,z,r)<5))continue;
       this.tree(zone, x, z, 0.65 + (i % 4) * 0.13, i % 9 === 0);
     }
     for (let i = 0; i < 10; i++) {
@@ -747,16 +732,16 @@ export class WorldView {
       this.rock(zone, x, z);
     }
     // Primera mesa de trabajo.
-    const table = this.host(zone, 'banco-carpinteria', -10, 7);
+    const table = this.host(zone, 'banco-carpinteria', -18*BRISALIA_SCALE, -59*BRISALIA_SCALE);
     this.box('mesa', table, 4.5, 0.35, 2.8, 0, 1.6, 0, this.mat('madera-taller', '#a66d3c'));
     for (const dx of [-1.8, 1.8]) for (const dz of [-1, 1]) this.cyl('pata', table, 0.38, 1.8, dx, 0.82, dz, this.mat('madera-patas', '#755136'));
     this.markInteraction(zone, {
       id: 'taller', label: 'Banco de trabajo', verb: 'Abrir recetas', type: 'workbench',
-      localPosition: new Vector3(-10, 0, 7), visual: table, enabled: true
+      localPosition: new Vector3(-18*BRISALIA_SCALE, 0, -59*BRISALIA_SCALE), visual: table, enabled: true
     });
-    this.npc(zone, 'aro', 'Arlo, el carpintero', '¡Bienvenido a Brisalia! Recogé madera y piedra, fabricá un martillo y construí tu hogar en el claro marcado.', -6, 2, '#b25c45');
-    this.npc(zone, 'mira', 'Mira, la herrera', 'En Altapiedra hay talleres inmensos. Por ahora, aprendé a reconocer el cobre en las rocas del valle.', 15, -6, '#4c7a9b');
-    this.npc(zone, 'nilo', 'Nilo, el cartógrafo', 'El Mapa Vivo muestra tierras que todavía no conocemos. Las islas son las mejores escuelas para un explorador curioso.', -1, 24, '#6b8e54');
+    this.npc(zone, 'aro', 'Arlo, el carpintero', '¡Bienvenido a Brisalia! Recogé madera y piedra, fabricá un martillo y construí tu hogar en el claro marcado.', -18*BRISALIA_SCALE, -64*BRISALIA_SCALE, '#b25c45');
+    this.npc(zone, 'mira', 'Mira, la herrera', 'En Altapiedra hay talleres inmensos. Por ahora, aprendé a reconocer el cobre en las rocas del valle.', 18*BRISALIA_SCALE, -59*BRISALIA_SCALE, '#4c7a9b');
+    this.npc(zone, 'nilo', 'Nilo, el cartógrafo', 'El Mapa Vivo muestra tierras que todavía no conocemos. Las islas son las mejores escuelas para un explorador curioso.', 0, -76*BRISALIA_SCALE, '#6b8e54');
     this.dock(zone, 33, 120, 'luciernagas', 'Isla de las Luciérnagas');
     this.populateRegionOutposts(zone);
     this.populatePointsOfInterest(zone);
@@ -826,6 +811,8 @@ export class WorldView {
     this.cyl('rueda-grua',mine,4,.9,2,11,0,metal,10).rotation.z=Math.PI/2;
     landmark('altapiedra','Paso de Altapiedra',-275,-535,'Las Sierras guardan máquinas antiguas y vetas de metal. La ciudad de Altapiedra llegará en otra actualización.');
     for(let i=0;i<9;i++)this.resource(zone,`sierra-cobre-${i}`,'Cobre','copper',1,-260+(i%3)*10,-490+Math.floor(i/3)*9);
+    // Legacy lake outpost is replaced by the real Nacar region in the playable map.
+    if(!this.geographicWorld){
     // LAGO DE LAS DOS ORILLAS
     for(const [x,z,color] of [[265,-205,'#5c90a3'],[285,-194,'#b96550'],[300,-160,'#a784c2']] as const)this.home(zone,x,z,color,.72);
     const pier=this.host(zone,'mirador-lago',250,-200);
@@ -833,6 +820,7 @@ export class WorldView {
     for(let k=0;k<6;k++)this.box('pasarela-lago',pier,4.2,.3,3.2,0,.2,k*3,wood);
     landmark('nacar','Orilla de Nácar',245,-250,'Al otro lado del lago se fundará Nácar, una ciudad dedicada a la navegación y los intercambios.');
     for(let i=0;i<7;i++)this.resource(zone,`nacar-piedra-${i}`,'Piedra','stone',2,250+(i%4)*10,-265+Math.floor(i/4)*15);
+    }
     // CUMBRES DEL PRIMER AMANECER
     const shrine=this.host(zone,'mirador-altaluz',200,-660);
     for(const x of [-7,7])this.box('pilastra',shrine,2.1,12,2.1,x,6,0,archStone);
@@ -889,7 +877,7 @@ export class WorldView {
     const eye = this.mat('ojos-jugador', '#283c4b');
     this.ball('ojo-izq', this.playerBody, 0.18, -0.24, 3.34, 0.67, eye);
     this.ball('ojo-der', this.playerBody, 0.18, 0.24, 3.34, 0.67, eye);
-    const santi=new SantiCharacter(this.scene,this.player);
+    const santi=new SantiCharacter(this.scene,this.player,undefined,this.assetPlacement);
     this.santi=santi;
     void santi.load().then(ready=>{
       if(ready&&this.santi===santi){
@@ -1090,10 +1078,19 @@ export class WorldView {
         landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)])):'Isla de las Luciérnagas';
     if(this.lastBiome!==name){this.lastBiome=name;}
     this.callbacks.onExplore(x,z,name,zone.id==='brisalia'?this.mainland.activeCount:1);
+    const swordLevel=this.store.swordLevel;
     if(zone.id==='brisalia'&&!this.insideUnderground)for(const place of this.geographicWorld?
-      this.geographicWorld.destinations.map(d=>({...d,discoverRadius:120})):POINTS_OF_INTEREST){
+      this.geographicWorld.destinations.map(d=>({...d,discoverRadius:
+        d.id===FOLIAGE_FOREST.id||d.id===FOLIAGE_FOREST.flowerMeadow.id
+          ?pointOfInterest(d.id)?.discoverRadius??120:120})):POINTS_OF_INTEREST){
       if(Math.hypot(x-place.x,z-place.z)<place.discoverRadius)this.store.discoverPlace(place.id);
     }
+    this.notifySwordEvolution(swordLevel);
+  }
+
+  private notifySwordEvolution(previousLevel:number):void{
+    const level=this.store.swordLevel;
+    if(level>previousLevel)this.callbacks.notify(`La Espada del Bosque Encantado evolucionó al nivel ${level}.`);
   }
 
   private walkHeightAt(x:number,z:number):number {
@@ -1167,6 +1164,9 @@ export class WorldView {
     const height=(x:number,z:number)=>isMainland?
       routeDeck(x,z)?.height??trailDeck(x,z)?.height??(this.geographicWorld?null:bridgeDeckAt(x,z))??wallHeight(x,z):this.y(zone,x,z);
     return {
+      // Prefab steps use source metres, calibrated to Santi's 1.40 m height.
+      stepHeightAt:(x,z)=>isMainland&&inBrisaliaFootprint(x-(this.geographicWorld?.town.x??0),
+        z-(this.geographicWorld?.town.z??0),2)?Math.max(TRAVERSAL.stepHeight,.22*BRISALIA_SCALE):TRAVERSAL.stepHeight,
       waterLevel:(x,z)=>isMainland?(this.geographicWorld?waterSurfaceAt(x,z)?.level??
         (wallHeight(x,z)<this.geographicWorld.seaLevel?this.geographicWorld.seaLevel:null):lagoonWaterAt(x,z)?.level??null):null,
       ground:(x,z,originY,maxDistance,footRadius)=>{
@@ -1186,7 +1186,8 @@ export class WorldView {
         const builtY=isMainland?buildingFloorAt(x,z,originY,this.store.state.structures):null;
         const built=builtY!==null&&builtY>=originY-maxDistance-.001?
           {height:builtY,normalY:1}:null;
-        const surfaces=[terrain,root,built,...[rock,generatedRock].map(hit=>hit?
+        const village=isMainland?this.village.ground(x,z,originY,maxDistance):null;
+        const surfaces=[terrain,root,built,village,...[rock,generatedRock].map(hit=>hit?
           {height:hit.height,normalY:hit.normal.y,rockId:hit.rockId}:null)]
           .filter((hit):hit is NonNullable<typeof hit>=>hit!==null);
         return surfaces.reduce<typeof terrain>((highest,hit)=>
@@ -1214,12 +1215,12 @@ export class WorldView {
           normalZ:tree.normal.z,rockId:tree.id,climbable:false
         }:null;
         let nearest=terrain;
-        for(const wall of [rock,trunk,generatedWall(x,y,z,dx,dz,reach)])
+        for(const wall of [rock,trunk,generatedWall(x,y,z,dx,dz,reach),this.village.wall(x,y,z,dx,dz,reach)])
           if(wall&&(!nearest||wall.distance<nearest.distance))nearest=wall;
         return nearest;
       },
       headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
-        height(x,z)<=y+.08&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
+        height(x,z)<=y+.08&&this.village.headroom(x,y,z,room)&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
         generated.hasOverheadClearance(x,y,z,room,ignoreRockId)&&
         buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
@@ -1236,10 +1237,9 @@ export class WorldView {
           !!coastalRock&&coastalRock.height>MAINLAND.waterLevel+1)&&
           (elevated||!!lagoonWaterAt(nextX,nextZ)||!isInlandWater(nextX,nextZ,sampleMainlandHeight(nextX,nextZ))):
           Math.sqrt((nextX/zone.radiusX)**2+(nextZ/zone.radiusZ)**2)<.80;
-        const houses=isMainland&&!elevated&&[
-          {x:-8,z:-32,r:6},{x:9,z:-33,r:5.5},{x:24,z:-22,r:5},
-          {x:-25,z:-27,r:5},{x:9,z:-12,r:5}
-        ].some(ob=>Math.hypot(ob.x+(this.geographicWorld?.town.x??0)-nextX,ob.z+(this.geographicWorld?.town.z??0)-nextZ)<ob.r);
+        const travel=Math.hypot(nextX-fromX,nextZ-fromZ);
+        const houses=isMainland&&travel>0&&this.village.wall(fromX,feetY+1.2,fromZ,
+          nextX-fromX,nextZ-fromZ,travel+.35)!==null;
         return canWalk&&!houses&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
           (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
           (!isMainland||!buildingBlocksMove(fromX,fromZ,nextX,nextZ,feetY,
@@ -1370,12 +1370,13 @@ export class WorldView {
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
     }
-    if(!actionDriven&&!this.traversal.airKickActive){
+    const slopeSlide=this.traversal.slopeSlideDirection;
+    if(slopeSlide||!actionDriven&&!this.traversal.airKickActive){
       const groundTravel=this.traversal.groundTravelVelocity;
       const movementIntent=Math.hypot(direction.x,direction.z)>1e-5;
       const groundFacing=groundTravel.speed>1e-5
         ?{x:groundTravel.x/groundTravel.speed,z:groundTravel.z/groundTravel.speed}:null;
-      const facing=this.traversal.climbFacing??this.traversal.airTravelDirection??
+      const facing=slopeSlide??this.traversal.climbFacing??this.traversal.airTravelDirection??
         (this.traversal.rollCarryActive?groundFacing:
           movementIntent?direction:walking?groundFacing:null);
       if(facing)
@@ -1411,11 +1412,14 @@ export class WorldView {
     const descending=this.traversal.mode==='airborne'&&localY<feetBeforeStep-.001;
     const landingGround=descending?contactWorld.ground(localX,localZ,localY+.1,1.6,
       TRAVERSAL.playerRadius*.55):null;
+    this.santi?.setSwordLevel(this.store.state.equippedItem==='sword'?this.store.swordLevel:0);
     const landing=this.santi?.update(dt,{
       mode:this.traversal.mode,moving:walking,
       movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
       run:running,sprint:sprinting,
       groundGrade:this.traversal.groundGrade,
+      sliding:slopeSlide!==null,
+      slideGrade:slopeSlide?.grade,
       descending,groundDistance:landingGround?localY-landingGround.height:null,
       climbVertical:this.traversal.climbMotion.vertical,
       climbSide:this.traversal.climbMotion.side,
@@ -1555,7 +1559,8 @@ export class WorldView {
     if(this.cameraOcclusionTimer<=0){
       this.cameraOcclusionTimer=.12;
       const desired=target.add(direction.scale(radius));
-      const hit=this.props.queryCameraObstruction(target,desired);
+      const hits=[this.props.queryCameraObstruction(target,desired),this.village.cameraObstruction(target,desired)].filter((h):h is number=>h!==null);
+      const hit=hits.length?Math.min(...hits):null;
       this.cameraOcclusionDistance=hit===null?Infinity:
         Math.max(CAMERA_TERRAIN.minRadius,hit-1.1);
     }
@@ -1681,6 +1686,11 @@ export class WorldView {
     } else if (node.type === 'workbench') {
       this.callbacks.openCraft();
     } else if ((node.type === 'npc' || node.type === 'lore') && node.dialogue) {
+      if(node.id==='hito-ecos'){
+        const swordLevel=this.store.swordLevel;
+        this.store.discoverPlace(node.id);
+        this.notifySwordEvolution(swordLevel);
+      }
       this.callbacks.dialogue(node.label, node.dialogue);
     }
   }
@@ -1879,10 +1889,12 @@ export class WorldView {
   }
 
   dispose(): void {
+    this.village.dispose();
     this.floating?.dispose();this.geographicWorld?.dispose();
     this.engine.stopRenderLoop();
     this.speedMotionBlur.dispose();
     this.santi?.dispose();
+    this.assetPlacement?.dispose();
     this.characterShadows.dispose();
     this.santi=null;
     this.dogo?.dispose();this.dogo=null;

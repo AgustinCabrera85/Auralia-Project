@@ -3,9 +3,10 @@ import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { FreeCamera, NullEngine, Scene, LoadAssetContainerAsync, MorphTarget, TransformNode, Vector3 } from '@babylonjs/core';
+import { FreeCamera, NullEngine, Scene, ImportMeshAsync, LoadAssetContainerAsync,
+  MorphTarget, Quaternion, TransformNode, Vector3 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
-import { SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_NLA_ACTIONS,
+import { SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_LOCOMOTION, SANTI_NLA_ACTIONS,
   availableCombatAttacks, combatInputForKey } from '../src/game/SantiCatalog.ts';
 // Like the controller below, transpile the actual modules without changing
 // the application's bundler resolution or substituting mocks for water optics.
@@ -123,7 +124,7 @@ asset.dispose();
 // The temporary ESM copies are TypeScript transpilation only; no browser is needed.
 const runtimeDir=resolve('.test-build');
 mkdirSync(runtimeDir,{recursive:true});
-const modules=['SantiCatalog','traversalRules','SantiCharacter','CharacterTraversalController','GroundFootPlacement'];
+const modules=['SantiCatalog','traversalRules','SantiCharacter','CharacterTraversalController','GroundFootPlacement','BrisaliaSwordVisual'];
 const runtimeFiles=modules.map(name=>resolve(runtimeDir,`santi-${name}.mjs`));
 for(const [index,name] of modules.entries()){
   const source=readFileSync(new URL(`../src/game/${name}.ts`,import.meta.url),'utf8');
@@ -132,7 +133,8 @@ for(const [index,name] of modules.entries()){
   }}).outputText
     .replace("from './GroundFootPlacement'","from './santi-GroundFootPlacement.mjs'")
     .replace("from './traversalRules'","from './santi-traversalRules.mjs'")
-    .replace("from './SantiCatalog'","from './santi-SantiCatalog.mjs'");
+    .replace("from './SantiCatalog'","from './santi-SantiCatalog.mjs'")
+    .replace("from './BrisaliaSwordVisual'","from './santi-BrisaliaSwordVisual.mjs'");
   writeFileSync(runtimeFiles[index],javascript);
 }
 try{
@@ -141,11 +143,85 @@ try{
   const {CharacterTraversalController}=await import(pathToFileURL(runtimeFiles[3]).href);
   const parent=new TransformNode('test-player',scene);
   const managersBeforeSanti=new Set(scene.morphTargetManagers);
-  const santi=new SantiCharacter(scene,parent,url);
+  let placementTarget,placementReleased=false;
+  const placementDebug={register(target){placementTarget=target;
+    return ()=>{placementReleased=true;};}};
+  const santi=new SantiCharacter(scene,parent,url,placementDebug);
   assert.equal(await santi.load(),true);
+  assert.equal(placementTarget.id,'santi.brisaliaSword');
+  assert.deepEqual(placementTarget.defaults.positionCm,[-15.5,-1,-10]);
+  assert.deepEqual(placementTarget.defaults.rotationDeg,[38,-1,10]);
   santi.blinkTime=-1000; // Isolate existing exact expression-count assertions.
   assert.equal(santi.actions.size,35);
   assert.ok(santi.shapeKeys.size>=52);
+  // Exercise the same after-animation hand grip and sword loading used in game.
+  const sword=santi.swordVisual;
+  assert.ok(sword);
+  sword.importer=async(path,target)=>ImportMeshAsync(
+    new Uint8Array(readFileSync(resolve('public'+path))),target,{pluginExtension:'.glb'});
+  const hand=scene.getTransformNodeByName('mixamorig:RightHand');
+  const middle=[1,2,3,4].map(index=>scene.getTransformNodeByName(
+    `mixamorig:RightHandMiddle${index}`));
+  const fingerDistance=()=>{
+    hand.computeWorldMatrix(true);
+    for(const bone of middle)bone.computeWorldMatrix(true);
+    const palm=Vector3.TransformCoordinates(middle[0].position.scale(.75),hand.getWorldMatrix());
+    return Vector3.Distance(middle[3].getWorldMatrix().getTranslation(),palm);
+  };
+  scene.render();
+  const openHand=fingerDistance();
+  hand.computeWorldMatrix(true);
+  const restingHand=hand.getWorldMatrix().getTranslation().clone();
+  santi.setSwordLevel(3);await sword.whenReady();scene.render();
+  assert.equal(sword.level,3);
+  const heldRoot=sword.currentRoot;heldRoot.computeWorldMatrix(true);
+  const calibratedOffset=sword.offsetMeters;
+  const calibratedRotation=sword.rotationDegrees;
+  assert.deepEqual([calibratedOffset.x,calibratedOffset.y,calibratedOffset.z],
+    [-.155,-.01,-.1]);
+  assert.deepEqual([calibratedRotation.x,calibratedRotation.y,calibratedRotation.z],
+    [38,-1,10]);
+  const originalPosition=heldRoot.position.clone();
+  placementTarget.apply({positionCm:[5,-2,3],rotationDeg:[38,-1,10]});
+  assert.ok(Vector3.Distance(heldRoot.position,originalPosition)>1,
+    'the sword placement controls move the equipped model immediately');
+  placementTarget.apply(placementTarget.defaults);
+  assert.ok(heldRoot.position.equalsWithEpsilon(originalPosition,1e-5),
+    'resetting the placement restores its original attachment');
+  heldRoot.computeWorldMatrix(true);
+  const handleAnchor=Vector3.TransformCoordinates(new Vector3(0,-.07,0),
+    heldRoot.getWorldMatrix());
+  sword.setRotationDegrees(20,35,-15);heldRoot.computeWorldMatrix(true);
+  const turnedAnchor=Vector3.TransformCoordinates(new Vector3(0,-.07,0),
+    heldRoot.getWorldMatrix());
+  assert.ok(Vector3.Distance(handleAnchor,turnedAnchor)<1e-4,
+    'rotation controls turn the sword around its grip without moving the handle');
+  sword.setRotationDegrees(calibratedRotation.x,calibratedRotation.y,
+    calibratedRotation.z);heldRoot.computeWorldMatrix(true);
+  hand.computeWorldMatrix(true);
+  const bladeAxis=Vector3.TransformNormal(Vector3.Up(),heldRoot.getWorldMatrix()).normalize();
+  const handForward=Vector3.TransformNormal(Vector3.Right(),hand.getWorldMatrix()).normalize();
+  assert.ok(Vector3.Dot(bladeAxis,handForward)>.98,
+    'the sword blade is turned ninety degrees through the relaxed fist');
+  const closedHand=fingerDistance();
+  assert.ok(closedHand<openHand*.5,'equipping the sword closes Santi’s hand around its handle');
+  const attack=santi.actions.get(SANTI_COMBAT.swordAttacks[0]);
+  for(const {node} of sword.gripJoints){
+    const key=attack.targetedAnimations.find(track=>track.target===node&&
+      track.animation.targetProperty==='rotationQuaternion')?.animation.getKeys()[0]?.value;
+    assert.ok(key instanceof Quaternion&&
+      Math.abs(Quaternion.Dot(node.rotationQuaternion,key))>.99999,
+    `${node.name} uses the authored sword-attack finger pose`);
+  }
+  hand.computeWorldMatrix(true);
+  assert.ok(Math.abs(hand.getWorldMatrix().getTranslation().y-restingHand.y)<.1,
+    'the sword grip leaves the arm relaxed at his side');
+  santi.setSwordLevel(0);scene.render();
+  assert.equal(sword.level,0);
+  assert.ok(fingerDistance()>closedHand*1.5,'unequipping releases the grip');
+  hand.computeWorldMatrix(true);
+  assert.ok(Math.abs(hand.getWorldMatrix().getTranslation().y-restingHand.y)<.1,
+    'unequipping restores the relaxed arm');
   const santiManagers=scene.morphTargetManagers.filter(manager=>!managersBeforeSanti.has(manager));
   assert.ok(santiManagers.length>0);
   assert.ok(santiManagers.every(manager=>manager.optimizeInfluencers&&manager.numMaxInfluencers===0),
@@ -177,6 +253,16 @@ try{
   santi.update(.016,{mode:'grounded',moving:true,run:false,backward:false,
     sprint:false,feetY:0,jumpStarted:false});
   assert.ok(santi.actions.get('Walking (6)').isPlaying);
+  santi.setSwordLevel(3);scene.render();
+  assert.ok(fingerDistance()<openHand*.5,
+    'the walking clip still holds the sword after sampling its open-hand keys');
+  for(const {node} of sword.gripJoints){
+    const key=attack.targetedAnimations.find(track=>track.target===node&&
+      track.animation.targetProperty==='rotationQuaternion').animation.getKeys()[0].value;
+    assert.ok(Math.abs(Quaternion.Dot(node.rotationQuaternion,key))>.99999,
+      `${node.name} keeps the same sword grip while walking`);
+  }
+  santi.setSwordLevel(0);scene.render();
   santi.update(.2,{mode:'grounded',moving:true,run:true,backward:false,
     sprint:false,feetY:0,jumpStarted:false});
   assert.ok(santi.actions.get('Run').isPlaying);
@@ -190,12 +276,53 @@ try{
     feetY:0,jumpStarted:false});
   assert.equal(santi.actions.get('Run').speedRatio,1,
     'releasing Shift restores normal animation speed');
+  santi.setSwordLevel(3);
+  const swordRun={mode:'grounded',moving:true,run:true,sprint:false,
+    backward:false,feetY:0,jumpStarted:false};
+  for(let frame=0;frame<12;frame++){santi.update(.04,swordRun);scene.render();}
+  const runGroup=santi.actions.get('Run');
+  for(const heading of [0,Math.PI/2,-Math.PI/2]){
+    parent.rotation.y=heading;
+    for(let frame=0;frame<=10;frame++){
+      runGroup.goToFrame(runGroup.from+(runGroup.to-runGroup.from)*frame/10,true);
+      scene.render();parent.computeWorldMatrix(true);heldRoot.computeWorldMatrix(true);
+      const outside=Vector3.TransformNormal(Vector3.Right(),
+        parent.getWorldMatrix()).normalize();
+      const blade=Vector3.TransformNormal(Vector3.Up(),
+        heldRoot.getWorldMatrix()).normalize();
+      assert.ok(Vector3.Dot(blade,outside)>.2&&blade.y<-.8,
+        `the running blade points down and outside Santi at heading ${heading}, frame ${frame}`);
+      const animatedWrist=santi.lastSwordWristBase;
+      assert.ok(animatedWrist,'the running twist keeps the animation wrist pose');
+      const twistedWrist=hand.rotationQuaternion.clone();
+      const armAxis=Vector3.TransformNormal(hand.position,
+        hand.parent.getWorldMatrix()).normalize();
+      const fingerAxis=()=>Vector3.TransformNormal(middle[0].position,
+        hand.getWorldMatrix()).normalize();
+      const twistedAlignment=Vector3.Dot(fingerAxis(),armAxis);
+      hand.rotationQuaternion.copyFrom(animatedWrist);
+      hand.markAsDirty('rotationQuaternion');hand.computeWorldMatrix(true);
+      const animatedAlignment=Vector3.Dot(fingerAxis(),armAxis);
+      hand.rotationQuaternion.copyFrom(twistedWrist);
+      hand.markAsDirty('rotationQuaternion');hand.computeWorldMatrix(true);
+      assert.ok(Math.abs(twistedAlignment-animatedAlignment)<.005,
+        `the running wrist stays in line with the forearm at frame ${frame}`);
+    }
+  }
+  parent.rotation.y=0;santi.setSwordLevel(0);scene.render();
+  assert.equal(santi.swordRunWristWeight,0,
+    'unequipping releases the running wrist turn');
   const uphill={mode:'grounded',moving:true,run:false,sprint:false,backward:false,
     groundGrade:.6,feetY:2,jumpStarted:false};
   for(let i=0;i<15;i++)santi.update(.02,uphill);
   assert.ok(santi.actions.get('Walking (6)').isPlaying,'a walkable hillside keeps the walking gait');
   santi.update(.2,{...uphill,run:true});
   assert.ok(santi.actions.get('Run').isPlaying,'running on a hillside keeps the running gait');
+  const runningTilt=scene.getTransformNodeByName('santi-slope-orientation');
+  const runningForward=Vector3.TransformNormal(new Vector3(0,0,1),
+    runningTilt.computeWorldMatrix(true)).normalize();
+  assert.ok(Vector3.Dot(runningForward,new Vector3(0,.6,1).normalize())>.995,
+    'the running model follows the uphill tangent instead of facing into the terrain');
   santi.update(.2,{...uphill,onStairs:true});
   assert.ok(santi.actions.get('Ascending Stairs').isPlaying,'a marked stair can use its authored gait');
   santi.update(.2,{...uphill,onStairs:true,run:true});
@@ -203,7 +330,8 @@ try{
   santi.update(.2,{...uphill,onStairs:true,run:true,sprint:true});
   assert.equal(santi.actions.get('Running Up Stairs').speedRatio,2);
   const lean=scene.getTransformNodeByName('santi-slope-orientation');
-  assert.ok(lean.rotation.x>.1&&lean.rotation.x<.4,'2X sprint leans forward into the slope');
+  assert.ok(Math.abs(lean.rotation.x+Math.atan(.6))<.02,
+    'running uphill tilts the character along the ground instead of into the wall');
   for(const name of ['Ascending Stairs','Running Up Stairs','Climbing Ladder','Left Shimmy','Right Shimmy']){
     const keys=rootTrack(santi.actions.get(name)).animation.getKeys();
     assert.ok(keys[0].value.subtract(keys.at(-1).value).length()<.0001,
@@ -759,7 +887,69 @@ try{
     assert.ok(track.animation.getKeys().every(key=>
       key.value.x===first.x&&key.value.y===first.y),
     `${name} keeps the visual aligned with the player collider`);
+    if(name===SANTI_COMBAT.sweep)
+      assert.ok(track.animation.getKeys().every(key=>key.value.z===first.z),
+        'the held slope-slide pose has no authored forward drift');
   }
+  santi.update(santi.actionDuration(SANTI_COMBAT.sweep)+.02,grounded);
+  const slideGroup=santi.actions.get(SANTI_COMBAT.sweep);
+  const startSlide=slideGroup.start.bind(slideGroup);
+  let slideStarts=0;
+  slideGroup.start=(...args)=>{slideStarts++;return startSlide(...args);};
+  const slideAngle=55*Math.PI/180;
+  const downhill={x:-Math.SQRT1_2,z:-Math.SQRT1_2};
+  parent.rotation.y=Math.atan2(downhill.x,downhill.z);
+  const slideHeight=(x,z)=>-Math.tan(slideAngle)*(x*downhill.x+z*downhill.z);
+  const slideWorld={...slopeWorld,fallbackHeight:slideHeight};
+  const sliding={...grounded,mode:'airborne',moving:true,sliding:true,
+    slideGrade:Math.tan(slideAngle)};
+  let heldFrame=0;
+  for(let frame=0;frame<150;frame++){
+    const distance=4*frame/60;
+    parent.position.set(downhill.x*distance,slideHeight(downhill.x*distance,downhill.z*distance),
+      downhill.z*distance);
+    santi.update(1/60,{...sliding,feetY:parent.position.y});
+    santi.updateGroundContact(1/60,false,slideWorld,{x:0,z:0});scene.render();
+    assert.ok(slideGroup.isStarted&&!slideGroup.isPlaying,
+      'the slope slide holds its sampled pose instead of playing a loop');
+    if(frame===60){
+      heldFrame=slideGroup.getCurrentFrame();
+      const tilt=scene.getTransformNodeByName('santi-slope-orientation');
+      const forward=Vector3.TransformNormal(new Vector3(0,0,1),
+        tilt.computeWorldMatrix(true)).normalize();
+      const terrainTangent=new Vector3(downhill.x,-Math.tan(slideAngle),downhill.z).normalize();
+      assert.ok(Vector3.Dot(forward,terrainTangent)>.995,
+        'the visual slide axis follows the downhill surface tangent');
+      const footGap=['mixamorig:LeftFoot','mixamorig:RightFoot'].map(name=>{
+        const foot=scene.getTransformNodeByName(name);foot.computeWorldMatrix(true);
+        return foot.absolutePosition.y-slideHeight(foot.absolutePosition.x,foot.absolutePosition.z);
+      });
+      assert.ok(Math.min(...footGap)>.02&&Math.min(...footGap)<.25,
+        `the lower shoe stays close to the hillside: ${footGap}`);
+      assert.ok(Math.abs(parent.position.y-slideHeight(parent.position.x,parent.position.z))<1e-6,
+        'visual slide support leaves the physical player position unchanged');
+    }
+    if(frame>60)assert.ok(Math.abs(slideGroup.getCurrentFrame()-heldFrame)<.01,
+      'the slide remains on its low pose for as long as the slope continues');
+  }
+  assert.equal(slideStarts,1,'the slide clip starts only once on a long slope');
+  assert.ok(Math.abs((heldFrame-slideGroup.from)/(slideGroup.to-slideGroup.from)-.45)<.01,
+    'the sustained slide holds the authored low pose');
+  santi.update(.05,{...sliding,sliding:false,feetY:parent.position.y});
+  santi.update(1/60,{...sliding,feetY:parent.position.y});
+  assert.equal(slideStarts,1,'one uneven frame does not restart the slide');
+  santi.update(.2,{...grounded,feetY:parent.position.y});
+  assert.ok(Math.abs(scene.getTransformNodeByName('santi-slope-orientation').position.y)<.4,
+    'the temporary slide support offset releases smoothly on solid ground');
+  assert.ok(Math.abs(scene.getTransformNodeByName('santi-slope-orientation').rotation.x)<.1,
+    'the model eases back upright after leaving the slope');
+  parent.rotation.y=0;
+  parent.position.set(0,0,0);
+  assert.ok(santi.actions.get(SANTI_LOCOMOTION.idle).isPlaying,
+    'leaving the slope blends back to grounded locomotion');
+  assert.ok(!santi.actions.get(SANTI_COMBAT.highFallRoll).isPlaying,
+    'sliding downhill does not count as a twelve-metre free fall');
+  slideGroup.start=startSlide;
   // Real exported eyelids, while a skeletal action and a facial expression run.
   santi.setExpression('SF_01_FELIZ_SonrisaNatural',.22);
   scene.render();
@@ -788,6 +978,7 @@ try{
   assert.ok(santi.shapeKeys.get('SF_AU45_Blink_L').every(t=>t.influence===.4),
     'automatic blinking restores a manually authored eyelid pose');
   santi.dispose();
+  assert.equal(placementReleased,true,'disposing Santi unregisters its debug placement target');
   assert.equal(santi.isReady,false);
   assert.deepEqual(new Set(scene.morphTargetManagers),managersBeforeSanti,
     'disposing Santi releases all owned morph managers instead of retaining their buffers');

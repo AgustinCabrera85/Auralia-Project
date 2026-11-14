@@ -1,6 +1,6 @@
 import { biomeWeightsAt, chunkOf, geographyMasks, hash01, isStarterArea, MAINLAND, sampleMainlandHeight } from './terrainData';
 import { waterSurfaceAt } from './geographicFeatures';
-import { ASSET_CATALOG, DECORATIVE_TREE_ASSETS } from './assetCatalog';
+import { ASSET_CATALOG, BRISALIA_PLANT_ASSETS, DECORATIVE_TREE_ASSETS } from './assetCatalog';
 import { GEOLOGY_FORMATIONS, geologyFaceExcludes, geologyPoint } from './geologyData';
 import { insideFoliageForest } from './foliageForestConfig';
 import { landscapeVegetation } from './landscapeRegions';
@@ -13,7 +13,8 @@ import { worldForestCandidates, worldForestCover, worldForestEnabled } from './g
 export const VEGETATION_CONFIG = {
   seed: 89031,
   renderRadiusChunks: { trees: 12, plants: 2 },
-  candidatesPerChunk: { arbolito1: 5, arbolito2: 6, arbolito3: 1, plantitas1: 16, arbolitoSeco: 2, tronco1: 4 },
+  candidatesPerChunk: { arbolito1: 5, arbolito2: 6, arbolito3: 1, plantitas1: 16, arbolitoSeco: 2, tronco1: 4,
+    brisaliaMargaritas:0,brisaliaMatorral:0,brisaliaYuyos:0 },
   // The player is roughly 4 m tall; these sizes keep the trees visually dominant.
   baseScale: {
     arbolito1:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito1].referenceScale*1.95,
@@ -21,10 +22,14 @@ export const VEGETATION_CONFIG = {
     arbolito3:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolito3].referenceScale*1.95,
     plantitas1:ASSET_CATALOG.plantitas1.referenceScale,
     arbolitoSeco:ASSET_CATALOG[DECORATIVE_TREE_ASSETS.arbolitoSeco].referenceScale*1.5,
-    tronco1:ASSET_CATALOG.tronco1.referenceScale
+    tronco1:ASSET_CATALOG.tronco1.referenceScale,
+    brisaliaMargaritas:ASSET_CATALOG.brisaliaMargaritas.referenceScale,
+    brisaliaMatorral:ASSET_CATALOG.brisaliaMatorral.referenceScale,
+    brisaliaYuyos:ASSET_CATALOG.brisaliaYuyos.referenceScale
   },
   scaleVariation: 0.16,
-  crownRadius: { arbolito1: 2.7, arbolito2: 4, arbolito3: 2.4, plantitas1: 0.5, arbolitoSeco: 3.7, tronco1: .5 },
+  crownRadius: { arbolito1: 2.7, arbolito2: 4, arbolito3: 2.4, plantitas1: 0.5, arbolitoSeco: 3.7, tronco1: .5,
+    brisaliaMargaritas:.45,brisaliaMatorral:.55,brisaliaYuyos:.4 },
   clusterCellSize: 135,
   minHeightAboveWater: { trees: 1.5, plants: 0.55 },
   maxSlope: { trees: 0.45, plants: 0.62 },
@@ -33,7 +38,9 @@ export const VEGETATION_CONFIG = {
 } as const;
 
 export type VegetationKind = keyof typeof VEGETATION_CONFIG.candidatesPerChunk;
-export type VegetationExclusion = { x: number; z: number; radius: number };
+export type VegetationExclusion = { x: number; z: number; radius: number;
+  /** Coarse tree clearance can defer to the grass system's exact village mask. */
+  excludeGrass?: boolean };
 export type VegetationPlacement = {
   kind: VegetationKind;
   x: number;
@@ -70,6 +77,9 @@ function densityAt(kind:VegetationKind,x:number,z:number,wetness:number,cluster:
     arbolito2:[.1,.8,.08,.12,.025,.01],
     arbolito3:[.035,.1,.025,.055,.01,.02],
     plantitas1:[.72,.48,.12,.78,.18,.03],
+    brisaliaMargaritas:[0,0,0,0,0,0],
+    brisaliaMatorral:[0,0,0,0,0,0],
+    brisaliaYuyos:[0,0,0,0,0,0],
     arbolitoSeco:[.01,.22,.05,.015,.005,.01],
     tronco1:[.035,.28,.02,.035,.005,.005]
   };
@@ -150,6 +160,33 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       placements.some(p=>p.obstacleRadius>0&&Math.hypot(point.x-p.x,point.z-p.z)<3))continue;
     placements.push({kind:'plantitas1',x:point.x,y,z:point.z,scale,
       yaw:hash01(i,formation.seed,9)*Math.PI*2,obstacleRadius:0});
+  }
+  const town=activeGeography()?.town;
+  if(town&&Math.abs((cx+.5)*size-town.x)<340&&Math.abs((cz+.5)*size-town.z)<340){
+    // Keep the village and construction plot clear; natural clusters begin at its edge.
+    for(const [index,kind] of BRISALIA_PLANT_ASSETS.entries()){
+      const count=[14,9,17][index],chance=[.46,.36,.53][index];
+      for(let i=0;i<count;i++){
+        const seed=VEGETATION_CONFIG.seed+19000+index*1009+i*17;
+        const x=(cx+hash01(cx,cz,seed+1))*size,z=(cz+hash01(cx,cz,seed+2))*size;
+        const radiusFromTown=Math.hypot(x-town.x,z-town.z);
+        if(radiusFromTown>300||isStarterArea(x,z)||hash01(cx,cz,seed+3)>chance)continue;
+        const masks=geographyMasks(x,z);
+        if(masks.road>VEGETATION_CONFIG.roadMaskLimit||masks.lake>.2||masks.river>.2)continue;
+        const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height;
+        if(h<(activeGeography()?.source.seaLevel??MAINLAND.waterLevel)+.8)continue;
+        const inlandWater=waterSurfaceAt(x,z);
+        if(inlandWater&&h<inlandWater.level+.45)continue;
+        const support=terrainFootprintAt(x,z,.4,gridHeight);
+        if(support.maxSlope>.46||support.maxHeight-support.minHeight>.35)continue;
+        const scale=VEGETATION_CONFIG.baseScale[kind]*(.85+.3*hash01(cx,cz,seed+4));
+        const clearance=VEGETATION_CONFIG.crownRadius[kind]*scale;
+        if(exclusions.some(e=>Math.hypot(x-e.x,z-e.z)<e.radius+clearance)||
+          placements.some(p=>p.obstacleRadius>0&&Math.hypot(x-p.x,z-p.z)<p.obstacleRadius+clearance))continue;
+        placements.push({kind,x,y:support.minHeight-.03,z,scale,
+          yaw:hash01(cx,cz,seed+5)*Math.PI*2,obstacleRadius:0});
+      }
+    }
   }
   return placements;
 }

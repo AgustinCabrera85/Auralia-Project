@@ -3,7 +3,7 @@ import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import {Texture} from '@babylonjs/core';
 import { chunkKey, chunkOf, desiredChunks, hash01, MAINLAND } from './terrainData';
 import { VEGETATION_CONFIG, vegetationForChunk, type VegetationExclusion, type VegetationKind, type VegetationPlacement } from './vegetationData';
-import { ASSET_CATALOG, DECORATIVE_TREE_ASSETS, HARVESTABLE_TREE_ASSETS, TREE_LOD_PATHS } from './assetCatalog';
+import { ASSET_CATALOG, BRISALIA_PLANT_ASSETS, DECORATIVE_TREE_ASSETS, HARVESTABLE_TREE_ASSETS, TREE_LOD_PATHS } from './assetCatalog';
 import { TreeColliderSystem, type TreeSurface, type TreeWallHit } from './TreeColliderSystem';
 import { configureFoliageV4Material, configureVegetationMaterial } from './LandscapeAtmosphere';
 import { AuraliaFoliageWind } from './AuraliaFoliageWind';
@@ -12,14 +12,28 @@ import { activeGeography } from './geography/ActiveGeography';
 import { createTreeSprite, treeSpriteView } from './TreeSprite';
 
 type Cell = { cx:number; cz:number };
-const kinds:readonly VegetationKind[]=['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1'];
+const kinds:readonly VegetationKind[]=['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1',...BRISALIA_PLANT_ASSETS];
+type BrisaliaPlantKind=typeof BRISALIA_PLANT_ASSETS[number];
+const brisaliaPlantKinds=new Set<VegetationKind>(BRISALIA_PLANT_ASSETS);
+const isBrisaliaPlant=(kind:VegetationKind):kind is BrisaliaPlantKind=>brisaliaPlantKinds.has(kind);
+/** Distance bands suit the supplied one-metre plants; hysteresis prevents LOD flicker. */
+export function brisaliaPlantLod(kind:BrisaliaPlantKind,distance:number,previous:0|1|2=0):0|1|2{
+  const shrub=kind==='brisaliaMatorral';
+  const nearIn=shrub?8:10,nearOut=shrub?10:12;
+  const farIn=shrub?24:31,farOut=shrub?28:36;
+  if(previous===0)return distance>farOut?2:distance>nearOut?1:0;
+  if(previous===1)return distance<nearIn?0:distance>farOut?2:1;
+  return distance<nearIn?0:distance<farIn?1:2;
+}
 
 /** Owns shared GLB meshes and thin-instance buffers; the terrain only supplies active cells. */
 export class VegetationSystem {
   private readonly sources=new Map<VegetationKind,Mesh>();
   private readonly farSources=new Map<VegetationKind,Mesh>();
+  private readonly lowSources=new Map<BrisaliaPlantKind,Mesh>();
   private readonly canopySources=new Map<VegetationKind,Mesh>();
   private readonly placementMatrices=new WeakMap<VegetationPlacement,Float32Array>();
+  private readonly plantLods=new WeakMap<VegetationPlacement,0|1|2>();
   private readonly templates=new Map<string,Mesh>();
   private readonly chunks=new Map<string,VegetationPlacement[]>();
   private pending:Cell[]=[];
@@ -154,6 +168,20 @@ export class VegetationSystem {
         this.farSources.set(kind,proxy);
       }catch(error){console.warn('[Auralia] No se pudo cargar '+path,error);}
     }));
+    await Promise.all(BRISALIA_PLANT_ASSETS.flatMap(kind=>([
+      {path:ASSET_CATALOG[kind].lodPath,lod:1 as const},
+      {path:ASSET_CATALOG[kind].lod2Path,lod:2 as const}
+    ]).map(async ({path,lod})=>{
+      try{
+        const proxy=await this.importSource(path,kind,false);
+        if(!proxy)return;
+        proxy.parent=this.parent;
+        proxy.name=`vegetacion-${kind}-${lod===1?'far':'low'}`;
+        proxy.metadata={farVegetationProxy:true,kind,assetId:kind,lod};
+        if(lod===1)this.farSources.set(kind,proxy);
+        else this.lowSources.set(kind,proxy);
+      }catch(error){console.warn('[Auralia] No se pudo cargar '+path,error);}
+    })));
     if(this.disposed)return;
     if(worldForestEnabled())this.spriteTexture=new Texture('/assets/world/vegetation/impostors/v4-trees.png',this.scene,false,true,Texture.TRILINEAR_SAMPLINGMODE);
     if(this.spriteTexture){this.spriteTexture.hasAlpha=true;this.spriteTexture.wrapU=this.spriteTexture.wrapV=Texture.CLAMP_ADDRESSMODE;}
@@ -261,6 +289,7 @@ export class VegetationSystem {
     this.frontTreeCount=0;
     const matrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const farMatrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
+    const lowMatrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const canopyMatrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const spriteViews=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const collidable:VegetationPlacement[]=[];
@@ -273,6 +302,7 @@ export class VegetationSystem {
         if(p.kind==='plantitas1'&&!plantsNear)continue;
         if(!this.sources.has(p.kind))continue;
         const distance=Math.hypot(p.x-this.visualFocus.x,p.z-this.visualFocus.z);
+        if(isBrisaliaPlant(p.kind)&&distance>120)continue;
         // Each tree has a stable fade-out distance; no hard forest ring or scale jump.
         if(p.obstacleRadius&&distance>(forest?WORLD_FOREST.fadeStart:350)+
           hash01(Math.floor(p.x),Math.floor(p.z),7441)*(forest?WORLD_FOREST.fadeEnd-WORLD_FOREST.fadeStart:510))continue;
@@ -287,7 +317,12 @@ export class VegetationSystem {
         if(p.obstacleRadius&&distance<130)collidable.push(p);
         const jitter=hash01(Math.floor(p.x),Math.floor(p.z),4927);
         let target=matrices;
-        if(p.obstacleRadius&&this.farSources.has(p.kind)){
+        if(isBrisaliaPlant(p.kind)){
+          const lod=brisaliaPlantLod(p.kind,distance,this.plantLods.get(p));
+          this.plantLods.set(p,lod);
+          if(lod===1&&this.farSources.has(p.kind))target=farMatrices;
+          if(lod===2&&this.lowSources.has(p.kind))target=lowMatrices;
+        }else if(p.obstacleRadius&&this.farSources.has(p.kind)){
           if(forest&&this.canopySources.has(p.kind)){
             if(distance<=WORLD_FOREST.fullDistance+jitter*25&&full<WORLD_FOREST.maxFullTrees)full++;
             else if(front.has(p))this.frontTreeCount++;
@@ -305,14 +340,16 @@ export class VegetationSystem {
           if(!matrix){matrix=new Float32Array(Matrix.Compose(new Vector3(p.scale,p.scale,p.scale),Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z)).m);this.placementMatrices.set(p,matrix);}
           target.get(p.kind)!.push(...matrix);
         }
-        if(target===farMatrices)this.visibleFarCount++;
+        if(target===farMatrices&&p.obstacleRadius)this.visibleFarCount++;
         if(target===canopyMatrices)this.visibleCanopyCount++;
         this.visibleCount++;
     }
     for(const kind of kinds){
       const source=this.sources.get(kind);
       const farSource=this.farSources.get(kind);
-      for(const [mesh,data] of [[source,matrices.get(kind)!],[farSource,farMatrices.get(kind)!],[this.canopySources.get(kind),canopyMatrices.get(kind)!]] as const){
+      const lowSource=this.lowSources.get(kind as BrisaliaPlantKind);
+      for(const [mesh,data] of [[source,matrices.get(kind)!],[farSource,farMatrices.get(kind)!],
+        [lowSource,lowMatrices.get(kind)!],[this.canopySources.get(kind),canopyMatrices.get(kind)!]] as const){
         if(!mesh)continue;
         mesh.isVisible=data.length>0;
         mesh.thinInstanceSetBuffer('matrix',new Float32Array(data),16,true);
@@ -360,6 +397,8 @@ export class VegetationSystem {
       source.dispose(false,false);
     }
     this.farSources.clear();
+    for(const source of this.lowSources.values())source.dispose(false,false);
+    this.lowSources.clear();
     for(const source of this.canopySources.values()){source.material?.dispose(false,false);source.dispose(false,false);}
     this.canopySources.clear();
     this.spriteTexture?.dispose();this.spriteTexture=null;

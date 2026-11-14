@@ -6,16 +6,20 @@ const {VegetationSystem}=require('../.test-build/world/VegetationSystem.js');
 const {vegetationForChunk,VEGETATION_CONFIG}=require('../.test-build/world/vegetationData.js');
 const {chunkOf,desiredChunks,MAINLAND,sampleMainlandHeight,geographyMasks,isStarterArea}=require('../.test-build/world/terrainData.js');
 const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
-const {DECORATIVE_TREE_ASSETS,HARVESTABLE_TREE_ASSETS}=
+const {BRISALIA_PLANT_ASSETS,DECORATIVE_TREE_ASSETS,HARVESTABLE_TREE_ASSETS}=
   require('../.test-build/world/assetCatalog.js');
 
 // Exercise the real resource/marker methods without starting the browser game.
 const vm=require('node:vm'),ts=require('typescript');
+const villageLayout=require('../.test-build/world/brisaliaLayout.js');
 const viewExports={};
-vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/game/WorldView.ts','utf8'),{
+// Mirror Vite's production define in this CommonJS-only harness; debug UI stays off.
+const viewSource=fs.readFileSync('src/game/WorldView.ts','utf8')
+  .replace(/import\.meta\.env\.DEV/g,'false');
+vm.runInNewContext(ts.transpileModule(viewSource,{
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
 }).outputText,{exports:viewExports,require:id=>id==='@babylonjs/core'
-  ?require('@babylonjs/core'):{}});
+  ?require('@babylonjs/core'):id==='../world/brisaliaLayout'?villageLayout:{}});
 let treeRequest,markerCount=0;
 const zone={id:'brisalia',nodes:[]};
 const fakeView={vegetationExclusions:[],
@@ -24,6 +28,9 @@ const fakeView={vegetationExclusions:[],
   ball(){markerCount++;return {};},mat(){return {};}};
 viewExports.WorldView.prototype.resource.call(fakeView,zone,'wood-test','Madera','wood',3,10,20);
 assert.equal(treeRequest[5],true,'wood requests an original harvestable GLB');
+assert.ok(!villageLayout.inBrisaliaFootprint(treeRequest[1],treeRequest[2],5)&&
+  villageLayout.BRISALIA_ROADS.every(road=>villageLayout.distanceToRoad(treeRequest[1],treeRequest[2],road)>=road.width/2+5),
+  'harvestable trees stay clear of Brisalia buildings and approaches');
 assert.equal(zone.nodes[0].verb,'Talar árbol');
 assert.equal(markerCount,0,'wood nodes have no floating marker');
 fakeView.markInteraction(zone,{...zone.nodes[0],resource:'spark'});
@@ -75,9 +82,28 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++)cells.push({cx:center.cx+dx,cz:center.cz+dz});
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   await system.load();
-  assert.equal(system.sharedMeshCount,6,'six imported source meshes');
-  assert.equal(imports.length,13,'six decorative GLBs, three wood GLBs and four V4 LODs load once');
-  assert.equal(new Set(imports).size,13);
+  assert.equal(system.sharedMeshCount,9,'decorative trees and Brisalia plants share source meshes');
+  assert.equal(imports.length,22,'all three plant LODs load once alongside existing vegetation');
+  assert.equal(new Set(imports).size,22);
+  for(const kind of BRISALIA_PLANT_ASSETS){
+    const levels=['', '-far', '-low'].map(suffix=>scene.getMeshByName(`vegetacion-${kind}${suffix}`));
+    assert.ok(levels.every(Boolean),`${kind} has all three LODs`);
+    const triangles=levels.map(mesh=>mesh.getTotalIndices()/3);
+    assert.ok(triangles[0]>triangles[1]&&triangles[1]>triangles[2],`${kind} uses progressively lighter geometry`);
+    const boxes=levels.map(mesh=>{
+      const positions=mesh.getVerticesData(VertexBuffer.PositionKind),minimum={},maximum={};
+      for(const axis of ['x','y','z']){minimum[axis]=Infinity;maximum[axis]=-Infinity;}
+      for(let i=0;i<positions.length;i++){
+        const axis=['x','y','z'][i%3];minimum[axis]=Math.min(minimum[axis],positions[i]);
+        maximum[axis]=Math.max(maximum[axis],positions[i]);
+      }
+      return {minimum,maximum};
+    });
+    for(let i=1;i<3;i++)for(const axis of ['x','y','z']){
+      assert.ok(Math.abs(boxes[0].minimum[axis]-boxes[i].minimum[axis])<.035,`${kind} LOD base matches: ${axis} ${boxes[0].minimum[axis]} ${boxes[i].minimum[axis]}`);
+      assert.ok(Math.abs(boxes[0].maximum[axis]-boxes[i].maximum[axis])<.035,`${kind} LOD bounds match: ${axis} ${boxes[0].maximum[axis]} ${boxes[i].maximum[axis]}`);
+    }
+  }
   const island=new TransformNode('island',scene);
   for(let i=0;i<3;i++){
     const node=new TransformNode('wood-node-'+i,scene);node.parent=island;
@@ -98,7 +124,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   const decorativeNode=new TransformNode('decorative-tree',scene);
   assert.equal(system.attachTreeVisual(decorativeNode,0,10),DECORATIVE_TREE_ASSETS.arbolito1);
   assert.equal(decorativeNode.getChildMeshes()[0].metadata.harvestableTree,false);
-  assert.equal(imports.length,13,'fixed trees share the loaded GLBs');
+  assert.equal(imports.length,22,'fixed trees share the loaded GLBs');
   for(let i=0;i<60;i++)system.update();
   assert.ok(system.activeChunkCount>cells.length&&
     system.activeChunkCount<=desiredChunks(center.cx*MAINLAND.chunkSize,
@@ -162,12 +188,12 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   system.setActiveChunks([],1100,-900);
   assert.equal(system.activeChunkCount,0,'released all streamed vegetation chunks');
   assert.equal(system.instanceCount,0);
-  assert.equal(system.sharedMeshCount,6,'shared GLBs survive chunk release');
+  assert.equal(system.sharedMeshCount,9,'shared GLBs survive chunk release');
   assert.ok(before>0);
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
   for(let i=0;i<loadedUpdates;i++)system.update();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
-  assert.equal(imports.length,13,'reload makes no new GLB imports');
+  assert.equal(imports.length,22,'reload makes no new GLB imports');
   const target={x:-509,z:32};
   const targetChunk=chunkOf(target.x,target.z);
   const targetCells=[];
@@ -208,6 +234,6 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   for(let i=0;i<24;i++)player.step(.025,input,world);
   assert.ok(player.position.z>trunkWall.point.z+.25,
     'the character stops before entering the replacement GLB trunk');
-  console.log(`✓ Vegetación: seis GLB compartidos, ${before} instancias en ${system.activeChunkCount} chunks, liberación y recarga`);
+  console.log(`✓ Vegetación: nueve GLB compartidos, ${before} instancias en ${system.activeChunkCount} chunks, liberación y recarga`);
   system.dispose();scene.dispose();engine.dispose();
 })().catch(error=>{console.error(error);process.exitCode=1;});

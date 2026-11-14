@@ -23,7 +23,11 @@ export class GrassDistancePlugin extends MaterialPluginBase{
    float dogContact = (1.0 - smoothstep(0.2, max(0.21, grassCompanion.z), dogDistance)) * step(0.01, grassCompanion.z);
    worldPos.xz += dogAway / max(dogDistance, 0.05) * dogContact * grassTip * 0.9;
    worldPos.y -= dogContact * grassTip * 0.55;
-   float grassShrink = 1.0 - smoothstep(${GRASS_PATCH.fadeStart}.0, ${GRASS_PATCH.farEnd}.0, distance(grassRoot, grassFocus));
+   vec2 grassCell = floor(grassRoot / ${GRASS_PATCH.spacing});
+   bool grassDistant = mod(grassCell.x, 2.0) == 0.0 && mod(grassCell.y, 2.0) == 0.0;
+   float grassFadeStart = grassDistant ? ${GRASS_PATCH.fadeStart}.0 : ${GRASS_PATCH.detailFadeStart}.0;
+   float grassFadeEnd = grassDistant ? ${GRASS_PATCH.farEnd}.0 : ${GRASS_PATCH.detailEnd}.0;
+   float grassShrink = 1.0 - smoothstep(grassFadeStart, grassFadeEnd, distance(grassRoot, grassFocus));
    worldPos.y = mix(finalWorld[3].y, worldPos.y, grassShrink); vPositionW = worldPos.xyz;
   `};
   if(type==='fragment')return {

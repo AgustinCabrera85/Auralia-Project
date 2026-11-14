@@ -1,0 +1,802 @@
+{
+  "revision": "4",
+  "units": "meters",
+  "terrain_included": false,
+  "prefabs": [
+    {
+      "id": "B01",
+      "type": "casa_taller",
+      "name": "AUR_BRISALIA_CASA_ROOT",
+      "glb": "glb/B01_casa_taller.glb",
+      "bytes": 7202380,
+      "mesh_objects": 388,
+      "bounds_min_m": [
+        -6.775,
+        -5.215,
+        -0.18
+      ],
+      "bounds_max_m": [
+        6.775,
+        5.215,
+        9.05
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B01",
+        "type": "casa_taller",
+        "name": "Casa taller de referencia",
+        "x_m": 20,
+        "y_m": 18,
+        "w_m": 13.55,
+        "h_m": 10.43,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B02",
+      "type": "posada",
+      "name": "B02 Posada y galería",
+      "glb": "glb/B02_posada.glb",
+      "bytes": 4869736,
+      "mesh_objects": 247,
+      "bounds_min_m": [
+        -7.98,
+        -6.6125,
+        -0.04
+      ],
+      "bounds_max_m": [
+        7.98,
+        6.6125,
+        7.905
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B02",
+        "type": "posada",
+        "name": "Posada y galería",
+        "x_m": 8,
+        "y_m": 48,
+        "w_m": 15,
+        "h_m": 10,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B03",
+      "type": "salon",
+      "name": "B03 Salón comunal",
+      "glb": "glb/B03_salon.glb",
+      "bytes": 4971380,
+      "mesh_objects": 157,
+      "bounds_min_m": [
+        -9.52,
+        -6.9648,
+        -0.04
+      ],
+      "bounds_max_m": [
+        9.52,
+        6.9648,
+        7.955
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B03",
+        "type": "salon",
+        "name": "Salón comunal",
+        "x_m": 73,
+        "y_m": 55,
+        "w_m": 18,
+        "h_m": 12,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B04",
+      "type": "taller",
+      "name": "B04 Taller del carpintero",
+      "glb": "glb/B04_taller.glb",
+      "bytes": 4440980,
+      "mesh_objects": 136,
+      "bounds_min_m": [
+        -6.98,
+        -5.7569,
+        -0.04
+      ],
+      "bounds_max_m": [
+        6.98,
+        5.7569,
+        5.015
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B04",
+        "type": "taller",
+        "name": "Taller del carpintero",
+        "x_m": 79,
+        "y_m": 24,
+        "w_m": 13,
+        "h_m": 9,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B05",
+      "type": "taller",
+      "name": "B05 Taller de cerámica y forja",
+      "glb": "glb/B05_taller.glb",
+      "bytes": 4261116,
+      "mesh_objects": 138,
+      "bounds_min_m": [
+        -5.98,
+        -5.2576,
+        -0.04
+      ],
+      "bounds_max_m": [
+        5.98,
+        5.2576,
+        5.015
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B05",
+        "type": "taller",
+        "name": "Taller de cerámica y forja",
+        "x_m": 94,
+        "y_m": 44,
+        "w_m": 11,
+        "h_m": 8,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B06",
+      "type": "torre",
+      "name": "B06 bell tower",
+      "glb": "glb/B06_torre.glb",
+      "bytes": 2356884,
+      "mesh_objects": 38,
+      "bounds_min_m": [
+        -3.1981,
+        -3.1981,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.1981,
+        3.1981,
+        13.12
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B06",
+        "type": "torre",
+        "name": "Torre de campana",
+        "x_m": 100,
+        "y_m": 70,
+        "w_m": 5.5,
+        "h_m": 5.5,
+        "floors": 3
+      }
+    },
+    {
+      "id": "B07",
+      "type": "vivienda",
+      "name": "B07 Vivienda 01",
+      "glb": "glb/B07_vivienda.glb",
+      "bytes": 4006568,
+      "mesh_objects": 90,
+      "bounds_min_m": [
+        -4.5508,
+        -4.0351,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5508,
+        4.0351,
+        4.67
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B07",
+        "type": "vivienda",
+        "name": "Vivienda 01",
+        "x_m": 5,
+        "y_m": 23,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B08",
+      "type": "vivienda",
+      "name": "B08 Vivienda 02",
+      "glb": "glb/B08_vivienda.glb",
+      "bytes": 4145032,
+      "mesh_objects": 141,
+      "bounds_min_m": [
+        -4.48,
+        -4.7735,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.7735,
+        8.99
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B08",
+        "type": "vivienda",
+        "name": "Vivienda 02",
+        "x_m": 5,
+        "y_m": 38,
+        "w_m": 8,
+        "h_m": 8,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B09",
+      "type": "vivienda",
+      "name": "B09 Vivienda 03",
+      "glb": "glb/B09_vivienda.glb",
+      "bytes": 4080232,
+      "mesh_objects": 112,
+      "bounds_min_m": [
+        -4.48,
+        -5.0641,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        5.0641,
+        5.07
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B09",
+        "type": "vivienda",
+        "name": "Vivienda 03",
+        "x_m": 7,
+        "y_m": 61,
+        "w_m": 8,
+        "h_m": 8,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B10",
+      "type": "vivienda",
+      "name": "B10 Vivienda 04",
+      "glb": "glb/B10_vivienda.glb",
+      "bytes": 4507212,
+      "mesh_objects": 121,
+      "bounds_min_m": [
+        -4.5495,
+        -4.0332,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5495,
+        4.0332,
+        7.41
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B10",
+        "type": "vivienda",
+        "name": "Vivienda 04",
+        "x_m": 15,
+        "y_m": 75,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B11",
+      "type": "vivienda",
+      "name": "B11 Vivienda 05",
+      "glb": "glb/B11_vivienda.glb",
+      "bytes": 3986348,
+      "mesh_objects": 92,
+      "bounds_min_m": [
+        -3.98,
+        -4.5168,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.5168,
+        6.25
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B11",
+        "type": "vivienda",
+        "name": "Vivienda 05",
+        "x_m": 33,
+        "y_m": 64,
+        "w_m": 7,
+        "h_m": 8,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B12",
+      "type": "vivienda",
+      "name": "B12 Vivienda 06",
+      "glb": "glb/B12_vivienda.glb",
+      "bytes": 4128708,
+      "mesh_objects": 146,
+      "bounds_min_m": [
+        -4.48,
+        -4.6455,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6455,
+        7.45
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B12",
+        "type": "vivienda",
+        "name": "Vivienda 06",
+        "x_m": 45,
+        "y_m": 73,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B13",
+      "type": "vivienda",
+      "name": "B13 Vivienda 07",
+      "glb": "glb/B13_vivienda.glb",
+      "bytes": 4006568,
+      "mesh_objects": 90,
+      "bounds_min_m": [
+        -4.5542,
+        -4.0401,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5542,
+        4.0401,
+        5.21
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B13",
+        "type": "vivienda",
+        "name": "Vivienda 07",
+        "x_m": 66,
+        "y_m": 75,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B14",
+      "type": "vivienda",
+      "name": "B14 Vivienda 08",
+      "glb": "glb/B14_vivienda.glb",
+      "bytes": 3959596,
+      "mesh_objects": 92,
+      "bounds_min_m": [
+        -3.98,
+        -4.0171,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.0171,
+        5.74
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B14",
+        "type": "vivienda",
+        "name": "Vivienda 08",
+        "x_m": 79,
+        "y_m": 72,
+        "w_m": 7,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B15",
+      "type": "vivienda",
+      "name": "B15 Vivienda 09",
+      "glb": "glb/B15_vivienda.glb",
+      "bytes": 4110872,
+      "mesh_objects": 134,
+      "bounds_min_m": [
+        -4.48,
+        -4.6446,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6445,
+        7.6
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B15",
+        "type": "vivienda",
+        "name": "Vivienda 09",
+        "x_m": 89,
+        "y_m": 73,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B16",
+      "type": "vivienda",
+      "name": "B16 Vivienda 10",
+      "glb": "glb/B16_vivienda.glb",
+      "bytes": 4316200,
+      "mesh_objects": 81,
+      "bounds_min_m": [
+        -4.553,
+        -3.0408,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.553,
+        3.0408,
+        5.06
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B16",
+        "type": "vivienda",
+        "name": "Vivienda 10",
+        "x_m": 5,
+        "y_m": 17,
+        "w_m": 8,
+        "h_m": 5,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B17",
+      "type": "vivienda",
+      "name": "B17 Vivienda 11",
+      "glb": "glb/B17_vivienda.glb",
+      "bytes": 4490956,
+      "mesh_objects": 141,
+      "bounds_min_m": [
+        -4.48,
+        -4.7715,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.7715,
+        8.78
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B17",
+        "type": "vivienda",
+        "name": "Vivienda 11",
+        "x_m": 37,
+        "y_m": 17,
+        "w_m": 8,
+        "h_m": 8,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B18",
+      "type": "vivienda",
+      "name": "B18 Vivienda 12",
+      "glb": "glb/B18_vivienda.glb",
+      "bytes": 4000608,
+      "mesh_objects": 118,
+      "bounds_min_m": [
+        -4.48,
+        -4.0679,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.0679,
+        5.1
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B18",
+        "type": "vivienda",
+        "name": "Vivienda 12",
+        "x_m": 75,
+        "y_m": 17,
+        "w_m": 8,
+        "h_m": 6,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B19",
+      "type": "vivienda",
+      "name": "B19 Vivienda 13",
+      "glb": "glb/B19_vivienda.glb",
+      "bytes": 4023616,
+      "mesh_objects": 118,
+      "bounds_min_m": [
+        -4.5548,
+        -3.542,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5548,
+        3.542,
+        7.74
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B19",
+        "type": "vivienda",
+        "name": "Vivienda 13",
+        "x_m": 90,
+        "y_m": 17,
+        "w_m": 8,
+        "h_m": 6,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B20",
+      "type": "vivienda",
+      "name": "B20 Vivienda 14",
+      "glb": "glb/B20_vivienda.glb",
+      "bytes": 3957196,
+      "mesh_objects": 92,
+      "bounds_min_m": [
+        -3.98,
+        -4.0155,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.0155,
+        5.38
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B20",
+        "type": "vivienda",
+        "name": "Vivienda 14",
+        "x_m": 48,
+        "y_m": 57,
+        "w_m": 7,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B21",
+      "type": "vivienda",
+      "name": "B21 Vivienda 15",
+      "glb": "glb/B21_vivienda.glb",
+      "bytes": 4110876,
+      "mesh_objects": 134,
+      "bounds_min_m": [
+        -4.48,
+        -4.6472,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6472,
+        8.14
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B21",
+        "type": "vivienda",
+        "name": "Vivienda 15",
+        "x_m": 32,
+        "y_m": 38,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B22",
+      "type": "vivienda",
+      "name": "B22 Vivienda 16",
+      "glb": "glb/B22_vivienda.glb",
+      "bytes": 4409340,
+      "mesh_objects": 81,
+      "bounds_min_m": [
+        -4.5488,
+        -4.0321,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5488,
+        4.0321,
+        4.7
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B22",
+        "type": "vivienda",
+        "name": "Vivienda 16",
+        "x_m": 69,
+        "y_m": 30,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B23",
+      "type": "vivienda",
+      "name": "B23 Vivienda 17",
+      "glb": "glb/B23_vivienda.glb",
+      "bytes": 4461220,
+      "mesh_objects": 141,
+      "bounds_min_m": [
+        -4.48,
+        -4.2746,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.2746,
+        9.32
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B23",
+        "type": "vivienda",
+        "name": "Vivienda 17",
+        "x_m": 71,
+        "y_m": 44,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B24",
+      "type": "vivienda",
+      "name": "B24 Vivienda 18",
+      "glb": "glb/B24_vivienda.glb",
+      "bytes": 4058236,
+      "mesh_objects": 118,
+      "bounds_min_m": [
+        -4.48,
+        -4.5649,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.5649,
+        4.74
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B24",
+        "type": "vivienda",
+        "name": "Vivienda 18",
+        "x_m": 105,
+        "y_m": 54,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B25",
+      "type": "vivienda",
+      "name": "B25 Vivienda 19",
+      "glb": "glb/B25_vivienda.glb",
+      "bytes": 4006592,
+      "mesh_objects": 90,
+      "bounds_min_m": [
+        -4.5496,
+        -4.0333,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5496,
+        4.0333,
+        4.49
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B25",
+        "type": "vivienda",
+        "name": "Vivienda 19",
+        "x_m": 17,
+        "y_m": 61,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 1
+      }
+    },
+    {
+      "id": "B26",
+      "type": "vivienda",
+      "name": "B26 Vivienda 20",
+      "glb": "glb/B26_vivienda.glb",
+      "bytes": 4461244,
+      "mesh_objects": 141,
+      "bounds_min_m": [
+        -4.48,
+        -4.274,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.274,
+        8.81
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": {
+        "id": "B26",
+        "type": "vivienda",
+        "name": "Vivienda 20",
+        "x_m": 102,
+        "y_m": 25,
+        "w_m": 8,
+        "h_m": 7,
+        "floors": 2
+      }
+    },
+    {
+      "id": "B27",
+      "type": "iglesia_monasterio",
+      "name": "B27 Chapel of the valley",
+      "glb": "glb/B27_iglesia_monasterio.glb",
+      "bytes": 6574344,
+      "mesh_objects": 445,
+      "bounds_min_m": [
+        -11.64,
+        -13.1174,
+        -0.04
+      ],
+      "bounds_max_m": [
+        11.64,
+        13.1174,
+        14.06
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": null
+    },
+    {
+      "id": "B28",
+      "type": "castillo",
+      "name": "B28 Castillo de Brisalia Rev4",
+      "glb": "glb/B28_castillo.glb",
+      "bytes": 29047032,
+      "mesh_objects": 2198,
+      "bounds_min_m": [
+        -35.63,
+        -33.7367,
+        -0.0555
+      ],
+      "bounds_max_m": [
+        35.63,
+        33.7367,
+        31.58
+      ],
+      "pivot": "footprint center XY, grade Z=0",
+      "original_plan": null
+    }
+  ],
+  "catalog_glb_bytes": 55314820
+}

@@ -8,6 +8,10 @@ import { TRAVERSAL, type LocomotionMode } from './traversalRules';
 import { GroundFootPlacement } from './GroundFootPlacement';
 import type { TraversalWorld } from './CharacterTraversalController';
 import type { EquipmentId } from '../domain/types';
+import type { SwordLevel } from '../domain/brisaliaSword';
+import { BrisaliaSwordVisual, BRISALIA_SWORD_DEFAULT_POSITION_CM,
+  BRISALIA_SWORD_DEFAULT_ROTATION_DEG } from './BrisaliaSwordVisual';
+import type { AssetPlacementDebug } from './AssetPlacementDebug';
 import {
   SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_LOCOMOTION, SANTI_NLA_ACTIONS,
   combatCombo, type SantiActionName, type SantiExpressionName
@@ -27,6 +31,13 @@ const BLINK_KEYS=['SF_AU45_Blink_L','SF_AU45_Blink_R'] as const;
 // Keep the eyelid targets in the shader from the first frame. A zero influence
 // removes them from Babylon's active set and recompiles the whole body material.
 const BLINK_IDLE_INFLUENCE=1e-6;
+const SLOPE_SLIDE_START=.22;
+const SLOPE_SLIDE_HOLD=.45;
+const SLOPE_SLIDE_SECONDS=.7;
+const SLOPE_SLIDE_GRACE=.12;
+const MAX_SLIDE_PITCH=75*Math.PI/180;
+const MAX_GROUND_PITCH=65*Math.PI/180;
+const SWORD_RUN_FOREARM_TWIST=60*Math.PI/180;
 // The source Jumping clip crouches for frames 1-12; frame 25 is airborne.
 const STANDING_JUMP_TAKEOFF=13/54;
 const STANDING_JUMP_HOVER=25/54;
@@ -69,6 +80,8 @@ export type SantiMotion={
   sprint:boolean;
   backward:boolean;
   groundGrade?:number;
+  sliding?:boolean;
+  slideGrade?:number;
   onStairs?:boolean;
   descending?:boolean;
   groundDistance?:number|null;
@@ -107,19 +120,33 @@ export class SantiCharacter {
   private airKickAnimation:AnimationGroup|null=null;
   private visualOrientation:TransformNode|null=null;
   private slopeOrientation:TransformNode|null=null;
-  private groundIncline=0;
+  private slideGrace=0;
+  private slideGrade=0;
+  private slideSeconds=0;
+  private slidingVisual=false;
+  private slideWorld:TraversalWorld|null=null;
+  private slideOffset={x:0,z:0};
+  private slideContactDt=0;
+  private slideFeet:TransformNode[]=[];
   private feet:GroundFootPlacement|null=null;
   private contactRoot:TransformNode|null=null;
   private landingApproach:'normal'|'highFall'|null=null;
   private climbContact:ClimbContact|null=null;
   private contactObserver:Observer<Scene>|null=null;
   private contactHands:TransformNode[]=[];
+  private swordVisual:BrisaliaSwordVisual|null=null;
+  private swordHand:TransformNode|null=null;
+  private swordRunWristWeight=0;
+  private lastSwordWristBase:Quaternion|null=null;
+  private lastSwordWristApplied:Quaternion|null=null;
+  private desiredSwordLevel:SwordLevel=0;
   private samplingSpin=false;
   private previousMode:LocomotionMode='grounded';
   private landingRecoverySeconds=0;
   private overrideSeconds=0;
   private actionLockSeconds=0;
   private debugPanel:HTMLDivElement|null=null;
+  private unregisterSwordPlacement:(()=>void)|null=null;
   private disposed=false;
   private blinkTime=-(2.6+Math.random()*3.6);
   private blinkWeight=0;
@@ -128,7 +155,8 @@ export class SantiCharacter {
   isReady=false;
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
-    private readonly modelPath=MODEL_PATH){}
+    private readonly modelPath=MODEL_PATH,
+    private readonly assetPlacement:AssetPlacementDebug|null=null){}
 
   async load():Promise<boolean>{
     const result=await ImportMeshAsync(this.modelPath,this.scene,{
@@ -191,8 +219,8 @@ export class SantiCharacter {
         if(track.target instanceof MorphTarget)
           group.removeTargetedAnimation(track.animation);
       if(IN_PLACE_ACTIONS.has(name)){
-        // Physics owns jump displacement. Attacks and rolls keep their vertical
-        // crouch, but cannot move the mesh away from the player collider.
+        // Physics owns jump and slide travel. The slide's root translation is
+        // removed; other attacks and rolls retain their authored crouch.
         const isJump=name===SANTI_LOCOMOTION.jump||
           name===SANTI_LOCOMOTION.runningJump;
         for(const track of group.targetedAnimations){
@@ -204,7 +232,7 @@ export class SantiCharacter {
           const anchor=name===SANTI_LOCOMOTION.landing?restHips??origin:origin;
           track.animation.setKeys(keys.map(key=>{
             const value=key.value as Vector3;
-            return {...key,value:isJump?origin.clone():
+            return {...key,value:isJump||name===SANTI_COMBAT.sweep?origin.clone():
               new Vector3(anchor.x,anchor.y,value.z)};
           }));
         }
@@ -265,7 +293,35 @@ export class SantiCharacter {
        ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot',1]],.55);
     this.contactHands=result.transformNodes.filter(node=>
       node.name==='mixamorig:LeftHand'||node.name==='mixamorig:RightHand');
-    this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>this.alignClimbContact());
+    const swordHand=this.contactHands.find(node=>node.name==='mixamorig:RightHand');
+    this.swordHand=swordHand??null;
+    if(swordHand){
+      this.swordVisual=new BrisaliaSwordVisual(this.scene,swordHand);
+      const sword=this.swordVisual;
+      if(this.assetPlacement)this.unregisterSwordPlacement=this.assetPlacement.register({
+        id:'santi.brisaliaSword',label:'Espada del Bosque Encantado',
+        axesLabel:'ejes locales de la mano',positionRangeCm:30,
+        defaults:{positionCm:[...BRISALIA_SWORD_DEFAULT_POSITION_CM],
+          rotationDeg:[...BRISALIA_SWORD_DEFAULT_ROTATION_DEG]},
+        read:()=>{
+          const offset=sword.offsetMeters,rotation=sword.rotationDegrees;
+          return {positionCm:[offset.x*100,offset.y*100,offset.z*100],
+            rotationDeg:[rotation.x,rotation.y,rotation.z]};
+        },
+        apply:pose=>{
+          sword.setOffsetMeters(...pose.positionCm.map(value=>value/100) as [number,number,number]);
+          sword.setRotationDegrees(...pose.rotationDeg);
+        }
+      });
+      this.swordVisual.setLevel(this.desiredSwordLevel);
+    }
+    this.slideFeet=result.transformNodes.filter(node=>
+      node.name==='mixamorig:LeftFoot'||node.name==='mixamorig:RightFoot');
+    this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>{
+      this.alignClimbContact();this.alignSlideContact();
+      this.alignSwordRunWrist();
+      this.swordVisual?.applyGrip();
+    });
     this.loaded=result;
     this.isReady=true;
     this.setExpression('SF_01_FELIZ_SonrisaNatural',.22);
@@ -277,8 +333,41 @@ export class SantiCharacter {
   updateGroundContact(dt:number,grounded:boolean,world:TraversalWorld,offset:{x:number;z:number}):void{
     this.feet?.update(dt,grounded&&!this.combat&&this.overrideSeconds<=0&&
       (this.actionLockSeconds<=0||this.landingRecoverySeconds>0),world,offset);
+    this.slideWorld=this.slidingVisual?world:null;
+    this.slideOffset=offset;
+    this.slideContactDt=Math.max(0,Math.min(dt,.1));
   }
   get footContact(){return this.feet?.status;}
+
+  setSwordLevel(level:SwordLevel):void{
+    if(level===this.desiredSwordLevel)return;
+    this.desiredSwordLevel=level;
+    if(level===0)this.swordRunWristWeight=0;
+    this.swordVisual?.setLevel(level);
+  }
+
+  /** Twist around the forearm so the blade clears the body without bending the wrist. */
+  private alignSwordRunWrist():void{
+    const wrist=this.swordHand?.rotationQuaternion;
+    if(!wrist)return;
+    const stillApplied=this.lastSwordWristApplied&&this.lastSwordWristBase&&
+      Math.abs(Quaternion.Dot(wrist,this.lastSwordWristApplied))>.999999;
+    const base=stillApplied?this.lastSwordWristBase!.clone():wrist.clone();
+    if(this.swordRunWristWeight<1e-4){
+      if(stillApplied){wrist.copyFrom(base);this.swordHand!.markAsDirty('rotationQuaternion');}
+      this.lastSwordWristBase=null;this.lastSwordWristApplied=null;
+      return;
+    }
+    // The hand offset is the elbow-to-wrist axis in the forearm's local space.
+    // Apply the turn before the animated wrist pose to preserve its bend.
+    const axis=this.swordHand!.position.clone().normalize();
+    const turn=Quaternion.RotationAxis(axis,
+      SWORD_RUN_FOREARM_TWIST*this.swordRunWristWeight);
+    wrist.copyFrom(turn.multiply(base));
+    this.swordHand!.markAsDirty('rotationQuaternion');
+    this.lastSwordWristBase=base;
+    this.lastSwordWristApplied=wrist.clone();
+  }
 
   get actionNames():readonly SantiActionName[]{return SANTI_NLA_ACTIONS;}
   get expressionNames():readonly SantiExpressionName[]{return SANTI_EXPRESSIONS;}
@@ -299,6 +388,26 @@ export class SantiCharacter {
     const horizontal=Math.hypot(wall.normalX,wall.normalZ);
     if(horizontal>.5&&Number.isFinite(distance))
       node.position.z=Math.max(-1.3,Math.min(1.3,node.position.z+(distance-.12)/horizontal));
+  }
+
+  private alignSlideContact():void{
+    const node=this.slopeOrientation,world=this.slideWorld;
+    if(!node||!world||this.slideFeet.length!==2)return;
+    let gap=Infinity;
+    for(const foot of this.slideFeet){
+      foot.computeWorldMatrix(true);
+      const p=foot.absolutePosition;
+      const terrain=world.fallbackHeight(p.x-this.slideOffset.x,p.z-this.slideOffset.z);
+      if(Number.isFinite(terrain))gap=Math.min(gap,p.y-terrain);
+    }
+    if(!Number.isFinite(gap))return;
+    // The slide NLA raises the ankles far above its root. Support the lower
+    // foot on the actual slope while leaving traversal ownership of position.
+    const desired=Math.max(-TRAVERSAL.playerHeight,Math.min(.25,
+      node.position.y+.09-gap));
+    node.position.y+=(desired-node.position.y)*
+      (1-Math.exp(-this.slideContactDt*25));
+    node.computeWorldMatrix(true);
   }
 
   setShapeKey(name:string,influence:number):boolean{
@@ -435,15 +544,26 @@ export class SantiCharacter {
   update(dt:number,motion:SantiMotion):SantiLanding|null{
     if(!this.isReady)return null;
     this.updateBlink(dt);
+    this.slideGrace=motion.sliding?SLOPE_SLIDE_GRACE:
+      Math.max(0,this.slideGrace-dt);
+    if(motion.mode!=='airborne')this.slideGrace=0;
+    if(motion.sliding){
+      const grade=motion.slideGrade??0;
+      this.slideGrade=Number.isFinite(grade)?Math.max(0,grade):0;
+    }else if(this.slideGrace===0)this.slideGrade=0;
+    const sliding=this.slideGrace>0;
     this.samplingSpin=false;
-    const grade=motion.mode==='grounded'&&motion.moving?Math.max(0,motion.groundGrade??0):0;
-    this.groundIncline+=(Math.atan(grade)-this.groundIncline)*(1-Math.exp(-dt*12));
+    const rawGrade=motion.groundGrade??0;
+    const grade=motion.mode==='grounded'&&motion.moving&&Number.isFinite(rawGrade)?rawGrade:0;
+    const groundPitch=Math.atan(grade);
     this.climbContact=motion.mode==='climbing'?motion.climbContact??null:null;
-    const lean=this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
-      motion.mode==='grounded'&&motion.moving&&motion.sprint&&
-      this.overrideSeconds===0?Math.min(.36,.07+this.groundIncline*.28):0;
+    const lean=sliding?Math.min(MAX_SLIDE_PITCH,Math.atan(this.slideGrade)):
+      this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
+      motion.mode==='grounded'&&motion.moving&&this.overrideSeconds===0?
+        -Math.max(-MAX_GROUND_PITCH,Math.min(MAX_GROUND_PITCH,groundPitch)):0;
     if(this.slopeOrientation)this.slopeOrientation.rotation.x+=
-      (lean-this.slopeOrientation.rotation.x)*(1-Math.exp(-dt*14));
+      (lean-this.slopeOrientation.rotation.x)*(1-Math.exp(-dt*18));
+    if(this.slopeOrientation&&!sliding)this.slopeOrientation.position.y*=Math.exp(-dt*10);
     if(this.slopeOrientation&&!this.climbContact)
       this.slopeOrientation.position.z*=Math.exp(-dt*18);
     if(motion.mode!=='grounded')this.cancelCombat();
@@ -479,12 +599,18 @@ export class SantiCharacter {
       }
       this.airbornePeakY=Math.max(this.airbornePeakY,motion.feetY);
       if(this.jumpInProgress&&!this.jumpWasRunning)this.jumpElapsed+=dt;
-      this.seekLandingApproach(motion);
+      if(!sliding)this.seekLandingApproach(motion);
     }else{
       this.jumpInProgress=false;
       this.airKickInProgress=false;
       this.landingApproach=null;
       if(motion.mode!=='grounded')this.landingRecoverySeconds=0;
+    }
+    if(sliding){
+      // Travel along the slope is support, not accumulated free-fall height.
+      this.jumpInProgress=false;this.airKickInProgress=false;
+      this.airborneStartY=motion.feetY;this.airbornePeakY=motion.feetY;
+      this.landingApproach=null;
     }
     this.previousMode=motion.mode;
     if(highFallLanding){
@@ -500,7 +626,10 @@ export class SantiCharacter {
     this.overrideSeconds=Math.max(0,this.overrideSeconds-dt);
     this.actionLockSeconds=Math.max(0,this.actionLockSeconds-dt);
     this.advanceCombat(dt);
-    if(this.overrideSeconds===0&&this.landingRecoverySeconds===0&&
+    if(sliding){
+      this.overrideSeconds=0;this.actionLockSeconds=0;this.landingRecoverySeconds=0;
+      this.seekSlopeSlide(dt);
+    }else if(this.overrideSeconds===0&&this.landingRecoverySeconds===0&&
       !(motion.mode==='airborne'&&this.landingApproach)){
       if(motion.mode==='mantling'){
         const group=this.actions.get(SANTI_LOCOMOTION.mantle)!;
@@ -544,6 +673,16 @@ export class SantiCharacter {
         this.transition(name,loop,speed);
       }
     }
+    if(!sliding){this.slidingVisual=false;this.slideSeconds=0;}
+    const runningWithSword=this.desiredSwordLevel>0&&motion.mode==='grounded'&&
+      motion.moving&&motion.run&&!motion.backward&&!sliding&&
+      !this.combat&&this.overrideSeconds<=0&&this.actionLockSeconds<=0&&
+      (this.active?.name===SANTI_LOCOMOTION.run||
+        this.active?.name===SANTI_LOCOMOTION.uphillRun);
+    const wristTarget=runningWithSword?1:0;
+    this.swordRunWristWeight+=(wristTarget-this.swordRunWristWeight)*
+      (1-Math.exp(-dt*30));
+    if(this.combat||this.overrideSeconds>0)this.swordRunWristWeight=0;
     if(this.fading&&this.active){
       this.blend=Math.min(1,this.blend+dt/this.blendSeconds);
       this.active.setWeightForAllAnimatables(this.blend);
@@ -582,6 +721,21 @@ export class SantiCharacter {
     this.landingApproach=kind;
     const progress=1-distance/LANDING_APPROACH_METERS;
     group.goToFrame(from+(contact-from)*progress,true);
+    group.pause();
+  }
+
+  private seekSlopeSlide(dt:number):void{
+    const group=this.actions.get(SANTI_COMBAT.sweep)!;
+    const from=group.from+(group.to-group.from)*SLOPE_SLIDE_START;
+    const hold=group.from+(group.to-group.from)*SLOPE_SLIDE_HOLD;
+    if(!this.slidingVisual){
+      this.slideSeconds=0;
+      if(this.active===group){group.stop();this.active=null;}
+      this.transitionGroup(group,false,1,from,hold,.12);
+      this.slidingVisual=true;
+    }
+    this.slideSeconds=Math.min(SLOPE_SLIDE_SECONDS,this.slideSeconds+dt);
+    group.goToFrame(from+(hold-from)*this.slideSeconds/SLOPE_SLIDE_SECONDS,true);
     group.pause();
   }
 
@@ -700,9 +854,13 @@ export class SantiCharacter {
     this.disposed=true;
     this.combat=null;
     this.debugPanel?.remove();
+    this.unregisterSwordPlacement?.();this.unregisterSwordPlacement=null;
     this.airKickAnimation?.dispose();this.airKickAnimation=null;
     this.scene.onAfterAnimationsObservable.remove(this.contactObserver);
     this.contactObserver=null;this.contactHands=[];this.climbContact=null;
+    this.swordVisual?.dispose();this.swordVisual=null;
+    this.swordHand=null;this.lastSwordWristBase=null;this.lastSwordWristApplied=null;
+    this.slideFeet=[];this.slideWorld=null;
     this.feet?.dispose();this.feet=null;
     if(this.loaded)this.disposeResult(this.loaded);
     this.visualOrientation?.dispose();this.visualOrientation=null;

@@ -50,7 +50,7 @@ export type SaveGameV1 = {
 export const MATERIALS: MaterialId[] = ['wood', 'stone', 'copper', 'spark', 'fireCrystal'];
 export const ITEM_LABEL: Record<ItemId, string> = {
   wood: 'Madera', stone: 'Piedra', copper: 'Cobre', spark: 'Chispa', fireCrystal:'Cristal ígneo',
-  hammer: 'Martillo', pickaxe: 'Pico', lantern: 'Linterna mágica', sword:'Espada de cobre'
+  hammer: 'Martillo', pickaxe: 'Pico', lantern: 'Linterna mágica', sword:'Espada del Bosque Encantado'
 };
 export const ITEM_ICON: Record<ItemId, string> = {
   wood: '🪵', stone: '🪨', copper: '🔩', spark: '✨', fireCrystal:'🔥',

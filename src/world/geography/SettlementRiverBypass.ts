@@ -1,10 +1,11 @@
+import { BRISALIA_SCALE } from '../brisaliaLayout';
 import type { StudioSpline } from './WorldStudioSource';
 import { STUDIO_RIVER_LEVELS } from './StudioRiverLevels';
 
 /** User-approved local Prado diversion. Keep the settlement platform and every
  * route point outside its approach; only the conflicting reach takes an arc. */
 export function settlementRiverBypass(spline:StudioSpline,town:{x:number;z:number}):StudioSpline{
-  const cx=town.x,cz=town.z-20,radius=230,scaleX=1.2;
+  const cx=town.x,cz=town.z-20,radius=230*BRISALIA_SCALE,scaleX=1.2;
   const points=spline.controlPoints.map((p,i)=>({...p,y:STUDIO_RIVER_LEVELS[spline.id]?.[i]??p.y??1}));
   const distance=(p:{x:number;z:number})=>Math.hypot((p.x-cx)/scaleX,p.z-cz);
   const inside=points.flatMap((p,i)=>distance(p)<radius?[i]:[]);if(!inside.length)return spline;

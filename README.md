@@ -1,6 +1,19 @@
 # Auralia · POC
 
-Prototipo de aventura en mundo abierto con Babylon.js, TypeScript y Vite. Incluye exploración de la isla principal y la Isla de las Luciérnagas, recolección, crafting, construcción modular, NPC y guardado local. La isla principal tiene una envolvente nominal de **4.000 × 3.000 m** y seis biomas. Las ciudades fuera de Brisalia siguen en desarrollo.
+Prototipo de aventura en mundo abierto con Babylon.js, TypeScript y Vite. Incluye exploración, recolección, crafting, construcción modular, NPC y guardado local. El mapa jugable usa la geografía de World Studio. Brisalia tiene 28 edificios; las demás ciudades siguen en desarrollo.
+
+## Estado del 14 de noviembre de 2026
+
+- **Santi:** carrera orientada a la pendiente, barrida sostenida al deslizar cuesta abajo y apoyo visual de los pies sin mover el collider. Se conservan las correcciones de pisada, aterrizaje y parpadeo del commit anterior.
+- **Espada del Bosque Encantado:** cuatro GLB para una única espada que evoluciona con los descubrimientos. Agarre con los dedos del ataque, colocación calibrada manualmente y giro de la muñeca sobre el eje del antebrazo al correr. Equipo muestra el nivel y el siguiente objetivo; crafting conserva el costo de la receta.
+- **Herramienta de colocación:** `F9` ajusta posición XYZ en centímetros y rotación XYZ en grados, permite copiar/restablecer valores y admite registrar otros assets. Solo se instancia en desarrollo; sus ajustes locales no se leen en producción.
+- **Brisalia:** B01–B27 de la revisión 4 y un único B28 de la revisión 5. Escala calibrada con Santi de 1,40 m, accesos conectados, colisiones sobre la geometría real y patio del castillo formado por el terreno del mapa. Se retiraron las casas provisionales y el castillo anterior; se reubicaron NPC y banco de trabajo.
+- **Terreno y caminos:** mayor continuidad de la silueta de las montañas entre LOD; terreno estable en los apoyos de Brisalia y desvío del río adaptado a la implantación ampliada. Caminos de tierra y grava con bordes irregulares y suaves.
+- **Vegetación:** margaritas, matorrales y yuyos con los tres LOD suministrados. El pasto conserva su forma y altura grandes, respeta edificios y caminos, se ve hasta 240 unidades del juego y se precarga hasta 288, con fondo disperso y detalle cercano.
+
+La referencia de rendimiento es **GTX 1060 de 6 GB, 1080p y al menos 30 FPS**; sigue siendo un objetivo pendiente de medición en ese hardware. La integración actual fue comprobada con compilación de producción, pruebas de los sistemas modificados y revisión del mapa en el navegador. No se incorporan ZIP, escenas de Blender, capturas ni perfiles de prueba al paquete de ejecución.
+
+Los detalles y límites vigentes están en [Santi](docs/SANTI_CHARACTER.md), [Brisalia y terreno](docs/LANDSCAPE_LOD.md) y [pasto y precarga](docs/GRASS_FIELD.md).
 
 ## Ejecutar y verificar
 
@@ -41,7 +54,7 @@ La [guía de construcción](docs/BUILDING_SYSTEM.md) explica la colocación y lo
 
 El [mapa maestro geográfico](docs/MAPA_MAESTRO_GEOGRAFICO.md) define el rediseño hacia doce regiones con relieve y cuencas propios. El tamaño total queda abierto hasta completar y medir el piloto de Brisalia; las coordenadas actuales siguen vigentes durante esa preparación.
 
-`src/world/terrainData.ts` define la altura, costa, biomas e hitos de la isla principal. `src/world/geographicFeatures.ts` define ríos, lagos y accidentes. El mapa técnico `docs/Mapa_geografico_auralia_v0.2.svg` y el asset `public/assets/mapa-geografico-v0.2.svg` se derivan de esos datos. Su nombre conserva `v0.2` por compatibilidad. El atlas ilustrado es una referencia narrativa, no un mapa métrico.
+`src/world/geography/PlayableWorld.ts` adapta la fuente de World Studio al mapa de ejecución, incluidas las terrazas de Brisalia. `src/world/brisaliaLayout.ts` contiene la implantación activa de edificios y caminos. `src/world/terrainData.ts`, `src/world/geographicFeatures.ts` y los mapas técnicos `v0.2` conservan datos del terreno legado y funciones compartidas. El atlas ilustrado es una referencia narrativa, no un mapa métrico.
 
 El terreno usa tres niveles de detalle y se carga alrededor del personaje. La vegetación, las rocas y otros objetos decorativos se distribuyen por sectores. Los puntos de interés descubiertos y los recursos recolectados conservan su estado en el guardado.
 

@@ -232,6 +232,32 @@ const restingOnSlope=new CharacterTraversalController();restingOnSlope.teleport(
 restingOnSlope.step(.02,input(),slope(55));
 assert.equal(restingOnSlope.mode,'airborne','stopping a sprint on a steep slope starts a slide');
 assert.ok(restingOnSlope.position.x<0,'the character slides downhill instead of standing across the slope');
+assert.ok(restingOnSlope.slopeSlideDirection?.x<-.99,
+  'the slide reports its downhill heading without movement input');
+assert.ok(Math.abs(restingOnSlope.slopeSlideDirection.grade-Math.tan(55*Math.PI/180))<.01,
+  'the slide reports the measured terrain grade for visual alignment');
+for(let i=0;i<90;i++){
+  restingOnSlope.step(1/60,input(),slope(55));
+  assert.ok(restingOnSlope.slopeSlideDirection?.x<-.99,
+    'a sustained slide keeps the same downhill heading');
+}
+restingOnSlope.teleport(0,0,0);
+assert.equal(restingOnSlope.slopeSlideDirection,null,'teleport clears slide state');
+const diagonalGrade=Math.tan(55*Math.PI/180)/Math.SQRT2;
+const diagonalSlope={...flat,
+  ground:(x,z,origin,max)=>{
+    const height=(x+z)*diagonalGrade;
+    return origin>=height&&origin-max<=height?
+      {height,normalY:Math.cos(55*Math.PI/180)}:null;
+  },
+  fallbackHeight:(x,z)=>(x+z)*diagonalGrade
+};
+const diagonalSlide=new CharacterTraversalController();diagonalSlide.teleport(0,0,0);
+diagonalSlide.step(.02,input(),diagonalSlope);
+assert.ok(diagonalSlide.slopeSlideDirection?.x<-.7&&
+  diagonalSlide.slopeSlideDirection.z<-.7,
+  'diagonal terrain slopes face the slide across both horizontal axes');
+assert.ok(Math.abs(diagonalSlide.slopeSlideDirection.grade-Math.tan(55*Math.PI/180))<.01);
 
 // The new large landscape is a height field, not a tagged GLB rock.
 const cliffHeight=(x,z)=>Math.abs(z)>2?0:Math.max(0,Math.min(x,8))*Math.tan(75*Math.PI/180);

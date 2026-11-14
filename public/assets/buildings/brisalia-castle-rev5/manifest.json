@@ -1,0 +1,21 @@
+{
+  "id": "B28",
+  "revision": 5,
+  "units": "meters",
+  "terrain_included": false,
+  "glb": "B28_Castillo_Brisalia_Rev5.glb",
+  "bytes": 46675088,
+  "mesh_objects": 2062,
+  "bounds_min_m": [
+    -35.63,
+    -33.4,
+    -0.211
+  ],
+  "bounds_max_m": [
+    35.63,
+    31.63,
+    31.58
+  ],
+  "pivot": "castle footprint centre XY, grade Z=0",
+  "source_blend": "Brisalia_Castillo_Rev5.blend"
+}

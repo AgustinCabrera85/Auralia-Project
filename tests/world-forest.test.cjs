@@ -3,7 +3,7 @@ const {NullEngine,Scene,TransformNode,ImportMeshAsync}=require('@babylonjs/core'
 const {WorldStudioSource}=require('../.test-build/world/geography/WorldStudioSource.js');
 const {PlayableWorld}=require('../.test-build/world/geography/PlayableWorld.js');
 const {setActiveGeography}=require('../.test-build/world/geography/ActiveGeography.js');
-const {VegetationSystem}=require('../.test-build/world/VegetationSystem.js');
+const {VegetationSystem,brisaliaPlantLod}=require('../.test-build/world/VegetationSystem.js');
 const {vegetationForChunk}=require('../.test-build/world/vegetationData.js');
 const {desiredChunks,chunkOf}=require('../.test-build/world/terrainData.js');
 const {WORLD_FOREST,worldForestCover,worldForestCandidates,forestFrontRows}=require('../.test-build/world/geography/WorldForest.js');
@@ -35,7 +35,25 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
  assert.ok(!vegetationForChunk(specimenCell.cx,specimenCell.cz,[{x:p.x,z:p.z,radius:12}]).some(t=>Math.hypot(t.x-p.x,t.z-p.z)<12),'building exclusions remain clear');
  await world.prepareAround(world.town.x,world.town.z);
  for(const c of desiredChunks(world.town.x,world.town.z,2))for(const t of vegetationForChunk(c.cx,c.cz))assert.ok(Math.abs(t.x-world.town.x)>=125||t.z-world.town.z<=-125||t.z-world.town.z>=170,'starter plot remains clear');
+ const brisaliaKinds=new Set(['brisaliaMargaritas','brisaliaMatorral','brisaliaYuyos']);
+ const townPlants=desiredChunks(world.town.x,world.town.z,5).flatMap(c=>vegetationForChunk(c.cx,c.cz)).filter(p=>brisaliaKinds.has(p.kind));
+ assert.ok(townPlants.length>20,'new vegetation grows around Brisalia');
+ assert.equal(new Set(townPlants.map(p=>p.kind)).size,3,'all three plant families are used');
+ assert.deepEqual(townPlants,desiredChunks(world.town.x,world.town.z,5).flatMap(c=>vegetationForChunk(c.cx,c.cz)).filter(p=>brisaliaKinds.has(p.kind)),'town plants are deterministic');
+ const blockedPlant=townPlants[0],blockedCell=chunkOf(blockedPlant.x,blockedPlant.z);
+ assert.ok(!vegetationForChunk(blockedCell.cx,blockedCell.cz,[{x:blockedPlant.x,z:blockedPlant.z,radius:8}]).some(p=>brisaliaKinds.has(p.kind)&&Math.hypot(p.x-blockedPlant.x,p.z-blockedPlant.z)<8),'new plants respect building exclusions');
+ for(const p of townPlants){
+  assert.ok(Math.hypot(p.x-world.town.x,p.z-world.town.z)<=300);
+  assert.equal(world.waterAt(p.x,p.z),null,'plants stay off water');
+  assert.ok(p.y<=world.surface.heightAt(p.x,p.z)+.001,'plants rest on terrain');
+ }
+ assert.equal(brisaliaPlantLod('brisaliaYuyos',13,0),1);
+ assert.equal(brisaliaPlantLod('brisaliaYuyos',11,1),1,'LOD hysteresis holds during small movements');
+ assert.equal(brisaliaPlantLod('brisaliaYuyos',37,1),2);
+ assert.equal(brisaliaPlantLod('brisaliaYuyos',33,2),2);
+ assert.equal(brisaliaPlantLod('brisaliaYuyos',9,2),0);
  await world.prepareAround(1524,-434);
+ assert.ok(!vegetationForChunk(21,-6).some(p=>brisaliaKinds.has(p.kind)),'town plants do not spread to other regions');
  const engine=new NullEngine(),scene=new Scene(engine),root=new TransformNode('forest',scene);
  const system=new VegetationSystem(scene,root,()=>[],async(url,scene)=>ImportMeshAsync(new Uint8Array(await fs.readFile('public'+url)),scene,{pluginExtension:'.glb'}));
  system.setViewDirection(Math.sin(144*Math.PI/180),-Math.cos(144*Math.PI/180));system.setActiveChunks([],1524,-434);await system.load();
@@ -55,6 +73,20 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
  const collisionTree=[...system.chunks.values()].flat().find(t=>t.obstacleRadius);
  system.setColliderFocus(collisionTree.x,collisionTree.z);assert.ok(system.treeColliders.colliders.size>0&&system.treeColliders.colliders.size<80,'collisions remain local');
  const beforeCount=system.instanceCount;
+ await world.prepareAround(world.town.x,world.town.z);
+ const plantFocus=townPlants[0];system.setActiveChunks([],plantFocus.x,plantFocus.z);
+ for(let i=0;i<120&&system.pending.length;i++)system.update();
+ const plantMeshes=[...brisaliaKinds].flatMap(kind=>['','-far','-low'].map(suffix=>scene.getMeshByName(`vegetacion-${kind}${suffix}`)));
+ assert.ok(plantMeshes.every(Boolean),'every Brisalia plant LOD has a shared render batch');
+ for(let level=0;level<3;level++)assert.ok(plantMeshes.filter((_,i)=>i%3===level).some(mesh=>mesh.thinInstanceCount>0),`plant LOD${level} is populated near Brisalia`);
+ const plantPositions=new Set();
+ for(const mesh of plantMeshes){
+  const data=mesh._thinInstanceDataStorage.matrixData;
+  for(let i=0;i<mesh.thinInstanceCount;i++){
+   const key=`${mesh.metadata.kind}:${data[i*16+12]}:${data[i*16+14]}`;
+   assert.ok(!plantPositions.has(key),'one plant LOD per instance');plantPositions.add(key);
+  }
+ }
  await world.prepareAround(-4000,4000);system.setActiveChunks([],-4000,4000);assert.equal(system.activeChunkCount,0,'distant sectors released');assert.equal(system.instanceCount,0);
  await world.prepareAround(1524,-434);system.setActiveChunks([],1524,-434);
  for(let i=0;i<2000&&system.pending.length;i++)system.update();assert.equal(system.instanceCount,beforeCount,'reloading restores identical forest');

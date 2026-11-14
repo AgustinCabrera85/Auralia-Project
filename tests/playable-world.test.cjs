@@ -21,9 +21,10 @@ const {LocalStorageSaveRepository}=require('../.test-build/persistence/SaveRepos
  for(const destination of world.destinations.filter(d=>!d.floating)){
   await world.prepareAround(destination.x,destination.z);
   // Refined tiles can span several 4 ms updates; allow that cooperative work
-  // to finish without requiring a whole dense tile in one frame.
-  for(let i=0;i<4000&&(i===0||terrain.pendingCount);i++)terrain.update(destination.x,destination.z);
-  assert.equal(terrain.pendingCount,0);assert.ok(world.stats.residentTiles<=9);
+  // to finish without requiring a whole dense tile in one frame. The Rev4
+  // settlement and its wider river bypass also preserve canonical triangles.
+  for(let i=0;i<8000&&(i===0||terrain.pendingCount);i++)terrain.update(destination.x,destination.z);
+  assert.equal(terrain.pendingCount,0, destination.id+' cooperative terrain queue completes');assert.ok(world.stats.residentTiles<=9);
   for(const [dx,dz] of [[0,0],[8.17,3.24],[-9.4,12.82]]){
    const x=destination.x+dx,z=destination.z+dz,y=world.surface.heightAt(x,z);
    assert.equal(sampleMainlandHeight(x,z),world.heightAt(x,z));

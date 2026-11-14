@@ -8,7 +8,7 @@ export type AssetInstantiation='thin'|'individual';
 export type AssetDefinition={
   path:string;category:AssetCategory;biomes:readonly Biome[];
   referenceScale:number;interaction:AssetInteraction;instantiation:AssetInstantiation;
-  collisionRadius?:number;renderDistance?:number;lodPath?:string;lodDistance?:number;
+  collisionRadius?:number;renderDistance?:number;lodPath?:string;lod2Path?:string;lodDistance?:number;
   horizontalScale?:number;
   surface?:'terrain'|'water';
 };
@@ -19,6 +19,9 @@ export const ASSET_CATALOG={
   arbolito2:{path:'/assets/vegetation/Arbolito_2.glb',category:'vegetation',biomes:['ecos','valle'],referenceScale:17,interaction:'decorative',instantiation:'thin'},
   arbolito3:{path:'/assets/vegetation/Arbolito_3.glb',category:'vegetation',biomes:['ecos','valle','nacar'],referenceScale:20,interaction:'decorative',instantiation:'thin'},
   plantitas1:{path:'/assets/vegetation/plantitas_1.glb',category:'vegetation',biomes:['valle','ecos','nacar'],referenceScale:2.4,interaction:'decorative',instantiation:'thin'},
+  brisaliaMargaritas:{path:'/assets/vegetation/brisalia-lods/margaritas_1_LOD0.glb',lodPath:'/assets/vegetation/brisalia-lods/margaritas_1_LOD1.glb',lod2Path:'/assets/vegetation/brisalia-lods/margaritas_1_LOD2.glb',category:'vegetation',biomes:['valle'],referenceScale:1.3,interaction:'decorative',instantiation:'thin'},
+  brisaliaMatorral:{path:'/assets/vegetation/brisalia-lods/Matorral_1_LOD0.glb',lodPath:'/assets/vegetation/brisalia-lods/Matorral_1_LOD1.glb',lod2Path:'/assets/vegetation/brisalia-lods/Matorral_1_LOD2.glb',category:'vegetation',biomes:['valle'],referenceScale:1.5,interaction:'decorative',instantiation:'thin'},
+  brisaliaYuyos:{path:'/assets/vegetation/brisalia-lods/Yuyos_1_LOD0.glb',lodPath:'/assets/vegetation/brisalia-lods/Yuyos_1_LOD1.glb',lod2Path:'/assets/vegetation/brisalia-lods/Yuyos_1_LOD2.glb',category:'vegetation',biomes:['valle'],referenceScale:1.4,interaction:'decorative',instantiation:'thin'},
   arbolitoSeco:{path:'/assets/world/vegetation/Arbolito_sin_hojas.glb',category:'vegetation',biomes:['ecos','sierras'],referenceScale:14,interaction:'decorative',instantiation:'thin'},
   tronco1:{path:'/assets/world/vegetation/Tronco_1.glb',category:'vegetation',biomes:['ecos','valle'],referenceScale:7,interaction:'decorative',instantiation:'thin'},
   formacionRocosa:{path:'/assets/world/rocks/Formacion_rocosa_1_closed.glb',category:'rocks',biomes:['sierras','cumbres','ecos'],referenceScale:9,interaction:'decorative',instantiation:'thin'},
@@ -37,6 +40,7 @@ export const ASSET_CATALOG={
 } as const satisfies Record<string,AssetDefinition>;
 
 export type AssetId=keyof typeof ASSET_CATALOG;
+export const BRISALIA_PLANT_ASSETS=['brisaliaMargaritas','brisaliaMatorral','brisaliaYuyos'] as const;
 export const CLIFF_LOD_PATH='/assets/world/cliffs/Acantilado_2_lod.glb';
 /** Logical forest species retain their seeded placements; their visuals use V4. */
 export const DECORATIVE_TREE_ASSETS={

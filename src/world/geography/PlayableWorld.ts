@@ -1,3 +1,4 @@
+import { BRISALIA_SCALE, brisaliaPlatformWeight, brisaliaCourtyardHeight } from '../brisaliaLayout';
 import { WorldStudioSource, type StudioHydrology, type StudioManifest, type StudioSpline } from './WorldStudioSource';
 import { GeographicSurface, type GeographicBounds, type GeographicSource } from './GeographicSource';
 import type { ActiveWorldGeography } from './ActiveGeography';
@@ -110,8 +111,9 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
     // A compact town platform preserves the metre-scale building grid. It is
     // part of the authoritative height function, never an overlapping ground.
     const townDistance=Math.hypot((x-this.town.x)/1.2,z-this.town.z+20);
-    const platform=1-smooth(90,155,townDistance);
+    const platform=Math.max(1-smooth(90,155,townDistance),brisaliaPlatformWeight(x-this.town.x,z-this.town.z));
     height+=(this.townHeight-height)*platform;
+    height+=brisaliaCourtyardHeight(x-this.town.x,z-this.town.z);
     const p=regionLocal(this.lagoon,x,z);
     if(inLagoonRegion(p.x,p.z))height=applyLagoonRelief(p.x,p.z,height-this.lagoon.y,this.lagoon.waterFloor)+this.lagoon.y;
     if(!ownsLagoonWater(p.x,p.z)&&!lake&&platform===0){
@@ -187,6 +189,11 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   riverStrips(bounds:GeographicBounds){return this.rivers.strips(bounds);}
   riverLevelAt(x:number,z:number){return this.lakeAt(x,z)?.level??this.rivers.at(x,z)?.level??null;}
   preserveDetail(bounds:GeographicBounds):boolean{
+    // Static foundations and the raised courtyard retain the same terrain
+    // triangles at a distance, so LOD cannot push soil through the stairs.
+    const s=BRISALIA_SCALE;
+    if(bounds[2]>=this.town.x-128*s&&bounds[0]<=this.town.x+176*s&&
+      bounds[3]>=this.town.z-144*s&&bounds[1]<=this.town.z+14*s)return true;
     // Protect water, banks and a two-cell guard. The outer dry shoulder can
     // still use ordinary LOD density; it cannot bridge across the channel.
     if(this.rivers.touches(bounds,26))return true;

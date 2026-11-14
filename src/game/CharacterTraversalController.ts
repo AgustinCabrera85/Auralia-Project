@@ -11,6 +11,7 @@ export type TraversalSolid={
   height:number;normalX:number;normalZ:number;rockId:string;centerX:number;centerZ:number;
 };
 export type TraversalWorld={
+  stepHeightAt?:(x:number,z:number)=>number;
   ground:(x:number,z:number,originY:number,maxDistance:number,footRadius:number)=>GroundHit|null;
   solidTop:(x:number,z:number,originY:number,maxDistance:number,rockId?:string)=>TraversalSolid|null;
   wall:(x:number,y:number,z:number,dirX:number,dirZ:number,maxDistance:number)=>TraversalWall|null;
@@ -55,6 +56,7 @@ export class CharacterTraversalController {
   private mantleProbeCooldown=0;
   private climbDetachRemaining=0;
   private grade=0;
+  private slideHeading:{x:number;z:number;grade:number}|null=null;
   private swimVelocityX=0;
   private swimVelocityZ=0;
   private swimDepthTarget:number|null=null;
@@ -78,6 +80,7 @@ export class CharacterTraversalController {
     this.climbRockId=null;this.lastClimbWall=null;this.mantle=null;
     this.mantleProbeCooldown=0;
     this.climbDetachRemaining=0;this.grade=0;
+    this.slideHeading=null;
     this.climbTravel={vertical:0,side:0};
     this.swimVelocityX=0;this.swimVelocityZ=0;
     this.swimDepthTarget=null;
@@ -95,6 +98,7 @@ export class CharacterTraversalController {
   get actionMotionActive():boolean{return this.actionMotion!==null;}
   get rollCarryActive():boolean{return Math.hypot(this.rollCarryX,this.rollCarryZ)>.05;}
   get groundGrade():number{return this.grade;}
+  get slopeSlideDirection():{x:number;z:number;grade:number}|null{return this.slideHeading;}
   get climbMotion():{vertical:number;side:number}{return this.climbTravel;}
   get climbContact():TraversalWall|null{return this.mode==='climbing'?this.lastClimbWall:null;}
   get climbFacing():{x:number;z:number}|null{
@@ -133,6 +137,7 @@ export class CharacterTraversalController {
   }
 
   step(dt:number,input:TraversalInput,world:TraversalWorld):boolean{
+    this.slideHeading=null;
     const startX=this.position.x,startY=this.position.y,startZ=this.position.z;
     const startedMode=this.mode;
     const count=Math.max(1,Math.ceil(Math.min(dt,.1)/.025));
@@ -140,6 +145,7 @@ export class CharacterTraversalController {
     let moved=false;
     for(let i=0;i<count;i++)moved=this.substep(subDt,{...input,
       jumpPressed:i===0&&input.jumpPressed,airKickPressed:i===0&&input.airKickPressed},world)||moved;
+    if(this.mode!=='airborne')this.slideHeading=null;
     const distance=Math.hypot(this.position.x-startX,this.position.z-startZ);
     this.grade=this.mode==='grounded'&&startedMode==='grounded'&&distance>.001
       ?(this.position.y-startY)/distance:0;
@@ -172,6 +178,7 @@ export class CharacterTraversalController {
 
   private substep(dt:number,input:TraversalInput,world:TraversalWorld):boolean{
     const p=this.position;
+    const stepHeight=world.stepHeightAt?.(p.x,p.z)??TRAVERSAL.stepHeight;
     const water=world.waterLevel?.(p.x,p.z);
     if(water!==undefined&&water!==null&&p.y<water-1.7&&
       water-world.fallbackHeight(p.x,p.z)>3&&this.mode!=='mantling'){
@@ -376,9 +383,12 @@ export class CharacterTraversalController {
       const nextX=p.x+dx,nextZ=p.z+dz;
       const distance=Math.hypot(dx,dz);
       const slopeLimit=input.sprint?TRAVERSAL.maxSprintSlopeDeg:TRAVERSAL.maxWalkSlopeDeg;
-      const groundRise=Math.max(TRAVERSAL.stepHeight,distance*Math.tan(slopeLimit*Math.PI/180));
+      const groundRise=Math.max(stepHeight,distance*Math.tan(slopeLimit*Math.PI/180));
       let blockingWall:TraversalWall|null=null;
-      for(const h of [.35,1.8,TRAVERSAL.playerHeight-.3]){
+      // A calibrated stair riser is tested by the ground probe; the wall probe
+      // must start above that riser or it prevents reaching the first tread.
+      const lowProbe=this.mode==='grounded'&&stepHeight>TRAVERSAL.stepHeight?stepHeight+.05:.35;
+      for(const h of [lowProbe,1.8,TRAVERSAL.playerHeight-.3]){
         const wall=world.wall(p.x,p.y+h,p.z,dx,dz,distance+TRAVERSAL.playerRadius);
         if(wall&&wall.distance<=distance+TRAVERSAL.playerRadius&&
           !(wall.terrain&&this.mode==='grounded'&&slopeAllowed(wall.normalY,input.sprint))){
@@ -388,12 +398,12 @@ export class CharacterTraversalController {
       if(blockingWall&&this.mode==='airborne'&&this.velocityY>=0&&
         this.tryMantle(blockingWall,world,input))return true;
       const risingTerrain=world.fallbackHeight(nextX,nextZ)>
-        p.y+(this.mode==='grounded'?groundRise:TRAVERSAL.stepHeight)+.001;
+        p.y+(this.mode==='grounded'?groundRise:stepHeight)+.001;
       if(!blockingWall&&!risingTerrain&&world.canMove(nextX,nextZ,p.x,p.z,p.y)){
         if(this.mode==='grounded'){
           const floor=world.ground(nextX,nextZ,p.y+groundRise+.05,
             groundRise+TRAVERSAL.groundSnap+.65,TRAVERSAL.playerRadius*.55);
-          const allowedRise=floor?.rockId?TRAVERSAL.stepHeight:groundRise;
+          const allowedRise=floor?.rockId?stepHeight:groundRise;
           if(floor&&slopeAllowed(floor.normalY,input.sprint)&&floor.height<=p.y+allowedRise+.001&&
             floor.height>=p.y-TRAVERSAL.groundSnap-.2){
             if(world.headroom(nextX,floor.height+.05,nextZ,TRAVERSAL.playerHeight-.1,
@@ -457,7 +467,10 @@ export class CharacterTraversalController {
           const length=Math.hypot(gx,gz);
           if(length>1e-5){
             const slideX=p.x-gx/length*4*dt,slideZ=p.z-gz/length*4*dt;
-            if(world.canMove(slideX,slideZ,p.x,p.z,p.y)){p.x=slideX;p.z=slideZ;}
+            if(world.canMove(slideX,slideZ,p.x,p.z,p.y)){
+              p.x=slideX;p.z=slideZ;
+              this.slideHeading={x:-gx/length,z:-gz/length,grade:length/(2*d)};
+            }
           }
           p.y=world.fallbackHeight(p.x,p.z)+.02;this.velocityY=0;
           return true;

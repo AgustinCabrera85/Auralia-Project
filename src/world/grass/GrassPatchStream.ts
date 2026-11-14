@@ -11,11 +11,12 @@ import {makeGrassClump} from './GrassClumpGeometry';
 export class GrassPatchStream{
  readonly focus={x:0,z:0,companionX:0,companionZ:0,companionRadius:0};
  private readonly patches=new Map<string,GrassPlacement[]>();
+ private readonly patchDetails=new Map<string,boolean>();
  private readonly patchExclusions=new Map<string,readonly VegetationExclusion[]>();
  private readonly sprites=new Map<GrassVariant,Mesh>();
  private readonly texture:Texture;
- private queue:{key:string;px:number;pz:number;distance:number}[]=[];
- private building:{key:string;iterator:Generator<void,GrassPlacement[],void>;ms:number}|null=null;
+ private queue:{key:string;px:number;pz:number;distance:number;detail:boolean}[]=[];
+ private building:{key:string;px:number;pz:number;detail:boolean;iterator:Generator<void,GrassPlacement[],void>;ms:number}|null=null;
  private selectionX=Infinity;
  private selectionZ=Infinity;
  private active=false;
@@ -83,41 +84,54 @@ export class GrassPatchStream{
   this.selectionX=x;this.selectionZ=z;this.select();
  }
  private select(){
-  const {size,farEnd}=GRASS_PATCH,reach=Math.ceil((farEnd+GRASS_PATCH.refreshDistance)/size);
+  const {size,farEnd,prefetch,detailEnd,nearEnd}=GRASS_PATCH,reach=Math.ceil((farEnd+prefetch)/size);
   const cx=Math.floor(this.focus.x/size),cz=Math.floor(this.focus.z/size),wanted=new Set<string>();
   this.queue=[];
   for(let dz=-reach;dz<=reach;dz++)for(let dx=-reach;dx<=reach;dx++){
    const px=cx+dx,pz=cz+dz;
    const distance=Math.hypot(Math.max(Math.abs((px+.5)*size-this.focus.x)-size/2,0),Math.max(Math.abs((pz+.5)*size-this.focus.z)-size/2,0));
-   if(distance>farEnd+GRASS_PATCH.refreshDistance)continue;
+   if(distance>farEnd+prefetch)continue;
    const key=px+':'+pz;wanted.add(key);
-   if(!this.patches.has(key))this.queue.push({key,px,pz,distance});
+   if(!this.patches.has(key))this.queue.push({key,px,pz,distance,detail:distance<nearEnd});
+   else if(!this.patchDetails.get(key)&&distance<detailEnd+prefetch)this.queue.push({key,px,pz,distance,detail:true});
   }
-  for(const key of this.patches.keys())if(!wanted.has(key)){this.patches.delete(key);this.patchExclusions.delete(key);}
+  for(const key of this.patches.keys())if(!wanted.has(key)){this.patches.delete(key);this.patchDetails.delete(key);this.patchExclusions.delete(key);}
   if(this.building&&!wanted.has(this.building.key))this.building=null;
   if(this.building)this.queue=this.queue.filter(p=>p.key!==this.building!.key);
-  this.queue.sort((a,b)=>a.distance-b.distance);this.dirty=true;
+  // Establish the distant silhouette before filling in the denser middle ring.
+  const priority=(p:typeof this.queue[number])=>p.distance+(p.detail&&p.distance>=nearEnd?farEnd+prefetch:0);
+  this.queue.sort((a,b)=>priority(a)-priority(b));this.dirty=true;
  }
  update(){
   if(!this.active)return;
   const started=performance.now();let built=0;
   while((this.queue.length||this.building)&&performance.now()-started<GRASS_PATCH.budgetMs){
-   if(!this.building){const next=this.queue[0],s=GRASS_PATCH.size;
+   if(!this.building){const s=GRASS_PATCH.size;
    // Never request sectors just for grass and never cache an unready sector as empty.
-   if(!this.world.source.isReady([next.px*s-6,next.pz*s-6,(next.px+1)*s+6,(next.pz+1)*s+6]))break;
-    this.queue.shift();this.building={key:next.key,iterator:generateGrassPatchSteps(next.px,next.pz,this.world),ms:0};
+   const index=this.queue.findIndex(p=>this.world.source.isReady([p.px*s-6,p.pz*s-6,(p.px+1)*s+6,(p.pz+1)*s+6]));
+   if(index<0)break;
+    const next=this.queue.splice(index,1)[0];
+    this.building={...next,iterator:generateGrassPatchSteps(next.px,next.pz,this.world,next.detail),ms:0};
    }
    const before=performance.now(),step=this.building.iterator.next(),elapsed=performance.now()-before;
    this.building.ms+=elapsed;this.generationTotalMs+=elapsed;
-   if(step.done){this.patches.set(this.building.key,step.value);this.maxPatchMs=Math.max(this.maxPatchMs,this.building.ms);this.building=null;this.generated++;built++;}
+   if(step.done){
+    const {key,px,pz,detail,ms}=this.building;
+    this.patches.set(key,step.value);this.patchDetails.set(key,detail);
+    this.maxPatchMs=Math.max(this.maxPatchMs,ms);this.building=null;this.generated++;
+    const distance=Math.hypot((px+.5)*GRASS_PATCH.size-this.focus.x,(pz+.5)*GRASS_PATCH.size-this.focus.z);
+    if(distance<GRASS_PATCH.farEnd+GRASS_PATCH.size)built++;
+    if(!detail&&distance<GRASS_PATCH.detailEnd+GRASS_PATCH.prefetch)
+     this.queue.push({key,px,pz,distance,detail:true});
+   }
   }
   if(built)this.dirty=true;
   if(this.dirty)this.refresh();
  }
  refreshExclusions(){this.patchExclusions.clear();this.dirty=true;}
- refreshTerrain(){this.patches.clear();this.building=null;if(this.active)this.select();}
+ refreshTerrain(){this.patches.clear();this.patchDetails.clear();this.building=null;if(this.active)this.select();}
  deactivate(){
-  this.active=false;this.patches.clear();this.patchExclusions.clear();this.queue=[];this.building=null;this.selectionX=this.selectionZ=Infinity;
+  this.active=false;this.patches.clear();this.patchDetails.clear();this.patchExclusions.clear();this.queue=[];this.building=null;this.selectionX=this.selectionZ=Infinity;
   this.refresh();
  }
  private refresh(){
@@ -126,7 +140,11 @@ export class GrassPatchStream{
   for(const v of GRASS_VARIANTS)lists.set(v,{near:[],far:[]});
   let obstacles:readonly VegetationExclusion[]|undefined;
   const {size,refreshDistance}=GRASS_PATCH;
-  if(this.active)for(const [key,patch] of this.patches){
+  const ordered=[...this.patches].map(([key,patch])=>{
+   const [px,pz]=key.split(':').map(Number);
+   return {key,patch,distance:((px+.5)*size-this.focus.x)**2+((pz+.5)*size-this.focus.z)**2};
+  }).sort((a,b)=>a.distance-b.distance);
+  if(this.active)for(const {key,patch} of ordered){
    const [px,pz]=key.split(':').map(Number),minX=px*size,minZ=pz*size;
    let local=this.patchExclusions.get(key);
    if(!local){
@@ -138,7 +156,8 @@ export class GrassPatchStream{
     if(local.some(a=>(p.x-a.x)**2+(p.z-a.z)**2<(a.radius+.5)**2))continue;
     const d=Math.hypot(p.x-this.focus.x,p.z-this.focus.z),list=lists.get(p.variant)!;
     if(d<GRASS_PATCH.nearEnd+refreshDistance&&this.nearCount<GRASS_PATCH.maxNear){list.near.push(p);this.nearCount++;}
-    if(d>GRASS_PATCH.nearStart-refreshDistance&&d<GRASS_PATCH.farEnd+refreshDistance&&this.spriteCount<GRASS_PATCH.maxSprites){list.far.push(p);this.spriteCount++;}
+    const end=p.distant?GRASS_PATCH.farEnd:GRASS_PATCH.detailEnd;
+    if(d>GRASS_PATCH.nearStart-refreshDistance&&d<end+refreshDistance&&this.spriteCount<GRASS_PATCH.maxSprites){list.far.push(p);this.spriteCount++;}
    }
   }
   for(const [variant,list] of lists)for(const [mesh,placements] of [[this.sources.get(variant)!,list.near],[this.sprites.get(variant)!,list.far]] as const){
