@@ -143,7 +143,8 @@ export class SeasonalIvyLeafPlugin extends MaterialPluginBase {
       uniform vec3 aurIvySeason;uniform float aurIvyLayer;`,
       CUSTOM_FRAGMENT_UPDATE_ALPHA:`if(aurIvySeason.x<vAurIvyLeaf)discard;`,
       CUSTOM_FRAGMENT_BEFORE_LIGHTS:`
-        surfaceAlbedo*=mix(vec3(.68,.80,.70),vec3(1.10,1.08,.90),fract(vAurIvyLeaf*17.3));
+        // Richer living greens distinguish ivy from the grass and gray masonry.
+        surfaceAlbedo*=mix(vec3(.68,1.02,.52),vec3(1.02,1.34,.72),fract(vAurIvyLeaf*17.3));
         surfaceAlbedo*=mix(.64,1.0,aurIvyLayer);
         float value=max(surfaceAlbedo.r,max(surfaceAlbedo.g,surfaceAlbedo.b));
         vec3 golden=vec3(1.,.88,.10)*mix(value,sqrt(max(value,0.)),.25);
