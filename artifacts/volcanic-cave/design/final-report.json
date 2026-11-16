@@ -1,0 +1,66 @@
+{
+  "schema": "auralia.cave-review.v1",
+  "roomId": "caverna-del-crisol",
+  "delivery": "Local playable cavern integrated into the existing game",
+  "entry": {
+    "travelDestination": "Volcán Ígneo · ladera del Crisol",
+    "mouthXZ": [
+      -342,
+      -4287
+    ],
+    "control": "Walk into the vestibule; E enters, E at the inner arrival returns to the landing",
+    "continuity": "Small walkable recess sculpted into canonical terrain triangles; 48-triangle rock shell and 9-triangle recessed back. Outside the entrance footprint the mountain is unchanged.",
+    "reload": "Safe exterior position saved; discoveries and rewards persist"
+  },
+  "validation": {
+    "typescript": "npm run check passed",
+    "productionBuild": "npm run build passed; existing large-bundle warning",
+    "movement": "44 route segments walked in both directions; accelerated ceiling rays agree with rendered geometry",
+    "multilevel": "Upper bridge and lower passage have independent exact-triangle support; underside blocks ascent",
+    "integration": "24 browser checks passed; see ../browser-checks.json",
+    "regressions": "Playable-world passed: 66 destination ray checks, walk into the recess and back without jumping, terrain/render agreement and unchanged heights outside the local entrance footprint.",
+    "images": [
+      "../arrival.png",
+      "../bridge.png",
+      "../ceiling.png",
+      "../entrance-above.png",
+      "../entrance-left.png",
+      "../entrance-right.png",
+      "../entrance.png",
+      "../exit.png",
+      "../overlook.png",
+      "../secret.png",
+      "../under-bridge.png",
+      "../vault.png"
+    ],
+    "rendering": "Real Santi and Dogo, production camera and loaded game materials",
+    "interiorTriangles": 38720,
+    "performance": "450-frame local CPU median 44 -> 8 ms; p95 76.4 -> 13 ms. Headless RAF p95 121.3 -> 17.6 ms, with 8/450 final intervals >33.4 ms. See ../performance.json.",
+    "genericSkillValidator": "Not passed: generic validator requires Meshy image approvals, paid budgets and Blender export artifacts. This uses code-native Babylon geometry, existing textures and zero paid services. No human Form/Runtime approval or publication is claimed.",
+    "entranceAndLedges": "scripts/check-cave-entrance.mjs passed: 142 walking frames to the optional entry, E enter/exit, real-mesh jump capture, stable hang, fresh W mantle, and tapered cave lip hand alignment.",
+    "currentEntranceImage": "../entrance.png",
+    "previousReviewImages": "Other exterior angle screenshots are from the earlier simulated-mouth review."
+  },
+  "postmortem": {
+    "observations": [
+      "Exterior heightfields cannot represent stacked walking surfaces",
+      "Ocean and water-optics updates must not query unloaded exterior tiles from interior coordinates",
+      "Ramp junctions and crossing paths require clearance checks"
+    ],
+    "corrections": [
+      "Restored the E entrance and exit transition per user clarification",
+      "Local cave candidate list skips exterior mesh evaluation; collider octrees retain exact triangle hits",
+      "Lighting receiver lists update only when actors change; outdoor sign lights do not update inside",
+      "Dry interior clears exterior water effects; exit restores exterior lights and streaming",
+      "Replaced the simulated slope opening with a small level vestibule and a gentle shared-terrain approach.",
+      "Removed the external amber cluster that intersected the new rock shell.",
+      "Jump catches a real broad lip; Santi hangs until a fresh W press, while S or Space releases. Tapered rock uses the actual top edge for hand contact."
+    ],
+    "remainingRisks": [
+      "Headless timing is not a guarantee for every device or the whole open world",
+      "Legacy terrain preload timing test remains above its 2500 ms budget",
+      "Additional caves need their own authored layouts and traversal checks"
+    ]
+  },
+  "proposedLessons": []
+}

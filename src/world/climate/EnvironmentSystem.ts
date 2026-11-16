@@ -9,6 +9,7 @@ import { Precipitation } from './Precipitation';
 import { LANDSCAPE_ATMOSPHERE_CONFIG } from '../LandscapeAtmosphere';
 import { getAuraliaWind, type AuraliaWindState } from '../AuraliaWindSystem';
 import { getAuraliaTreeColors, type AuraliaTreeColors } from '../AuraliaFoliageWind';
+import { updateSeasonalIvy } from '../materials/SeasonalIvyMaterial';
 
 /** One shared environmental clock for every playable zone of Auralia. */
 export class EnvironmentSystem {
@@ -30,6 +31,8 @@ export class EnvironmentSystem {
   private debugLabel:HTMLElement|null=null;
   private debugTimer=0;
   private current:ClimateFrame;
+  private sheltered=false;
+  setSheltered(value:boolean):void{this.sheltered=value;}
 
   constructor(
     private readonly scene:Scene,
@@ -71,6 +74,7 @@ export class EnvironmentSystem {
     this.current=sampleClimate(this.elapsed,this.forcedWeather);
     const frame=this.current,weather=frame.weatherMix;
     this.treeColors.update(frame.season,step);
+    updateSeasonalIvy(this.scene,frame);
     // Clear weather preserves the existing breeze; storms raise its baseline.
     // The scene wind controller layers its short gusts on top in one update.
     this.wind.setStrength(.45+weather.wind*.9);
@@ -85,7 +89,7 @@ export class EnvironmentSystem {
       this.nextLightning=this.animationSeconds+8;
 
     this.sky.update(frame,this.flash,this.animationSeconds);
-    this.precipitation.update(frame);
+    this.precipitation.update(frame,this.sheltered);
 
     // Existing sun and hemispheric lights are modified; no duplicate light sources.
     this.sun.direction.set(-frame.sunDirection[0],-frame.sunDirection[1],-frame.sunDirection[2]);

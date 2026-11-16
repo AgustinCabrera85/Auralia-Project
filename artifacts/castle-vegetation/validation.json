@@ -1,0 +1,23 @@
+{
+  "placements": 588,
+  "species": {
+    "brisaliaYuyos": 200,
+    "brisaliaMatorral": 358,
+    "brisaliaMargaritas": 30
+  },
+  "sides": {
+    "left": 158,
+    "right": 175,
+    "front": 159,
+    "rear": 171
+  },
+  "wallContact": "pass",
+  "maxRootDistance": 0.5789694702798194,
+  "maxStoneDistance": 0.7150889032815679,
+  "entranceClearance": "pass",
+  "terrainSupport": "pass",
+  "translatedTown": "pass",
+  "structureExclusion": "pass",
+  "visibleInstances": 566,
+  "errors": []
+}

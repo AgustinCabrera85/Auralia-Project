@@ -62,7 +62,8 @@ export class CharacterTraversalController {
   private swimDepthTarget:number|null=null;
   private climbTravel={vertical:0,side:0};
   private lastClimbWall:TraversalWall|null=null;
-  private mantle:{from:TraversalPosition;to:TraversalPosition;elapsed:number;duration:number}|null=null;
+  private mantle:{from:TraversalPosition;to:TraversalPosition;elapsed:number;duration:number;ledge?:boolean}|null=null;
+  private ledge:{wall:TraversalWall;target:TraversalPosition;armed:boolean}|null=null;
 
   private sameSupport(a:string,b:string|null,world:TraversalWorld):boolean{
     return b!==null&&(a===b||world.sameSupport?.(a,b)===true);
@@ -77,7 +78,7 @@ export class CharacterTraversalController {
     this.groundVelocityX=0;this.groundVelocityZ=0;
     this.rollCarryX=0;this.rollCarryZ=0;
     this.actionMotion=null;
-    this.climbRockId=null;this.lastClimbWall=null;this.mantle=null;
+    this.climbRockId=null;this.lastClimbWall=null;this.mantle=null;this.ledge=null;
     this.mantleProbeCooldown=0;
     this.climbDetachRemaining=0;this.grade=0;
     this.slideHeading=null;
@@ -86,7 +87,7 @@ export class CharacterTraversalController {
     this.swimDepthTarget=null;
   }
 
-  get canInteract():boolean{return this.mode!=='climbing'&&this.mode!=='mantling';}
+  get canInteract():boolean{return this.mode!=='climbing'&&this.mode!=='mantling'&&this.mode!=='hanging';}
   constrainCeiling(ceiling:number):void{
     const maxY=ceiling-TRAVERSAL.playerHeight-.08;
     if(this.position.y>maxY){this.position.y=maxY;this.velocityY=Math.min(0,this.velocityY);}
@@ -100,9 +101,9 @@ export class CharacterTraversalController {
   get groundGrade():number{return this.grade;}
   get slopeSlideDirection():{x:number;z:number;grade:number}|null{return this.slideHeading;}
   get climbMotion():{vertical:number;side:number}{return this.climbTravel;}
-  get climbContact():TraversalWall|null{return this.mode==='climbing'?this.lastClimbWall:null;}
+  get climbContact():TraversalWall|null{return this.mode==='hanging'?this.ledge?.wall??null:this.mode==='climbing'?this.lastClimbWall:null;}
   get climbFacing():{x:number;z:number}|null{
-    return this.mode==='climbing'||this.mode==='mantling'
+    return this.mode==='climbing'||this.mode==='mantling'||this.mode==='hanging'
       ?{x:-this.climbNormal.x,z:-this.climbNormal.z}:null;
   }
   get mantleProgress():number{return this.mantle?this.mantle.elapsed/this.mantle.duration:0;}
@@ -188,14 +189,35 @@ export class CharacterTraversalController {
     }
     if(this.mode==='swimming')return this.swimStep(dt,input,world,water??null);
     this.climbDetachRemaining=Math.max(0,this.climbDetachRemaining-dt);
+    if(this.mode==='hanging'){
+      const ledge=this.ledge!,top=world.ground(ledge.target.x,ledge.target.z,ledge.target.y+.2,.4,TRAVERSAL.playerRadius*.45);
+      const supported=top&&Math.abs(top.height-ledge.target.y)<.15&&
+        (ledge.wall.terrain&&!top.rockId||!!top.rockId&&this.sameSupport(top.rockId,ledge.wall.rockId,world));
+      if(!supported||input.jumpPressed||input.vertical<0){
+        this.mode='airborne';this.ledge=null;this.supportRockId=null;this.velocityY=0;
+        this.airVelocityX=this.climbNormal.x*2;this.airVelocityZ=this.climbNormal.z*2;
+        this.climbDetachRemaining=.4;return true;
+      }
+      if(input.vertical<=0)ledge.armed=true;
+      if(input.vertical>0&&ledge.armed&&world.headroom(p.x,p.y+.05,p.z,TRAVERSAL.playerHeight+ledge.target.y-p.y)&&
+        world.headroom(ledge.target.x,ledge.target.y+.05,ledge.target.z,TRAVERSAL.playerHeight-.1,top.rockId)&&
+        world.canMove(ledge.target.x,ledge.target.z,p.x,p.z,ledge.target.y+.05)){
+        this.mode='mantling';this.mantle={from:{...p},to:ledge.target,elapsed:0,duration:.95,ledge:true};
+        this.ledge=null;return true;
+      }
+      return false;
+    }
     if(this.mode==='mantling'){
       const mantle=this.mantle!;
       mantle.elapsed=Math.min(mantle.duration,mantle.elapsed+dt);
       const t=mantle.elapsed/mantle.duration;
       const eased=t*t*(3-2*t);
-      p.x=mantle.from.x+(mantle.to.x-mantle.from.x)*eased;
-      p.y=mantle.from.y+(mantle.to.y-mantle.from.y)*eased;
-      p.z=mantle.from.z+(mantle.to.z-mantle.from.z)*eased;
+      // Lift clear of the vertical face before bringing the capsule over the lip.
+      const lift=mantle.ledge?Math.min(1,t/.65):t,over=mantle.ledge?Math.max(0,(t-.6)/.4):t;
+      const horizontal=mantle.ledge?over*over*(3-2*over):eased;
+      p.x=mantle.from.x+(mantle.to.x-mantle.from.x)*horizontal;
+      p.y=mantle.from.y+(mantle.to.y-mantle.from.y)*lift*lift*(3-2*lift);
+      p.z=mantle.from.z+(mantle.to.z-mantle.from.z)*horizontal;
       if(t>=1){
         this.mode='grounded';this.mantle=null;this.velocityY=0;
         if(this.supportRockId==='terrain:mainland')this.supportRockId=null;
@@ -304,6 +326,8 @@ export class CharacterTraversalController {
       this.airDashRemaining=this.verticalAirKick?TRAVERSAL.airKickSeconds:
         directionLength>1e-5?TRAVERSAL.doubleJumpDashSeconds:0;
     }
+    if(this.mode==='airborne'&&this.climbDetachRemaining===0&&!this.airKickActive&&
+      this.tryCatchLedge(world,input))return true;
     if(input.vertical>0&&this.climbDetachRemaining===0&&!this.actionMotion&&
       !input.jumpPressed&&!input.airKickPressed&&!this.airKickActive){
       const forwardLength=Math.hypot(input.forwardX,input.forwardZ);
@@ -312,7 +336,8 @@ export class CharacterTraversalController {
         for(const probe of [1.15,1.8,2.5,3.2]){
           const hit=world.wall(p.x,p.y+probe,p.z,input.forwardX,input.forwardZ,
             TRAVERSAL.climbReach+TRAVERSAL.playerRadius+.4);
-          if(hit&&!(hit.terrain&&slopeAllowed(hit.normalY,input.sprint))&&
+          if(hit&&!(this.mode==='airborne'&&Math.abs(hit.normalY)<=(hit.terrain?.25:.4))&&
+            !(hit.terrain&&slopeAllowed(hit.normalY,input.sprint))&&
             canBeginClimb(hit.normalY,hit.climbable,
             hit.distance<=TRAVERSAL.climbReach+TRAVERSAL.playerRadius+.4,hit.terrain)){
             wall=hit;this.climbProbeHeight=probe;break;
@@ -395,7 +420,7 @@ export class CharacterTraversalController {
           blockingWall=wall;break;
         }
       }
-      if(blockingWall&&this.mode==='airborne'&&this.velocityY>=0&&
+      if(blockingWall&&blockingWall.terrain&&Math.abs(blockingWall.normalY)>.25&&this.mode==='airborne'&&this.velocityY>=0&&
         this.tryMantle(blockingWall,world,input))return true;
       const risingTerrain=world.fallbackHeight(nextX,nextZ)>
         p.y+(this.mode==='grounded'?groundRise:stepHeight)+.001;
@@ -547,6 +572,52 @@ export class CharacterTraversalController {
       this.swimDepthTarget=null;
     }
     return Math.hypot(p.x-oldX,p.y-oldY,p.z-oldZ)>.001;
+  }
+
+  /** Catch a real flat lip at hand height, including walls that are not marked
+   * climbable. No continuous wall climb is enabled by this edge-only query. */
+  private tryCatchLedge(world:TraversalWorld,input:TraversalInput):boolean{
+    const p=this.position,dx=input.moveX||input.moveZ?input.moveX:input.forwardX,
+      dz=input.moveX||input.moveZ?input.moveZ:input.forwardZ,length=Math.hypot(dx,dz);
+    if(length<1e-5)return false;
+    const handY=p.y+TRAVERSAL.ledgeHandHeight,tolerance=TRAVERSAL.ledgeCatchTolerance;
+    const wall=world.wall(p.x,handY-tolerance,p.z,dx/length,dz/length,TRAVERSAL.playerRadius+.65);
+    if(!wall||Math.abs(wall.normalY)>.4)return false;
+    const n=Math.hypot(wall.normalX,wall.normalZ);if(n<.5)return false;
+    const sign=wall.normalX*dx+wall.normalZ*dz>0?-1:1,nx=wall.normalX/n*sign,nz=wall.normalZ/n*sign;
+    const depth=TRAVERSAL.playerRadius+.45,x=wall.pointX-nx*depth,z=wall.pointZ-nz*depth;
+    const top=world.ground(x,z,handY+tolerance,2*tolerance,TRAVERSAL.playerRadius*.45);
+    if(!top||top.normalY<.96||Math.abs(top.height-handY)>tolerance||
+      !(wall.terrain&&!top.rockId||!!top.rockId&&this.sameSupport(top.rockId,wall.rockId,world)))return false;
+    // Both hands and the landing must have a broad, level top, not a rounded
+    // shoulder or a narrow post. A ray above the edge must be unobstructed.
+    for(const side of [-.5,.5]){
+      const hand=world.ground(wall.pointX-nx*.35-nz*side,wall.pointZ-nz*.35+nx*side,top.height+.2,.4,0);
+      if(!hand||hand.normalY<.96||Math.abs(hand.height-top.height)>.12||
+        !(wall.terrain&&!hand.rockId||!!hand.rockId&&this.sameSupport(hand.rockId,wall.rockId,world)))return false;
+    }
+    if(world.wall(p.x,top.height+.15,p.z,-nx,-nz,wall.distance+.3))return false;
+    // The side ray strikes below the lip. On tapered rock that point is further
+    // out than the actual edge: locate the last supported top triangle before
+    // fixing the hands, rather than hanging from an imaginary vertical plane.
+    let outside=-.65,inside=depth,lipY=top.height;
+    for(let i=0;i<10;i++){
+      const inset=(outside+inside)/2;
+      const lip=world.ground(wall.pointX-nx*inset,wall.pointZ-nz*inset,top.height+.2,.45,0);
+      if(lip&&lip.normalY>=.96&&(wall.terrain&&!lip.rockId||!!lip.rockId&&this.sameSupport(lip.rockId,wall.rockId,world))){inside=inset;lipY=lip.height;}
+      else outside=inset;
+    }
+    const edgeX=wall.pointX-nx*inside,edgeZ=wall.pointZ-nz*inside;
+    const hang={x:edgeX+nx*(TRAVERSAL.playerRadius+.18),y:lipY-TRAVERSAL.ledgeHandHeight,
+      z:edgeZ+nz*(TRAVERSAL.playerRadius+.18)};
+    if(hang.y<world.fallbackHeight(hang.x,hang.z)+.15||
+      !world.headroom(hang.x,hang.y+.05,hang.z,TRAVERSAL.playerHeight-.1)||
+      !world.headroom(x,top.height+.05,z,TRAVERSAL.playerHeight-.1,top.rockId))return false;
+    this.mode='hanging';Object.assign(p,hang);this.climbNormal={x:nx,z:nz};
+    this.ledge={wall:{...wall,normalX:nx,normalY:0,normalZ:nz,pointX:edgeX,pointY:lipY,pointZ:edgeZ},target:{x,y:top.height,z},armed:input.vertical<=0};
+    this.supportRockId=top.rockId??wall.rockId;this.velocityY=0;
+    this.airVelocityX=0;this.airVelocityZ=0;this.airDashRemaining=0;this.verticalAirKick=false;
+    this.climbRockId=null;this.lastClimbWall=null;return true;
   }
 
   private findClimbWall(world:TraversalWorld):TraversalWall|null{

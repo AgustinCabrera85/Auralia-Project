@@ -302,7 +302,7 @@ export class VegetationSystem {
         if(p.kind==='plantitas1'&&!plantsNear)continue;
         if(!this.sources.has(p.kind))continue;
         const distance=Math.hypot(p.x-this.visualFocus.x,p.z-this.visualFocus.z);
-        if(isBrisaliaPlant(p.kind)&&distance>120)continue;
+        if(isBrisaliaPlant(p.kind)&&distance>(p.castleBorder?220:120))continue;
         // Each tree has a stable fade-out distance; no hard forest ring or scale jump.
         if(p.obstacleRadius&&distance>(forest?WORLD_FOREST.fadeStart:350)+
           hash01(Math.floor(p.x),Math.floor(p.z),7441)*(forest?WORLD_FOREST.fadeEnd-WORLD_FOREST.fadeStart:510))continue;

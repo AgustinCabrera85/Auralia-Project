@@ -1,0 +1,21 @@
+{
+  "schema": "game-room.opening-schedule.v1",
+  "roomId": "caverna-del-crisol",
+  "primaryArrival": {
+    "openingId": "crisol-mouth",
+    "transition": "Walk into the exterior vestibule; E optionally enters the separate interior."
+  },
+  "openings": [
+    {
+      "id": "crisol-mouth",
+      "kind": "walkable_cave_vestibule",
+      "widthMeters": 12.4,
+      "profileHeight": 10,
+      "depthMeters": 10.5,
+      "wall": "locally recessed volcanic slope",
+      "destination": "Caverna del Crisol via E",
+      "threshold": "level landing shared by rendering and traversal at (-342,-4287)",
+      "geometry": "48-triangle rock shell and 9-triangle recessed back; existing terrain vertices form the approach and landing."
+    }
+  ]
+}

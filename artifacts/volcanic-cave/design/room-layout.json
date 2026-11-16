@@ -1,0 +1,266 @@
+{
+  "schema": "game-room.layout.v1",
+  "roomId": "caverna-del-crisol",
+  "units": "meters",
+  "source": "src/world/volcanicCaveData.ts",
+  "baseY": -400,
+  "exterior": {
+    "x": -342,
+    "z": -4287
+  },
+  "surfaces": [
+    {
+      "id": "shell",
+      "method": "marching tetrahedra of a smooth union of noisy air cavities",
+      "step": 3
+    },
+    {
+      "id": "routes",
+      "method": "closed rock ribbons with mitered joints and tapered undersides"
+    }
+  ],
+  "nodes": {
+    "exit": {
+      "x": 0,
+      "y": 0,
+      "z": 70,
+      "width": 4.8
+    },
+    "entry": {
+      "x": 0,
+      "y": 0,
+      "z": 65,
+      "width": 5
+    },
+    "throat": {
+      "x": 3,
+      "y": 0,
+      "z": 48,
+      "width": 5
+    },
+    "overlook": {
+      "x": -5,
+      "y": 1,
+      "z": 28,
+      "width": 8
+    },
+    "west": {
+      "x": -26,
+      "y": 4,
+      "z": 8,
+      "width": 7
+    },
+    "bridgeWest": {
+      "x": -20,
+      "y": 6,
+      "z": -14,
+      "width": 5.5
+    },
+    "bridgeEast": {
+      "x": 16,
+      "y": 6,
+      "z": -14,
+      "width": 5.5
+    },
+    "eastApproach": {
+      "x": 21,
+      "y": 6,
+      "z": -3,
+      "width": 6
+    },
+    "east": {
+      "x": 31,
+      "y": 3,
+      "z": 8,
+      "width": 7
+    },
+    "lowerEast": {
+      "x": 30,
+      "y": -4,
+      "z": 29,
+      "width": 5
+    },
+    "lowerSouth": {
+      "x": 10,
+      "y": -6,
+      "z": 36,
+      "width": 5
+    },
+    "lowerTurn": {
+      "x": -4,
+      "y": -7,
+      "z": 17,
+      "width": 5
+    },
+    "westBend": {
+      "x": -43,
+      "y": -5,
+      "z": -12,
+      "width": 5
+    },
+    "under": {
+      "x": 0,
+      "y": -7,
+      "z": -14,
+      "width": 7
+    },
+    "lowerWest": {
+      "x": -24,
+      "y": -5,
+      "z": -31,
+      "width": 8
+    },
+    "return": {
+      "x": -39,
+      "y": -3,
+      "z": 30,
+      "width": 5
+    },
+    "north": {
+      "x": 18,
+      "y": 5,
+      "z": -40,
+      "width": 7
+    },
+    "rejoin": {
+      "x": -20,
+      "y": 1.8,
+      "z": 31,
+      "width": 6
+    },
+    "vault": {
+      "x": 13,
+      "y": 5,
+      "z": -63,
+      "width": 11
+    },
+    "secret": {
+      "x": -35,
+      "y": 0,
+      "z": -52,
+      "width": 8
+    },
+    "shortcut": {
+      "x": -13,
+      "y": 4,
+      "z": -40,
+      "width": 5
+    }
+  },
+  "routes": [
+    [
+      "exit",
+      "entry",
+      "throat",
+      "overlook",
+      "west",
+      "bridgeWest",
+      "bridgeEast",
+      "north",
+      "vault"
+    ],
+    [
+      "bridgeEast",
+      "eastApproach",
+      "east",
+      "lowerEast",
+      "lowerSouth",
+      "lowerTurn",
+      "under",
+      "lowerWest",
+      "westBend",
+      "return",
+      "rejoin",
+      "overlook"
+    ],
+    [
+      "lowerWest",
+      "secret"
+    ],
+    [
+      "vault",
+      "shortcut",
+      "bridgeWest"
+    ]
+  ],
+  "fixtures": [
+    {
+      "x": 0,
+      "y": 9,
+      "z": 58,
+      "color": [
+        0.52,
+        0.65,
+        0.82
+      ],
+      "range": 36,
+      "power": 1.4
+    },
+    {
+      "x": -26,
+      "y": 12,
+      "z": 8,
+      "color": [
+        0.88,
+        0.57,
+        0.31
+      ],
+      "range": 44,
+      "power": 1.8
+    },
+    {
+      "x": 17,
+      "y": 16,
+      "z": -12,
+      "color": [
+        0.52,
+        0.7,
+        0.75
+      ],
+      "range": 52,
+      "power": 2.1
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "z": -63,
+      "color": [
+        1,
+        0.43,
+        0.16
+      ],
+      "range": 34,
+      "power": 2.3
+    },
+    {
+      "x": -35,
+      "y": 6,
+      "z": -52,
+      "color": [
+        0.32,
+        0.72,
+        0.77
+      ],
+      "range": 27,
+      "power": 1.5
+    },
+    {
+      "x": 10,
+      "y": -1,
+      "z": 22,
+      "color": [
+        0.88,
+        0.42,
+        0.19
+      ],
+      "range": 34,
+      "power": 1.1
+    }
+  ],
+  "instances": [],
+  "productionCamera": {
+    "controller": "WorldView.updateCameraOcclusion",
+    "maxInteriorRadius": 18,
+    "clearance": 0.5
+  }
+}

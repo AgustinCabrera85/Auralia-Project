@@ -1,5 +1,6 @@
 import { BRISALIA_BUILDINGS, BRISALIA_SCALE, BRISALIA_ROADS, brisaliaPlatformWeight } from '../src/world/brisaliaLayout.ts';
 import { CharacterTraversalController } from '../src/game/CharacterTraversalController.ts';
+import { auditCastleFloors } from './brisalia-castle-floor.browser.mjs';
 
 /** Runs against the actual playable world, including imported geometry. */
 export async function auditVillage(world){
@@ -59,5 +60,6 @@ export async function auditVillage(world){
   const roadMesh=world.scene.getMeshByName('brisalia:connected-streets');
   check(roadMesh.getVerticesData('normal')[1]>.99,'Road normals face up');
   return {count:buildings.length,sourceMetersToWorldUnits:S,buildings,castleWalkFrames:frames,
-    courtyardGround:ground,courtyardUsesMapTerrain:true,connectedRoads:BRISALIA_ROADS.length};
+    courtyardGround:ground,courtyardUsesMapTerrain:true,connectedRoads:BRISALIA_ROADS.length,
+    castleFloors:auditCastleFloors(world.village,world.geographicWorld)};
 }

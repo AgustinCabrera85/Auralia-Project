@@ -65,7 +65,12 @@ export class Precipitation {
     return p;
   }
 
-  update(frame:ClimateFrame):void{
+  update(frame:ClimateFrame,sheltered=false):void{
+    if(sheltered){
+      if(this.rainActive){this.rain.stop();this.rain.reset();this.rainActive=false;}
+      if(this.snowActive){this.snow.stop();this.snow.reset();this.snowActive=false;}
+      return;
+    }
     // Emitter follows camera, but already spawned droplets stay in world space.
     const pos=this.camera.globalPosition;
     this.emitter.copyFromFloats(pos.x,pos.y,pos.z);

@@ -1,0 +1,79 @@
+{
+  "schema": "game-room.room-brief.v1",
+  "roomId": "caverna-del-crisol",
+  "family": "gameplay-room",
+  "purpose": "Discover and explore a volcanic cavern, cross above and below a natural bridge, find two persistent rewards and return safely.",
+  "runtimeSurface": "Existing local Auralia Babylon.js runtime; code-native procedural meshes, no Blender export or paid asset generation.",
+  "boundsMeters": [
+    120,
+    78,
+    174
+  ],
+  "terrainPolicy": "Compact landing carved into the canonical terrain; mountain outside the entrance footprint is unchanged",
+  "hero": {
+    "id": "natural-bridge",
+    "role": "Reveal with separate upper and lower routes",
+    "reservedBoundsMeters": [
+      36,
+      13,
+      11
+    ]
+  },
+  "symmetry": {
+    "mode": "none",
+    "order": 1,
+    "appliesTo": [
+      "architecture",
+      "circulation"
+    ],
+    "exceptions": [
+      "Asymmetric eroded lava-tube branches"
+    ]
+  },
+  "circulation": {
+    "description": "Main route, lower loop, mineral chamber and upper return shortcut. All routes walkable in both directions.",
+    "minimumClearanceMeters": 3.8
+  },
+  "productionCamera": {
+    "viewport": [
+      1440,
+      1000
+    ],
+    "location": [
+      -20,
+      -386,
+      3
+    ],
+    "target": [
+      -20,
+      -392,
+      -14
+    ],
+    "verticalFovDegrees": 45.8
+  },
+  "performanceBudget": {
+    "maxSceneTriangles": 100000,
+    "maxVLowBytes": 16000000,
+    "maxHighTextureBytes": 8000000
+  },
+  "creditBudget": {
+    "maximumCredits": 0,
+    "approvalRequired": false
+  },
+  "environment": {
+    "type": "none",
+    "identity": "Sealed cavern; weather continues outside",
+    "source": "",
+    "assignmentKey": "crisol"
+  },
+  "artifacts": {
+    "floorPlan": "plans/floor.svg",
+    "reflectedCeilingPlan": "plans/ceiling.svg",
+    "planMetadata": "plan-metadata.json",
+    "visualTarget": "../bridge.png",
+    "wallElevations": [
+      "../under-bridge.png"
+    ],
+    "openingContactSheet": "../entrance.png"
+  }
+}

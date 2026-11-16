@@ -1,0 +1,35 @@
+{
+  "schema": "game-room.prop-manifest.v1",
+  "roomId": "caverna-del-crisol",
+  "generation": {
+    "provider": "repository-native geometry",
+    "hardCreditCeiling": 0
+  },
+  "assets": [
+    {
+      "id": "mineral-cluster",
+      "class": "reusable",
+      "function": "Visible route cue and collectible discovery",
+      "dimensionsMeters": [
+        3,
+        4.8,
+        3
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "positive-y",
+      "source": "src/world/VolcanicCaveSystem.ts",
+      "rejectionCriteria": [
+        "Floating bases",
+        "Occluded interaction",
+        "Unreachable reward"
+      ]
+    },
+    {
+      "id": "basalt",
+      "class": "reusable",
+      "function": "Rock surface detail",
+      "source": "public/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+      "provenance": "Existing repository texture, reused unchanged"
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "method": "450 instrumented frames: entry, bridge and lower passage; movement and camera orbit; isolated headless Chrome, 1440x1000. Same runtime machine, sequential samples, no concurrent build during final sample. Exterior entrance was relocated and its transfer retained.",
+  "before": {
+    "frames": 450,
+    "resolution": [
+      1440,
+      1000
+    ],
+    "meshes": 5716,
+    "active": 21,
+    "cpu": {
+      "median": 44,
+      "p95": 76.4,
+      "p99": 85
+    },
+    "interval": {
+      "median": 48.1,
+      "p95": 121.3,
+      "p99": 139
+    },
+    "over33": 383,
+    "costs": {
+      "update": {
+        "perFrame": 24.239,
+        "calls": 450,
+        "max": 70.7
+      },
+      "render": {
+        "perFrame": 20.77,
+        "calls": 450,
+        "max": 61
+      },
+      "camera": {
+        "perFrame": 3.974,
+        "calls": 450,
+        "max": 12.7
+      },
+      "ceiling": {
+        "perFrame": 5.926,
+        "calls": 728,
+        "max": 9.6
+      },
+      "collision rays": {
+        "perFrame": 6.47,
+        "calls": 3229,
+        "max": 3.7
+      },
+      "ground rays": {
+        "perFrame": 12.081,
+        "calls": 73248,
+        "max": 0.9
+      },
+      "cave lights": {
+        "perFrame": 5.702,
+        "calls": 450,
+        "max": 19.7
+      },
+      "outdoor signs": {
+        "perFrame": 3.967,
+        "calls": 450,
+        "max": 11.6
+      },
+      "climate": {
+        "perFrame": 0.059,
+        "calls": 450,
+        "max": 0.3
+      },
+      "movement": {
+        "perFrame": 3.554,
+        "calls": 450,
+        "max": 29.1
+      },
+      "dogo": {
+        "perFrame": 6.954,
+        "calls": 450,
+        "max": 20.5
+      },
+      "santi feet": {
+        "perFrame": 0.002,
+        "calls": 450,
+        "max": 0.1
+      }
+    }
+  },
+  "after": {
+    "frames": 450,
+    "resolution": [
+      1440,
+      1000
+    ],
+    "meshes": 5761,
+    "active": 18,
+    "cpu": {
+      "median": 8,
+      "p95": 13,
+      "p99": 15.3
+    },
+    "interval": {
+      "median": 8.6,
+      "p95": 17.6,
+      "p99": 48.2
+    },
+    "over33": 8,
+    "renderCosts": {
+      "activeMeshes": 0.403,
+      "animations": 0.604,
+      "renderTargets": 0,
+      "draw": 0.825
+    },
+    "costs": {
+      "update": {
+        "perFrame": 2.936,
+        "calls": 450,
+        "max": 11.1
+      },
+      "render": {
+        "perFrame": 5.389,
+        "calls": 450,
+        "max": 22.9
+      },
+      "camera": {
+        "perFrame": 0.607,
+        "calls": 450,
+        "max": 2.5
+      },
+      "ceiling": {
+        "perFrame": 0.162,
+        "calls": 842,
+        "max": 0.6
+      },
+      "collision rays": {
+        "perFrame": 1.417,
+        "calls": 4204,
+        "max": 1.2
+      },
+      "ground rays": {
+        "perFrame": 2.988,
+        "calls": 71396,
+        "max": 9.5
+      },
+      "cave lights": {
+        "perFrame": 0.025,
+        "calls": 450,
+        "max": 0.3
+      },
+      "outdoor signs": {
+        "perFrame": 0,
+        "calls": 0,
+        "max": 0
+      },
+      "climate": {
+        "perFrame": 0.084,
+        "calls": 450,
+        "max": 1.1
+      },
+      "movement": {
+        "perFrame": 0.737,
+        "calls": 450,
+        "max": 5.6
+      },
+      "dogo": {
+        "perFrame": 1.726,
+        "calls": 450,
+        "max": 10.4
+      },
+      "santi feet": {
+        "perFrame": 0.002,
+        "calls": 450,
+        "max": 0.1
+      }
+    }
+  },
+  "limits": "CPU and headless frame-interval measurements, not a device-wide guaranteed FPS. 8 of 450 final intervals still exceed 33.4 ms."
+}

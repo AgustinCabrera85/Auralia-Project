@@ -132,6 +132,7 @@ export class SantiCharacter {
   private contactRoot:TransformNode|null=null;
   private landingApproach:'normal'|'highFall'|null=null;
   private climbContact:ClimbContact|null=null;
+  private hangingContact=false;
   private contactObserver:Observer<Scene>|null=null;
   private contactHands:TransformNode[]=[];
   private swordVisual:BrisaliaSwordVisual|null=null;
@@ -378,16 +379,18 @@ export class SantiCharacter {
   private alignClimbContact():void{
     const node=this.slopeOrientation,wall=this.climbContact;
     if(!node||!wall||this.contactHands.length!==2)return;
-    let distance=Infinity;
+    let distance=Infinity,handY=0;
     for(const hand of this.contactHands){
       hand.computeWorldMatrix(true);
       const p=hand.getAbsolutePosition();
+      handY+=p.y/this.contactHands.length;
       distance=Math.min(distance,(p.x-wall.pointX)*wall.normalX+
         (p.y-wall.pointY)*wall.normalY+(p.z-wall.pointZ)*wall.normalZ);
     }
     const horizontal=Math.hypot(wall.normalX,wall.normalZ);
     if(horizontal>.5&&Number.isFinite(distance))
       node.position.z=Math.max(-1.3,Math.min(1.3,node.position.z+(distance-.12)/horizontal));
+    if(this.hangingContact)node.position.y=Math.max(-1,Math.min(1,node.position.y+wall.pointY+.04-handY));
   }
 
   private alignSlideContact():void{
@@ -556,7 +559,8 @@ export class SantiCharacter {
     const rawGrade=motion.groundGrade??0;
     const grade=motion.mode==='grounded'&&motion.moving&&Number.isFinite(rawGrade)?rawGrade:0;
     const groundPitch=Math.atan(grade);
-    this.climbContact=motion.mode==='climbing'?motion.climbContact??null:null;
+    this.climbContact=motion.mode==='climbing'||motion.mode==='hanging'?motion.climbContact??null:null;
+    this.hangingContact=motion.mode==='hanging';
     const lean=sliding?Math.min(MAX_SLIDE_PITCH,Math.atan(this.slideGrade)):
       this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
       motion.mode==='grounded'&&motion.moving&&this.overrideSeconds===0?
@@ -567,7 +571,7 @@ export class SantiCharacter {
     if(this.slopeOrientation&&!this.climbContact)
       this.slopeOrientation.position.z*=Math.exp(-dt*18);
     if(motion.mode!=='grounded')this.cancelCombat();
-    if(motion.mode==='swimming'){
+    if(motion.mode==='swimming'||motion.mode==='hanging'){
       this.overrideSeconds=0;this.actionLockSeconds=0;this.landingRecoverySeconds=0;
     }
     let landing:SantiLanding|null=null;
@@ -645,6 +649,8 @@ export class SantiCharacter {
         let speed=1;
         if(motion.mode==='swimming'){
           name=SANTI_LOCOMOTION.swim;speed=motion.movementIntent?(motion.run?1.25:1):.45;
+        }else if(motion.mode==='hanging'){
+          name=SANTI_LOCOMOTION.hanging;
         }else if(motion.mode==='climbing'){
           const up=motion.climbVertical??(motion.moving?1:0),side=motion.climbSide??0;
           name=Math.abs(up)>.08?SANTI_LOCOMOTION.climb:

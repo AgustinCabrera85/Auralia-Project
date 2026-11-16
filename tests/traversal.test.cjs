@@ -340,6 +340,39 @@ blocked.teleport(0,0,0);
 for(let i=0;i<10;i++)blocked.step(.02,input({moveX:1,vertical:1}),wallWorld(30,false));
 assert.ok(blocked.position.x<.5,'untagged wall blocks the capsule');
 assert.notEqual(blocked.mode,'climbing');
+// A straight edge catches the hands during ascent or descent, even on an
+// untagged wall. W already held for the jump must not automatically mantle.
+const ledgeWorld=wallWorld(5,false);
+for(const tagged of [false,true]){
+ const hanger=new CharacterTraversalController(),world=wallWorld(5,tagged);
+ hanger.teleport(0,0,0);
+ for(let i=0;i<90&&hanger.mode!=='hanging';i++)hanger.step(.02,input({moveX:1,vertical:1,jumpPressed:i===0}),world);
+ assert.equal(hanger.mode,'hanging','jump catches a straight lip');
+ const held={...hanger.position};
+ for(let i=0;i<50;i++)hanger.step(.02,input({moveX:1,vertical:1}),world);
+ assert.equal(hanger.mode,'hanging','holding the approach key does not auto-climb');
+ assert.deepEqual(hanger.position,held,'hanging is stable');
+ assert.equal(hanger.canInteract,false);
+ hanger.step(.02,input(),world);hanger.step(.02,input({vertical:1}),world);
+ assert.equal(hanger.mode,'mantling','a fresh W press climbs onto the ledge');
+ for(let i=0;i<65;i++){
+  hanger.step(.02,input(),world);
+  assert(hanger.position.x<1||hanger.position.y>=4.99,'capsule rises clear before crossing the wall');
+ }
+ assert.equal(hanger.mode,'grounded');assert.equal(hanger.position.y,5);
+}
+const fallingHanger=new CharacterTraversalController();fallingHanger.teleport(.2,3,0);fallingHanger.mode='airborne';
+for(let i=0;i<100&&fallingHanger.mode!=='hanging';i++)fallingHanger.step(.02,input(),ledgeWorld);
+assert.equal(fallingHanger.mode,'hanging','falling hands can catch the edge without W');
+fallingHanger.step(.02,input({jumpPressed:true}),ledgeWorld);
+assert.equal(fallingHanger.mode,'airborne','Space releases the edge');
+fallingHanger.step(.02,input({vertical:1}),ledgeWorld);
+assert.equal(fallingHanger.mode,'airborne','release has a regrab cooldown');
+for(const world of [wallWorld(20,false),{...ledgeWorld,headroom:()=>false},
+ {...ledgeWorld,ground:(...args)=>{const h=ledgeWorld.ground(...args);return h?{...h,normalY:.85}:null;}}]){
+ const rejected=new CharacterTraversalController();rejected.teleport(0,1.6,0);rejected.mode='airborne';
+ rejected.step(.02,input(),world);assert.notEqual(rejected.mode,'hanging','reject tall walls, low ceilings and sloped tops');
+}
 const climber=new CharacterTraversalController();
 climber.teleport(0,0,0);
 climber.step(.02,input({moveX:1,vertical:1}),wallWorld(30,true));

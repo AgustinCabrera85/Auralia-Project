@@ -11,6 +11,8 @@ import { settlementRiverBypass } from './SettlementRiverBypass';
 import { NacarBathymetry } from './NacarBathymetry';
 import { LakeWaterDomain } from './LakeWaterDomain';
 import { POINTS_OF_INTEREST } from '../pointsOfInterest';
+import { VOLCANIC_CAVE } from '../volcanicCaveData';
+import { caveApproachHeight, caveApproachWeight } from '../cavePortalGeometry';
 
 export type RegionFrame={x:number;y:number;z:number;scale:number;waterFloor?:number;streamWater?:boolean};
 /** These scaffold routes are replaced end-to-end by the playable watershed,
@@ -119,10 +121,13 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
     if(!ownsLagoonWater(p.x,p.z)&&!lake&&platform===0){
       height=this.rivers.bedAt(x,z,height);
     }
-    return height;
+    return caveApproachHeight(x,z,height,(gx,gz)=>this.scaffold.heightAt(gx,gz));
   }
   weightsAt(x:number,z:number,height:number,slope:number){
     const base=this.scaffold.weightsAt(x,z,height,slope);
+    const cave=caveApproachWeight(x,z);
+    if(cave>0)return [base[0]*(1-cave),base[1]*(1-cave),base[2]*(1-cave)+cave,
+      base[3]*(1-cave),base[4]*(1-cave),base[5]*(1-cave)] as const;
     const field=this.waterFieldAt(x,z);
     // Incised upland channels have exposed bedrock. Blend through the wetted
     // bank, retaining sand around lowland lagoons and the open coast.
@@ -189,6 +194,8 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   riverStrips(bounds:GeographicBounds){return this.rivers.strips(bounds);}
   riverLevelAt(x:number,z:number){return this.lakeAt(x,z)?.level??this.rivers.at(x,z)?.level??null;}
   preserveDetail(bounds:GeographicBounds):boolean{
+    const entrance=VOLCANIC_CAVE.entrance;
+    if(bounds[2]>=entrance.x-26&&bounds[0]<=entrance.x+26&&bounds[3]>=entrance.z-26&&bounds[1]<=entrance.z+36)return true;
     // Static foundations and the raised courtyard retain the same terrain
     // triangles at a distance, so LOD cannot push soil through the stairs.
     const s=BRISALIA_SCALE;
@@ -226,6 +233,7 @@ export class PlayableWorld implements GeographicSource,ActiveWorldGeography {
   get spawn(){return {x:this.town.x+1,z:this.town.z+10};}
   get destinations(){return [
     {id:'brisalia',name:'Brisalia',...this.spawn},
+    {id:'ladera-del-crisol',name:'Volcán Ígneo · ladera del Crisol',x:VOLCANIC_CAVE.entrance.x,z:VOLCANIC_CAVE.entrance.z+35},
     {id:'embarcadero-brisalia',name:'Muelle de Brisalia',...this.dock},
     {id:'laguna-tres-vertientes',name:'Laguna de las Tres Vertientes',...regionPoint(this.lagoon,-160,-650)},
     {id:'gruta',name:'Acceso sumergido a la gruta',...regionPoint(this.lagoon,-6,-858)},

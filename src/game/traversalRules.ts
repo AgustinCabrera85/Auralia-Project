@@ -17,6 +17,8 @@ export const TRAVERSAL = {
   maxWalkSlopeDeg: 42,
   maxSprintSlopeDeg: 60,     // 2X sprint can power up a hill; walls still require climbing
   mantleMaxHeight: 1.65,      // separate from long rock climbing
+  ledgeHandHeight: 3.45,     // feet-to-hands offset in the hanging pose
+  ledgeCatchTolerance: .55,
   climbUpSpeed: 3.1,
   climbSideSpeed: 2.2,
   climbReach: 1.15,
@@ -24,7 +26,7 @@ export const TRAVERSAL = {
   climbWallMaxNormalY: 0.6,
   maxFallResetHeight: 140,
 } as const;
-export type LocomotionMode='grounded'|'airborne'|'climbing'|'mantling'|'swimming';
+export type LocomotionMode='grounded'|'airborne'|'hanging'|'climbing'|'mantling'|'swimming';
 export type GroundHit={height:number;normalY:number;rockId?:string};
 export function slopeAllowed(normalY:number,sprint=false):boolean {
   return Number.isFinite(normalY)&&normalY>=Math.cos(

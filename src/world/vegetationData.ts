@@ -9,6 +9,7 @@ import { mountainRouteExcludes } from './mountainRoutes';
 import { nearTerrainSurfaceAt, terrainFootprintAt } from './terrainLod';
 import { activeGeography } from './geography/ActiveGeography';
 import { worldForestCandidates, worldForestCover, worldForestEnabled } from './geography/WorldForest';
+import { castlePlantsForChunk } from './BrisaliaCastlePlanting';
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
@@ -39,6 +40,7 @@ export const VEGETATION_CONFIG = {
 
 export type VegetationKind = keyof typeof VEGETATION_CONFIG.candidatesPerChunk;
 export type VegetationExclusion = { x: number; z: number; radius: number;
+  buildingId?:string;
   /** Coarse tree clearance can defer to the grass system's exact village mask. */
   excludeGrass?: boolean };
 export type VegetationPlacement = {
@@ -49,6 +51,7 @@ export type VegetationPlacement = {
   scale: number;
   yaw: number;
   obstacleRadius: number;
+  castleBorder?:true;
 };
 
 const kinds: readonly VegetationKind[] = ['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1'];
@@ -188,5 +191,6 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       }
     }
   }
+  placements.push(...castlePlantsForChunk(cx,cz,town??{x:0,z:0},exclusions,gridHeight));
   return placements;
 }

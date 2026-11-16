@@ -179,6 +179,14 @@ export class GameStore {
     this.commit();
   }
 
+  /** Discovery and its one-time reward are one save operation. */
+  claimDiscoveryReward(id:string,resource:MaterialId,amount:number):boolean {
+    if(!/^[a-z0-9-]{1,64}$/.test(id)||!Number.isInteger(amount)||amount<1||amount>10)return false;
+    const discovered=this.data.discoveredPlaces??(this.data.discoveredPlaces=[]);
+    if(discovered.includes(id)||discovered.length>=100)return false;
+    discovered.push(id);this.data.inventory[resource]+=amount;this.commit();return true;
+  }
+
   travel(zone: ZoneId): void {
     this.data.zone = zone;
     this.data.playerPosition=undefined;

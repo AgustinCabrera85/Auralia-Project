@@ -1,0 +1,25 @@
+{
+  "schema": "game-room.plan-metadata.v1",
+  "roomId": "caverna-del-crisol",
+  "style": "monochrome-engineering",
+  "projectionSource": "actual-meshes",
+  "layers": [
+    "lower-room",
+    "reflected-ceiling"
+  ],
+  "semanticLabelsOutsideImage": true,
+  "aiInspirationIncluded": false,
+  "source": "scripts/document-volcanic-cave.cjs",
+  "coverage": [
+    "room-outline",
+    "cutouts",
+    "circulation",
+    "placed-features"
+  ],
+  "notes": {
+    "signs": "No physical signage; the HUD identifies the E entrance and exit.",
+    "markers": "Mineral clusters mark route nodes.",
+    "openings": "Walkable vestibule reviewed separately in entrance.png and the left/right/above views; the interior exit has a recessed daylight cue.",
+    "ceiling": "Two horizontal sections of the actual cavity mesh; no decorative ceiling props."
+  }
+}

@@ -1,6 +1,7 @@
 import type { Biome } from './terrainData';
 import { FOLIAGE_V4_ASSETS } from './foliageV4Catalog';
 import { EXPANSION_V3_ASSETS } from './expansionV3Catalog';
+import { WAYFINDING_ASSETS } from './wayfindingAssets';
 
 export type AssetCategory='vegetation'|'rocks'|'cliffs'|'crystals'|'structures'|'landmarks';
 export type AssetInteraction='decorative'|'resource'|'landmark';
@@ -36,6 +37,7 @@ export const ASSET_CATALOG={
   crisolHerrero:{path:'/assets/world/structures/Crisol_Herrero.glb',category:'structures',biomes:['valle'],referenceScale:5,interaction:'decorative',instantiation:'individual'},
   islaFlotante:{path:'/assets/world/landmarks/Isla_flotante_2.glb',category:'landmarks',biomes:['cumbres'],referenceScale:90,interaction:'landmark',instantiation:'individual'},
   ...FOLIAGE_V4_ASSETS,
+  ...WAYFINDING_ASSETS,
   ...EXPANSION_V3_ASSETS
 } as const satisfies Record<string,AssetDefinition>;
 

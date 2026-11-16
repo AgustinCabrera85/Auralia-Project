@@ -1,0 +1,69 @@
+{
+  "ivyMaterials": [
+    "B28 R5 cut limestone:seasonal-ivy:wall",
+    "B28 R5 cut limestone:seasonal-ivy:tower",
+    "B28 R5 warm limestone:seasonal-ivy:tower",
+    "B28 R5 aged limestone:seasonal-ivy:tower"
+  ],
+  "batches": 161,
+  "volume": {
+    "patches": 26322,
+    "roots": 438,
+    "twigs": 34109,
+    "stemSegments": 149869,
+    "triangles": 564782,
+    "layers": 2,
+    "maxStemRadius": 0.013612028075712181,
+    "minLeafClearance": 0.018,
+    "layerGap": 0.03,
+    "buildMs": 584.2000000178814,
+    "attachmentCacheUsed": true,
+    "meshes": 24,
+    "minLayerGap": 0.02999999999997982,
+    "minWoodClearance": 0.018000000000000682,
+    "maxWallLeafDistance": 0.0955822149762291
+  },
+  "sourceMeshes": 2088,
+  "scale": 2.7142857142857144,
+  "coverageProbes": 230,
+  "greenWallRegions": 9,
+  "probeDetails": [
+    {
+      "label": "side -1, 8, 0",
+      "point": [
+        -30.480006756029212,
+        8.000000391508372,
+        0.00001060514497908116
+      ],
+      "normal": [
+        -1,
+        0,
+        -1.224646883842921e-16
+      ],
+      "tower": false
+    },
+    {
+      "label": "side 1, 8, 0",
+      "point": [
+        30.479994186172163,
+        8.000000391508372,
+        0.00001060514497908116
+      ],
+      "normal": [
+        1,
+        0,
+        1.2246468838429204e-16
+      ],
+      "tower": false
+    }
+  ],
+  "seasons": [
+    "spring",
+    "summer",
+    "autumn",
+    "winter"
+  ],
+  "calendar": "pass",
+  "shaderCompile": "pass",
+  "errors": []
+}

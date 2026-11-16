@@ -434,12 +434,23 @@ export function brisaliaPlatformWeight(x:number,z:number):number{
 export function brisaliaCourtyardHeight(x:number,z:number):number{
  x/=BRISALIA_SCALE;z/=BRISALIA_SCALE;
  const dx=Math.abs(x-135),dz=z+104;
- // Rev5: eight 0.36 m treads rise to 1.35 m, ending at source Y=-30.28.
- // The interior remains map soil and meets the top landing without a drop.
+ // Rev5: eight 0.36 m treads rise to 1.35 m, ending at source Z=-30.28.
+ // The open courtyard remains map soil and meets the top landing without a drop.
  const t=Math.max(0,Math.min(1,(33.16-dz)/2.88));
  // Keep the terrain below the stone treads, including their first nosings.
  const approach=1.35*t-.08*Math.sin(Math.PI*t);
- return approach*BRISALIA_SCALE*(1-smooth(28,34,dx))*(1-smooth(27,33,-dz));
+ // Rev5 wing floors also top out at 1.35 m. Recess the terrain into their
+ // 0.20 m slabs so it cannot intersect the stone. The 1.6 m guard exceeds a
+ // diagonal of the canonical 3-world-unit terrain grid: triangles along the
+ // floor perimeter must use recessed vertices too, not bridge from the yard.
+ // Castle yaw is 180 degrees, so dz is the negated source-model Z coordinate.
+ const wingDistance=Math.hypot(Math.max(15.20-dx,0,dx-26.80),Math.max(-5.80-dz,0,dz-15.80));
+ const floorRecess=.10*(1-smooth(1.6,2.4,wingDistance));
+ // The last gate tread shares the courtyard elevation too. Recess its ramp
+ // gradually, preserving the first step's walkable rise, then blend back to
+ // the open yard past the gatehouse passage (source Z=-23) and its guard.
+ const gateRecess=(.10*t+.03*Math.sin(Math.PI*t))*(1-smooth(5.1,5.9,dx))*smooth(19.8,21.4,dz);
+ return (approach-floorRecess-gateRecess)*BRISALIA_SCALE*(1-smooth(28,34,dx))*(1-smooth(27,33,-dz));
 }
 export function distanceToRoad(x:number,z:number,road:VillageRoad):number{
  let best=Infinity;

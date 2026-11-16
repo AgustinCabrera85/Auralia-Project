@@ -34,7 +34,7 @@ export class RockColliderSystem {
 
   /** Keep the exact procedural shell before the visible meshes are merged.
    * Geometry/material are shared; the hidden proxy follows its streamed parent. */
-  registerGeneratedMesh(source:Mesh):void{
+  registerGeneratedMesh(source:Mesh,spatialPicking=false):void{
     const id=`generated-rock:${source.uniqueId}`;
     if(this.colliders.has(id))return;
     const proxy=source.clone(`collider-${source.name}`,source.parent,true);
@@ -47,6 +47,12 @@ export class RockColliderSystem {
       y:min.y,z:(min.z+max.z)*.5,scale:1,yaw:0,climbable:true};
     proxy.metadata={rockCollider:true,rockId:id};
     proxy.freezeWorldMatrix();
+    if(spatialPicking){
+      // Static interiors receive many foot, wall and camera rays per frame.
+      // Small indexed batches plus an octree keep exact-triangle picking local.
+      proxy.subdivide(Math.max(1,Math.ceil(proxy.getTotalIndices()/(3*96))));
+      proxy.createOrUpdateSubmeshesOctree(16,4);
+    }
     const entry:Collider={placement,radius,height,instances:[proxy],generated:true};
     this.colliders.set(id,entry);
     proxy.onDisposeObservable.addOnce(()=>{
@@ -296,6 +302,14 @@ export class RockColliderSystem {
       if(ray.intersectsMesh(mesh,true).hit)return false;
     }
     return true;
+  }
+
+  /** Downward-facing underside, ignoring vertical caps coplanar with the ray. */
+  queryCeiling(x:number,y:number,z:number,maxDistance:number):number|null{
+    const ray=new Ray(new Vector3(x,y,z),Vector3.Up(),maxDistance);
+    const hit=this.hits(ray,this.nearby(x,z)).find(h=>
+      h.distance>.015&&(h.getNormal(true)?.y??0)<-.15);
+    return hit?.pickedPoint?.y??null;
   }
 
   /** First closed rock shell between the player and the desired camera position. */

@@ -1,0 +1,28 @@
+{
+  "schema": "game-room.milestone-reviews.v1",
+  "roomId": "caverna-del-crisol",
+  "function": {
+    "status": "authorized-scope",
+    "approvedBy": "user",
+    "evidence": [
+      "Conversation: Quiero que empieces por la primera caverna completa"
+    ],
+    "notes": "Execution of the proposed first cave authorized; no separate approval of later screenshots is claimed."
+  },
+  "form": {
+    "status": "local-review",
+    "evidence": [
+      "../bridge.png",
+      "../under-bridge.png",
+      "../ceiling.png"
+    ],
+    "notes": "Code-native runtime geometry; no export/deployment gate crossed."
+  },
+  "runtime": {
+    "status": "local-review",
+    "evidence": [
+      "../browser-checks.json"
+    ],
+    "notes": "Player review remains available in the local running project; no publication requested."
+  }
+}

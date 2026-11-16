@@ -1,0 +1,34 @@
+{
+  "checks": [
+    "E enters the cave",
+    "interior loads separately behind the transition",
+    "dry interior has no water depth effects",
+    "discovery persisted",
+    "discovered cave appears on map",
+    "main reward collected once",
+    "reward cannot duplicate",
+    "deep cave excludes outdoor sun from characters",
+    "interior limits mesh evaluation to cave and actors",
+    "secret found",
+    "reward survives reload",
+    "fall recovery",
+    "exit interaction is reachable",
+    "E exits to the hillside",
+    "landscape restored on exit",
+    "outdoor sun restored on exit",
+    "exit aligns with the shared vestibule floor",
+    "E revisit 0",
+    "claimed reward stays absent 0",
+    "E revisit 1",
+    "claimed reward stays absent 1",
+    "revisits release geometry and lights",
+    "travel restores exterior streaming",
+    "distant cave geometry released"
+  ],
+  "entrance": {
+    "x": -342,
+    "z": -4287
+  },
+  "transition": "E",
+  "terrain": "local walkable vestibule"
+}

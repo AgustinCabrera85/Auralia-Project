@@ -4,6 +4,7 @@ import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { BRISALIA_BUILDINGS, BRISALIA_SCALE, brisaliaRoadEdge, inBrisaliaFootprint,
   type BrisaliaBuilding } from './brisaliaLayout';
 import { createVillageRoadMaterial } from './materials/VillageRoadMaterial';
+import { BrisaliaCastleIvy } from './BrisaliaCastleIvy';
 
 /** The playable settlement, with one independent prefab per building ID. */
 export class BrisaliaVillage {
@@ -12,6 +13,7 @@ export class BrisaliaVillage {
   readonly ready:Promise<void>;
   private disposed=false;
   private roads:Mesh|null=null;
+  private castleIvy:BrisaliaCastleIvy|null=null;
   constructor(private scene:Scene,private parent:TransformNode,
     readonly origin:{x:number;z:number},private heightAt:(x:number,z:number)=>number){
     this.createRoads();
@@ -45,6 +47,49 @@ export class BrisaliaVillage {
         Quaternion.RotationAxis(Vector3.Up(),-side*100*Math.PI/180));
     }
     const parts=asset.meshes.filter((m):m is Mesh=>m instanceof Mesh&&m.getTotalVertices()>0);
+    const gateLanding=b.id==='B28'&&b.revision===5?parts.find(m=>m.name==='R5_GATE_threshold_landing'):undefined;
+    if(gateLanding)parts.splice(parts.indexOf(gateLanding),1);
+    if(b.id==='B28'&&b.revision===5)for(const mesh of parts){
+      if(!/^AUR034_WING60_floor_-?1_0$/.test(mesh.name))continue;
+      // The authored ground-floor slabs stop 17 cm short of the inner wall.
+      // Extend their horizontal edges into the masonry before batching, so
+      // lowering the soil cannot expose grass through a perimeter gap. These
+      // two meshes are centered on local X/Z; keep floor and stair heights.
+      const half=mesh.getBoundingInfo().boundingBox.extendSize;
+      mesh.scaling.x*=(half.x+.25)/half.x;
+      mesh.scaling.z*=(half.z+.25)/half.z;
+    }
+    const root=new TransformNode(`brisalia:${b.id}`,this.scene);
+    root.parent=this.parent;
+    root.position.set(this.origin.x+b.x,this.heightAt(this.origin.x+b.x,this.origin.z+b.z)-
+      (b.id==='B28'?1.35*BRISALIA_SCALE:0),this.origin.z+b.z);
+    root.scaling.setAll(BRISALIA_SCALE);
+    root.rotation.y=b.yaw*Math.PI/180;
+    root.metadata={buildingId:b.id,revision:b.revision,sourceMetersToWorldUnits:BRISALIA_SCALE};
+    if(b.id==='B28'){
+      axes.setEnabled(false);root.setEnabled(false);
+      const ivy=new BrisaliaCastleIvy(this.scene,parts,root);this.castleIvy=ivy;
+      await ivy.volume.ready;
+      if(this.disposed){axes.dispose(false,false);root.dispose(false,false);return;}
+    }
+    // Replace the short landing with a watertight slab through the gatehouse.
+    // Build in castle coordinates, alongside the converted source meshes, so
+    // the new box has its own indices and no imported/interleaved buffers.
+    let passage:Mesh|undefined;
+    if(gateLanding){
+      passage=new Mesh('B28:gate-passage-floor',this.scene);
+      // Seat each side 10 cm inside the 7.10 m opening instead of leaving seams.
+      const data=VertexData.CreateBox({width:7.3,height:.115,depth:7.3});
+      for(let i=0;i<data.positions!.length;i+=3){
+        const x=data.positions![i],y=data.positions![i+1],z=data.positions![i+2];
+        const top=Math.abs(data.normals![i+1])>.5;
+        data.uvs![i/3*2]=(top||Math.abs(data.normals![i+2])>.5?x:z)/1.3;
+        data.uvs![i/3*2+1]=top?1+(26.65-z)/1.3:y/1.3;
+      }
+      data.applyToMesh(passage);
+      passage.position.set(0,1.3175,-26.65);
+      passage.material=gateLanding.material;
+    }
     const groups=new Map<string,Mesh[]>();
     for(const mesh of parts){
       mesh.computeWorldMatrix(true);
@@ -54,13 +99,6 @@ export class BrisaliaVillage {
       const key=`${mesh.material?.uniqueId}:${cell}`;
       const list=groups.get(key)??[];list.push(mesh);groups.set(key,list);
     }
-    const root=new TransformNode(`brisalia:${b.id}`,this.scene);
-    root.parent=this.parent;
-    root.position.set(this.origin.x+b.x,this.heightAt(this.origin.x+b.x,this.origin.z+b.z)-
-      (b.id==='B28'?1.35*BRISALIA_SCALE:0),this.origin.z+b.z);
-    root.scaling.setAll(BRISALIA_SCALE);
-    root.rotation.y=b.yaw*Math.PI/180;
-    root.metadata={buildingId:b.id,revision:b.revision,sourceMetersToWorldUnits:BRISALIA_SCALE};
     const meshes:Mesh[]=[];
     for(const [key,group] of groups){
       const mesh=Mesh.MergeMeshes(group,false,true,undefined,false,true);
@@ -70,10 +108,17 @@ export class BrisaliaVillage {
       mesh.metadata={buildingId:b.id};
       mesh.computeWorldMatrix(true);mesh.freezeWorldMatrix();meshes.push(mesh);
     }
+    if(passage){
+      // Keep its native Babylon winding separate from the imported glTF batches.
+      passage.parent=root;passage.isPickable=true;passage.checkCollisions=false;
+      passage.metadata={buildingId:b.id};
+      passage.computeWorldMatrix(true);passage.freezeWorldMatrix();meshes.push(passage);
+    }
     // Materials/textures are still referenced by the batches; only the original
     // draw objects and transform hierarchy are discarded.
     axes.dispose(false,false);
-    this.buildings.set(b.id,{root,meshes,sourceMeshes:parts.length});
+    root.setEnabled(true);
+    this.buildings.set(b.id,{root,meshes,sourceMeshes:parts.length+(gateLanding?1:0)});
   }
   private createRoads():void{
     // Signed union with a feathered, irregular shoulder. It is baked once,
@@ -122,7 +167,7 @@ export class BrisaliaVillage {
     const hit=this.cast(new Ray(new Vector3(x,origin,z),new Vector3(0,-1,0),distance));
     if(!hit?.pickedPoint)return null;
     const normal=hit.getNormal(true);
-    return normal&&Math.abs(normal.y)>.55?{height:hit.pickedPoint.y,normalY:Math.abs(normal.y)}:null;
+    return normal&&Math.abs(normal.y)>.55?{height:hit.pickedPoint.y,normalY:Math.abs(normal.y),rockId:`building:${hit.pickedMesh?.metadata?.buildingId}`}:null;
   }
   wall(x:number,y:number,z:number,dx:number,dz:number,reach:number){
     const direction=new Vector3(dx,0,dz).normalize();
@@ -141,6 +186,7 @@ export class BrisaliaVillage {
   }
   dispose():void{
     this.disposed=true;
+    this.castleIvy?.dispose();this.castleIvy=null;
     const materials=new Set<Material>();
     for(const b of this.buildings.values()){
       for(const m of b.meshes)if(m.material)materials.add(m.material);

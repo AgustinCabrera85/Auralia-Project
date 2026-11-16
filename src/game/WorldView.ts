@@ -1,4 +1,6 @@
 import { BrisaliaVillage } from '../world/BrisaliaVillage';
+import { WayfindingSystem } from '../world/WayfindingSystem';
+import { brisaliaWayfinding } from '../world/wayfindingData';
 import { BRISALIA_BUILDINGS, BRISALIA_ROADS, BRISALIA_SCALE, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
 import {
   ArcRotateCamera, ArcRotateCameraPointersInput, Color3, DirectionalLight, Engine, HemisphericLight,
@@ -62,6 +64,8 @@ import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQual
 import { PlayableWorld, regionPoint } from '../world/geography/PlayableWorld';
 import { FloatingKingdoms } from '../world/geography/FloatingKingdoms';
 import { LagoonVegetation } from '../world/geography/LagoonVegetation';
+import { VolcanicCaveSystem } from '../world/VolcanicCaveSystem';
+import { VOLCANIC_CAVE } from '../world/volcanicCaveData';
 
 export type Interactable = {
   id: string;
@@ -144,8 +148,9 @@ export class WorldView {
   private readonly geography: GeographyStream;
   private readonly mountainPasses:MountainPassSystem;
   private readonly lagoon:LagoonSystem;
+  private readonly volcanicCave:VolcanicCaveSystem;
   private waterContactTimer=0;
-  private get insideUnderground(){return this.mountainPasses.inside||this.lagoon.inside;}
+  private get insideUnderground(){return this.mountainPasses.inside||this.lagoon.inside||this.volcanicCave.inside;}
   private readonly vegetation: VegetationSystem;
   private readonly grass: GrassSectorSystem;
   private readonly props: WorldPropSystem;
@@ -177,6 +182,7 @@ export class WorldView {
   private renderQuality=readRenderQuality();
   private placingMainland=false;
   readonly village:BrisaliaVillage;
+  readonly wayfinding:WayfindingSystem;
   private geographyLoading=false;
   private geographyFailure:string|null=null;
 
@@ -240,6 +246,8 @@ export class WorldView {
       (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.town);
     this.lagoon=new LagoonSystem(this.scene,continentRoot,
       (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.lagoon);
+    this.volcanicCave=new VolcanicCaveSystem(this.scene,
+      (x,z)=>geographicWorld?.surface.heightAt(x,z)??nearTerrainHeightAt(x,z,sampleMainlandHeight),!!geographicWorld,true);
     const islandOffset=geographicWorld?.firefly??ISLAND_OFFSET;
     this.createZone('luciernagas', new Vector3(islandOffset.x, 0, islandOffset.z), 78, 65, { x: -3, z: -20 });
     this.placingMainland=!!geographicWorld;
@@ -253,10 +261,21 @@ export class WorldView {
       this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;
     }
     this.placingMainland=false;
+    this.vegetationExclusions.push({...this.volcanicCave.entrance,radius:30});
     this.village=new BrisaliaVillage(this.scene,continentRoot,geographicWorld?.town??{x:0,z:0},
       (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z));
+    const guideSites=brisaliaWayfinding(geographicWorld?.town??{x:0,z:0});
+    this.wayfinding=new WayfindingSystem(this.scene,continentRoot,guideSites,
+      (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z));
+    for(const s of guideSites){
+      this.vegetationExclusions.push({x:s.at[0],z:s.at[1],radius:2.2});
+      this.buildObstacles.push({x:s.at[0],z:s.at[1],radius:1.2,kind:'resource'});
+    }
     this.populateFireflyIsland();
     this.createPlayer();
+    this.wayfinding.addCharacter(this.player);
+    for(const zone of this.zones.values())for(const node of zone.nodes)
+      if(node.type==='npc')this.wayfinding.addCharacter(node.visual);
     const buildHeight=(x:number,z:number)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z);
     this.buildVisuals=new BuildVisuals(this.scene,continentRoot,buildHeight);
     this.buildObstacles.push(...this.collectBuildObstacles());
@@ -322,6 +341,14 @@ export class WorldView {
       this.updateCameraOcclusion(this.cameraFrameDt,this.zones.get(this.store.state.zone)!);
       // Evaluate immersion after the orbit/occlusion has placed the active camera.
       this.scene.activeCamera?.getViewMatrix(true);
+      if(this.volcanicCave.inside){
+        // Interior coordinates lie below sea level. Clear the exterior water
+        // depth pass before rendering so it cannot cover the dry arrival view.
+        const eye=this.scene.activeCamera?.globalPosition??this.camera.position;
+        this.lagoon.updateView(eye,this.player.position,null,this.player);
+        this.speedMotionBlur.updateWaterSurface(this.cameraFrameDt,null);
+        return;
+      }
       const eye=this.scene.activeCamera?.globalPosition??this.camera.position;
       const surface=this.lagoon.inside?null:waterSurfaceAt(eye.x,eye.z);
       const water=this.lagoon.inside?GROTTO_WATER:surface?.level;
@@ -588,13 +615,6 @@ export class WorldView {
     return root;
   }
 
-  private sign(zone: IslandInfo, x: number, z: number): TransformNode {
-    const root = this.host(zone, 'poste-senal', x, z);
-    this.cyl('poste', root, 0.34, 2.7, 0, 1.35, 0, this.mat('poste', '#754d2e'));
-    this.box('tabla', root, 3.1, 0.8, 0.25, 0.9, 2.4, 0, this.mat('tabla', '#cc9a61'));
-    return root;
-  }
-
   private home(zone: IslandInfo, x: number, z: number, roofColor: '#b96550' | '#5c90a3' | '#a784c2', scale = 1): void {
     if(zone.id==='brisalia')this.vegetationExclusions.push({x,z,radius:8*scale});
     const root = this.host(zone, 'casa-pueblo', x, z);
@@ -677,7 +697,7 @@ export class WorldView {
 
   private populateMainland(): void {
     const zone = this.zones.get('brisalia')!;
-    for(const b of BRISALIA_BUILDINGS)this.vegetationExclusions.push({x:b.x,z:b.z+b.footprintOffsetZ,radius:Math.hypot(b.width,b.depth)/2+2,excludeGrass:false});
+    for(const b of BRISALIA_BUILDINGS)this.vegetationExclusions.push({x:b.x,z:b.z+b.footprintOffsetZ,radius:Math.hypot(b.width,b.depth)/2+2,excludeGrass:false,buildingId:b.id});
     for(const r of BRISALIA_ROADS)for(let i=1;i<r.points.length;i++){
       const [ax,az]=r.points[i-1],[bx,bz]=r.points[i],n=Math.ceil(Math.hypot(bx-ax,bz-az)/3);
       for(let j=0;j<=n;j++)this.vegetationExclusions.push({x:ax+(bx-ax)*j/n,z:az+(bz-az)*j/n,radius:r.width/2+2,excludeGrass:false});
@@ -688,7 +708,6 @@ export class WorldView {
     this.cyl('estanque', plaza, 5.4, 0.7, 0, 0.3, 0, this.mat('piedra-plaza', '#b2b2a0'));
     this.cyl('fuente', plaza, 3.5, 0.35, 0, 0.72, 0, this.mat('agua-fuente', '#6dbfdd', 0.25));
     this.cyl('obelisco', plaza, 1.1, 3, 0, 2.2, 0, this.mat('cristal-plaza', '#d7c99a'));
-    this.sign(zone, -13, 4);
 
     // Parcela de construcción visible, sin obstáculos.
     const plot = this.host(zone, 'claro-del-hogar', this.plot.x, this.plot.z);
@@ -698,7 +717,6 @@ export class WorldView {
       this.box('limite-x', plot, 35, 0.16, 0.45, 0, 0.13, v, border);
       this.box('limite-z', plot, 0.45, 0.16, 35, v, 0.13, 0, border);
     }
-    this.sign(zone, -44, 18);
     const flag = this.cyl('banderin-parcela', plot, 0.3, 4, -15, 2, -15, this.mat('poste-bandera', '#976e46'));
     flag.rotation.z = 0.05;
     this.box('bandera', plot, 2.4, 1.2, 0.1, -13.8, 3.4, -15, this.mat('bandera', '#e0bd63'));
@@ -896,6 +914,7 @@ export class WorldView {
   }
 
   activateZone(id: ZoneId): void {
+    if(this.volcanicCave.inside)this.leaveVolcanicCave();
     if(this.floating?.id&&(id!=='brisalia'||!this.store.state.playerPosition?.realm))this.floating.clear();
     if(this.geographicWorld&&id==='brisalia'){
       const saved=this.store.state.playerPosition;
@@ -992,6 +1011,7 @@ export class WorldView {
   async travelGeographic(x:number,z:number,name='Nueva región'):Promise<void>{
     if(!this.geographicWorld)return;
     if(this.geographyLoading)return;
+    if(this.volcanicCave.inside)this.leaveVolcanicCave();
     this.cancelPlacement();this.pressed.clear();this.floating?.clear();
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
     if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
@@ -1027,15 +1047,19 @@ export class WorldView {
   }
 
   get geographicStatus(){return {loading:this.geographyLoading,failure:this.geographyFailure,
-    source:this.geographicWorld?.id??'legacy',ready:!this.geographyLoading&&!this.geographyFailure&&this.mainland.pendingCount===0,
+    source:this.geographicWorld?.id??'legacy',ready:!this.geographyLoading&&!this.geographyFailure&&(this.insideUnderground||this.mainland.pendingCount===0),
     position:{...this.traversal.position},mode:this.traversal.mode,terrain:this.mainland.statistics,
     sourceData:this.geographicWorld?.stats,avatarReady:this.santi?.isReady,vegetation:this.vegetation.instanceCount,grass:this.grass.instanceCount,
     resources:this.props.activeCrystalCount,waterChunks:this.geography.activeCount+this.geography.farActiveCount,
-    lagoonInside:this.lagoon.inside,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity,
+    lagoonInside:this.lagoon.inside,cave:this.volcanicCave.status,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity,
     companion:this.dogo?.status};}
 
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
   teleportToLandmark(id:string):void {
+    if(this.volcanicCave.inside)this.leaveVolcanicCave();
+    if(id===VOLCANIC_CAVE.id&&this.geographicWorld){
+      void this.travelGeographic(this.volcanicCave.entrance.x,this.volcanicCave.entrance.z+5,VOLCANIC_CAVE.name).catch(()=>{});return;
+    }
     if(this.geographicWorld){
       const destination=this.geographicWorld.destinations.find(p=>p.id===id);
       if(destination){void (destination.floating?this.travelFloating(destination.floating):
@@ -1072,7 +1096,7 @@ export class WorldView {
   private sendLocation():void {
     const zone=this.zones.get(this.store.state.zone)!;
     const x=this.player.position.x-zone.offset.x,z=this.player.position.z-zone.offset.z;
-    const name=this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
+    const name=this.volcanicCave.inside?VOLCANIC_CAVE.name:this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
       zone.id==='brisalia'?(this.geographicWorld?
         this.geographicWorld.destinations.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b).name:
         landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)])):'Isla de las Luciérnagas';
@@ -1101,6 +1125,7 @@ export class WorldView {
   }
 
   private traversalWorld(zone:IslandInfo,feetY=this.traversal.position.y):TraversalWorld{
+    if(this.volcanicCave.inside)return this.volcanicCave.traversalWorld();
     if(this.floating?.id){
       const c=this.floating.colliders;
       return {
@@ -1220,7 +1245,7 @@ export class WorldView {
         return nearest;
       },
       headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
-        height(x,z)<=y+.08&&this.village.headroom(x,y,z,room)&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
+        height(x,z)<=y+.08&&this.volcanicCave.exteriorHeadroom(x,y,z,room)&&this.village.headroom(x,y,z,room)&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
         generated.hasOverheadClearance(x,y,z,room,ignoreRockId)&&
         buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
@@ -1241,6 +1266,8 @@ export class WorldView {
         const houses=isMainland&&travel>0&&this.village.wall(fromX,feetY+1.2,fromZ,
           nextX-fromX,nextZ-fromZ,travel+.35)!==null;
         return canWalk&&!houses&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
+          (!isMainland||this.volcanicCave.canMoveOutside(nextX,nextZ,fromX,fromZ,feetY))&&
+          (!isMainland||this.wayfinding.canMove(nextX,nextZ,fromX,fromZ,feetY))&&
           (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
           (!isMainland||!buildingBlocksMove(fromX,fromZ,nextX,nextZ,feetY,
             this.store.state.structures));
@@ -1302,6 +1329,8 @@ export class WorldView {
       if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))){void this.prepareGeography(p.x,p.z).catch(()=>{});return;}
     }
     this.lagoon.restoreAtmosphere();
+    this.volcanicCave.restoreAtmosphere();
+    this.climate.setSheltered(this.insideUnderground);
     const climateFrame=this.climate.update(dt);
     this.telemetry?.mark('clima');
     this.climateSaveTimer+=dt;
@@ -1357,6 +1386,10 @@ export class WorldView {
       if(s)this.traversal.constrainCeiling(s.ceiling);
     }
     if(this.lagoon.inside){const p=this.traversal.position,s=grottoSurfaceAt(p.x,p.z);if(s)this.traversal.constrainCeiling(s.ceiling);}
+    if(this.volcanicCave.inside){
+      const p=this.traversal.position,ceiling=this.volcanicCave.ceilingAt(new Vector3(p.x,p.y,p.z));
+      if(ceiling!==null)this.traversal.constrainCeiling(ceiling);
+    }
     let {x:localX,y:localY,z:localZ}=this.traversal.position;
     if(zone.id==='brisalia'&&!this.insideUnderground&&this.traversal.mode==='grounded'&&!this.traversal.supportRockId){
       const exit=this.exitEmbeddedGeology(localX,localY,localZ);
@@ -1366,6 +1399,7 @@ export class WorldView {
       }
     }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
+    if(!this.volcanicCave.inside)this.wayfinding.update(climateFrame.night,this.player.position,dt);
     if(zone.id==='brisalia'&&!this.insideUnderground){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
@@ -1394,7 +1428,7 @@ export class WorldView {
     this.dogo?.update(dt,{
       x:localX,y:localY,z:localZ,heading:this.player.rotation.y,
       supported:this.traversal.mode==='grounded'||this.traversal.mode==='swimming',
-      context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}`
+      context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}:${this.volcanicCave.inside}`
     },this.traversalWorld(zone,this.dogo.follow.visible?this.dogo.follow.position.y:localY),zone.offset);
     const dog=this.dogo?.follow;
     this.characterShadows.update(this.player.position,dog?.visible?this.dogo!.root.position:undefined,!this.insideUnderground);
@@ -1452,10 +1486,18 @@ export class WorldView {
       Math.max(target.y,this.player.position.y+focusHeight);
     this.camera.setTarget(target,false,false,true);
     this.telemetry?.mark('movimiento');
-    this.ocean?.update(dt,this.player.position);
+    if(!this.insideUnderground)this.ocean?.update(dt,this.player.position);
     this.telemetry?.mark('oceano');
     this.mountainPasses.update(localX,localY,localZ,dt);
     this.lagoon.update(dt,localX,localY,localZ,climateFrame);
+    this.volcanicCave.syncExterior(localX,localZ,zone.id==='brisalia'&&!this.insideUnderground&&!this.floating?.id);
+    const caveRecovery=this.volcanicCave.update(dt,this.player.position,
+      this.dogo?[this.player,this.dogo.root]:[this.player],this.traversal.mode==='grounded',climateFrame.dayLight);
+    if(caveRecovery){
+      this.traversal.teleport(caveRecovery.x,caveRecovery.y,caveRecovery.z);this.player.position.copyFrom(caveRecovery);
+      this.camera.setTarget(caveRecovery.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
+      this.callbacks.notify('Volviste a la última cornisa segura.');
+    }
     this.waterContactTimer-=dt;
     if(this.waterContactTimer<=0){
       this.waterContactTimer=.25;
@@ -1491,6 +1533,15 @@ export class WorldView {
   }
 
   private updateCameraOcclusion(dt:number,zone:IslandInfo):void{
+    if(this.volcanicCave.inside){
+      const t=this.camera.getTarget(),a=this.camera.alpha,b=this.camera.beta;
+      const d=new Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b));
+      const preferred=Math.min(18,this.cameraPreferredRadius);
+      const hit=this.volcanicCave.colliders.queryCameraObstruction(t,t.add(d.scale(preferred)),.5);
+      const safe=hit===null?preferred:Math.max(.25,hit-.7);
+      this.camera.radius=safe<this.camera.radius?safe:this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*6);
+      this.cameraAppliedRadius=this.camera.radius;return;
+    }
     const swimming=this.traversal.mode==='swimming';
     let preferred=this.cameraPreferredRadius;
     if(swimming){
@@ -1568,7 +1619,9 @@ export class WorldView {
     // narrow rock in less than the slower distant-prop refresh interval.
     const generatedHit=this.lagoon.rockColliders.queryCameraObstruction(target,target.add(direction.scale(radius)),.45);
     const generatedDistance=generatedHit===null?Infinity:Math.max(.25,generatedHit-.65);
-    const safe=Math.min(radius,this.cameraOcclusionDistance,terrainView.maxRadius,generatedDistance);
+    const caveHit=this.volcanicCave.exteriorCameraObstruction(target,target.add(direction.scale(radius)));
+    const caveDistance=caveHit===null?Infinity:Math.max(.25,caveHit-.65);
+    const safe=Math.min(radius,this.cameraOcclusionDistance,terrainView.maxRadius,generatedDistance,caveDistance);
     this.camera.radius=safe<this.camera.radius?safe:
       this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*5);
     this.cameraAppliedRadius=this.camera.radius;
@@ -1577,6 +1630,15 @@ export class WorldView {
   private findNearest(): void {
     const zone = this.zones.get(this.store.state.zone)!;
     const playerLocal = this.player.position.subtract(zone.offset);
+    const caveAction=zone.id==='brisalia'&&!this.lagoon.inside&&!this.mountainPasses.inside?this.volcanicCave.nearestAction(playerLocal):null;
+    if(caveAction||this.volcanicCave.inside){
+      this.interactTarget=null;
+      const hints={enter:'E · Entrar en la Caverna del Crisol',exit:'E · Salir a la ladera del volcán',reward:'E · Recoger el corazón ígneo',secret:'E · Descubrir la cámara de minerales'};
+      const label=this.traversal.mode==='hanging'?'Colgando del borde · W subir · S o Espacio soltarse':
+        this.traversal.mode==='mantling'?'Subiendo al borde...':
+        caveAction?hints[caveAction]:'Caverna del Crisol · Explorá las cornisas y los pasos inferiores';
+      if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
+    }
     const aquatic=zone.id==='brisalia'?this.lagoon.nearestPortal(playerLocal.x,playerLocal.y,playerLocal.z):null;
     if(aquatic||this.lagoon.inside){
       this.interactTarget=null;
@@ -1611,6 +1673,7 @@ export class WorldView {
     let label=nearest&&this.traversal.canInteract?`E  ·  ${nearest.verb}`:
       'WASD mover · Espacio salto ×2 · Q combo / patada aérea · F barrida · R roll · V equipo · E usar';
     if(this.traversal.mode==='swimming')label=`WASD nadar · Shift rápido · Espacio ${this.traversal.swimSubmerged?'volver a la superficie':'sumergirse'}${this.geographicWorld?' · Ctrl descender':''}`;
+    else if(this.traversal.mode==='hanging')label='Colgando del borde · W subir · S o Espacio soltarse';
     else if(this.traversal.mode==='climbing')label='W/S trepar · A/D moverse · Espacio soltarse';
     else if(this.traversal.mode==='mantling')label='Subiendo al borde...';
     else if(zone.id==='brisalia'&&this.traversal.mode==='grounded'){
@@ -1632,7 +1695,40 @@ export class WorldView {
 
   canOpenPanel():boolean{return this.traversal.canInteract;}
 
+  private leaveVolcanicCave():Vector3{
+    const next=this.volcanicCave.leave();this.zones.get('brisalia')!.root.setEnabled(true);
+    this.climate.setSheltered(false);return next;
+  }
+
   interact(): void {
+    if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement&&this.traversal.canInteract&&
+      !this.lagoon.inside&&!this.mountainPasses.inside){
+      const p=this.player.position,action=this.volcanicCave.nearestAction(p);
+      if(action==='reward'||action==='secret'){
+        const secret=action==='secret',id=secret?VOLCANIC_CAVE.secretId:VOLCANIC_CAVE.rewardId;
+        if(this.store.claimDiscoveryReward(id,secret?'spark':'fireCrystal',secret?3:5)){
+          this.volcanicCave.claimed(secret);
+          this.callbacks.notify(secret?'Cámara secreta descubierta · +3 chispas':'Corazón del Crisol descubierto · +5 cristales ígneos');
+        }return;
+      }
+      if(action==='enter'||action==='exit'){
+        const entering=action==='enter',found=this.store.state.discoveredPlaces??[];
+        const next=entering?this.volcanicCave.enter(found.includes(VOLCANIC_CAVE.rewardId),found.includes(VOLCANIC_CAVE.secretId)):this.leaveVolcanicCave();
+        if(entering){
+          this.zones.get('brisalia')!.root.setEnabled(false);
+          this.store.discoverPlace(VOLCANIC_CAVE.id);
+          this.lastSafePosition={x:this.volcanicCave.entrance.x,z:this.volcanicCave.entrance.z+6};
+        }else this.lastSafePosition={x:next.x,z:next.z};
+        this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
+        this.traversal.teleport(next.x,next.y+.1,next.z);this.player.position.set(next.x,next.y+.1,next.z);
+        this.camera.alpha=entering?Math.PI/2:-Math.PI/2-VOLCANIC_CAVE.entranceYaw;
+        this.camera.setTarget(next.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
+        this.store.setPlayerPosition('brisalia',this.lastSafePosition.x,this.lastSafePosition.z);
+        this.sendLocation();this.callbacks.notify(entering?'Descubriste la Caverna del Crisol.':'Regresaste a la ladera del volcán.');
+        return;
+      }
+      if(this.volcanicCave.inside)return;
+    }
     if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement){
       const p=this.traversal.position,portal=this.lagoon.nearestPortal(p.x,p.y,p.z);
       if(portal){
@@ -1889,6 +1985,8 @@ export class WorldView {
   }
 
   dispose(): void {
+    this.volcanicCave.dispose();
+    this.wayfinding.dispose();
     this.village.dispose();
     this.floating?.dispose();this.geographicWorld?.dispose();
     this.engine.stopRenderLoop();

@@ -1,0 +1,21 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-11-15",
+  "assets": [
+    {
+      "file": "public/assets/wayfinding/wood-v2-color.png",
+      "role": "Shared oak base color for Board, Lamp, Pointer1 and Pointer2",
+      "prompt": "Edit this existing wood texture into a higher-quality seamless PBR base-color texture for wooden signboards and lamp posts in Auralia, a cozy stylized medieval village game. Preserve the overall warm medium walnut/oak brown palette and VERTICAL grain orientation, so the current UV mappings still work. Replace the blurred repetitive streaks with crisp, subtly hand-painted aged oak fibers, gently meandering grain, a few small natural knots, narrow hairline splits, occasional soft worn patches and restrained fine pores. Rich believable wood, not photorealistic noise; clean readable medium-scale grain that won't compete with cream text painted over it. Flat orthographic texture filling the entire square, even diffuse color with NO directional lighting, NO baked highlights, NO shadows, NO bevels, NO planks or seams, NO panel borders, NO text, NO objects, NO watermark. Seamlessly tileable horizontally and vertically; opposing edges must match. One square color texture only, highest crisp detail."
+    },
+    {
+      "file": "public/assets/wayfinding/wood-v2-normal.png",
+      "role": "Matching shallow grain normal map",
+      "prompt": "Convert this exact wood base-color texture into its matching subtle tangent-space NORMAL MAP for a PBR game material. Preserve every grain curve, knot and fine split at exactly the same location and scale. Encode surface normals as RGB using OpenGL tangent convention: neutral flat wood must be RGB 128,128,255, red for X slope and green for Y slope. Only shallow fiber grooves, tiny pores and subtle recessed cracks, extremely restrained relief: mostly pale periwinkle with small cyan/pink variations. No wood brown color, no albedo, no lighting, no baked shadows, no geometry change, no perspective, no edge frame, no words or legends. Full-frame square normal texture only. Opposite edges must tile seamlessly to match the supplied color texture."
+    },
+    {
+      "file": "public/assets/wayfinding/wood-v2-endgrain.png",
+      "role": "Planar growth-ring texture for the top cut of every post",
+      "prompt": "Create one square PBR base-color texture of the END GRAIN of a solid aged oak wooden post for a cozy stylized medieval game. Flat straight-on top-down close-up of a freshly sawn but weathered wood cross-section, filling the entire square image edge to edge. Organic irregular concentric growth rings around a slightly off-center pith, fine radial fibers, just two very restrained hairline radial splits, soft tool-cut texture. Warm muted medium brown oak matching a village wooden signpost; clean subtly hand-painted style with crisp moderate detail, not noisy or photographic. The game maps this square texture onto a circular end cap: draw continuous end-grain wood across the full square, NO outer silhouette, NO surrounding background, NO bark border, NO plank divisions, NO directional grain streaks. Albedo only: uniform illumination, no highlights, no shadows, no ambient occlusion, no perspective, no text, no watermark. Flat 2D texture, not a render of a cylinder. Center the growth-ring pattern around roughly (50%,50%)."
+    }
+  ]
+}
