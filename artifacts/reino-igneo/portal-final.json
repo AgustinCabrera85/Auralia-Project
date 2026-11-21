@@ -1,0 +1,72 @@
+{
+  "exit": {
+    "action": "exit",
+    "inside": false,
+    "exterior": true,
+    "environmentRestored": true,
+    "exposureRestored": true,
+    "candidatesRestored": true,
+    "position": [
+      -342,
+      1120.5102727658548,
+      -4287
+    ]
+  },
+  "reenter": {
+    "action": "enter",
+    "inside": true,
+    "meshesReused": true,
+    "checkpoint": "A0",
+    "position": [
+      -41.00000124945666,
+      118.04421031062735,
+      158.00000481497932
+    ]
+  },
+  "save": {
+    "version": 1,
+    "zone": "brisalia",
+    "playerPosition": {
+      "zone": "brisalia",
+      "x": -342,
+      "z": -4281
+    },
+    "inventory": {
+      "wood": 0,
+      "stone": 0,
+      "copper": 0,
+      "spark": 0,
+      "fireCrystal": 5,
+      "hammer": 0,
+      "pickaxe": 0,
+      "lantern": 0,
+      "sword": 0
+    },
+    "equippedItem": "unarmed",
+    "structures": [],
+    "visited": [
+      "brisalia"
+    ],
+    "discoveredPlaces": [
+      "brisalia",
+      "ladera-del-crisol",
+      "caverna-del-crisol",
+      "reino-igneo-reja-abierta",
+      "reino-igneo-hogar",
+      "reino-igneo-salida-abierta",
+      "reino-igneo-forja",
+      "reino-igneo-cristal"
+    ],
+    "resourceRespawns": {},
+    "environment": {
+      "elapsedHours": 15.94929000000977
+    },
+    "createdAt": "2026-11-19T04:07:19.471Z",
+    "updatedAt": "2026-11-19T04:55:38.922Z",
+    "igneousCheckpoint": "A0"
+  },
+  "errors": {
+    "village": [],
+    "wayfinding": []
+  }
+}

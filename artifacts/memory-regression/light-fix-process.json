@@ -1,0 +1,6 @@
+{
+  "rendererMiB": 700.5,
+  "gpuProcessMiB": 1499.6,
+  "rendererPlusGpuMiB": 2200.1,
+  "note": "Isolated Chrome native private footprints; not Chrome tab hover. Extracted from detailed memory-infra trace."
+}

@@ -977,6 +977,25 @@ try{
   for(let i=0;i<30;i++)santi.update(1/60,grounded);
   assert.ok(santi.shapeKeys.get('SF_AU45_Blink_L').every(t=>t.influence===.4),
     'automatic blinking restores a manually authored eyelid pose');
+  const abilityBinding={file:'santi',clip:'Sword And Shield Casting',speed:1.2,blendSeconds:.12};
+  assert.equal(santi.hasAbilityAnimation(abilityBinding),true);
+  assert.equal(santi.hasAbilityAnimation({...abilityBinding,clip:'missing ultimate'}),false);
+  assert.equal(santi.startAbilityAnimation(abilityBinding),true);
+  assert.equal(santi.requestAttack('sword'),false,'Q cannot overwrite a special');
+  assert.equal(santi.playAction(SANTI_COMBAT.roll),false,'R cannot overwrite a special');
+  santi.sampleAbilityAnimation(abilityBinding,.4);santi.update(.1,grounded);scene.render();
+  assert.ok(Math.abs(santi.actions.get(abilityBinding.clip).getCurrentFrame()-
+    (santi.actions.get(abilityBinding.clip).from+.4*1.2*(santi.actions.get(abilityBinding.clip).to-santi.actions.get(abilityBinding.clip).from)/santi.actions.get(abilityBinding.clip).getLength()))<.02,`special follows simulation time: ${santi.actions.get(abilityBinding.clip).getCurrentFrame()}`);
+  santi.endAbilityAnimation();assert.equal(santi.actionBusy,false);
+  const abilityAsset=await LoadAssetContainerAsync(url,scene);
+  abilityAsset.animationGroups.forEach(g=>g.stop());
+  assert.equal(santi.installAbilityAnimation(abilityAsset,{...abilityBinding,file:'/assets/matching-rig.glb'}),true,
+    'an explicitly bound clip can be retargeted onto the same rig');
+  assert.equal(santi.installAbilityAnimation({...abilityAsset,skeletons:[]},
+    {...abilityBinding,file:'/assets/roots-are-not-a-rig.glb'}),false,'FX meshes cannot replace a character rig');
+  abilityAsset.dispose();
+  assert.equal(santi.hasAbilityAnimation({...abilityBinding,file:'/assets/matching-rig.glb'}),true);
+  assert.equal(santi.requestAttack('sword'),true,'normal combat resumes after release');
   santi.dispose();
   assert.equal(placementReleased,true,'disposing Santi unregisters its debug placement target');
   assert.equal(santi.isReady,false);

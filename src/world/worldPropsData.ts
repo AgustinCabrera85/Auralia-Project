@@ -13,7 +13,7 @@ import { activeGeography } from './geography/ActiveGeography';
 export const PROP_CONFIG={
   seed:43179,renderRadiusChunks:3,scaleVariation:.2,roadMaskLimit:.38,
   respawnMs:180000,
-  candidatesPerChunk:{packRocas:16,cristalAzul:1,cristalCeleste:1,cristalFuego:1}
+  candidatesPerChunk:{packRocas:16,cristalAzul:1,cristalCeleste:1}
 } as const;
 
 /** Large assets are available to global compositions, not random chunk candidates. */
@@ -29,12 +29,11 @@ export type PropPlacement={
   worldHeight?:number;worldRadius?:number;climbable?:boolean;
 };
 export const PROP_KINDS=Object.keys(PROP_CONFIG.candidatesPerChunk) as DecorativeKind[];
-export const CRYSTAL_KINDS:readonly PropKind[]=['cristalAzul','cristalCeleste','cristalFuego'];
+export const CRYSTAL_KINDS:readonly PropKind[]=['cristalAzul','cristalCeleste'];
 
 export const FIXED_CRYSTALS=[
   {id:'crystal:ruina-caminos',kind:'cristalAzul',x:-160,z:-210},
-  {id:'crystal:orilla-nacar',kind:'cristalCeleste',x:170,z:-260},
-  {id:'crystal:altapiedra',kind:'cristalFuego',x:-410,z:-565}
+  {id:'crystal:orilla-nacar',kind:'cristalCeleste',x:170,z:-260}
 ] as const;
 export const SPECIAL_ASSETS=[
   {id:'crisol-brisalia',kind:'crisolHerrero',x:23,z:-8,yOffset:0},
@@ -43,8 +42,7 @@ export const SPECIAL_ASSETS=[
 
 const DENSITY:Record<DecorativeKind,Partial<Record<Biome,number>>>= {
   packRocas:{valle:.2,ecos:.2,sierras:.26,nacar:.24,costa:.12},
-  cristalAzul:{ecos:.16,nacar:.04},cristalCeleste:{ecos:.04,nacar:.16,cumbres:.025},
-  cristalFuego:{sierras:.13,cumbres:.08}
+  cristalAzul:{ecos:.16,nacar:.04},cristalCeleste:{ecos:.04,nacar:.16,cumbres:.025}
 };
 
 /** Only loose stones and deposits use per-chunk candidates. */

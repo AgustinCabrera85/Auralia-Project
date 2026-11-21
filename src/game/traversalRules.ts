@@ -6,9 +6,10 @@ export const TRAVERSAL = {
   initialJumpSpeed: 10.5,     // m/s, about 2.3 m max rise
   runningJumpSpeed: 12.5,     // longer, higher leap when Shift is held
   sprintJumpSpeed: 13.2,
-  doubleJumpSpeed: 9.2,       // second impulse while still airborne
-  doubleJumpDashSpeed: 31,
-  doubleJumpDashSeconds: 0.27,
+  doubleJumpSpeed: 13.5,      // about 3.8 m of extra rise from the second impulse
+  doubleJumpDashSpeed: 36,
+  doubleJumpDashSeconds: 0.32,
+  airKickJumpSpeed: 9.2,      // Q keeps its existing vertical kick trajectory
   airKickSeconds: 0.56,        // Q's airborne kick holds horizontal position
   playerRadius: 0.6,          // meters
   playerHeight: 3.8,         // match the visual character
@@ -27,7 +28,9 @@ export const TRAVERSAL = {
   maxFallResetHeight: 140,
 } as const;
 export type LocomotionMode='grounded'|'airborne'|'hanging'|'climbing'|'mantling'|'swimming';
-export type GroundHit={height:number;normalY:number;rockId?:string};
+export type GroundHit={height:number;normalY:number;rockId?:string;
+  /** Actual support wins over the terrain material underneath it. */
+  surface?:'wood'|'stone'|'paved'};
 export function slopeAllowed(normalY:number,sprint=false):boolean {
   return Number.isFinite(normalY)&&normalY>=Math.cos(
     (sprint?TRAVERSAL.maxSprintSlopeDeg:TRAVERSAL.maxWalkSlopeDeg)*Math.PI/180)-1e-6;

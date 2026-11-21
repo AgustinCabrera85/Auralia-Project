@@ -3,3 +3,9 @@
 *.f32 binary
 *.rgb binary
 *.rgba binary
+# Model buffers and GPU assets must not undergo newline conversion on Windows.
+*.bin binary
+*.glb binary
+*.ktx2 binary
+*.wasm binary
+public/assets/reino-igneo/Reino_Igneo.glb filter=lfs diff=lfs merge=lfs -text

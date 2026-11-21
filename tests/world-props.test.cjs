@@ -36,8 +36,11 @@ assert.equal(rectRockSizing(0,.5,.5).heightMeters>=30,true);
 assert.equal(rectRockSizing(20,0,0).diameterMeters,7.5);
 const rocksFromSeveralChunks=[];
 const rectangularRocks=GEOLOGY_COMPOSITIONS.flatMap(c=>c.pieces).filter(p=>p.kind==='rocasRectangulares');
-for(let cx=-9;cx<8;cx++)for(let cz=-9;cz<8;cz++)
-  rocksFromSeveralChunks.push(...propsForChunk(cx,cz).filter(p=>p.kind==='packRocas'));
+for(let cx=-9;cx<8;cx++)for(let cz=-9;cz<8;cz++){
+  const props=propsForChunk(cx,cz);
+  assert(props.every(p=>p.kind!=='cristalFuego'),'the sacred fire crystal never spawns on exterior terrain');
+  rocksFromSeveralChunks.push(...props.filter(p=>p.kind==='packRocas'));
+}
 assert.ok(rocksFromSeveralChunks.length>0,'procedural rocks are generated');
 assert.ok(rocksFromSeveralChunks.every(p=>Number.isInteger(p.partIndex)&&p.partIndex>=0&&p.partIndex<17&&p.rockDiameter>0));
 assert.ok(new Set(rocksFromSeveralChunks.map(p=>p.partIndex)).size>4,'varied independent parts are selected');
@@ -73,9 +76,10 @@ for(const p of FIXED_CRYSTALS){
   for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++)cells.push({cx:center.cx+dx,cz:center.cz+dz});
   system.setActiveChunks(cells,-160,-210);
   await system.load();
-  assert.equal(system.sharedAssetCount,11,'all eleven new non-vegetation GLBs loaded once');
-  assert.equal(imports.length,12,'one cliff visual LOD is loaded in addition to shared assets');
-  assert.equal(new Set(imports).size,12);
+  assert.equal(system.sharedAssetCount,10,'only exterior assets are loaded');
+  assert(!imports.includes(ASSET_CATALOG.cristalFuego.path),'the sacred crystal is loaded only with its realm');
+  assert.equal(imports.length,11,'one cliff visual LOD is loaded in addition to shared assets');
+  assert.equal(new Set(imports).size,11);
   const cliffLod=scene.getMeshByName('asset-acantilado2-lod');
   const cliffOriginal=scene.meshes.find(m=>m.name.startsWith('asset-acantilado2-')&&
     m.metadata?.collisionOnly===false&&m!==cliffLod);
@@ -163,13 +167,13 @@ for(const p of FIXED_CRYSTALS){
   system.setActiveChunks([],1000,1000);
   assert.equal(system.activeChunkCount,0);
   assert.equal(system.activeCrystalCount,0);
-  assert.equal(system.sharedAssetCount,11,'releasing chunks preserves shared GLBs');
+  assert.equal(system.sharedAssetCount,10,'releasing chunks preserves shared GLBs');
   assert.equal(system.activeRockColliderCount,0,'distant colliders are unloaded');
   system.setActiveChunks(cells,-160,-210);
   for(let i=0;i<60;i++)system.update(1/60);
   assert.equal(system.visibleDecorationCount,count,'reload has the same deterministic decoration');
   assert.equal(system.nearestResource(-160,-210,2),null,'cooldown survives unload and reload');
-  assert.equal(imports.length,12,'reload does not import GLBs again');
+  assert.equal(imports.length,11,'reload does not import GLBs again');
   const cliffPiece=GEOLOGY_COMPOSITIONS.find(c=>c.formation.id==='altapiedra-cliff')
     .pieces.find(p=>p.id.includes(':wall:3'));
   const monumentCell=chunkOf(cliffPiece.x,cliffPiece.z);
@@ -201,6 +205,6 @@ for(const p of FIXED_CRYSTALS){
   system.setColliderFocus(1000,1000,null);
   assert.equal(system.activeFormationCount,0,'the formation is released after contact ends');
   assert.equal(system.activeRockColliderCount,0,'collider instances are released');
-  console.log(`✓ Assets: 11 GLB nuevos, ${count} props decorativos y cristales persistentes en ${system.activeChunkCount} chunks`);
+  console.log(`✓ Assets: 10 GLB exteriores, ${count} props decorativos y cristales persistentes en ${system.activeChunkCount} chunks`);
   system.dispose();scene.dispose();engine.dispose();
 })().catch(error=>{console.error(error);process.exitCode=1;});

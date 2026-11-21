@@ -1,0 +1,323 @@
+{
+  "levels": [
+    {
+      "level": 1,
+      "id": "ability-1-1",
+      "center": {
+        "x": -1249,
+        "y": 11.04876628796277,
+        "z": 1953,
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      "placements": 6,
+      "hits": [
+        {
+          "id": "dev-target-0",
+          "executionId": "ability-1-1",
+          "damage": 10
+        },
+        {
+          "id": "dev-target-1",
+          "executionId": "ability-1-1",
+          "damage": 10
+        },
+        {
+          "id": "dev-target-2",
+          "executionId": "ability-1-1",
+          "damage": 10
+        }
+      ],
+      "fx": {
+        "state": "ready",
+        "instances": 6,
+        "active": 6,
+        "fallback": false,
+        "failure": ""
+      },
+      "clip": "Sword And Shield Casting",
+      "morph": 0.9804229108177009,
+      "activeRoots": 6,
+      "sequence": [
+        6
+      ],
+      "shakePulses": [
+        0.008838838729914027
+      ],
+      "inclinations": [
+        0.15055155865502795
+      ],
+      "rings": [
+        {
+          "radius": 4,
+          "roots": 6,
+          "scale": 0.55,
+          "delay": 0,
+          "lean": 0.3839724354387525
+        }
+      ],
+      "placementsValid": true
+    },
+    {
+      "level": 2,
+      "id": "ability-1-2",
+      "center": {
+        "x": -1249,
+        "y": 11.04876628796277,
+        "z": 1953,
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      "placements": 16,
+      "hits": [
+        {
+          "id": "dev-target-0",
+          "executionId": "ability-1-2",
+          "damage": 13
+        },
+        {
+          "id": "dev-target-1",
+          "executionId": "ability-1-2",
+          "damage": 13
+        },
+        {
+          "id": "dev-target-2",
+          "executionId": "ability-1-2",
+          "damage": 13
+        }
+      ],
+      "fx": {
+        "state": "ready",
+        "instances": 16,
+        "active": 16,
+        "fallback": false,
+        "failure": ""
+      },
+      "clip": "Sword And Shield Casting",
+      "morph": 1,
+      "activeRoots": 16,
+      "sequence": [
+        6,
+        16
+      ],
+      "shakePulses": [
+        0.01262691247130575,
+        0.04580384377586159
+      ],
+      "inclinations": [
+        0.15055156339566925,
+        -0.15055157048791099
+      ],
+      "rings": [
+        {
+          "radius": 4,
+          "roots": 6,
+          "scale": 0.65,
+          "delay": 0,
+          "lean": 0.3839724354387525
+        },
+        {
+          "radius": 6,
+          "roots": 10,
+          "scale": 0.75,
+          "delay": 0.24,
+          "lean": -0.3839724354387525
+        }
+      ],
+      "placementsValid": true
+    },
+    {
+      "level": 3,
+      "id": "ability-1-3",
+      "center": {
+        "x": -1249,
+        "y": 11.04876628796277,
+        "z": 1953,
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      "placements": 30,
+      "hits": [
+        {
+          "id": "dev-target-0",
+          "executionId": "ability-1-3",
+          "damage": 16
+        },
+        {
+          "id": "dev-target-1",
+          "executionId": "ability-1-3",
+          "damage": 16
+        },
+        {
+          "id": "dev-target-2",
+          "executionId": "ability-1-3",
+          "damage": 16
+        }
+      ],
+      "fx": {
+        "state": "ready",
+        "instances": 30,
+        "active": 30,
+        "fallback": false,
+        "failure": ""
+      },
+      "clip": "Sword And Shield Casting",
+      "morph": 1,
+      "activeRoots": 30,
+      "sequence": [
+        6,
+        16,
+        30
+      ],
+      "shakePulses": [
+        0.016414986212697477,
+        0.05954499690862006,
+        0.035345030797684605
+      ],
+      "inclinations": [
+        0.15055156687213966,
+        -0.1505515691398182,
+        0.15055157929437046
+      ],
+      "rings": [
+        {
+          "radius": 4,
+          "roots": 6,
+          "scale": 0.75,
+          "delay": 0,
+          "lean": 0.3839724354387525
+        },
+        {
+          "radius": 6,
+          "roots": 10,
+          "scale": 0.85,
+          "delay": 0.24,
+          "lean": -0.3839724354387525
+        },
+        {
+          "radius": 8,
+          "roots": 14,
+          "scale": 0.95,
+          "delay": 0.48,
+          "lean": 0.3839724354387525
+        }
+      ],
+      "placementsValid": true
+    },
+    {
+      "level": 4,
+      "id": "ability-1-4",
+      "center": {
+        "x": -1249,
+        "y": 11.04876628796277,
+        "z": 1953,
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      "placements": 48,
+      "hits": [
+        {
+          "id": "dev-target-0",
+          "executionId": "ability-1-4",
+          "damage": 20
+        },
+        {
+          "id": "dev-target-1",
+          "executionId": "ability-1-4",
+          "damage": 20
+        },
+        {
+          "id": "dev-target-2",
+          "executionId": "ability-1-4",
+          "damage": 20
+        }
+      ],
+      "fx": {
+        "state": "ready",
+        "instances": 48,
+        "active": 48,
+        "fallback": false,
+        "failure": ""
+      },
+      "clip": "Sword And Shield Casting",
+      "morph": 0.9374436273128803,
+      "activeRoots": 48,
+      "sequence": [
+        6,
+        16,
+        30,
+        48
+      ],
+      "shakePulses": [
+        0.020203059954089202,
+        0.07328615004137855,
+        0.04350157636638105,
+        0.08085593903135238
+      ],
+      "inclinations": [
+        0.15055156953061713,
+        -0.1505515680755344,
+        0.15055156487959132,
+        -0.15055157326013746
+      ],
+      "rings": [
+        {
+          "radius": 4,
+          "roots": 6,
+          "scale": 0.85,
+          "delay": 0,
+          "lean": 0.3839724354387525
+        },
+        {
+          "radius": 6,
+          "roots": 10,
+          "scale": 0.95,
+          "delay": 0.24,
+          "lean": -0.3839724354387525
+        },
+        {
+          "radius": 8,
+          "roots": 14,
+          "scale": 1.05,
+          "delay": 0.48,
+          "lean": 0.3839724354387525
+        },
+        {
+          "radius": 10,
+          "roots": 18,
+          "scale": 1.15,
+          "delay": 0.72,
+          "lean": -0.3839724354387525
+        }
+      ],
+      "placementsValid": true
+    }
+  ],
+  "assets": {
+    "state": "ready",
+    "instances": 0,
+    "active": 0,
+    "fallback": false,
+    "failure": ""
+  },
+  "controls": {
+    "repeat": true,
+    "typing": true,
+    "blur": true
+  },
+  "poolStable": 48,
+  "sceneReset": true,
+  "savedProgressUnchanged": true
+}

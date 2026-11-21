@@ -1,4 +1,5 @@
-﻿import { ImportMeshAsync, Matrix, Mesh, MultiMaterial, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core';
+﻿import { importGpuMeshAsync as ImportMeshAsync } from './GpuAssets';
+import { Matrix, Mesh, MultiMaterial, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import {Texture} from '@babylonjs/core';
 import { chunkKey, chunkOf, desiredChunks, hash01, MAINLAND } from './terrainData';

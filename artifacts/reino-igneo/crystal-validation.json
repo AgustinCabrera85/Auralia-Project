@@ -1,0 +1,19 @@
+{
+  "model": "Cristal_de_Fuego.glb",
+  "singleCrystal": true,
+  "oldGemPrimitivesHidden": 3,
+  "firePower": true,
+  "oneTimeReward": 1,
+  "exteriorCrystalLoaded": false,
+  "animatedLight": true,
+  "animatedEmbers": true,
+  "visibleAfterReturn": true,
+  "meshes": 419,
+  "material": "tripo_mat_350e5887-39a5-4733-b1f8-5bd3caf98694",
+  "position": [
+    76.42789454052715,
+    13.700996816457632,
+    -93.78437813045024
+  ],
+  "recoveries": []
+}

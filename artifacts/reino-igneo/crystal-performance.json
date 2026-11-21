@@ -1,0 +1,27 @@
+{
+  "label": "cristal-igneo-1080p",
+  "mode": "engine.runRenderLoop with real delta time",
+  "fps": 59.999400005991,
+  "seconds": 10.00010000000149,
+  "frames": 601,
+  "medianMs": 7.699999995529652,
+  "p95Ms": 10.800000004470348,
+  "ms": 7.100000001490116,
+  "draws": 38,
+  "triangles": 49115,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "avatar": true,
+  "companion": {
+    "visible": true,
+    "distance": 5.4209990522409095
+  },
+  "loadMs": 26485.19999999553,
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  }
+}

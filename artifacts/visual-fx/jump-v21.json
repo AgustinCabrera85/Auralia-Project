@@ -1,0 +1,24 @@
+{
+  "firstJumpUnchanged": true,
+  "secondRise": 3.796666666666667,
+  "heldKeySingleBurst": true,
+  "worldAnchored": true,
+  "noThirdJump": true,
+  "airKickCompatible": true,
+  "blurReset": true,
+  "pauseReset": true,
+  "zoneReset": true,
+  "poolReuse": true,
+  "disposal": true,
+  "resources": {
+    "meshes": 6,
+    "textures": 951,
+    "systems": 3
+  },
+  "stats": {
+    "activeBursts": 1,
+    "particles": 21,
+    "maxParticles": 72,
+    "maxDrawCalls": 9
+  }
+}

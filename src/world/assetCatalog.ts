@@ -33,7 +33,7 @@ export const ASSET_CATALOG={
   acantilado2:{path:'/assets/world/cliffs/Acantilado_2_closed.glb',category:'cliffs',biomes:['sierras','cumbres','costa'],referenceScale:19,interaction:'decorative',instantiation:'thin'},
   cristalAzul:{path:'/assets/world/crystals/Cristal_azul_flotante.glb',category:'crystals',biomes:['ecos','nacar'],referenceScale:4.8,interaction:'resource',instantiation:'individual'},
   cristalCeleste:{path:'/assets/world/crystals/Cristal_celeste_1.glb',category:'crystals',biomes:['ecos','nacar','cumbres'],referenceScale:6,interaction:'resource',instantiation:'individual'},
-  cristalFuego:{path:'/assets/world/crystals/Cristal_de_Fuego.glb',category:'crystals',biomes:['sierras','cumbres'],referenceScale:5,interaction:'resource',instantiation:'individual'},
+  cristalFuego:{path:'/assets/world/crystals/Cristal_de_Fuego.glb',category:'crystals',biomes:[],referenceScale:5,interaction:'landmark',instantiation:'individual'},
   crisolHerrero:{path:'/assets/world/structures/Crisol_Herrero.glb',category:'structures',biomes:['valle'],referenceScale:5,interaction:'decorative',instantiation:'individual'},
   islaFlotante:{path:'/assets/world/landmarks/Isla_flotante_2.glb',category:'landmarks',biomes:['cumbres'],referenceScale:90,interaction:'landmark',instantiation:'individual'},
   ...FOLIAGE_V4_ASSETS,

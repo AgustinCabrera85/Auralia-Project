@@ -16,6 +16,8 @@ import { POINTS_OF_INTEREST } from '../world/pointsOfInterest';
 import { VOLCANIC_CAVE } from '../world/volcanicCaveData';
 import { SEASON_LABELS, WEATHER_ICONS, WEATHER_LABELS, type ClimateFrame } from '../world/climate/ClimateModel';
 import { readRenderQuality, RENDER_QUALITIES, type RenderQuality } from '../game/renderResolution';
+import { AbilitiesHud } from './AbilitiesHud';
+import type { AbilitySystem } from '../game/abilities/AbilitySystem';
 
 type HudActions = {
   interact: () => void;
@@ -45,6 +47,8 @@ const QUEST: Record<Milestone, { number: string; title: string; detail: string; 
 };
 
 export class Hud {
+  private abilities:AbilitiesHud|null=null;
+  attachAbilities(system:AbilitySystem):void{this.abilities?.dispose();this.abilities=new AbilitiesHud(system);}
   readonly canvas: HTMLCanvasElement;
   private panel: Panel = null;
   private mapSelection = 'brisalia';
@@ -131,7 +135,7 @@ export class Hud {
     store.subscribe(() => this.render());
   }
 
-  get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible; }
+  get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible || !!this.abilities?.isOpen; }
 
   /** Clockwise camera heading from map north (-Z), in radians. */
   setCameraHeading(radians: number): void {
@@ -208,7 +212,7 @@ export class Hud {
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
-      e.target instanceof HTMLSelectElement) return;
+      e.target instanceof HTMLSelectElement || e.target instanceof HTMLElement&&e.target.isContentEditable) return;
     const key = e.key.toLowerCase();
     if (key === 'escape') {
       if (this.dialogueVisible) this.closeDialogue();
@@ -416,6 +420,11 @@ export class Hud {
         {id:'lantern',description:'Linterna mágica. Sin ataque de Q asignado.',key:'5'}]}
     ];
     return `<p class="panel-lead">Elegí qué lleva Santi. La espada del bosque evoluciona del nivel 1 al 4 al cumplir sus objetivos de exploración. Seleccionarla habilita sus ataques. También podés cambiar con las teclas 1–5. La barrida permanece en F.</p>
+      <h3 class="equipment-group-title">Poderes de los reinos</h3>
+      <article class="equipment-card${this.store.hasFirePower?' selected':''}">
+        <div class="equipment-icon">🔥</div><div><h4>Afinidad de fuego · ${this.store.hasFirePower?'Desbloqueada':'Sellada'}</h4>
+        <p>${this.store.hasFirePower?'El Cristal Ígneo te ha reconocido. Su poder permanece unido a vos.':
+          'Alcanzá el cristal único en la cámara final del Reino Ígneo y despertá su poder.'}</p></div></article>
       ${groups.map(group=>`<h3 class="equipment-group-title">${group.title}</h3>
         <div class="equipment-grid">${group.items.map(item=>{
           const owned=item.id==='unarmed'||inventory[item.id]>0;
@@ -472,6 +481,7 @@ export class Hud {
     return `<p class="panel-lead">Las Doce Coronas están en desarrollo sobre el continente actual. El tamaño definitivo del mundo sigue abierto. El mapa (M) permite visitar hitos para probar los recorridos. En las entradas de Ferragrís, presioná E para explorar las galerías o salir por otro acceso.</p><div class="help-grid">
       <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr, dos pulsaciones rápidas de <strong>Shift</strong> y mantener la segunda para sprint, y <strong>Espacio</strong> para saltar o volver a saltar en el aire. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
       <article><h3>⚔️ Acciones de Santi</h3><p>Abrí <strong>Equipo (V)</strong> o usá <strong>1–5</strong> para elegir mano limpia, espada o herramienta. <strong>Q</strong> alterna las patadas a mano limpia o los ataques de espada si está seleccionada. <strong>F</strong> ejecuta la barrida y <strong>R</strong> el roll. Las patadas no trasladan al personaje; el roll conserva la dirección con la que empezó. Patadas, barrida y rolls deben terminar antes de repetirse. Tras una caída muy alta, Santi hace automáticamente el roll de aterrizaje.</p></article>
+      <article><h3>🌿 Poderes</h3><p><strong>H</strong> abre selección y requisitos; <strong>X</strong> activa el especial y <strong>T</strong> solicita el definitivo independiente. <strong>Esc</strong> cancela. Las raíces requieren la espada equipada y siguen sus cuatro niveles. Cancelar antes del compromiso no consume enfriamiento; después lo conserva. Definitivo, fuego y vuelo permanecen pendientes.</p></article>
       <article><h3>🪵 Recolección</h3><p>Acercate a árboles con marcador, rocas y cristales, y presioná <strong>E</strong>. Los recursos reaparecen después de unos segundos.</p></article>
       <article><h3>⚒️ Fabricación</h3><p>Presioná <strong>C</strong>, elegí una receta y usá los materiales que reuniste. Fabricá primero el martillo.</p></article>
       <article><h3>🏡 Construcción</h3><p>Presioná <strong>B</strong>, elegí una pieza y caminá al Claro del Hogar. Click para colocar; R para girar y Esc para cancelar.</p></article>

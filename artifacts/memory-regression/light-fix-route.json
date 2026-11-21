@@ -1,0 +1,98 @@
+{
+  "cycle": 1,
+  "samples": [
+    {
+      "label": "village-day",
+      "heapUsedMiB": 570,
+      "meshes": 1577,
+      "geometries": 1411,
+      "textures": 240,
+      "effects": 110,
+      "terrain": {
+        "near": {
+          "resident": 72,
+          "enabled": 72,
+          "vertices": 45000,
+          "triangles": 82944
+        },
+        "mid": {
+          "resident": 120,
+          "enabled": 102,
+          "vertices": 108591,
+          "triangles": 193902
+        },
+        "far": {
+          "resident": 131,
+          "enabled": 101,
+          "vertices": 225745,
+          "triangles": 400924
+        }
+      },
+      "materials": 609,
+      "maxMaterialLights": 6
+    },
+    {
+      "label": "outside",
+      "heapUsedMiB": 558,
+      "meshes": 1464,
+      "geometries": 1243,
+      "textures": 240,
+      "effects": 110,
+      "terrain": {
+        "near": {
+          "resident": 80,
+          "enabled": 80,
+          "vertices": 50000,
+          "triangles": 92160
+        },
+        "mid": {
+          "resident": 66,
+          "enabled": 36,
+          "vertices": 31870,
+          "triangles": 50936
+        },
+        "far": {
+          "resident": 91,
+          "enabled": 77,
+          "vertices": 150446,
+          "triangles": 265766
+        }
+      },
+      "materials": 610,
+      "maxMaterialLights": 6
+    },
+    {
+      "label": "village-night",
+      "heapUsedMiB": 526,
+      "meshes": 1469,
+      "geometries": 1290,
+      "textures": 240,
+      "effects": 113,
+      "terrain": {
+        "near": {
+          "resident": 47,
+          "enabled": 40,
+          "vertices": 29375,
+          "triangles": 54144
+        },
+        "mid": {
+          "resident": 67,
+          "enabled": 50,
+          "vertices": 67567,
+          "triangles": 122136
+        },
+        "far": {
+          "resident": 88,
+          "enabled": 73,
+          "vertices": 148619,
+          "triangles": 263270
+        }
+      },
+      "materials": 610,
+      "maxMaterialLights": 6
+    }
+  ],
+  "buildings": 28,
+  "lanterns": 27,
+  "lampsActive": 0
+}

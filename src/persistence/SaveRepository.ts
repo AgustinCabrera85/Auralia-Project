@@ -1,6 +1,7 @@
 import { newGame, type SaveGameV1 } from '../domain/types';
 import { EQUIPMENT_IDS, type ItemId, emptyInventory } from '../domain/types';
 import { START_HOUR } from '../world/climate/ClimateModel';
+import { normalizeAbilityProgress } from '../domain/abilities/progress';
 
 /** Se puede reemplazar por IndexedDB o una API remota sin cambiar la lógica del juego. */
 export interface SaveRepository {
@@ -25,6 +26,9 @@ export class LocalStorageSaveRepository implements SaveRepository {
       return {
         ...parsed,
         inventory,equippedItem,
+        abilities:normalizeAbilityProgress(parsed.abilities,{inventory,discoveredPlaces:
+          Array.isArray(parsed.discoveredPlaces)?parsed.discoveredPlaces:[]}),
+        igneousCheckpoint:typeof parsed.igneousCheckpoint==='string'&&/^[a-zA-Z0-9_]{1,40}$/.test(parsed.igneousCheckpoint)?parsed.igneousCheckpoint:undefined,
         environment: parsed.environment && Number.isFinite(parsed.environment.elapsedHours) &&
           parsed.environment.elapsedHours>=0 && parsed.environment.elapsedHours<=24*365*100
           ?{elapsedHours:parsed.environment.elapsedHours}:{elapsedHours:START_HOUR},

@@ -1,0 +1,33 @@
+{
+  "jump": {
+    "height": 2.2966666666665105,
+    "landed": true
+  },
+  "lava": {
+    "recovered": true,
+    "frames": 57,
+    "lowestAuthoredY": -35.92316340360418,
+    "returned": [
+      -13.500000411406461,
+      10.044102068187556,
+      34.2000010422297
+    ],
+    "checkpoint": "mirador"
+  },
+  "abyss": {
+    "recovered": true,
+    "frames": 32,
+    "lowestAuthoredY": -59.9933391642748,
+    "returned": [
+      -13.500000411406461,
+      10.044102068187556,
+      34.2000010422297
+    ],
+    "checkpoint": "mirador"
+  },
+  "cameraClose": {
+    "hidden": true,
+    "restored": true
+  },
+  "errors": []
+}

@@ -1,4 +1,5 @@
-import { AssetContainer, Color3, DynamicTexture, Light, LoadAssetContainerAsync, Material, Mesh,
+import { loadGpuAssetContainerAsync as LoadAssetContainerAsync } from './GpuAssets';
+import { AssetContainer, Color3, DynamicTexture, Light, Material, Mesh,
   MeshBuilder, MultiMaterial, PBRMaterial, PointLight, Scene, StandardMaterial,
   Texture, TransformNode, Vector3, type AbstractMesh } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
@@ -6,6 +7,8 @@ import { WAYFINDING_ASSETS, type WayfindingAsset } from './wayfindingAssets';
 import type { GuideRoute, WayfindingSite } from './wayfindingData';
 import { WayfindingSway } from './WayfindingSway';
 import { addWayfindingEndGrain } from './wayfindingGeometry';
+import { setMaterialLightBudget } from './SceneLightBudget';
+import { gpuAssetUrl } from './GpuAssets';
 
 /** Region-independent road furniture, with inscriptions painted on both faces.
  * New road layouts supply sites/routes; meshes, textures and lamps are reused. */
@@ -24,8 +27,13 @@ export class WayfindingSystem {
   private woodTextures:Texture[]=[];
   private endGrain:PBRMaterial|null=null;
   private disposed=false;
+  private readonly siteHeights=new Map<string,number>();
   constructor(private scene:Scene,private parent:TransformNode,readonly sites:readonly WayfindingSite[],
-    private heightAt:(x:number,z:number)=>number){this.ready=this.load();}
+    private heightAt:(x:number,z:number)=>number){
+    // Capture elevations before travel can evict the site's terrain tiles.
+    for(const site of sites)this.siteHeights.set(site.id,heightAt(...site.at));
+    this.ready=this.load();
+  }
 
   private async load():Promise<void>{
     await Promise.all([...new Set(this.sites.map(s=>s.asset))].map(async id=>{
@@ -44,9 +52,9 @@ export class WayfindingSystem {
 
   private improveWood(asset:AssetContainer):void{
     if(!this.woodTextures.length){
-      const color=new Texture('/assets/wayfinding/wood-v2-color.png',this.scene,false,false);
-      const normal=new Texture('/assets/wayfinding/wood-v2-normal.png',this.scene,false,false);
-      const end=new Texture('/assets/wayfinding/wood-v2-endgrain.png',this.scene,false,false);
+      const color=new Texture(gpuAssetUrl('/assets/wayfinding/wood-v2-color.png',this.scene),this.scene,false,false);
+      const normal=new Texture(gpuAssetUrl('/assets/wayfinding/wood-v2-normal.png',this.scene),this.scene,false,false);
+      const end=new Texture(gpuAssetUrl('/assets/wayfinding/wood-v2-endgrain.png',this.scene),this.scene,false,false);
       normal.gammaSpace=false;normal.level=.28;
       for(const texture of [color,normal,end]){texture.wrapU=Texture.WRAP_ADDRESSMODE;texture.wrapV=Texture.WRAP_ADDRESSMODE;texture.anisotropicFilteringLevel=8;}
       this.woodTextures=[color,normal,end];
@@ -61,11 +69,18 @@ export class WayfindingSystem {
       // finish with the matching new normal map instead of mismatched grooves.
       material.metallicTexture=null;material.ambientTexture=null;material.metallic=0;material.roughness=.88;
     }
+    // Replaced wood maps used to stay alive in the container for the whole
+    // session. Keep maps referenced by any material (including shared iron).
+    const used=new Set(asset.materials.flatMap(m=>m.getActiveTextures()));
+    for(let i=asset.textures.length-1;i>=0;i--){
+      const texture=asset.textures[i];
+      if(!used.has(texture)){asset.textures.splice(i,1);texture.dispose();}
+    }
   }
 
   private place(site:WayfindingSite,asset:AssetContainer):void{
     const root=new TransformNode(`wayfinding:${site.id}`,this.scene);root.parent=this.parent;
-    root.position.set(site.at[0],this.heightAt(...site.at),site.at[1]);root.rotation.y=site.yaw;
+    root.position.set(site.at[0],this.siteHeights.get(site.id)??this.heightAt(...site.at),site.at[1]);root.rotation.y=site.yaw;
     root.metadata={wayfinding:true,location:site.location,region:site.region,routes:site.routes};
     const axes=new TransformNode(`${root.name}:axes`,this.scene);axes.parent=root;axes.rotation.y=Math.PI;
     const pointer=site.asset.includes('Pointer');axes.position.y=pointer?-.2287568:-.45505095;
@@ -163,7 +178,7 @@ export class WayfindingSystem {
       if(material instanceof MultiMaterial){for(const sub of material.subMaterials)prepare(sub);}
       else if((material instanceof StandardMaterial||material instanceof PBRMaterial)&&material.maxSimultaneousLights<5)
         // Sun, sky and moon plus at most two nearby lamps per character.
-        material.maxSimultaneousLights=5;
+        setMaterialLightBudget(material,5);
     };
     for(const root of this.characters){
       if(root.isDisposed()){this.characters.delete(root);continue;}

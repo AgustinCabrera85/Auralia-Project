@@ -1,0 +1,27 @@
+{
+  "label": "palacio-1080p",
+  "mode": "engine.runRenderLoop with real delta time",
+  "fps": 59.8443447593916,
+  "seconds": 10.009299999997019,
+  "frames": 600,
+  "medianMs": 8.600000001490116,
+  "p95Ms": 15.700000002980232,
+  "ms": 13.799999997019768,
+  "draws": 69,
+  "triangles": 56283,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "avatar": true,
+  "companion": {
+    "visible": true,
+    "distance": 3.0387731998772276
+  },
+  "loadMs": 18993,
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  }
+}

@@ -89,7 +89,7 @@ export class EnvironmentSystem {
       this.nextLightning=this.animationSeconds+8;
 
     this.sky.update(frame,this.flash,this.animationSeconds);
-    this.precipitation.update(frame,this.sheltered);
+    this.precipitation.update(frame,this.sheltered,step);
 
     // Existing sun and hemispheric lights are modified; no duplicate light sources.
     this.sun.direction.set(-frame.sunDirection[0],-frame.sunDirection[1],-frame.sunDirection[2]);

@@ -1,6 +1,7 @@
+import { importGpuMeshAsync as ImportMeshAsync } from '../world/GpuAssets';
 import {
-  AnimationGroup, ImportMeshAsync, Mesh, MorphTarget, Quaternion, Scene, TransformNode, Vector3,
-  type MorphTargetManager, type Observer
+  AnimationGroup, Mesh, MorphTarget, Quaternion, Scene, TransformNode, Vector3,
+  type MorphTargetManager, type Observer, type AssetContainer
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
@@ -12,6 +13,7 @@ import type { SwordLevel } from '../domain/brisaliaSword';
 import { BrisaliaSwordVisual, BRISALIA_SWORD_DEFAULT_POSITION_CM,
   BRISALIA_SWORD_DEFAULT_ROTATION_DEG } from './BrisaliaSwordVisual';
 import type { AssetPlacementDebug } from './AssetPlacementDebug';
+import type { AbilityAnimation } from '../domain/abilities/types';
 import {
   SANTI_COMBAT, SANTI_EXPRESSIONS, SANTI_LOCOMOTION, SANTI_NLA_ACTIONS,
   combatCombo, type SantiActionName, type SantiExpressionName
@@ -54,7 +56,8 @@ const FALL_ROLL_CONTACT=9/55;
 const IN_PLACE_ACTIONS=new Set<SantiActionName>([
   SANTI_LOCOMOTION.jump,SANTI_LOCOMOTION.runningJump,SANTI_LOCOMOTION.landing,
   ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,
-  SANTI_COMBAT.highFallRoll
+  SANTI_COMBAT.highFallRoll,
+  'Sword And Shield Casting','Sword And Shield Power Up'
 ]);
 const LOCKED_ACTIONS=new Set<SantiActionName>([
   ...SANTI_COMBAT.attacks,SANTI_COMBAT.sweep,SANTI_COMBAT.roll,SANTI_COMBAT.highFallRoll
@@ -99,6 +102,8 @@ export type SantiLanding={kind:'standing'|'highFallRoll';duration:number};
 
 /** Visual character only. WorldView keeps ownership of movement and collisions. */
 export class SantiCharacter {
+  private special:AnimationGroup|null=null;
+  private readonly abilityClips=new Map<string,AnimationGroup>();
   readonly actions=new Map<SantiActionName,AnimationGroup>();
   readonly shapeKeys=new Map<string,MorphTarget[]>();
   private readonly morphBudgets=new Map<MorphTargetManager,number>();
@@ -332,7 +337,7 @@ export class SantiCharacter {
   }
 
   updateGroundContact(dt:number,grounded:boolean,world:TraversalWorld,offset:{x:number;z:number}):void{
-    this.feet?.update(dt,grounded&&!this.combat&&this.overrideSeconds<=0&&
+    this.feet?.update(dt,grounded&&!this.special&&!this.combat&&this.overrideSeconds<=0&&
       (this.actionLockSeconds<=0||this.landingRecoverySeconds>0),world,offset);
     this.slideWorld=this.slidingVisual?world:null;
     this.slideOffset=offset;
@@ -466,6 +471,7 @@ export class SantiCharacter {
 
   /** Play any registered NLA action once; locomotion resumes when it ends. */
   playAction(name:SantiActionName,startFraction=0,force=false):boolean{
+    if(this.special)return false;
     if(this.actionLockSeconds>0&&!force)return false;
     if(!this.actions.has(name))return false;
     this.combat=null;
@@ -488,6 +494,7 @@ export class SantiCharacter {
 
   /** One deliberate press queues at most one following strike, never a whole chain. */
   requestAttack(equipment:EquipmentId):boolean{
+    if(this.special)return false;
     this.prepareCombat(equipment,true);
     if(this.combat){
       if(this.combat.queued)return false;
@@ -544,9 +551,73 @@ export class SantiCharacter {
     return group.getLength(from,group.to);
   }
 
+  get actionBusy():boolean{return !!this.special||!!this.combat||this.overrideSeconds>0||this.actionLockSeconds>0;}
+  private abilityClip(binding:AbilityAnimation):AnimationGroup|undefined{
+    return binding.file==='santi'?this.actions.get(binding.clip as SantiActionName):
+      this.abilityClips.get(`${binding.file}#${binding.clip}`);
+  }
+  hasAbilityAnimation(binding:AbilityAnimation):boolean{return this.isReady&&!!this.abilityClip(binding);}
+  /** Strict matching-rig import. Incompatible clips fail closed; no arbitrary substitution. */
+  installAbilityAnimation(container:AssetContainer,binding:AbilityAnimation):boolean{
+    const source=container.animationGroups.find(g=>g.name===binding.clip);
+    if(!this.loaded||!source||this.abilityClips.size>=8)return false;
+    const sourceRig=container.skeletons[0],targetRig=this.loaded.skeletons[0];
+    if(!sourceRig||!targetRig||sourceRig.bones.length!==targetRig.bones.length)return false;
+    const bones=new Map(targetRig.bones.map(b=>[b.name,b]));
+    for(const bone of sourceRig.bones){
+      const target=bones.get(bone.name);
+      if(!target||bone.getParent()?.name!==target.getParent()?.name||
+        !bone.getRestMatrix().equalsWithEpsilon(target.getRestMatrix(),.001))return false;
+    }
+    const nodes=new Map(this.loaded.transformNodes.map(n=>[n.name,n]));
+    const tracks=source.targetedAnimations.filter(t=>t.target instanceof TransformNode);
+    if(tracks.length!==source.targetedAnimations.length||!tracks.length)return false;
+    for(const track of tracks){
+      const old=track.target as TransformNode,next=nodes.get(old.name);
+      if(!next||old.parent?.name!==next.parent?.name||
+        Vector3.Distance(old.scaling,next.scaling)>.01)return false;
+    }
+    const key=`${binding.file}#${binding.clip}`;
+    const clone=source.clone(key,target=>nodes.get(target.name)!,true,true);
+    if(!clone)return false;
+    // Source is Z-up inside Santi's conversion root. Strip planar root travel.
+    for(const track of clone.targetedAnimations){
+      if(track.target.name!=='mixamorig:Hips'||track.animation.targetProperty!=='position')continue;
+      const keys=track.animation.getKeys(),anchor=keys[0]?.value as Vector3|undefined;
+      if(anchor)track.animation.setKeys(keys.map(k=>({...k,value:new Vector3(anchor.x,anchor.y,(k.value as Vector3).z)})));
+    }
+    this.abilityClips.get(key)?.dispose();this.abilityClips.set(key,clone);return true;
+  }
+  startAbilityAnimation(binding:AbilityAnimation):boolean{
+    const group=this.abilityClip(binding);
+    if(!group||this.actionBusy||!this.isReady)return false;
+    this.special=group;this.swordRunWristWeight=0;
+    this.transitionGroup(group,false,binding.speed,group.from,group.to,binding.blendSeconds);
+    group.pause();return true;
+  }
+  sampleAbilityAnimation(binding:AbilityAnimation,elapsed:number):void{
+    const group=this.special;if(!group)return;
+    const progress=elapsed*binding.speed/group.getLength();
+    const t=binding.loop?progress%1:Math.min(1,progress);
+    group.goToFrame(group.from+(group.to-group.from)*t,true);group.pause();
+  }
+  endAbilityAnimation():void{
+    if(!this.special)return;this.special=null;
+    this.overrideSeconds=0;this.actionLockSeconds=0;
+    this.transition(SANTI_LOCOMOTION.idle,true,1);
+  }
+
   update(dt:number,motion:SantiMotion):SantiLanding|null{
     if(!this.isReady)return null;
     this.updateBlink(dt);
+    if(this.special){
+      if(this.fading){
+        this.blend=Math.min(1,this.blend+dt/Math.max(.001,this.blendSeconds));
+        this.special.setWeightForAllAnimatables(this.blend);this.fading.setWeightForAllAnimatables(1-this.blend);
+        if(this.blend===1){this.fading.stop();this.fading=null;}
+      }
+      return null;
+    }
     this.slideGrace=motion.sliding?SLOPE_SLIDE_GRACE:
       Math.max(0,this.slideGrace-dt);
     if(motion.mode!=='airborne')this.slideGrace=0;
@@ -858,6 +929,7 @@ export class SantiCharacter {
 
   dispose():void{
     this.disposed=true;
+    this.special=null;this.abilityClips.forEach(g=>g.dispose());this.abilityClips.clear();
     this.combat=null;
     this.debugPanel?.remove();
     this.unregisterSwordPlacement?.();this.unregisterSwordPlacement=null;

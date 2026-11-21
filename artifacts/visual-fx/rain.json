@@ -1,0 +1,22 @@
+{
+  "stats": {
+    "active": true,
+    "streaks": 1024,
+    "drawCalls": 1,
+    "particles": 0,
+    "textures": 0
+  },
+  "vertices": 4096,
+  "triangles": 2048,
+  "cpuUpdateMicroseconds": 0.44000000357627866,
+  "gpuDrawMilliseconds": 0.001024,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "depthTest": true,
+  "oldRainRemoved": true,
+  "weatherTransitions": true,
+  "shelter": true,
+  "resourceReuse": true
+}

@@ -56,6 +56,7 @@ try {
     },
     onStructureSelected:structure=>hud.setSelectedStructure(structure)
   }, () => hud.isModalOpen,geographicWorld);
+  hud.attachAbilities(world.abilities);
   const navigation=document.createElement('div');navigation.className='world-travel';
   navigation.style.cssText='position:fixed;left:12px;bottom:72px;z-index:25;display:flex;gap:6px;padding:8px;background:#142333e8;border-radius:8px;color:white;font:13px sans-serif;max-width:90vw;flex-wrap:wrap';
     const destinations=geographicWorld.destinations;
@@ -63,7 +64,11 @@ try {
     for(const p of destinations){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;places.append(o);}
     const visit=document.createElement('button');visit.textContent='Viajar';visit.onclick=()=>{const p=destinations.find(p=>p.id===places.value)!;world.teleportToLandmark(p.id);};
     const slot=document.createElement('span');slot.textContent='Auralia · Continente';navigation.append(places,visit,slot);
+  const igneous=document.createElement('button');igneous.textContent='Reino Ígneo · probar';
+  igneous.onclick=()=>{void world.enterIgneousRealm('A0',true).catch(()=>{});};navigation.append(igneous);
   document.body.append(navigation);
+  if(new URLSearchParams(location.search).has('reinoIgneo'))
+    void world.enterIgneousRealm(new URLSearchParams(location.search).get('checkpoint')??'A0',true).catch(()=>{});
   if(new URLSearchParams(location.search).has('qa'))Object.assign(window,{__auraliaGame:{world,store,repository,hud}});
   window.setTimeout(() => hud.notify('¡Bienvenido a Auralia! Buscá materiales, conocé Brisalia y construí tu hogar.'), 800);
 } catch (error) {

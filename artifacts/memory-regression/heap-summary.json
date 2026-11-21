@@ -1,0 +1,180 @@
+{
+  "totalMiB": 775.401743888855,
+  "groups": [
+    {
+      "name": "#define PBR_FRAGMENT_SHADER",
+      "bytes": 271611564,
+      "count": 347
+    },
+    {
+      "name": "system / JSArrayBufferData",
+      "bytes": 264042574,
+      "count": 3454
+    },
+    {
+      "name": "(object elements)",
+      "bytes": 41393468,
+      "count": 148464
+    },
+    {
+      "name": "#define PBR_VERTEX_SHADER",
+      "bytes": 39670312,
+      "count": 347
+    },
+    {
+      "name": "system / ExternalStringData",
+      "bytes": 34961365,
+      "count": 4246
+    },
+    {
+      "name": "heap number",
+      "bytes": 27984732,
+      "count": 2332071
+    },
+    {
+      "name": "#define CUSTOM_FRAGMENT_EXTENSION",
+      "bytes": 19973984,
+      "count": 39
+    },
+    {
+      "name": "#define PBR_FRAGMENT_SHADER",
+      "bytes": 15483244,
+      "count": 319
+    },
+    {
+      "name": "_Vector3",
+      "bytes": 14183340,
+      "count": 506548
+    },
+    {
+      "name": "system / InstructionStream",
+      "bytes": 7493952,
+      "count": 4817
+    },
+    {
+      "name": "Object",
+      "bytes": 6842804,
+      "count": 275179
+    },
+    {
+      "name": "(object properties)",
+      "bytes": 4041336,
+      "count": 2327
+    },
+    {
+      "name": "#define PBR_VERTEX_SHADER",
+      "bytes": 3821932,
+      "count": 347
+    },
+    {
+      "name": "_Quaternion",
+      "bytes": 3494104,
+      "count": 109191
+    },
+    {
+      "name": "",
+      "bytes": 2518796,
+      "count": 35392
+    },
+    {
+      "name": "#define CUSTOM_VERTEX_EXTENSION",
+      "bytes": 2457540,
+      "count": 39
+    },
+    {
+      "name": "Array",
+      "bytes": 2297596,
+      "count": 143599
+    },
+    {
+      "name": "Float32Array",
+      "bytes": 2093464,
+      "count": 32709
+    },
+    {
+      "name": "blink::ScriptResource",
+      "bytes": 2057032,
+      "count": 661
+    },
+    {
+      "name": "ArrayBuffer",
+      "bytes": 1894364,
+      "count": 33328
+    },
+    {
+      "name": "system / BytecodeArray",
+      "bytes": 1877280,
+      "count": 6494
+    },
+    {
+      "name": "system / TrustedByteArray",
+      "bytes": 1752860,
+      "count": 10853
+    },
+    {
+      "name": "(concatenated string)",
+      "bytes": 1558920,
+      "count": 77946
+    },
+    {
+      "name": "system / DescriptorArray",
+      "bytes": 1193368,
+      "count": 9393
+    },
+    {
+      "name": "#define PBR_FRAGMENT_SHADER",
+      "bytes": 885956,
+      "count": 28
+    },
+    {
+      "name": "system / Map",
+      "bytes": 884896,
+      "count": 22246
+    },
+    {
+      "name": "_Animation",
+      "bytes": 714584,
+      "count": 9926
+    },
+    {
+      "name": "_Observable",
+      "bytes": 692088,
+      "count": 21628
+    },
+    {
+      "name": "_Mesh",
+      "bytes": 613552,
+      "count": 1266
+    },
+    {
+      "name": "EventState",
+      "bytes": 605584,
+      "count": 21628
+    },
+    {
+      "name": "system / FeedbackVector",
+      "bytes": 585892,
+      "count": 3325
+    },
+    {
+      "name": "system / PropertyArray",
+      "bytes": 560096,
+      "count": 18317
+    },
+    {
+      "name": "precision highp float;",
+      "bytes": 542160,
+      "count": 39
+    },
+    {
+      "name": "system / UncompiledDataWithoutPreparseData",
+      "bytes": 529580,
+      "count": 26479
+    },
+    {
+      "name": "system / FeedbackCell",
+      "bytes": 528128,
+      "count": 33009
+    }
+  ]
+}

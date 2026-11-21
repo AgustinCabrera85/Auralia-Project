@@ -1,0 +1,1682 @@
+[
+  {
+    "url": "",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 1024,
+    "format": 14,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 1,
+    "height": 1,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 32,
+    "height": 64,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 32,
+    "height": 64,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/water/caustics-refractive-1k.png",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/water/waterfall-foam-plates-1k.png",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 2048,
+    "height": 2048,
+    "format": 6,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 512,
+    "height": 256,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "/assets/terrain/biomes/textures/normal/biome_volcanico_basalto_normal_gl_1k.png",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 64,
+    "height": 64,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "/assets/terrain/biomes/textures/albedo/biome_valle_cultivo_tierra_fertil_albedo_1k.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/terrain/biomes/textures/albedo/biome_sierra_grava_pasto_albedo_1k.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/terrain/biomes/textures/normal/biome_valle_cultivo_tierra_fertil_normal_gl_1k.png",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/vegetation/Tronco_1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/grass/grass-sprites.png",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/plantitas_1.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/crystals/Cristal_azul_flotante.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Pack_rocas_1_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/structures/Crisol_Herrero.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Lamp.glb#image4",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Lamp.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Lamp.glb#image5",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Lamp.glb#image6",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer1.glb#image4",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer1.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer1.glb#image5",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer2.glb#image4",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer2.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Pointer2.glb#image5",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Board.glb#image4",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Board.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/wayfinding/Board.glb#image5",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Escalon_rocoso_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Meseta_rocosa_pasto_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/margaritas_1_LOD0.glb#image0",
+    "width": 2048,
+    "height": 2048,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Matorral_1_LOD0.glb#image0",
+    "width": 2048,
+    "height": 2048,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Yuyos_1_LOD0.glb#image0",
+    "width": 2048,
+    "height": 2048,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image1",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image2",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/landmarks/Isla_flotante_2.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/wayfinding/wood-v2-color.png",
+    "width": 1254,
+    "height": 1254,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/wayfinding/wood-v2-normal.png",
+    "width": 1254,
+    "height": 1254,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/wayfinding/wood-v2-endgrain.png",
+    "width": 1254,
+    "height": 1254,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/a9220690d19deace.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/3e57033da8fca235.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/68e0e7a03065f249.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/18c7fb962f5ea055.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/4e9c74727bd9ba81.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/b783872ed6817d52.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/27f84daddef3a566.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/d2df8faea144fb55.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/240ccf7f2bc642e2.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/b439b1b7ace29354.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/2ad8ef00accdb36d.webp",
+    "width": 1536,
+    "height": 1536,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/440d2e7311ad13b6.webp",
+    "width": 1536,
+    "height": 1536,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/f096e0d85b98a4dd.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/4446c53e1b5ef3c6.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/044bebaec6d75ff6.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/eb32264c64539bb8.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/c44384a0e81452d6.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/1bbe0f45c058afe1.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/ec83f168f4091b9d.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/6286df5970dd631c.webp",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/b82df8c47e1d84a3.webp",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/457ce681e83b914f.webp",
+    "width": 1024,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/576058980c128354.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/0040a7db35e55792.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/44d7baada284ffdf.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/3fdcc46e155a956a.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/e4f7f05bbf75b71d.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/6cebfe4fa75e567b.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/9cf9a770efe9316e.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/144ffee5f2a05f0b.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/ddce52e68cca1c2a.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/be7d439ae6ec62e9.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/ed0cc38de835d27c.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/d69d2ed63b300af2.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/ff995843704795e7.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/6195b57b53f7f751.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/e87c7975263a8df1.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/fcae4a791b4f50ac.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 4,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/b0d9f405cf885153.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/cd62b9336d43b593.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 4,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/72e37eb2173329bd.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/71bc0f9276771b78.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/9710292703dd6e82.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/329ef075e262ecf9.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/de72640d4d2647a1.jpg",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/3411d4eb0955d03f.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/1cf6eaa7d52b2b81.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/8806654a6afc1d2d.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/69b2c30ee5f74524.webp",
+    "width": 2048,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/675ce3b9ab1e1961.webp",
+    "width": 341,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/3f8fa1aef434710c.webp",
+    "width": 2048,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/c2fb91897cf2a00f.webp",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/2eb2a64638c8a7f0.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/0e69d8dca0840a04.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/eb406379455a1dc6.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1536,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 381,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1536,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 381,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1056,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 672,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1044,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 741,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 911,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 911,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1536,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 381,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 1536,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 381,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 603,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 911,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 911,
+    "height": 256,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/crystals/Cristal_celeste_1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/crystals/Cristal_celeste_1.glb#image1",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/crystals/Cristal_celeste_1.glb#image2",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/547d2fce0d6ac5b7.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/7e0854d8c24c6949.webp",
+    "width": 1536,
+    "height": 1536,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/e4d8d070cb4d4476.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/characters/dogo/Dogo_Auralia.glb#image0",
+    "width": 4096,
+    "height": 4096,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 7924,
+    "height": 1,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "",
+    "width": 104,
+    "height": 1,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "data:/assets/world/cliffs/Acantilado_2_closed.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/cliffs/Acantilado_2_closed.glb#image1",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/world/cliffs/Acantilado_2_closed.glb#image2",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:EnvironmentBRDFTexture0",
+    "width": 256,
+    "height": 256,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/e91ab1e504b229b7.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 124,
+    "height": 1,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "data:/assets/vegetation/Arbolito_1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/Arbolito_2.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/Arbolito_3.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/13a5fc6cdc546a78.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/d77d53f336cdb5e0.webp",
+    "width": 341,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image1",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image2",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image3",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image4",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image5",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/characters/santi/Santi_NLA_SK_Opt.glb#image1",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/characters/santi/Santi_NLA_SK_Opt.glb#image2",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/characters/santi/Santi_NLA_SK_Opt.glb#image0",
+    "width": 1024,
+    "height": 768,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "",
+    "width": 264,
+    "height": 1,
+    "format": 5,
+    "mips": false
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/margaritas_1_LOD1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/margaritas_1_LOD2.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Matorral_1_LOD1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Matorral_1_LOD2.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Yuyos_1_LOD1.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/vegetation/brisalia-lods/Yuyos_1_LOD2.glb#image0",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/world/vegetation/impostors/v4-trees.png",
+    "width": 2048,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/bdb47f1143eb59d2.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image0",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image1",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image2",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image3",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image4",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image5",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image6",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image7",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image8",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image9",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image10",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image11",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image12",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image13",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image14",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image15",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image16",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image17",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image18",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image19",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image20",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image21",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "data:/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb#image22",
+    "width": 1024,
+    "height": 1024,
+    "format": 5,
+    "mips": true
+  },
+  {
+    "url": "/assets/ivy/Auralia_Leaf_green_mid_512.png",
+    "width": 512,
+    "height": 512,
+    "format": 5,
+    "mips": true
+  }
+]

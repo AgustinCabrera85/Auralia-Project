@@ -1,11 +1,14 @@
 import { BrisaliaVillage } from '../world/BrisaliaVillage';
+import { installSceneLightBudget } from '../world/SceneLightBudget';
+import { installGpuAssets } from '../world/GpuAssets';
+import { SantiDoubleJumpFX } from './SantiDoubleJumpFX.js';
 import { WayfindingSystem } from '../world/WayfindingSystem';
 import { brisaliaWayfinding } from '../world/wayfindingData';
-import { BRISALIA_BUILDINGS, BRISALIA_ROADS, BRISALIA_SCALE, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
+import { BRISALIA_BUILDINGS, BRISALIA_ROADS, BRISALIA_SCALE, brisaliaRoadEdge, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
 import {
   ArcRotateCamera, ArcRotateCameraPointersInput, Color3, DirectionalLight, Engine, HemisphericLight,
   Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
-  VertexBuffer, VertexData, PointLight
+  VertexBuffer, VertexData, PointLight, type AbstractMesh
 } from '@babylonjs/core';
 import type { ZoneId } from '../data/world';
 import type { BuildType, MaterialId, Structure } from '../domain/types';
@@ -16,7 +19,8 @@ import { BUILD_CATALOG, costAsText } from '../domain/recipes';
 import { BuildVisuals } from '../world/building/BuildVisuals';
 import { AuthoredWater } from '../world/editor/AuthoredWater';
 import { AuthoredAssets } from '../world/editor/AuthoredAssets';
-import { authoredAssetExclusions, blocksAuthoredMovement } from '../world/editor/WorldEditState';
+import { authoredAssetExclusions, blocksAuthoredMovement, surfaceWeightsAt } from '../world/editor/WorldEditState';
+import { terrainMaterialWeightsAt } from '../world/materials/TerrainMaterial';
 import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
 import { landscapeNameAt } from '../world/landscapeRegions';
@@ -48,7 +52,7 @@ import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, isLand, sampleMainl
 import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type ActionMotionKind,
   type TraversalWorld } from './CharacterTraversalController';
-import { TRAVERSAL } from './traversalRules';
+import { TRAVERSAL, type GroundHit } from './traversalRules';
 import { terrainWallAt } from './TerrainTraversal';
 import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, cameraTerrainView, swimmingCameraOrbit } from './cameraTerrain';
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
@@ -60,12 +64,17 @@ import { CharacterShadows } from './CharacterShadows';
 import { SANTI_COMBAT, combatInputForKey, type SantiActionName } from './SantiCatalog';
 import { DoubleTapSprint } from './DoubleTapSprint';
 import { SpeedMotionBlur } from './SpeedMotionBlur';
+import { SantiSprintDust, type DustGround, type DustSurface } from './SantiSprintDust.js';
 import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQuality } from './renderResolution';
 import { PlayableWorld, regionPoint } from '../world/geography/PlayableWorld';
 import { FloatingKingdoms } from '../world/geography/FloatingKingdoms';
 import { LagoonVegetation } from '../world/geography/LagoonVegetation';
 import { VolcanicCaveSystem } from '../world/VolcanicCaveSystem';
+import { igneousFlag } from '../world/IgneousRealm';
 import { VOLCANIC_CAVE } from '../world/volcanicCaveData';
+import { AbilitySystem } from './abilities/AbilitySystem';
+import { RootsSurfaceAdapter } from './abilities/RootsSurfaceAdapter';
+import { PROVISIONAL_SWORD_DAMAGE } from '../domain/abilities/forestRoots';
 
 export type Interactable = {
   id: string;
@@ -114,6 +123,8 @@ const ISLAND_OFFSET = { x: -210, z: 420 };
 
 /** Vista del mundo con terreno por chunks y vegetación GLB compartida. */
 export class WorldView {
+  readonly abilities:AbilitySystem;
+  private abilityFocus=true;
   private floating:FloatingKingdoms|null=null;
   private ocean: OceanWater | null = null;
   readonly engine: Engine;
@@ -131,6 +142,9 @@ export class WorldView {
   private readonly pressed = new Set<string>();
   private readonly sprintTap=new DoubleTapSprint();
   private readonly speedMotionBlur:SpeedMotionBlur;
+  private readonly sprintDust:SantiSprintDust;
+  private readonly doubleJumpFX:SantiDoubleJumpFX;
+  private sprintDustPaused=false;
   private player!: TransformNode;
   private playerBody!: TransformNode;
   private santi:SantiCharacter|null=null;
@@ -149,6 +163,7 @@ export class WorldView {
   private readonly mountainPasses:MountainPassSystem;
   private readonly lagoon:LagoonSystem;
   private readonly volcanicCave:VolcanicCaveSystem;
+  private igneousTransition=false;
   private waterContactTimer=0;
   private get insideUnderground(){return this.mountainPasses.inside||this.lagoon.inside||this.volcanicCave.inside;}
   private readonly vegetation: VegetationSystem;
@@ -179,6 +194,7 @@ export class WorldView {
   private cameraOcclusionTimer=0;
   private cameraOcclusionDistance=Infinity;
   private cameraFrameDt=0;
+  private readonly closeCameraMeshes=new Map<AbstractMesh,boolean>();
   private renderQuality=readRenderQuality();
   private placingMainland=false;
   readonly village:BrisaliaVillage;
@@ -201,6 +217,8 @@ export class WorldView {
     if(geographicWorld)this.engine.maxFPS=this.renderQuality==='performance'?30:60;
     this.resize();
     this.scene = new Scene(this.engine);
+    installSceneLightBudget(this.scene);
+    installGpuAssets(this.scene);
     applyLandscapeAtmosphere(this.scene);
 
     const hemi = new HemisphericLight('ambiente', new Vector3(0, 1, 0), this.scene);
@@ -232,6 +250,10 @@ export class WorldView {
     // Las flechas se reservan para el personaje, no para orbitar la cámara.
     this.camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
     this.speedMotionBlur=new SpeedMotionBlur(this.camera,this.engine);
+    this.sprintDust=new SantiSprintDust(this.scene,{intensity:2.8,scale:3.6,capacity:72,
+      sampleGround:(x,z,y)=>this.sampleSprintDustGround(x,z,y)});
+    this.doubleJumpFX=new SantiDoubleJumpFX(this.scene,{intensity:.9,scale:1});
+    void this.doubleJumpFX.prepare().catch(error=>console.error('[Double jump FX]',error));
 
     this.createSea();
     const continentRoot=new TransformNode('zona-brisalia',this.scene);
@@ -318,6 +340,22 @@ export class WorldView {
       }
       this.rockVisualRequests.length=0;
     });
+    this.abilities=new AbilitySystem(this.scene,store,()=>this.santi,()=>{
+      const zone=this.zones.get(store.state.zone)!,p=this.traversal.position;
+      return {position:{x:p.x+zone.offset.x,y:p.y+zone.offset.y,z:p.z+zone.offset.z},
+        scope:`${store.state.zone}:${this.floating?.id??''}:${this.volcanicCave.inside}:${this.lagoon.inside}:${this.mountainPasses.inside}`,
+        playerState:this.traversal.mode,
+        blocked:!this.abilityFocus||document.hidden?'Juego en pausa.':this.blocked()?'Cerrá el panel para activar.':
+          this.assetPlacement?.capturesControls?'Cerrá el editor de assets.':this.placement?'Salí del modo construcción.':
+          this.geographyLoading||this.geographyFailure||this.igneousTransition?'Esperá a que termine el viaje.':
+          this.traversal.slopeSlideDirection?'Buscá suelo firme.':null};
+    },new RootsSurfaceAdapter(()=>this.traversalWorld(this.zones.get(store.state.zone)!),
+      ()=>this.zones.get(store.state.zone)!.offset,(x,z,y)=>{
+        if(store.state.zone==='brisalia'&&!this.insideUnderground&&!this.floating?.id){
+          if(buildingFloorAt(x,z,y+.1,store.state.structures)!==null||this.village.ground(x,z,y+.1,.3))return false;
+        }
+        return this.insideUnderground||!!this.floating?.id||y>(this.geographicWorld?.seaLevel??MAINLAND.waterLevel)+.05;
+      },()=>PROVISIONAL_SWORD_DAMAGE),callbacks.notify);
     this.activateZone(store.state.zone);
     this.callbacks.onClimate(this.climate.frame);
     if(new URLSearchParams(window.location.search).has('grassStats')){
@@ -333,6 +371,8 @@ export class WorldView {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
+    window.addEventListener('focus',this.onFocus);
+    document.addEventListener('visibilitychange',this.onVisibility);
     window.addEventListener('resize', this.resize);
     canvas.addEventListener('pointerdown', this.onPointerDown);
     this.scene.onBeforeRenderObservable.add(()=>{
@@ -368,7 +408,9 @@ export class WorldView {
     },-1,true); // Other materials consume the resolved atmosphere this frame.
     this.engine.runRenderLoop(() => {
       this.telemetry?.beginFrame();
-      const dt = Math.min(this.engine.getDeltaTime() / 1000, 0.045);
+      const rawDt=this.engine.getDeltaTime()/1000;
+      if(rawDt>.25)this.resetMovementEffects();
+      const dt = Math.min(rawDt, 0.045);
       this.cameraFrameDt=dt;
       this.update(dt);
       this.telemetry?.endUpdate();
@@ -397,10 +439,14 @@ export class WorldView {
     else this.engine.resize();
   };
   private readonly onBlur = () => {
+    this.resetMovementEffects();
+    this.abilityFocus=false;this.abilities?.interrupt();this.traversal.setAttackHold(0);
     this.pressed.clear();this.sprintTap.reset();
     this.jumpRequested=false;this.airKickRequested=false;
     this.santi?.prepareCombat(this.store.state.equippedItem??'unarmed',false);
   };
+  private readonly onFocus=()=>{this.abilityFocus=true;};
+  private readonly onVisibility=()=>{if(document.hidden)this.onBlur();else this.onFocus();};
   private readonly onKeyDown = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     if(key==='f8'){e.preventDefault();if(!e.repeat)this.toggleTelemetry();return;}
@@ -408,11 +454,15 @@ export class WorldView {
       e.preventDefault();if(!e.repeat)this.assetPlacement.toggle();return;
     }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
-      e.target instanceof HTMLSelectElement) return;
+      e.target instanceof HTMLSelectElement || e.target instanceof HTMLElement&&e.target.isContentEditable) return;
+    if(['x','t'].includes(key)){
+      e.preventDefault();if(!e.repeat)this.abilities.request(key==='t');return;
+    }
+    if(key==='escape'){this.abilities.interrupt();this.traversal.setAttackHold(0);}
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright',
       'shift', 'e', 'r', 'q', 'f', ' '].includes(key)) e.preventDefault();
     this.pressed.add(key);
-    if (e.repeat || this.blocked()) return;
+    if (e.repeat || this.blocked() || this.assetPlacement?.capturesControls || this.abilities.manager.controlLocked) return;
     if(key==='shift')this.sprintTap.press(performance.now());
     if(this.landscapeDebug?.handleKey(key)){e.preventDefault();return;}
     if(key===' '&&!this.placement)this.jumpRequested=true;
@@ -914,6 +964,8 @@ export class WorldView {
   }
 
   activateZone(id: ZoneId): void {
+    this.resetMovementEffects();
+    this.abilities?.resetScene();
     if(this.volcanicCave.inside)this.leaveVolcanicCave();
     if(this.floating?.id&&(id!=='brisalia'||!this.store.state.playerPosition?.realm))this.floating.clear();
     if(this.geographicWorld&&id==='brisalia'){
@@ -941,7 +993,7 @@ export class WorldView {
       this.store.state.structures):null;
     this.player.position.set(zone.offset.x+start.x,Math.max(terrainY,floorY??terrainY),
       zone.offset.z+start.z);
-    this.traversal.teleport(start.x,this.player.position.y,start.z);
+    this.resetMovementEffects();this.traversal.teleport(start.x,this.player.position.y,start.z);
     this.lastSafePosition={x:start.x,z:start.z};
     this.jumpRequested=false;
     if(id==='brisalia')this.props.setColliderFocus(start.x,start.z,null);
@@ -1011,6 +1063,7 @@ export class WorldView {
   async travelGeographic(x:number,z:number,name='Nueva región'):Promise<void>{
     if(!this.geographicWorld)return;
     if(this.geographyLoading)return;
+    this.abilities.resetScene();
     if(this.volcanicCave.inside)this.leaveVolcanicCave();
     this.cancelPlacement();this.pressed.clear();this.floating?.clear();
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
@@ -1038,7 +1091,7 @@ export class WorldView {
       await this.geographicWorld.prepareAround(p.x,p.z);
       this.store.setPlayerPosition('brisalia',p.x,p.z,id);
       this.activateZone('brisalia');
-      this.traversal.teleport(p.x,p.y,p.z);this.player.position.set(p.x,p.y,p.z);
+      this.resetMovementEffects();this.traversal.teleport(p.x,p.y,p.z);this.player.position.set(p.x,p.y,p.z);
       this.camera.setTarget(this.player.position.add(new Vector3(0,2.05,0)),false,false,true);
       this.camera.alpha=-Math.PI/2;this.camera.beta=1.15;this.camera.radius=THIRD_PERSON_CAMERA.distance;
       this.cameraPreferredRadius=this.cameraAppliedRadius=THIRD_PERSON_CAMERA.distance;
@@ -1056,6 +1109,7 @@ export class WorldView {
 
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
   teleportToLandmark(id:string):void {
+    this.abilities.resetScene();
     if(this.volcanicCave.inside)this.leaveVolcanicCave();
     if(id===VOLCANIC_CAVE.id&&this.geographicWorld){
       void this.travelGeographic(this.volcanicCave.entrance.x,this.volcanicCave.entrance.z+5,VOLCANIC_CAVE.name).catch(()=>{});return;
@@ -1079,7 +1133,7 @@ export class WorldView {
     this.activateZone('brisalia');
     const y=this.walkHeightAt(point.x,point.z);
     this.player.position.set(point.x,y,point.z);
-    this.traversal.teleport(point.x,y,point.z);
+    this.resetMovementEffects();this.traversal.teleport(point.x,y,point.z);
     this.lastSafePosition={x:point.x,z:point.z};
     this.streamMainland(point.x,point.z);
     void this.authoredAssets.sync(point.x,point.z);
@@ -1096,7 +1150,7 @@ export class WorldView {
   private sendLocation():void {
     const zone=this.zones.get(this.store.state.zone)!;
     const x=this.player.position.x-zone.offset.x,z=this.player.position.z-zone.offset.z;
-    const name=this.volcanicCave.inside?VOLCANIC_CAVE.name:this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
+    const name=this.volcanicCave.inside?'Reino \u00cdgneo':this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
       zone.id==='brisalia'?(this.geographicWorld?
         this.geographicWorld.destinations.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b).name:
         landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)])):'Isla de las Luciérnagas';
@@ -1122,6 +1176,39 @@ export class WorldView {
     if(this.placingMainland){x+=this.geographicWorld!.town.x;z+=this.geographicWorld!.town.z;}
     return bridgeSurfaceAt(this.mountainPasses.bridges,x,z)?.height??
       (this.geographicWorld?null:bridgeDeckAt(x,z))??nearTerrainHeightAt(x,z,sampleMainlandHeight);
+  }
+
+  /** Runs only on a dust step (at most 9/s), using the controller's local support query. */
+  private sampleSprintDustGround(worldX:number,worldZ:number,feetY:number):DustGround|null{
+    const zone=this.zones.get(this.store.state.zone);
+    // These authored realms do not yet expose a reliable surface material.
+    if(!zone||this.volcanicCave.inside||this.floating?.id)return null;
+    const x=worldX-zone.offset.x,z=worldZ-zone.offset.z;
+    const world=this.traversalWorld(zone,feetY);
+    const hit=world.ground(x,z,feetY+.4,.8,0);
+    if(!hit)return null;
+    const water=world.waterLevel?.(x,z);
+    if(water!=null&&water>=hit.height-.02)return {...hit,surface:'water'};
+    const weather=this.climate.frame.weatherMix;
+    const wetness=this.insideUnderground?0:Math.min(1,weather.rain/.7);
+    let surface:DustSurface=hit.surface??'stone';
+    if(!hit.surface&&!this.insideUnderground){
+      if(zone.id==='brisalia'){
+        const town=this.geographicWorld?.town??TOWN_OFFSET;
+        if(brisaliaRoadEdge(x-town.x,z-town.z)<=0)surface='dirt';
+        else {
+          const slope=Math.sqrt(Math.max(0,1/(hit.normalY*hit.normalY)-1));
+          const weights=this.geographicWorld?.weightsAt(x,z,hit.height,slope)??
+            surfaceWeightsAt(x,z,terrainMaterialWeightsAt(x,z,hit.height,slope));
+          const materials:readonly DustSurface[]=['grass','dirt','stone','sand','snow','lava'];
+          let dominant=0;
+          for(let i=1;i<weights.length;i++)if(weights[i]>weights[dominant])dominant=i;
+          surface=materials[dominant];
+        }
+      }else surface=Math.hypot(x/zone.radiusX,z/zone.radiusZ)>.69?'sand':'grass';
+    }
+    if(!this.insideUnderground&&weather.snow>.05)surface='snow';
+    return {height:hit.height,normalY:hit.normalY,surface,wetness};
   }
 
   private traversalWorld(zone:IslandInfo,feetY=this.traversal.position.y):TraversalWorld{
@@ -1203,20 +1290,22 @@ export class WorldView {
         const slope=deck!==null?newDeck?.normalY??1:surface?1/Math.hypot(1,surface.slopeX,surface.slopeZ):
           1/Math.hypot(1,(height(x+d,z)-height(x-d,z))/(2*d),
             (height(x,z+d)-height(x,z-d))/(2*d));
-        const terrain=terrainY<=originY+.001&&terrainY>=originY-maxDistance-.001
-          ?{height:terrainY,normalY:slope}:null;
+        const terrain:GroundHit|null=terrainY<=originY+.001&&terrainY>=originY-maxDistance-.001
+          ?{height:terrainY,normalY:slope,surface:deck!==null?'wood':undefined}:null;
         const rock=isMainland?this.props.queryRockGround(x,z,originY,maxDistance,footRadius):null;
         const generatedRock=isMainland?generated.queryGround(x,z,originY,maxDistance,footRadius):null;
         const root=isMainland?this.vegetation.queryTreeGround(x,z,originY,maxDistance):null;
         const builtY=isMainland?buildingFloorAt(x,z,originY,this.store.state.structures):null;
         const built=builtY!==null&&builtY>=originY-maxDistance-.001?
-          {height:builtY,normalY:1}:null;
+          {height:builtY,normalY:1,surface:'paved' as const}:null;
         const village=isMainland?this.village.ground(x,z,originY,maxDistance):null;
-        const surfaces=[terrain,root,built,village,...[rock,generatedRock].map(hit=>hit?
-          {height:hit.height,normalY:hit.normal.y,rockId:hit.rockId}:null)]
+        const surfaces=[terrain,root?{...root,surface:'wood' as const}:null,built,
+          village?{...village,surface:'paved' as const}:null,...[rock,generatedRock].map(hit=>hit?
+          {height:hit.height,normalY:hit.normal.y,rockId:hit.rockId,surface:'stone' as const}:null)]
           .filter((hit):hit is NonNullable<typeof hit>=>hit!==null);
         return surfaces.reduce<typeof terrain>((highest,hit)=>
-          !highest||hit.height>highest.height?hit:highest,null);
+          !highest||hit.height>highest.height?hit:
+            hit.height===highest.height&&hit.surface?{...highest,surface:hit.surface}:highest,null);
       },
       solidTop:(x,z,originY,maxDistance,rockId)=>{
         if(!isMainland)return null;
@@ -1322,7 +1411,16 @@ export class WorldView {
     return null;
   }
 
+  private resetMovementEffects():void{
+    this.sprintDust.reset();this.doubleJumpFX.reset();
+  }
+
   private update(dt: number): void {
+    const dustPaused=!this.abilityFocus||document.hidden||this.blocked()||this.geographyLoading||
+      !!this.geographyFailure||this.igneousTransition;
+    if(dustPaused&&!this.sprintDustPaused)this.resetMovementEffects();
+    this.sprintDustPaused=dustPaused;
+    this.abilities.update(dt,!this.abilityFocus||document.hidden||this.blocked()||this.geographyLoading||this.igneousTransition);
     if(this.geographyLoading||this.geographyFailure)return;
     if(this.geographicWorld&&this.store.state.zone==='brisalia'&&!this.insideUnderground){
       const p=this.traversal.position;
@@ -1345,7 +1443,8 @@ export class WorldView {
     }
     this.telemetry?.mark('ui');
     const zone=this.zones.get(this.store.state.zone)!;
-    const controls=!this.blocked()&&!this.placement;
+    const controls=!this.blocked()&&!this.placement&&!this.igneousTransition&&this.abilityFocus&&
+      !this.assetPlacement?.capturesControls&&!this.abilities.manager.controlLocked;
     const horizontal=controls?Number(this.pressed.has('d')||this.pressed.has('arrowright'))-
       Number(this.pressed.has('a')||this.pressed.has('arrowleft')):0;
     const vertical=controls?Number(this.pressed.has('w')||this.pressed.has('arrowup'))-
@@ -1356,7 +1455,7 @@ export class WorldView {
     const sprinting=running&&this.sprintTap.active;
     this.santi?.prepareCombat(this.store.state.equippedItem??'unarmed',controls);
     const combat=this.santi?.combatState;
-    this.traversal.setAttackHold(combat?.remainingSeconds??0);
+    this.traversal.setAttackHold(Math.max(combat?.remainingSeconds??0,this.abilities.manager.holdSeconds));
     if(combat&&combat.serial!==this.attackSerial){
       this.attackSerial=combat.serial;
       // Aim each new strike with WASD, then keep its planted feet and heading.
@@ -1394,12 +1493,13 @@ export class WorldView {
     if(zone.id==='brisalia'&&!this.insideUnderground&&this.traversal.mode==='grounded'&&!this.traversal.supportRockId){
       const exit=this.exitEmbeddedGeology(localX,localY,localZ);
       if(exit){
-        this.traversal.teleport(exit.x,exit.y,exit.z);
+        this.resetMovementEffects();this.traversal.teleport(exit.x,exit.y,exit.z);
         localX=exit.x;localY=exit.y;localZ=exit.z;
       }
     }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
     if(!this.volcanicCave.inside)this.wayfinding.update(climateFrame.night,this.player.position,dt);
+    this.village.lanterns.update(this.volcanicCave.inside?0:climateFrame.night,this.player.position,this.player,dt);
     if(zone.id==='brisalia'&&!this.insideUnderground){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
@@ -1428,17 +1528,23 @@ export class WorldView {
     this.dogo?.update(dt,{
       x:localX,y:localY,z:localZ,heading:this.player.rotation.y,
       supported:this.traversal.mode==='grounded'||this.traversal.mode==='swimming',
-      context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}:${this.volcanicCave.inside}`
+      context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}:${this.volcanicCave.inside}:${this.volcanicCave.inside?this.volcanicCave.realm.checkpointId:''}`
     },this.traversalWorld(zone,this.dogo.follow.visible?this.dogo.follow.position.y:localY),zone.offset);
     const dog=this.dogo?.follow;
     this.characterShadows.update(this.player.position,dog?.visible?this.dogo!.root.position:undefined,!this.insideUnderground);
     this.grass.setCompanionContact(dog?.position.x??0,dog?.position.z??0,
       !!dog?.visible&&!this.floating?.id&&!this.insideUnderground&&zone.id==='brisalia');
     if(doubleJumpStarted)this.speedMotionBlur.triggerDoubleJump();
+    if(!dustPaused){
+      if(doubleJumpStarted&&!airKickPressed)this.doubleJumpFX.trigger(this.player.position,direction);
+      this.doubleJumpFX.update(dt);
+    }
     const sprintVisual=sprinting&&walking&&
       this.traversal.mode==='grounded'&&!actionDriven&&
       Math.hypot(direction.x,direction.z)>1e-5;
     this.speedMotionBlur.update(dt,sprintVisual);
+    if(!dustPaused)this.sprintDust.update({dt,position:this.player.position,sprinting:sprintVisual,
+      grounded:this.traversal.mode==='grounded'});
     const sprintDistance=sprintVisual?THIRD_PERSON_CAMERA.sprintDistance:0;
     this.sprintCameraOffset+=(sprintDistance-this.sprintCameraOffset)*
       Math.min(1,dt*(sprintVisual?4:5));
@@ -1446,7 +1552,8 @@ export class WorldView {
     const descending=this.traversal.mode==='airborne'&&localY<feetBeforeStep-.001;
     const landingGround=descending?contactWorld.ground(localX,localZ,localY+.1,1.6,
       TRAVERSAL.playerRadius*.55):null;
-    this.santi?.setSwordLevel(this.store.state.equippedItem==='sword'?this.store.swordLevel:0);
+    this.santi?.setSwordLevel(this.abilities.sandbox||this.store.state.equippedItem==='sword'?
+      this.abilities.visualSwordLevel as 1|2|3|4:0);
     const landing=this.santi?.update(dt,{
       mode:this.traversal.mode,moving:walking,
       movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
@@ -1493,8 +1600,9 @@ export class WorldView {
     this.volcanicCave.syncExterior(localX,localZ,zone.id==='brisalia'&&!this.insideUnderground&&!this.floating?.id);
     const caveRecovery=this.volcanicCave.update(dt,this.player.position,
       this.dogo?[this.player,this.dogo.root]:[this.player],this.traversal.mode==='grounded',climateFrame.dayLight);
+    if(this.volcanicCave.inside)this.store.setIgneousCheckpoint(this.volcanicCave.realm.checkpointId);
     if(caveRecovery){
-      this.traversal.teleport(caveRecovery.x,caveRecovery.y,caveRecovery.z);this.player.position.copyFrom(caveRecovery);
+      this.resetMovementEffects();this.traversal.teleport(caveRecovery.x,caveRecovery.y,caveRecovery.z);this.player.position.copyFrom(caveRecovery);
       this.camera.setTarget(caveRecovery.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
       this.callbacks.notify('Volviste a la última cornisa segura.');
     }
@@ -1537,11 +1645,13 @@ export class WorldView {
       const t=this.camera.getTarget(),a=this.camera.alpha,b=this.camera.beta;
       const d=new Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b));
       const preferred=Math.min(18,this.cameraPreferredRadius);
-      const hit=this.volcanicCave.colliders.queryCameraObstruction(t,t.add(d.scale(preferred)),.5);
+      const hit=this.volcanicCave.cameraObstruction(t,t.add(d.scale(preferred)));
       const safe=hit===null?preferred:Math.max(.25,hit-.7);
       this.camera.radius=safe<this.camera.radius?safe:this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*6);
+      this.hidePlayerForCloseCamera(this.camera.radius<1.6);
       this.cameraAppliedRadius=this.camera.radius;return;
     }
+    this.hidePlayerForCloseCamera(false);
     const swimming=this.traversal.mode==='swimming';
     let preferred=this.cameraPreferredRadius;
     if(swimming){
@@ -1627,16 +1737,28 @@ export class WorldView {
     this.cameraAppliedRadius=this.camera.radius;
   }
 
+  private hidePlayerForCloseCamera(hide:boolean):void{
+    if(hide){
+      for(const mesh of this.player.getChildMeshes()){
+        if(!this.closeCameraMeshes.has(mesh))this.closeCameraMeshes.set(mesh,mesh.isVisible);
+        mesh.isVisible=false;
+      }
+    }else if(this.closeCameraMeshes.size){
+      for(const [mesh,visible] of this.closeCameraMeshes)if(!mesh.isDisposed())mesh.isVisible=visible;
+      this.closeCameraMeshes.clear();
+    }
+  }
+
   private findNearest(): void {
     const zone = this.zones.get(this.store.state.zone)!;
     const playerLocal = this.player.position.subtract(zone.offset);
     const caveAction=zone.id==='brisalia'&&!this.lagoon.inside&&!this.mountainPasses.inside?this.volcanicCave.nearestAction(playerLocal):null;
     if(caveAction||this.volcanicCave.inside){
       this.interactTarget=null;
-      const hints={enter:'E · Entrar en la Caverna del Crisol',exit:'E · Salir a la ladera del volcán',reward:'E · Recoger el corazón ígneo',secret:'E · Descubrir la cámara de minerales'};
       const label=this.traversal.mode==='hanging'?'Colgando del borde · W subir · S o Espacio soltarse':
         this.traversal.mode==='mantling'?'Subiendo al borde...':
-        caveAction?hints[caveAction]:'Caverna del Crisol · Explorá las cornisas y los pasos inferiores';
+        this.igneousTransition?'Cargando el Reino Ígneo…':caveAction?'E · '+this.volcanicCave.actionLabel(caveAction):
+          this.store.hasFirePower?'Reino Ígneo · Afinidad de fuego desbloqueada':'Reino Ígneo · Descendé hacia el lago y el Bastión';
       if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
     }
     const aquatic=zone.id==='brisalia'?this.lagoon.nearestPortal(playerLocal.x,playerLocal.y,playerLocal.z):null;
@@ -1693,7 +1815,35 @@ export class WorldView {
     if (active) this.pressed.add(key); else this.pressed.delete(key);
   }
 
-  canOpenPanel():boolean{return this.traversal.canInteract;}
+  canOpenPanel():boolean{return this.traversal.canInteract||this.abilities.manager.controlLocked;}
+
+  /** Development access and normal portal share the same deferred load and real controller. */
+  async enterIgneousRealm(checkpoint?:string,development=false):Promise<void>{
+    if(this.igneousTransition)return;
+    this.abilities.resetScene();
+    this.igneousTransition=true;this.callbacks.notify('Cargando el Reino Ígneo…');
+    try{
+      // Initial activateZone may still be preparing the saved exterior region.
+      while(this.geographyLoading)await new Promise(resolve=>window.setTimeout(resolve,50));
+      if(development&&this.geographicWorld){
+        await this.travelGeographic(this.volcanicCave.entrance.x,this.volcanicCave.entrance.z,'Volcán Ígneo');
+        this.volcanicCave.syncExterior(this.volcanicCave.entrance.x,this.volcanicCave.entrance.z);
+      }
+      const next=await this.volcanicCave.enter(this.store.state.discoveredPlaces??[],checkpoint??this.store.state.igneousCheckpoint??'A0');
+      this.zones.get('brisalia')!.root.setEnabled(false);this.climate.setSheltered(true);
+      this.store.discoverPlace(VOLCANIC_CAVE.id);
+      this.placeAtIgneousPortal(next,true);this.callbacks.notify('Reino Ígneo · Seguí el descenso hacia el lago.');
+    }catch(error){this.callbacks.notify('No se pudo cargar el Reino Ígneo: '+String(error));throw error;}
+    finally{this.igneousTransition=false;}
+  }
+  private placeAtIgneousPortal(next:Vector3,entering:boolean):void{
+    this.lastSafePosition=entering?{x:this.volcanicCave.entrance.x,z:this.volcanicCave.entrance.z+6}:{x:next.x,z:next.z};
+    this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
+    this.resetMovementEffects();this.traversal.teleport(next.x,next.y+.06,next.z);this.player.position.set(next.x,next.y+.06,next.z);
+    this.camera.alpha=entering?Math.PI/2:-Math.PI/2-VOLCANIC_CAVE.entranceYaw;
+    this.camera.setTarget(next.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
+    this.store.setPlayerPosition('brisalia',this.lastSafePosition.x,this.lastSafePosition.z);this.sendLocation();
+  }
 
   private leaveVolcanicCave():Vector3{
     const next=this.volcanicCave.leave();this.zones.get('brisalia')!.root.setEnabled(true);
@@ -1701,30 +1851,24 @@ export class WorldView {
   }
 
   interact(): void {
+    if(this.abilities.manager.controlLocked)return;
     if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement&&this.traversal.canInteract&&
       !this.lagoon.inside&&!this.mountainPasses.inside){
       const p=this.player.position,action=this.volcanicCave.nearestAction(p);
-      if(action==='reward'||action==='secret'){
-        const secret=action==='secret',id=secret?VOLCANIC_CAVE.secretId:VOLCANIC_CAVE.rewardId;
-        if(this.store.claimDiscoveryReward(id,secret?'spark':'fireCrystal',secret?3:5)){
-          this.volcanicCave.claimed(secret);
-          this.callbacks.notify(secret?'Cámara secreta descubierta · +3 chispas':'Corazón del Crisol descubierto · +5 cristales ígneos');
-        }return;
+      if(this.igneousTransition)return;
+      if(action==='enter'){void this.enterIgneousRealm().catch(()=>{});return;}
+      if(action==='exit'){
+        const next=this.leaveVolcanicCave();this.placeAtIgneousPortal(next,false);
+        this.callbacks.notify('Regresaste a la ladera del volcán.');return;
       }
-      if(action==='enter'||action==='exit'){
-        const entering=action==='enter',found=this.store.state.discoveredPlaces??[];
-        const next=entering?this.volcanicCave.enter(found.includes(VOLCANIC_CAVE.rewardId),found.includes(VOLCANIC_CAVE.secretId)):this.leaveVolcanicCave();
-        if(entering){
-          this.zones.get('brisalia')!.root.setEnabled(false);
-          this.store.discoverPlace(VOLCANIC_CAVE.id);
-          this.lastSafePosition={x:this.volcanicCave.entrance.x,z:this.volcanicCave.entrance.z+6};
-        }else this.lastSafePosition={x:next.x,z:next.z};
-        this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
-        this.traversal.teleport(next.x,next.y+.1,next.z);this.player.position.set(next.x,next.y+.1,next.z);
-        this.camera.alpha=entering?Math.PI/2:-Math.PI/2-VOLCANIC_CAVE.entranceYaw;
-        this.camera.setTarget(next.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)),false,false,true);
-        this.store.setPlayerPosition('brisalia',this.lastSafePosition.x,this.lastSafePosition.z);
-        this.sendLocation();this.callbacks.notify(entering?'Descubriste la Caverna del Crisol.':'Regresaste a la ladera del volcán.');
+      if(action){
+        const id=igneousFlag(action);
+        if(action==='cristal')this.store.awakenFirePower();
+        else this.store.discoverPlace(id);
+        this.volcanicCave.realm.setFlags(this.store.state.discoveredPlaces??[]);
+        const discovery=this.volcanicCave.realm.meta.discoveries.find(d=>d.lugar===action);
+        this.callbacks.notify(action==='cristal'?'El Cristal del Reino Ígneo te reconoce. ¡Afinidad de fuego desbloqueada!':
+          discovery?.recompensa??(action==='reja_abierta'?'La reja de la sima está abierta.':'El torno del Bastión está activado.'));
         return;
       }
       if(this.volcanicCave.inside)return;
@@ -1734,7 +1878,7 @@ export class WorldView {
       if(portal){
         const entering=!this.lagoon.inside,next=entering?this.lagoon.enter(portal.id):this.lagoon.leave(portal.id);
         if(next){this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
-          this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
+          this.resetMovementEffects();this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
           this.camera.setTarget(next.add(new Vector3(0,2.05,0)));
           this.callbacks.notify(entering?'Gruta de las Vertientes: atravesá el sifón y buscá las dos salidas.':portal.name);
           if(!portal.submerged){const exit=this.geographicWorld?regionPoint(this.geographicWorld.lagoon,portal.x,portal.z):portal;
@@ -1749,7 +1893,7 @@ export class WorldView {
         const next=entering?this.mountainPasses.enter(portal.id):this.mountainPasses.leave(portal.id);
         if(next){
           this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
-          this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
+          this.resetMovementEffects();this.traversal.teleport(next.x,next.y,next.z);this.player.position.copyFrom(next);
           this.camera.setTarget(next.add(new Vector3(0,THIRD_PERSON_CAMERA.targetHeight,0)));
           this.store.discoverPlace(portal.id);
           const exit={x:portal.x+(this.geographicWorld?.town.x??0),z:portal.z+(this.geographicWorld?.town.z??0)};
@@ -1944,6 +2088,7 @@ export class WorldView {
 
   /** Nueva partida y relectura del guardado sin recargar el navegador. */
   refreshFromSave(): void {
+    this.abilities.reloadSave();
     this.climate.setElapsedHours(this.store.state.environment?.elapsedHours??9);
     this.callbacks.onClimate(this.climate.frame);
     this.climateSaveTimer=0;
@@ -1985,12 +2130,17 @@ export class WorldView {
   }
 
   dispose(): void {
+    this.abilities.dispose();
+    window.removeEventListener('focus',this.onFocus);
+    document.removeEventListener('visibilitychange',this.onVisibility);
     this.volcanicCave.dispose();
     this.wayfinding.dispose();
     this.village.dispose();
     this.floating?.dispose();this.geographicWorld?.dispose();
     this.engine.stopRenderLoop();
     this.speedMotionBlur.dispose();
+    this.sprintDust.dispose();
+    this.doubleJumpFX.dispose();
     this.santi?.dispose();
     this.assetPlacement?.dispose();
     this.characterShadows.dispose();

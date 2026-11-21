@@ -1,98 +1,113 @@
-const assert=require('node:assert/strict');
-const {NullEngine,Scene,Vector3,Ray,HemisphericLight,TransformNode,MeshBuilder,PBRMaterial}=require('@babylonjs/core');
+﻿const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const B=require('@babylonjs/core');
 const {VolcanicCaveSystem}=require('../.test-build/world/VolcanicCaveSystem.js');
-const {CAVE_NODES,CAVE_ROUTES,VOLCANIC_CAVE,caveWorldPoint}=require('../.test-build/world/volcanicCaveData.js');
-const {CharacterTraversalController}=require('../.test-build/game/CharacterTraversalController.js');
+const {IGNEOUS_SCALE,igneousFlag,inHazardPolygon}=require('../.test-build/world/IgneousRealm.js');
+const {VOLCANIC_CAVE}=require('../.test-build/world/volcanicCaveData.js');
 const {GameStore}=require('../.test-build/domain/GameStore.js');
 const {newGame}=require('../.test-build/domain/types.js');
-const engine=new NullEngine(),scene=new Scene(engine),sun=new HemisphericLight('test-sun',Vector3.Up(),scene);
-const cave=new VolcanicCaveSystem(scene,()=>1120,true,false);
-cave.syncExterior(VOLCANIC_CAVE.entrance.x,VOLCANIC_CAVE.entrance.z);assert(cave.ready);
-const exteriorMeshes=cave.exterior.getChildMeshes(false).filter(m=>m.isVisible);
-assert.equal(exteriorMeshes.length,2,'entrance uses only its rock shell and recessed back');
-assert(exteriorMeshes.reduce((n,m)=>n+m.getTotalIndices()/3,0)<100,'small exterior geometry budget');
-assert.equal(cave.nearestAction(new Vector3(VOLCANIC_CAVE.entrance.x,1120,VOLCANIC_CAVE.entrance.z)),'enter');
-const originalMeshes=scene.meshes.length,originalLights=scene.lights.length;
-const spawn=cave.enter(),world=cave.traversalWorld();
-const hanging=new CharacterTraversalController();let caught=false;
-for(let z=-23;z<-16&&!caught;z+=.15){
- hanging.teleport(0,-397.4,z);hanging.mode='airborne';
- hanging.step(1/60,{moveX:0,moveZ:0,forwardX:0,forwardZ:1,horizontal:0,vertical:0,run:false,sprint:false,jumpPressed:false},world);
- caught=hanging.mode==='hanging';
-}
-assert(caught,'the tapered bridge has a grabbable straight edge');
-const edge=hanging.climbContact;
-const edgeTop=world.ground(edge.pointX-edge.normalX*.03,edge.pointZ-edge.normalZ*.03,edge.pointY+.15,.3,0);
-assert(edgeTop&&Math.abs(edgeTop.height-edge.pointY)<.03,'hands anchor to the real lip rather than the tapered side below it');
-hanging.step(1/60,{moveX:0,moveZ:0,forwardX:0,forwardZ:1,horizontal:0,vertical:1,run:false,sprint:false,jumpPressed:false},world);
-assert.equal(hanging.mode,'mantling','W climbs the real cave edge');
-assert(!sun.isEnabled(),'exterior lights suspended inside');
+const meta=JSON.parse(fs.readFileSync('public/assets/reino-igneo/nivel.json','utf8'));
+(async()=>{
+const engine=new B.NullEngine(),scene=new B.Scene(engine),sun=new B.HemisphericLight('sun',B.Vector3.Up(),scene);
+let loads=0,release;
+const loaded=new Promise(r=>release=r);
+const loader=async()=>{
+ loads++;await loaded;const container=new B.AssetContainer(scene);
+ const root=new B.TransformNode('__root__',scene);root.scaling.z=-1;
+ const floor=B.MeshBuilder.CreateBox('authored-solid',{width:12,depth:20,height:.4},scene);
+ floor.position.set(-41,117.8,158);floor.parent=root;floor.metadata={gltf:{extras:{auralia_collision:true,auralia_kind:'solid'}}};
+ const lava=B.MeshBuilder.CreateGround('lava',{width:103,height:71},scene);lava.position.set(1.5,-36.8,-4);lava.parent=root;
+ lava.metadata={gltf:{extras:{auralia_collision:false,auralia_kind:'lava'}}};
+ const gate=new B.TransformNode('Gate_Sima',scene);gate.parent=root;
+ const bars=B.MeshBuilder.CreateBox('gate-bars',{width:4,height:3,depth:.3},scene);bars.position.set(-41,119.5,152);bars.parent=gate;
+ bars.metadata={gltf:{extras:{auralia_collision:true,auralia_dynamic:true}}};
+ const oldGem=B.MeshBuilder.CreateSphere('old-caldera-gem',{},scene);oldGem.parent=root;
+ oldGem.material=new B.PBRMaterial('Lago web · cristal de la Caldera',scene);
+ container.rootNodes=[root];container.transformNodes=[root,gate];container.meshes=[floor,lava,bars,oldGem];
+ const crystal=new B.AssetContainer(scene),gem=B.MeshBuilder.CreateCylinder('red-crystal-fixture',{height:1},scene);
+ gem.material=new B.PBRMaterial('red-crystal-material',scene);crystal.rootNodes=[gem];crystal.meshes=[gem];crystal.materials=[gem.material];
+ return {container,meta,crystal};
+};
+const cave=new VolcanicCaveSystem(scene,()=>1120,true,false,loader);
+cave.syncExterior(VOLCANIC_CAVE.entrance.x,VOLCANIC_CAVE.entrance.z);
+assert.equal(cave.nearestAction(new B.Vector3(VOLCANIC_CAVE.entrance.x,1120,VOLCANIC_CAVE.entrance.z)),'enter');
+const candidates=scene.getActiveMeshCandidates;
+const p1=cave.realm.load(),p2=cave.realm.load();assert.equal(p1,p2,'cache the loading promise');assert.equal(loads,1);
+assert(!cave.inside&&sun.isEnabled(),'loading never teleports or isolates the exterior');release();await p1;
+assert.equal(IGNEOUS_SCALE,3.8/1.4,'user calibrated Santi scale');
+const spawn=await cave.enter();const world=cave.traversalWorld();assert(!sun.isEnabled());
+const crystalRoot=scene.getTransformNodeByName('cristal-unico-reino-igneo');
+assert(crystalRoot.isEnabled());assert(!scene.getMeshByName('old-caldera-gem').isEnabled());
+assert(cave.realm.meshes.includes(scene.getMeshByName('red-crystal-fixture')));
+assert(scene.getActiveMeshCandidates().data.includes(scene.getMeshByName('cristal-igneo-aura')));
+assert.equal(scene.imageProcessingConfiguration.toneMappingEnabled,true,'interior keeps the approved contrast curve');
+assert.equal(scene.imageProcessingConfiguration.toneMappingType,B.ImageProcessingConfiguration.TONEMAPPING_ACES);
 assert.equal(cave.nearestAction(spawn),'exit');
-assert(cave.status.triangles<100000,'geometry budget');
-console.log('Interior:',cave.status);
-// Real triangle collisions at all routes, including two different floors at the crossing.
-for(const [id,n] of Object.entries(CAVE_NODES)){
-  const p=caveWorldPoint(n),h=world.ground(p.x,p.z,p.y+1,3,.33);
-  assert(h&&Math.abs(h.height-p.y)<.4,`${id}: support on the rendered path (${h?.height})`);
-  assert(world.headroom(p.x,h.height+.1,p.z,3.8),`${id}: full character clearance`);
+const local=cave.realm.local(spawn);assert(Math.abs(local.x+41)<1e-4&&Math.abs(local.z-158)<1e-4);
+assert(Math.abs(local.y-118)<.1,'feet land on a ray-verified floor');
+assert(world.ground(spawn.x,spawn.z,spawn.y+1,2,.2));assert(world.headroom(spawn.x,spawn.y,spawn.z,3.8));
+const hazard=meta.hazards[0],lake=cave.realm.point([1.5,-36.9,-4]);assert(inHazardPolygon(1.5,-4,hazard.polygon));
+assert(!inHazardPolygon(1000,1000,hazard.polygon));assert.equal(world.ground(lake.x,lake.z,lake.y+2,5,0),null,'lava never becomes floor');
+const actors=new B.TransformNode('Santi',scene),body=B.MeshBuilder.CreateBox('actor',{},scene);body.parent=actors;
+cave.update(.5,spawn,[actors],true);assert(scene.getActiveMeshCandidates().data.includes(body),'real actor retained');
+const late=B.MeshBuilder.CreateBox('late-equipment',{},scene);late.parent=actors;cave.restoreAtmosphere();cave.update(.5,spawn,[actors],true);
+assert(scene.getActiveMeshCandidates().data.includes(late));assert(scene.lights.some(l=>l.name==='igneo-personajes'&&l.includedOnlyMeshes.includes(late)));
+const gate=scene.getTransformNodeByName('Gate_Sima');assert(!gate.isWorldMatrixFrozen);
+cave.realm.setFlags([igneousFlag('reja_abierta')]);assert.equal(gate.position.y,3.25);
+assert(cave.update(.1,lake,[actors],false),'lava recovers');
+assert.equal(cave.update(.1,cave.realm.point([5,73,116]),[actors],false),null,'legitimate descending route is not a fall');
+cave.leave();assert(sun.isEnabled());assert.equal(scene.getActiveMeshCandidates,candidates);assert(!cave.realm.root.isEnabled());
+assert(!crystalRoot.isEnabled(),'the unique crystal and its effects are hidden outside the realm');
+assert(!scene.getLightByName('igneo-cristal-poder').isEnabled());
+assert.equal(scene.imageProcessingConfiguration.toneMappingEnabled,false,'exterior color processing is restored');
+const count=scene.meshes.length;await cave.enter();cave.leave();assert.equal(loads,1);assert.equal(scene.meshes.length,count,'repeat visit reuses container');
+let saved=newGame();const repo={load:()=>structuredClone(saved),save:s=>saved=structuredClone(s),clear(){}};
+const store=new GameStore(repo);store.collect('wood',2);store.discoverPlace(igneousFlag('reja_abierta'));store.setIgneousCheckpoint('F6');
+for(const d of meta.discoveries)store.discoverPlace(igneousFlag(d.lugar));
+assert(!store.hasFirePower);assert(store.awakenFirePower());const reload=new GameStore(repo);
+assert.equal(reload.state.igneousCheckpoint,'F6');assert.equal(reload.state.inventory.wood,2);assert.equal(reload.state.discoveredPlaces.length,6);
+assert(reload.hasFirePower);assert.equal(reload.state.inventory.fireCrystal,1);
+assert(!reload.awakenFirePower());assert.equal(reload.state.inventory.fireCrystal,1);
+assert.equal(cave.realm.action(cave.realm.point(meta.checkpoints.palacio_cristal)),'cristal');
+cave.realm.setFlags(reload.state.discoveredPlaces);
+assert.equal(cave.realm.action(cave.realm.point(meta.checkpoints.palacio_cristal)),null);
+// Indexed rays must agree with Babylon's exact picking under reflected/rotated/scaled parents.
+const {StaticTriangleIndex}=require('../.test-build/world/StaticTriangleIndex.js');
+const index=new StaticTriangleIndex(),shape=B.MeshBuilder.CreateBox('ray-parity',{width:14,height:7,depth:11},scene);
+shape.position.set(13,27,-19);shape.rotation.set(.2,.8,-.1);shape.scaling.set(2.7,2.7,-2.7);shape.computeWorldMatrix(true);index.add(shape);
+for(let i=0;i<200;i++){
+ const from=new B.Vector3(13+Math.cos(i*2.399)*60,27+(i%9-4)*12,-19+Math.sin(i*2.399)*60);
+ const direction=shape.position.subtract(from).normalize(),ray=new B.Ray(from,direction,150);
+ const exact=ray.intersectsMeshes([shape],false)[0],fast=index.hits(ray,new Set([shape]))[0];
+ assert.equal(!!fast,!!exact);if(exact){assert(Math.abs(fast.distance-exact.distance)<1e-4);assert(B.Vector3.Distance(fast.getNormal(true),exact.getNormal(true))<1e-4);}
 }
-const top=world.ground(0,-14,-392,4,0),bottom=world.ground(0,-14,-405,5,0);
-assert(top&&bottom&&top.height-bottom.height>11,'independent upper bridge and lower passage');
-assert(!world.headroom(0,-405,-14,10),'bridge underside blocks an upward jump');
-const obstruction=cave.colliders.queryCameraObstruction(new Vector3(0,-390,0),new Vector3(90,-390,0),.5);
-assert(obstruction!==null&&obstruction<90,'camera sees cavern wall triangles');
-// Picking acceleration must give the same result as unpartitioned visible geometry.
-const structure=scene.meshes.filter(m=>m.isVisible&&/^crisol-(cavidad|cornisa|columna|tunel-de-salida|salida-cielo)/.test(m.name));
-for(const n of Object.values(CAVE_NODES))for(const offset of [-.4,0,.4]){
-  const point=caveWorldPoint(n),p=new Vector3(point.x+offset,point.y+.2,point.z+offset);
-  const hit=new Ray(p,Vector3.Up(),40).intersectsMeshes(structure,false).find(h=>h.distance>.015&&(h.getNormal(true)?.y??0)<-.15);
-  const fast=cave.colliders.queryCeiling(p.x,p.y,p.z,40),exact=hit?.pickedPoint?.y??null;
-  assert(exact===null?fast===null:fast!==null&&Math.abs(fast-exact)<1e-5,'accelerated ceiling matches rendered triangles');
-}
-// Walk every authored segment in both directions without jumping or teleporting at joints.
-const input=(dx,dz)=>({moveX:dx,moveZ:dz,forwardX:dx,forwardZ:dz,horizontal:0,vertical:1,run:false,sprint:false,jumpPressed:false});
-let walked=0;
-for(const route of CAVE_ROUTES)for(const ids of [route,[...route].reverse()]){
-  const controller=new CharacterTraversalController(),p=caveWorldPoint(CAVE_NODES[ids[0]]);
-  controller.teleport(p.x,p.y+.1,p.z);
-  for(const id of ids.slice(1)){
-    const target=caveWorldPoint(CAVE_NODES[id]);let reached=false,stationary=0,lastDistance=Infinity;
-    for(let frame=0;frame<1800;frame++){
-      const p=controller.position,dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz);
-      if(d<.8){reached=true;break;}
-      stationary=Math.abs(lastDistance-d)<.0001?stationary+1:0;lastDistance=d;if(stationary>60)break;
-      controller.step(1/30,input(dx/d,dz/d),world);
-      assert(p.y>VOLCANIC_CAVE.recoveryY,`${ids.join(' → ')}: fell before ${id}`);
-    }
-    assert(reached,`${ids.join(' → ')}: blocked toward ${id} at ${JSON.stringify(controller.position)}`);walked++;
-  }
-}
-const actor=new TransformNode('actor',scene),body=MeshBuilder.CreateBox('body',{},scene);body.parent=actor;body.material=new PBRMaterial('actor-material',scene);
-cave.update(.5,new Vector3(13,-395,-63),[actor],true);
-assert(scene.lights.some(l=>l.name.startsWith('crisol-personajes')&&l.isEnabled()&&l.includedOnlyMeshes.includes(body)),'PBR actor receives local light');
-assert(!sun.isEnabled(),'outside sun does not leak onto interior characters');
-const candidates=scene.getActiveMeshCandidates();
-assert(candidates.data.includes(body)&&candidates.length<60,'interior rendering evaluates actors and cave only');
-assert(candidates.data.every(m=>!m.name.startsWith('collider-')),'collision proxies are not render candidates');
-const exteriorCandidates=cave.exteriorCandidates;
-let lightResyncs=0;const restoreLights=[];
-for(const light of scene.lights){const fn=light._resyncMeshes;light._resyncMeshes=function(){lightResyncs++;return fn.call(this);};restoreLights.push(()=>light._resyncMeshes=fn);}
-for(let i=0;i<120;i++){cave.restoreAtmosphere();cave.update(1/60,new Vector3(13,-395,-63),[actor],true);}
-assert.equal(lightResyncs,0,'stable cave lighting never rescans all exterior meshes');
-const equipment=MeshBuilder.CreateBox('late-equipment',{},scene);equipment.parent=actor;equipment.material=body.material;
-cave.restoreAtmosphere();cave.update(.5,new Vector3(13,-395,-63),[actor],true);
-assert(lightResyncs>0&&scene.lights.some(l=>l.name.startsWith('crisol-personajes')&&l.includedOnlyMeshes.includes(equipment)),'late-loaded equipment updates receivers');
-assert(scene.getActiveMeshCandidates().data.includes(equipment),'late-loaded equipment is rendered');
-for(const restore of restoreLights)restore();
-cave.restoreAtmosphere();const recovered=cave.update(.1,new Vector3(10,-425,10),[actor],false);
-assert(recovered&&recovered.y>-419,'fall recovers to reachable checkpoint');
-actor.dispose(false,true);cave.leave();
-assert.equal(scene.getActiveMeshCandidates,exteriorCandidates,'outside mesh selection restored on exit');
-assert(sun.isEnabled(),'exterior light restored');assert.equal(scene.meshes.length,originalMeshes);assert.equal(scene.lights.length,originalLights);
-for(let i=0;i<3;i++){cave.enter(true,true);assert.equal(cave.nearestAction(new Vector3(13,-395,-63)),null);cave.leave();}
-assert.equal(scene.meshes.length,originalMeshes);assert.equal(scene.lights.length,originalLights);
-let saved=newGame(),saves=0;const repo={load:()=>structuredClone(saved),save:s=>{saved=structuredClone(s);saves++;},clear(){}};
-const store=new GameStore(repo);assert(store.claimDiscoveryReward(VOLCANIC_CAVE.rewardId,'fireCrystal',5));assert.equal(saves,1);
-const reloaded=new GameStore(repo);assert(!reloaded.claimDiscoveryReward(VOLCANIC_CAVE.rewardId,'fireCrystal',5));assert.equal(reloaded.state.inventory.fireCrystal,5);
-assert(reloaded.claimDiscoveryReward(VOLCANIC_CAVE.secretId,'spark',3));
-cave.dispose();engine.dispose();console.log(`Cave OK: ${walked} route segments walked; multilevel collision, camera, recovery, lights, repeat visits and persistent rewards.`);
+index.remove(shape);assert.equal(index.hits(new B.Ray(B.Vector3.Zero(),B.Vector3.Up(),100),new Set([shape])).length,0);shape.dispose();
+// A footprint spanning two treads must never be placed below the higher tread.
+const {RockColliderSystem}=require('../.test-build/world/RockColliderSystem.js');
+const steps=new RockColliderSystem(()=>undefined);
+const low=B.MeshBuilder.CreateBox('low-tread',{width:4,depth:2,height:.4},scene);
+const high=B.MeshBuilder.CreateBox('high-tread',{width:4,depth:2,height:.9},scene);
+low.position.set(0,200-.2,1);high.position.set(0,200+.05,-1);
+steps.registerGeneratedMesh(low,true);steps.registerGeneratedMesh(high,true);
+const tread=steps.queryStepGround(0,.1,202,3,.33,1.05);
+assert(Math.abs(tread.height-200.5)<1e-5,'highest real tread supports the foot, without averaging it into the mesh');
+assert.equal(steps.queryStepGround(2.6,1,202,3,.33),null,'the footprint never bridges a gap beyond the capsule radius');
+assert(steps.querySolidTop(0,-1,202,3),'the shell remains available to prevent tunnelling');
+steps.dispose();low.dispose();high.dispose();
+// Partially overlapping floors: retain only exposed rock, with interpolated UVs.
+const {repairIgneousFloors}=require('../.test-build/world/IgneousGeometry.js');
+const rockFloor=B.MeshBuilder.CreateGround('overlapping-basalt',{width:4,height:4},scene);
+const paving=B.MeshBuilder.CreateGround('paving',{width:2,height:4},scene);paving.position.x=1;
+rockFloor.position.y=paving.position.y=300;
+rockFloor.material=new B.PBRMaterial('Palacio ceremonial · Macizo continuo de basalto · Reino',scene);
+paving.material=new B.PBRMaterial('Palacio ceremonial · Losa de la procesión',scene);
+assert(repairIgneousFloors([rockFloor,paving])>0);
+const down=x=>new B.Ray(new B.Vector3(x,301,0),B.Vector3.Down(),2);
+assert(!down(1).intersectsMesh(rockFloor).hit,'covered rock face is removed');
+assert(down(-1).intersectsMesh(rockFloor).hit,'exposed rock remains');
+assert(down(1).intersectsMesh(paving).hit,'original paving is untouched');
+const pos=rockFloor.getVerticesData(B.VertexBuffer.PositionKind),uv=rockFloor.getVerticesData(B.VertexBuffer.UVKind);
+for(let i=4;i<pos.length/3;i++)assert(Math.abs(uv[i*2]-(pos[i*3]+2)/4)<1e-5,'new cut vertices preserve texture coordinates');
+rockFloor.dispose();paving.dispose();
+cave.dispose();engine.dispose();console.log('Reino Igneo OK: deferred/cache, RH transform and scale, real triangle floor, hazard exclusion, gate, actors, exterior restore and saved progress.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

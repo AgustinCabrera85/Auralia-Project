@@ -6,6 +6,9 @@ import { canReplaceWall, planBuild, removalProblem, wallReplacementProblem, type
 import { sampleMainlandHeight } from '../world/terrainData';
 import type { SaveRepository } from '../persistence/SaveRepository';
 import { BRISALIA_SWORD_NAME, brisaliaSwordLevel } from './brisaliaSword';
+import { normalizeAbilityProgress, isAbilityId } from './abilities/progress';
+import { abilityDefinition } from './abilities/catalog';
+import type { AbilityId } from './abilities/types';
 
 export type Milestone = 'collect' | 'craft' | 'build' | 'sail' | 'light' | 'complete';
 export type StoreListener = (state: Readonly<SaveGameV1>) => void;
@@ -19,11 +22,34 @@ export class GameStore {
 
   constructor(private readonly repository: SaveRepository) {
     this.data = repository.load();
+    this.data.abilities=normalizeAbilityProgress(this.data.abilities,this.data);
     this.nextId = this.data.structures.length;
   }
 
   get state(): Readonly<SaveGameV1> { return this.data; }
   get swordLevel(){return brisaliaSwordLevel(this.data);}
+  /** Only the sacred chamber unlocks fire; old harvested fragments do not. */
+  get hasFirePower():boolean{return this.data.abilities?.unlocked.includes('igneo_fire')??false;}
+  awakenFirePower():boolean{return this.claimDiscoveryReward('reino-igneo-cristal','fireCrystal',1);}
+  /** Reward/mission API: idempotent and never spends inventory. */
+  unlockAbility(id:AbilityId):boolean{
+    if(!isAbilityId(id)||this.data.abilities!.unlocked.includes(id))return false;
+    this.data.abilities!.unlocked.push(id);this.commit();return true;
+  }
+  selectAbility(id:AbilityId):boolean{
+    if(!isAbilityId(id)||!this.data.abilities!.unlocked.includes(id)||
+      abilityDefinition(id).implementation!=='available'||abilityDefinition(id).slot!=='special')return false;
+    if(this.data.abilities!.selected!==id){this.data.abilities!.selected=id;this.commit();}
+    return true;
+  }
+  advanceAbility(id:AbilityId,level:number):boolean{
+    if(!isAbilityId(id)||!this.data.abilities!.unlocked.includes(id))return false;
+    const definition=abilityDefinition(id);
+    if(definition.levelSource==='sword'||definition.implementation!=='available'||
+      !Number.isInteger(level)||level<= (this.data.abilities!.levels[id]??1)||
+      !definition.profiles.some(p=>p.level===level))return false;
+    this.data.abilities!.levels[id]=level;this.commit();return true;
+  }
   equip(item:EquipmentId):{ok:boolean;message:string}{
     if(item!=='unarmed'&&(this.data.inventory[item]??0)<1)
       return {ok:false,message:'Todavía no tenés ese objeto.'};
@@ -43,6 +69,7 @@ export class GameStore {
   }
 
   private commit(): void {
+    this.data.abilities=normalizeAbilityProgress(this.data.abilities,this.data);
     this.data.updatedAt = new Date().toISOString();
     this.repository.save(this.data);
     for (const listener of this.listeners) listener(this.data);
@@ -177,6 +204,11 @@ export class GameStore {
     if(discovered.includes(id)||discovered.length>=100)return;
     discovered.push(id);
     this.commit();
+  }
+
+  setIgneousCheckpoint(id:string):void {
+    if(!/^[a-zA-Z0-9_]{1,40}$/.test(id)||this.data.igneousCheckpoint===id)return;
+    this.data.igneousCheckpoint=id;this.commit();
   }
 
   /** Discovery and its one-time reward are one save operation. */

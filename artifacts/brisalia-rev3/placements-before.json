@@ -1,0 +1,391 @@
+[
+  {
+    "id": "B01",
+    "file": "B01_casa_taller.glb",
+    "x": -27,
+    "z": -110,
+    "yaw": 0,
+    "width": 13.55,
+    "depth": 10.43,
+    "height": 9.23,
+    "originalCenter": [
+      26.775,
+      23.215
+    ]
+  },
+  {
+    "id": "B02",
+    "file": "B02_posada.glb",
+    "x": -56,
+    "z": -50,
+    "yaw": 0,
+    "width": 15.96,
+    "depth": 13.225,
+    "height": 7.945,
+    "originalCenter": [
+      15.98,
+      54.6125
+    ]
+  },
+  {
+    "id": "B03",
+    "file": "B03_salon.glb",
+    "x": 3,
+    "z": -46,
+    "yaw": 0,
+    "width": 19.04,
+    "depth": 13.9296,
+    "height": 7.995,
+    "originalCenter": [
+      82.52,
+      61.9648
+    ]
+  },
+  {
+    "id": "B04",
+    "file": "B04_taller.glb",
+    "x": 50,
+    "z": -82,
+    "yaw": 180,
+    "width": 13.96,
+    "depth": 11.5138,
+    "height": 5.055,
+    "originalCenter": [
+      85.98,
+      29.7569
+    ]
+  },
+  {
+    "id": "B05",
+    "file": "B05_taller.glb",
+    "x": 54,
+    "z": -51,
+    "yaw": 0,
+    "width": 11.96,
+    "depth": 10.5152,
+    "height": 5.055,
+    "originalCenter": [
+      99.98,
+      49.2576
+    ]
+  },
+  {
+    "id": "B06",
+    "file": "B06_torre.glb",
+    "x": 80,
+    "z": -24,
+    "yaw": 0,
+    "width": 6.3962,
+    "depth": 6.3962,
+    "height": 13.16,
+    "originalCenter": [
+      103.1981,
+      73.1981
+    ]
+  },
+  {
+    "id": "B07",
+    "file": "B07_vivienda.glb",
+    "x": -46,
+    "z": -110,
+    "yaw": 180,
+    "width": 9.1016,
+    "depth": 8.0702,
+    "height": 4.71,
+    "originalCenter": [
+      9.550799999999999,
+      27.0351
+    ]
+  },
+  {
+    "id": "B08",
+    "file": "B08_vivienda.glb",
+    "x": -61,
+    "z": -80,
+    "yaw": 180,
+    "width": 8.96,
+    "depth": 9.547,
+    "height": 9.03,
+    "originalCenter": [
+      9.48,
+      42.7735
+    ]
+  },
+  {
+    "id": "B09",
+    "file": "B09_vivienda.glb",
+    "x": -67,
+    "z": -24,
+    "yaw": 0,
+    "width": 8.96,
+    "depth": 10.1282,
+    "height": 5.11,
+    "originalCenter": [
+      11.48,
+      66.0641
+    ]
+  },
+  {
+    "id": "B10",
+    "file": "B10_vivienda.glb",
+    "x": -36,
+    "z": -24,
+    "yaw": 0,
+    "width": 9.099,
+    "depth": 8.0664,
+    "height": 7.45,
+    "originalCenter": [
+      19.549500000000002,
+      79.0332
+    ]
+  },
+  {
+    "id": "B11",
+    "file": "B11_vivienda.glb",
+    "x": -20,
+    "z": -24,
+    "yaw": 0,
+    "width": 7.96,
+    "depth": 9.0336,
+    "height": 6.29,
+    "originalCenter": [
+      36.98,
+      68.5168
+    ]
+  },
+  {
+    "id": "B12",
+    "file": "B12_vivienda.glb",
+    "x": 17,
+    "z": -24,
+    "yaw": 0,
+    "width": 8.96,
+    "depth": 9.291,
+    "height": 7.49,
+    "originalCenter": [
+      49.480000000000004,
+      77.6455
+    ]
+  },
+  {
+    "id": "B13",
+    "file": "B13_vivienda.glb",
+    "x": 33,
+    "z": -24,
+    "yaw": 0,
+    "width": 9.1084,
+    "depth": 8.0802,
+    "height": 5.25,
+    "originalCenter": [
+      70.5542,
+      79.0401
+    ]
+  },
+  {
+    "id": "B14",
+    "file": "B14_vivienda.glb",
+    "x": 48,
+    "z": -24,
+    "yaw": 0,
+    "width": 7.96,
+    "depth": 8.0342,
+    "height": 5.78,
+    "originalCenter": [
+      82.98,
+      76.0171
+    ]
+  },
+  {
+    "id": "B15",
+    "file": "B15_vivienda.glb",
+    "x": 63,
+    "z": -24,
+    "yaw": 0,
+    "width": 8.96,
+    "depth": 9.2891,
+    "height": 7.64,
+    "originalCenter": [
+      93.48,
+      77.64455
+    ]
+  },
+  {
+    "id": "B16",
+    "file": "B16_vivienda.glb",
+    "x": -61,
+    "z": -110,
+    "yaw": 180,
+    "width": 9.106,
+    "depth": 6.0816,
+    "height": 5.1,
+    "originalCenter": [
+      9.553,
+      20.0408
+    ]
+  },
+  {
+    "id": "B17",
+    "file": "B17_vivienda.glb",
+    "x": -8,
+    "z": -110,
+    "yaw": 180,
+    "width": 8.96,
+    "depth": 9.543,
+    "height": 8.82,
+    "originalCenter": [
+      41.480000000000004,
+      21.7715
+    ]
+  },
+  {
+    "id": "B18",
+    "file": "B18_vivienda.glb",
+    "x": 14,
+    "z": -110,
+    "yaw": 180,
+    "width": 8.96,
+    "depth": 8.1358,
+    "height": 5.14,
+    "originalCenter": [
+      79.48,
+      21.0679
+    ]
+  },
+  {
+    "id": "B19",
+    "file": "B19_vivienda.glb",
+    "x": 31,
+    "z": -110,
+    "yaw": 180,
+    "width": 9.1096,
+    "depth": 7.084,
+    "height": 7.78,
+    "originalCenter": [
+      94.5548,
+      20.542
+    ]
+  },
+  {
+    "id": "B20",
+    "file": "B20_vivienda.glb",
+    "x": 0,
+    "z": -24,
+    "yaw": 0,
+    "width": 7.96,
+    "depth": 8.031,
+    "height": 5.42,
+    "originalCenter": [
+      51.98,
+      61.0155
+    ]
+  },
+  {
+    "id": "B21",
+    "file": "B21_vivienda.glb",
+    "x": -41,
+    "z": -80,
+    "yaw": 180,
+    "width": 8.96,
+    "depth": 9.2944,
+    "height": 8.18,
+    "originalCenter": [
+      36.480000000000004,
+      42.6472
+    ]
+  },
+  {
+    "id": "B22",
+    "file": "B22_vivienda.glb",
+    "x": 28,
+    "z": -82,
+    "yaw": 180,
+    "width": 9.0976,
+    "depth": 8.0642,
+    "height": 4.74,
+    "originalCenter": [
+      73.5488,
+      34.0321
+    ]
+  },
+  {
+    "id": "B23",
+    "file": "B23_vivienda.glb",
+    "x": 30,
+    "z": -51,
+    "yaw": 0,
+    "width": 8.96,
+    "depth": 8.5492,
+    "height": 9.36,
+    "originalCenter": [
+      75.48,
+      48.2746
+    ]
+  },
+  {
+    "id": "B24",
+    "file": "B24_vivienda.glb",
+    "x": 80,
+    "z": -51,
+    "yaw": 0,
+    "width": 8.96,
+    "depth": 9.1298,
+    "height": 4.78,
+    "originalCenter": [
+      109.48,
+      58.5649
+    ]
+  },
+  {
+    "id": "B25",
+    "file": "B25_vivienda.glb",
+    "x": -52,
+    "z": -24,
+    "yaw": 0,
+    "width": 9.0992,
+    "depth": 8.0666,
+    "height": 4.53,
+    "originalCenter": [
+      21.549599999999998,
+      65.0333
+    ]
+  },
+  {
+    "id": "B26",
+    "file": "B26_vivienda.glb",
+    "x": 49,
+    "z": -110,
+    "yaw": 180,
+    "width": 8.96,
+    "depth": 8.548,
+    "height": 8.85,
+    "originalCenter": [
+      106.48,
+      29.274
+    ]
+  },
+  {
+    "id": "B27",
+    "file": "B27_iglesia_monasterio.glb",
+    "x": -110,
+    "z": -82,
+    "yaw": 180,
+    "width": 23.28,
+    "depth": 26.2348,
+    "height": 14.1,
+    "originalCenter": null
+  },
+  {
+    "id": "B28",
+    "file": "B28_Castillo_Brisalia_Rev5.glb",
+    "assetRoot": "brisalia-castle-rev5",
+    "revision": 5,
+    "x": 135,
+    "z": -104,
+    "yaw": 180,
+    "width": 71.26,
+    "depth": 65.03,
+    "height": 31.791,
+    "footprintOffsetZ": 0.885,
+    "originalCenter": null
+  }
+]

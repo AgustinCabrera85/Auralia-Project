@@ -312,7 +312,7 @@ export class CharacterTraversalController {
       this.airVelocityX=input.moveX*this.airTargetSpeed;
       this.airVelocityZ=input.moveZ*this.airTargetSpeed;
     }else if(this.mode==='airborne'&&(input.jumpPressed||input.airKickPressed)&&this.jumpsUsed===1){
-      this.velocityY=TRAVERSAL.doubleJumpSpeed;
+      this.velocityY=input.airKickPressed?TRAVERSAL.airKickJumpSpeed:TRAVERSAL.doubleJumpSpeed;
       this.jumpsUsed=2;this.supportRockId=null;
       this.verticalAirKick=input.airKickPressed===true;
       const directionLength=this.verticalAirKick?0:Math.hypot(input.moveX,input.moveZ);
@@ -462,7 +462,18 @@ export class CharacterTraversalController {
       const oldY=p.y;
       const integrated=integrateAirborneVertical(this.velocityY,dt);
       this.velocityY=integrated.velocityY;
-      const nextY=oldY+integrated.deltaY;
+      let nextY=oldY+integrated.deltaY;
+      // Sweep the rising capsule, including the extra air-jump impulse, so a
+      // thin roof cannot be crossed between substeps. Stop at the last clear height.
+      const clearRise=(rise:number)=>world.headroom(p.x,oldY+.05,p.z,TRAVERSAL.playerHeight+rise-.05);
+      if(integrated.deltaY>0&&!clearRise(integrated.deltaY)){
+        let clear=0,blocked=integrated.deltaY;
+        for(let i=0;i<8;i++){
+          const middle=(clear+blocked)/2;
+          if(clearRise(middle))clear=middle;else blocked=middle;
+        }
+        nextY=oldY+clear;this.velocityY=0;
+      }
       const terrainY=world.fallbackHeight(p.x,p.z);
       if(oldY<terrainY-.1){
         p.y=terrainY;this.mode='grounded';this.velocityY=0;this.supportRockId=null;

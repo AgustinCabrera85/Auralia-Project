@@ -1,0 +1,27 @@
+{
+  "label": "salon-trono-1080p",
+  "mode": "engine.runRenderLoop with real delta time",
+  "fps": 59.95802937943439,
+  "seconds": 10.007,
+  "frames": 601,
+  "medianMs": 12.5,
+  "p95Ms": 16.299999997019768,
+  "ms": 12.799999997019768,
+  "draws": 102,
+  "triangles": 62758,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "avatar": true,
+  "companion": {
+    "visible": true,
+    "distance": 4.447144069062406
+  },
+  "loadMs": 29336.20000000298,
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  }
+}

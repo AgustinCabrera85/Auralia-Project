@@ -1,0 +1,25 @@
+{
+  "baselineRenderCpuMs": {
+    "mean": 18.37333333392938,
+    "max": 103.80000001192093
+  },
+  "activeRenderCpuMs": {
+    "mean": 19.190000000596047,
+    "max": 22.600000023841858
+  },
+  "fxUpdateCpuMs": 0.23,
+  "note": "Headless scene.render CPU timings, 30 warmed samples; not GPU frame times or an FPS promise.",
+  "pendingDownloadAborted": true,
+  "noLateMeshes": true,
+  "disposedInstances": 48,
+  "beforeDisposal": {
+    "meshes": 1373,
+    "materials": 580,
+    "morphs": 58
+  },
+  "afterDisposal": {
+    "meshes": 1277,
+    "materials": 577,
+    "morphs": 10
+  }
+}

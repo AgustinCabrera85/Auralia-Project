@@ -1,0 +1,1727 @@
+{
+  "generator": "Khronos toktx 4.4.2 UASTC quality 3, Zstd 9, full-resolution mipmaps",
+  "mapping": {
+    "/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb": "/assets/gpu/models/15a63b7d489a2dd309ce.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B01_casa_taller.gltf": "/assets/gpu/models/8f9785e42fe64a989ba0.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B02_posada.gltf": "/assets/gpu/models/c80c737cd0b09aff090d.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B03_salon.gltf": "/assets/gpu/models/86184001bead1624fb6e.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B04_taller.gltf": "/assets/gpu/models/eb731bc0358a3df1fe63.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B05_taller.gltf": "/assets/gpu/models/70481ed3d55353f9d3e2.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B06_torre.gltf": "/assets/gpu/models/582c874a920dc5e619ad.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B07_vivienda.gltf": "/assets/gpu/models/db740fa242ecc3e877a2.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B08_vivienda.gltf": "/assets/gpu/models/784573c29973a64b65a0.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B09_vivienda.gltf": "/assets/gpu/models/d39328a9534a141a974f.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B10_vivienda.gltf": "/assets/gpu/models/e0d0bd9a7330c74de8f5.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B11_vivienda.gltf": "/assets/gpu/models/febb3406a42a14e13ad1.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B12_vivienda.gltf": "/assets/gpu/models/4ee0a7cc5747f022a105.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B13_vivienda.gltf": "/assets/gpu/models/95388541e2c62126bf6c.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B14_vivienda.gltf": "/assets/gpu/models/0e7671d5ee320228481c.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B15_vivienda.gltf": "/assets/gpu/models/2458b213980be4efca3d.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B16_vivienda.gltf": "/assets/gpu/models/15179293f7236b051702.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B17_vivienda.gltf": "/assets/gpu/models/5566ce047ffe8b80e339.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B18_vivienda.gltf": "/assets/gpu/models/1804f8340633b3e458f4.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B19_vivienda.gltf": "/assets/gpu/models/42da9e36023773318418.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B20_vivienda.gltf": "/assets/gpu/models/033dd9ad62090c8ee894.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B21_vivienda.gltf": "/assets/gpu/models/13dd3dc16215faed68db.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B22_vivienda.gltf": "/assets/gpu/models/6c4ce9007755b76f8301.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B23_vivienda.gltf": "/assets/gpu/models/dda339dfaedf3a7927f8.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B24_vivienda.gltf": "/assets/gpu/models/f299ca5ece1ade6a512f.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B25_vivienda.gltf": "/assets/gpu/models/39a75b0f12fb2139beb1.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B26_vivienda.gltf": "/assets/gpu/models/7681ef739b9b8c386e4d.gltf",
+    "/assets/buildings/brisalia-rev3-final/shared_gltf/B27_iglesia_monasterio.gltf": "/assets/gpu/models/e2deaa8dc9478f943016.gltf",
+    "/assets/characters/dogo/Dogo_Auralia.glb": "/assets/gpu/models/dad0cb72b6952605a51b.gltf",
+    "/assets/characters/santi/Santi_NLA_SK_Opt.glb": "/assets/gpu/models/9bc7caa134ed34826784.gltf",
+    "/assets/foliage-v4/Tree_01_Soft_Emerald.glb": "/assets/gpu/models/3a2b716b0faf90712ac6.gltf",
+    "/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb": "/assets/gpu/models/d3b2289c4d4c3699bd0b.gltf",
+    "/assets/foliage-v4/Tree_02_Broad_Meadow.glb": "/assets/gpu/models/9df87b857bf6a349a673.gltf",
+    "/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb": "/assets/gpu/models/e9baf46c1893497ee65f.gltf",
+    "/assets/foliage-v4/Tree_03_Tall_Clouds.glb": "/assets/gpu/models/b6ba5d027c59389dcd9b.gltf",
+    "/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb": "/assets/gpu/models/189a085f06b7430d4daf.gltf",
+    "/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb": "/assets/gpu/models/d93c5841b39cfbd65da1.gltf",
+    "/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb": "/assets/gpu/models/3c644b75d543c19b9549.gltf",
+    "/assets/vegetation/Arbolito_1.glb": "/assets/gpu/models/c19e30aac2bb7a1e5982.gltf",
+    "/assets/vegetation/Arbolito_2.glb": "/assets/gpu/models/835fe57e548488aff260.gltf",
+    "/assets/vegetation/Arbolito_3.glb": "/assets/gpu/models/b77947e245cf4476fb53.gltf",
+    "/assets/vegetation/brisalia-lods/Matorral_1_LOD0.glb": "/assets/gpu/models/50f898b5e3baa2651ab3.gltf",
+    "/assets/vegetation/brisalia-lods/Matorral_1_LOD1.glb": "/assets/gpu/models/05b54961fcdc59332352.gltf",
+    "/assets/vegetation/brisalia-lods/Matorral_1_LOD2.glb": "/assets/gpu/models/d327d3758bcbc1c52ae0.gltf",
+    "/assets/vegetation/brisalia-lods/Yuyos_1_LOD0.glb": "/assets/gpu/models/c30cb11dace4643fe302.gltf",
+    "/assets/vegetation/brisalia-lods/Yuyos_1_LOD1.glb": "/assets/gpu/models/b5a8a8ef736f04fdce9d.gltf",
+    "/assets/vegetation/brisalia-lods/Yuyos_1_LOD2.glb": "/assets/gpu/models/a2ae01b4ac7c1bfd6d20.gltf",
+    "/assets/vegetation/brisalia-lods/margaritas_1_LOD0.glb": "/assets/gpu/models/96ccf8e47a8e6bae92a3.gltf",
+    "/assets/vegetation/brisalia-lods/margaritas_1_LOD1.glb": "/assets/gpu/models/9cf8afe7300e7edf9fb9.gltf",
+    "/assets/vegetation/brisalia-lods/margaritas_1_LOD2.glb": "/assets/gpu/models/42fea874fd8b1a7bfb13.gltf",
+    "/assets/vegetation/plantitas_1.glb": "/assets/gpu/models/6209ca296a2837452c58.gltf",
+    "/assets/wayfinding/Board.glb": "/assets/gpu/models/47839c40df40456cb8ad.gltf",
+    "/assets/wayfinding/Lamp.glb": "/assets/gpu/models/d4d62c465c078b9cd6a8.gltf",
+    "/assets/wayfinding/Pointer1.glb": "/assets/gpu/models/d284180d4b987b0e289e.gltf",
+    "/assets/wayfinding/Pointer2.glb": "/assets/gpu/models/020251528f37c39bc806.gltf",
+    "/assets/world/cliffs/Acantilado_2_closed.glb": "/assets/gpu/models/b048f8dee7fcb3d9470e.gltf",
+    "/assets/world/crystals/Cristal_azul_flotante.glb": "/assets/gpu/models/ce0d1a511f4cd88b9cff.gltf",
+    "/assets/world/crystals/Cristal_celeste_1.glb": "/assets/gpu/models/7e88fcd6642018559108.gltf",
+    "/assets/world/landmarks/Isla_flotante_2.glb": "/assets/gpu/models/2e02f69dbb61fe74bff2.gltf",
+    "/assets/world/rocks/Escalon_rocoso_closed.glb": "/assets/gpu/models/7c8d453fcdb0769adbb6.gltf",
+    "/assets/world/rocks/Formacion_rocosa_1_closed.glb": "/assets/gpu/models/9da75b7357c24d49bc4f.gltf",
+    "/assets/world/rocks/Meseta_rocosa_pasto_closed.glb": "/assets/gpu/models/1bcbd2f1be04571cc73c.gltf",
+    "/assets/world/rocks/Pack_rocas_1_closed.glb": "/assets/gpu/models/a698dcdf099275bef565.gltf",
+    "/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K_closed.glb": "/assets/gpu/models/348aa3fc178f609191c6.gltf",
+    "/assets/world/structures/Crisol_Herrero.glb": "/assets/gpu/models/43b617d75589150b8364.gltf",
+    "/assets/world/vegetation/Tronco_1.glb": "/assets/gpu/models/182ce121a15346424189.gltf",
+    "/assets/water/caustics-refractive-1k.png": "/assets/gpu/textures/a7d0090d0386b7bf14c8d3b7.ktx2",
+    "/assets/water/waterfall-foam-plates-1k.png": "/assets/gpu/textures/136441efc3b702b951b781ef.ktx2",
+    "/assets/grass/grass-sprites.png": "/assets/gpu/textures/048742f872f09039c3ed8b46.ktx2",
+    "/assets/wayfinding/wood-v2-color.png": "/assets/gpu/textures/3e9062d21f5106ce144645d8.ktx2",
+    "/assets/wayfinding/wood-v2-normal.png": "/assets/gpu/textures/ec4e7efae25774df0d4055bc.ktx2",
+    "/assets/wayfinding/wood-v2-endgrain.png": "/assets/gpu/textures/c88f44ed20228d02c41da20a.ktx2",
+    "/assets/world/vegetation/impostors/v4-trees.png": "/assets/gpu/textures/fe528f1a070031122cc1724f.ktx2",
+    "/assets/ivy/Auralia_Leaf_green_mid_512.png": "/assets/gpu/textures/7cb10fd89dec3cb43420b8c3.ktx2"
+  },
+  "models": [
+    {
+      "source": "/assets/buildings/brisalia-castle-rev5/B28_Castillo_Brisalia_Rev5.glb",
+      "output": "/assets/gpu/models/15a63b7d489a2dd309ce.gltf",
+      "images": 23
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B01_casa_taller.gltf",
+      "output": "/assets/gpu/models/8f9785e42fe64a989ba0.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B02_posada.gltf",
+      "output": "/assets/gpu/models/c80c737cd0b09aff090d.gltf",
+      "images": 37
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B03_salon.gltf",
+      "output": "/assets/gpu/models/86184001bead1624fb6e.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B04_taller.gltf",
+      "output": "/assets/gpu/models/eb731bc0358a3df1fe63.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B05_taller.gltf",
+      "output": "/assets/gpu/models/70481ed3d55353f9d3e2.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B06_torre.gltf",
+      "output": "/assets/gpu/models/582c874a920dc5e619ad.gltf",
+      "images": 19
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B07_vivienda.gltf",
+      "output": "/assets/gpu/models/db740fa242ecc3e877a2.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B08_vivienda.gltf",
+      "output": "/assets/gpu/models/784573c29973a64b65a0.gltf",
+      "images": 32
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B09_vivienda.gltf",
+      "output": "/assets/gpu/models/d39328a9534a141a974f.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B10_vivienda.gltf",
+      "output": "/assets/gpu/models/e0d0bd9a7330c74de8f5.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B11_vivienda.gltf",
+      "output": "/assets/gpu/models/febb3406a42a14e13ad1.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B12_vivienda.gltf",
+      "output": "/assets/gpu/models/4ee0a7cc5747f022a105.gltf",
+      "images": 29
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B13_vivienda.gltf",
+      "output": "/assets/gpu/models/95388541e2c62126bf6c.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B14_vivienda.gltf",
+      "output": "/assets/gpu/models/0e7671d5ee320228481c.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B15_vivienda.gltf",
+      "output": "/assets/gpu/models/2458b213980be4efca3d.gltf",
+      "images": 29
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B16_vivienda.gltf",
+      "output": "/assets/gpu/models/15179293f7236b051702.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B17_vivienda.gltf",
+      "output": "/assets/gpu/models/5566ce047ffe8b80e339.gltf",
+      "images": 32
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B18_vivienda.gltf",
+      "output": "/assets/gpu/models/1804f8340633b3e458f4.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B19_vivienda.gltf",
+      "output": "/assets/gpu/models/42da9e36023773318418.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B20_vivienda.gltf",
+      "output": "/assets/gpu/models/033dd9ad62090c8ee894.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B21_vivienda.gltf",
+      "output": "/assets/gpu/models/13dd3dc16215faed68db.gltf",
+      "images": 29
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B22_vivienda.gltf",
+      "output": "/assets/gpu/models/6c4ce9007755b76f8301.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B23_vivienda.gltf",
+      "output": "/assets/gpu/models/dda339dfaedf3a7927f8.gltf",
+      "images": 32
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B24_vivienda.gltf",
+      "output": "/assets/gpu/models/f299ca5ece1ade6a512f.gltf",
+      "images": 27
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B25_vivienda.gltf",
+      "output": "/assets/gpu/models/39a75b0f12fb2139beb1.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B26_vivienda.gltf",
+      "output": "/assets/gpu/models/7681ef739b9b8c386e4d.gltf",
+      "images": 32
+    },
+    {
+      "source": "/assets/buildings/brisalia-rev3-final/shared_gltf/B27_iglesia_monasterio.gltf",
+      "output": "/assets/gpu/models/e2deaa8dc9478f943016.gltf",
+      "images": 25
+    },
+    {
+      "source": "/assets/characters/dogo/Dogo_Auralia.glb",
+      "output": "/assets/gpu/models/dad0cb72b6952605a51b.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/characters/santi/Santi_NLA_SK_Opt.glb",
+      "output": "/assets/gpu/models/9bc7caa134ed34826784.gltf",
+      "images": 3
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_01_Soft_Emerald.glb",
+      "output": "/assets/gpu/models/3a2b716b0faf90712ac6.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_01_Soft_Emerald_LOD1.glb",
+      "output": "/assets/gpu/models/d3b2289c4d4c3699bd0b.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_02_Broad_Meadow.glb",
+      "output": "/assets/gpu/models/9df87b857bf6a349a673.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_02_Broad_Meadow_LOD1.glb",
+      "output": "/assets/gpu/models/e9baf46c1893497ee65f.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_03_Tall_Clouds.glb",
+      "output": "/assets/gpu/models/b6ba5d027c59389dcd9b.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_03_Tall_Clouds_LOD1.glb",
+      "output": "/assets/gpu/models/189a085f06b7430d4daf.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_04_Leaning_Sunlit.glb",
+      "output": "/assets/gpu/models/d93c5841b39cfbd65da1.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb",
+      "output": "/assets/gpu/models/3c644b75d543c19b9549.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/vegetation/Arbolito_1.glb",
+      "output": "/assets/gpu/models/c19e30aac2bb7a1e5982.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/Arbolito_2.glb",
+      "output": "/assets/gpu/models/835fe57e548488aff260.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/Arbolito_3.glb",
+      "output": "/assets/gpu/models/b77947e245cf4476fb53.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Matorral_1_LOD0.glb",
+      "output": "/assets/gpu/models/50f898b5e3baa2651ab3.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Matorral_1_LOD1.glb",
+      "output": "/assets/gpu/models/05b54961fcdc59332352.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Matorral_1_LOD2.glb",
+      "output": "/assets/gpu/models/d327d3758bcbc1c52ae0.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Yuyos_1_LOD0.glb",
+      "output": "/assets/gpu/models/c30cb11dace4643fe302.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Yuyos_1_LOD1.glb",
+      "output": "/assets/gpu/models/b5a8a8ef736f04fdce9d.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/Yuyos_1_LOD2.glb",
+      "output": "/assets/gpu/models/a2ae01b4ac7c1bfd6d20.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/margaritas_1_LOD0.glb",
+      "output": "/assets/gpu/models/96ccf8e47a8e6bae92a3.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/margaritas_1_LOD1.glb",
+      "output": "/assets/gpu/models/9cf8afe7300e7edf9fb9.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/brisalia-lods/margaritas_1_LOD2.glb",
+      "output": "/assets/gpu/models/42fea874fd8b1a7bfb13.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/vegetation/plantitas_1.glb",
+      "output": "/assets/gpu/models/6209ca296a2837452c58.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/wayfinding/Board.glb",
+      "output": "/assets/gpu/models/47839c40df40456cb8ad.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/wayfinding/Lamp.glb",
+      "output": "/assets/gpu/models/d4d62c465c078b9cd6a8.gltf",
+      "images": 7
+    },
+    {
+      "source": "/assets/wayfinding/Pointer1.glb",
+      "output": "/assets/gpu/models/d284180d4b987b0e289e.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/wayfinding/Pointer2.glb",
+      "output": "/assets/gpu/models/020251528f37c39bc806.gltf",
+      "images": 6
+    },
+    {
+      "source": "/assets/world/cliffs/Acantilado_2_closed.glb",
+      "output": "/assets/gpu/models/b048f8dee7fcb3d9470e.gltf",
+      "images": 3
+    },
+    {
+      "source": "/assets/world/crystals/Cristal_azul_flotante.glb",
+      "output": "/assets/gpu/models/ce0d1a511f4cd88b9cff.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/crystals/Cristal_celeste_1.glb",
+      "output": "/assets/gpu/models/7e88fcd6642018559108.gltf",
+      "images": 3
+    },
+    {
+      "source": "/assets/world/landmarks/Isla_flotante_2.glb",
+      "output": "/assets/gpu/models/2e02f69dbb61fe74bff2.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/rocks/Escalon_rocoso_closed.glb",
+      "output": "/assets/gpu/models/7c8d453fcdb0769adbb6.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/rocks/Formacion_rocosa_1_closed.glb",
+      "output": "/assets/gpu/models/9da75b7357c24d49bc4f.gltf",
+      "images": 3
+    },
+    {
+      "source": "/assets/world/rocks/Meseta_rocosa_pasto_closed.glb",
+      "output": "/assets/gpu/models/1bcbd2f1be04571cc73c.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/rocks/Pack_rocas_1_closed.glb",
+      "output": "/assets/gpu/models/a698dcdf099275bef565.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K_closed.glb",
+      "output": "/assets/gpu/models/348aa3fc178f609191c6.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/structures/Crisol_Herrero.glb",
+      "output": "/assets/gpu/models/43b617d75589150b8364.gltf",
+      "images": 1
+    },
+    {
+      "source": "/assets/world/vegetation/Tronco_1.glb",
+      "output": "/assets/gpu/models/182ce121a15346424189.gltf",
+      "images": 1
+    }
+  ],
+  "images": [
+    {
+      "key": "2e62c576819e9965c513f7f1",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1341841
+    },
+    {
+      "key": "6b6cd7098254f604637406ec",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1267263
+    },
+    {
+      "key": "335af2a7c31ceb7a75e9c960",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 653309
+    },
+    {
+      "key": "8a18f01aff5ef04593187d01",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1261490
+    },
+    {
+      "key": "e2249335a524f88fb43007f7",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1230541
+    },
+    {
+      "key": "f2817b6131d649b2af36f153",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1330949
+    },
+    {
+      "key": "1558bec9085efa78563c9a85",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1313820
+    },
+    {
+      "key": "0f44cb382b35a209e8bed0d5",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 651634
+    },
+    {
+      "key": "4ec61a5dba0d9075856cca8f",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1087690
+    },
+    {
+      "key": "12a293e900e2796cc18a21d9",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 802279
+    },
+    {
+      "key": "d9a00357264e033e053eaeab",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 715381
+    },
+    {
+      "key": "90c73c0043ca76fcd7f01b82",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1320742
+    },
+    {
+      "key": "21789cea2ab02e05a8e44e1b",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1255725
+    },
+    {
+      "key": "4b121acf356de6456af1ffc9",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 653833
+    },
+    {
+      "key": "2c7d86f2e1a27b3fad4b2bcf",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1278778
+    },
+    {
+      "key": "dc9a3e76a42a22415513ae73",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1207837
+    },
+    {
+      "key": "3ae063d4238affd12be1f351",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 814738
+    },
+    {
+      "key": "88d868b7481d17f0614b30b2",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 667737
+    },
+    {
+      "key": "7bd1304acf99d4f8c4c989f3",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 869501
+    },
+    {
+      "key": "46c32c29a725381539222483",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1229478
+    },
+    {
+      "key": "1faa35b5db73756dbe593a70",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 634262
+    },
+    {
+      "key": "299dc8ce4252bca6b7544b62",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1303885
+    },
+    {
+      "key": "546fed508c7c2fb979eade05",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1238725
+    },
+    {
+      "key": "7b58331d2185bc853ac65ffd",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1038073
+    },
+    {
+      "key": "be94028b30f7eb9b0c049f13",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1320410
+    },
+    {
+      "key": "0f52a97a1a581d6bfb065bb2",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1246604
+    },
+    {
+      "key": "f32bb42198ca82291bfdc69b",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 818086
+    },
+    {
+      "key": "97ba601a32a18489a5a91fbf",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1299919
+    },
+    {
+      "key": "e301e90b0ea38eefa0af0ea4",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1264152
+    },
+    {
+      "key": "6a7773360fc401a3cb2e431c",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 760185
+    },
+    {
+      "key": "a78f903d39384aec6003a514",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1225742
+    },
+    {
+      "key": "596a172fc4779e8c6a7c79b3",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1360075
+    },
+    {
+      "key": "14a7d8c950c8cb29fcdbb613",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 784645
+    },
+    {
+      "key": "6377aa1bbf0ad74840053307",
+      "width": 1536,
+      "height": 1536,
+      "sourceWidth": 1536,
+      "sourceHeight": 1536,
+      "linear": true,
+      "bytes": 2964872
+    },
+    {
+      "key": "e9e9b17d22afa79b27fe34d5",
+      "width": 1536,
+      "height": 1536,
+      "sourceWidth": 1536,
+      "sourceHeight": 1536,
+      "linear": false,
+      "bytes": 2837242
+    },
+    {
+      "key": "3a835d1671a91eec45c3f08c",
+      "width": 1536,
+      "height": 1536,
+      "sourceWidth": 1536,
+      "sourceHeight": 1536,
+      "linear": true,
+      "bytes": 2212279
+    },
+    {
+      "key": "b4a8b5ed86efb40be5c3aeff",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1124137
+    },
+    {
+      "key": "107b108689e10c5cf8cbcd90",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 613237
+    },
+    {
+      "key": "44820bb7c84ee7b1b37f0420",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 979644
+    },
+    {
+      "key": "b804e0bb2084c2068f8b8849",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1324276
+    },
+    {
+      "key": "674f3bfab55f026672a9f64f",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1086489
+    },
+    {
+      "key": "557e95b41cd397826e6197ae",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1333686
+    },
+    {
+      "key": "b28355ddfeb542752056c853",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 722431
+    },
+    {
+      "key": "59e0aa23f292e7ddb891d865",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 137535
+    },
+    {
+      "key": "8880ad82177f35bb2f1412e8",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 139788
+    },
+    {
+      "key": "5446579a7611f2ed7f4378a0",
+      "width": 1024,
+      "height": 256,
+      "sourceWidth": 1024,
+      "sourceHeight": 256,
+      "linear": false,
+      "bytes": 118528
+    },
+    {
+      "key": "b99e6a6c86bcc8688f2ce514",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1112932
+    },
+    {
+      "key": "ea3b7b6b9f2966f07e434458",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1340939
+    },
+    {
+      "key": "019a9a44b3525e13cd1d5d6b",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 664568
+    },
+    {
+      "key": "874bec258e00f9415b837d7a",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1289841
+    },
+    {
+      "key": "0b402c53996823206d03ea8e",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 736634
+    },
+    {
+      "key": "2ce2c61e6b77bec8d14eb33b",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1354387
+    },
+    {
+      "key": "2200349563217a07fb31f676",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1303597
+    },
+    {
+      "key": "d33c4b9de6cd23adf8f5e5dd",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1308142
+    },
+    {
+      "key": "e4e40f3d222823327814a761",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 815683
+    },
+    {
+      "key": "87fd181c5d8647eafb46e647",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1320910
+    },
+    {
+      "key": "4eb2f787e948f3bddae0815c",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1243812
+    },
+    {
+      "key": "7afe4541ddf886c8c689f206",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 869648
+    },
+    {
+      "key": "3585d1f799e7c37a7bcab74f",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1260364
+    },
+    {
+      "key": "f6340ed6a534256e9c46c4d4",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1153448
+    },
+    {
+      "key": "c337fe57f810fc3ee712cfc0",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1342779
+    },
+    {
+      "key": "9336bf01cb9d712c9eebf2f7",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1287164
+    },
+    {
+      "key": "236ec9c8c6ce9de3040020ff",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1089457
+    },
+    {
+      "key": "16f03479da55f15f42ac532f",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1251827
+    },
+    {
+      "key": "d7c10f143ee95eda50efcbc6",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1213528
+    },
+    {
+      "key": "b9150526c919a977a2edb8ec",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1289241
+    },
+    {
+      "key": "2780f3172fe150490c998225",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1233596
+    },
+    {
+      "key": "e072a5bd8ac92d2ce4f3321e",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 911882
+    },
+    {
+      "key": "20cc0bccef49a69bb4530549",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1359809
+    },
+    {
+      "key": "83be537570ecb328f747c689",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1331838
+    },
+    {
+      "key": "dd4e9c6d412770744846502c",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1141721
+    },
+    {
+      "key": "2e23dc9f2eb60dcfed02baea",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 623434
+    },
+    {
+      "key": "09fda60acbd4dc6569706be0",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 1029844
+    },
+    {
+      "key": "8bffc86d8ca58b4d0bdc1629",
+      "width": 2048,
+      "height": 512,
+      "sourceWidth": 2048,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 1177305
+    },
+    {
+      "key": "95ff92e3b9aca3698eb0f361",
+      "width": 344,
+      "height": 512,
+      "sourceWidth": 341,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 38492
+    },
+    {
+      "key": "96af7bc9c1db9b74a7c806bf",
+      "width": 2048,
+      "height": 512,
+      "sourceWidth": 2048,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 648016
+    },
+    {
+      "key": "23325c5166f8125c278451a5",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 223668
+    },
+    {
+      "key": "bad1409ed83eef955175a333",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 416867
+    },
+    {
+      "key": "dff706e3d5147d4c299ee24c",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 404861
+    },
+    {
+      "key": "db0fa88687c5271e0b067b0d",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 171230
+    },
+    {
+      "key": "ab450ccf4168620ad7fd66a9",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1206681
+    },
+    {
+      "key": "e00197bd593d175053090f19",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1220630
+    },
+    {
+      "key": "88b60aa4d26e27e306e0bd78",
+      "width": 4096,
+      "height": 4096,
+      "sourceWidth": 4096,
+      "sourceHeight": 4096,
+      "linear": false,
+      "bytes": 9744217
+    },
+    {
+      "key": "09c3135ae532114a865f277a",
+      "width": 1024,
+      "height": 768,
+      "sourceWidth": 1024,
+      "sourceHeight": 768,
+      "linear": false,
+      "bytes": 733756
+    },
+    {
+      "key": "3a505e52c709ba1faf4b08d9",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 795500
+    },
+    {
+      "key": "edc2fa6943ffde1ed1eef6f3",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1251310
+    },
+    {
+      "key": "b06aeb02c9237dd6e45e581f",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46546
+    },
+    {
+      "key": "6a99fcc75cd630057e739d0a",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45402
+    },
+    {
+      "key": "9cd79ffafe686203bfd15bdb",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46944
+    },
+    {
+      "key": "9f83a1a000ecadcabf541809",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45926
+    },
+    {
+      "key": "7cb10fd89dec3cb43420b8c3",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45367
+    },
+    {
+      "key": "3a0d9919e29d3e3dcdd26dd8",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45243
+    },
+    {
+      "key": "321b3c7d3b944e4f0acd6758",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46726
+    },
+    {
+      "key": "3f994853ab07452511442add",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46239
+    },
+    {
+      "key": "48df6dcc9683d98070f1e45a",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45457
+    },
+    {
+      "key": "b6cc43290834dd93885cade0",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46242
+    },
+    {
+      "key": "c804a4531eec779b9caeb3bf",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45956
+    },
+    {
+      "key": "d0eaebf1b3017b79288c0c43",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46595
+    },
+    {
+      "key": "cd25a19dfac6b66a672f8cd0",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46684
+    },
+    {
+      "key": "f88d02b2a8695b892d3afe69",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 46602
+    },
+    {
+      "key": "d1e6d22538699b9b86aa13b7",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 45767
+    },
+    {
+      "key": "6e5812da1648f1f3232ce374",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 47106
+    },
+    {
+      "key": "b4985fdd488f11c84a131981",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1344778
+    },
+    {
+      "key": "dfae8c77f784140b2c5634c2",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1364174
+    },
+    {
+      "key": "64e947b774b6f3321343f3ef",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1346605
+    },
+    {
+      "key": "8aa694330381e5e002c6d376",
+      "width": 2048,
+      "height": 2048,
+      "sourceWidth": 2048,
+      "sourceHeight": 2048,
+      "linear": false,
+      "bytes": 4906137
+    },
+    {
+      "key": "9e4612d1f01b4c2e09985f5b",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1328007
+    },
+    {
+      "key": "f8739e3a00b38b1c47b4b056",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 336233
+    },
+    {
+      "key": "fc0101e21b30410bab9783be",
+      "width": 2048,
+      "height": 2048,
+      "sourceWidth": 2048,
+      "sourceHeight": 2048,
+      "linear": false,
+      "bytes": 5195681
+    },
+    {
+      "key": "ece57f3504bd21f5c64f9f8a",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1350675
+    },
+    {
+      "key": "5920b5b1bbf70eff5d277c8b",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 336945
+    },
+    {
+      "key": "7732b704c6a586e36e68568a",
+      "width": 2048,
+      "height": 2048,
+      "sourceWidth": 2048,
+      "sourceHeight": 2048,
+      "linear": false,
+      "bytes": 5069383
+    },
+    {
+      "key": "216bfa8ba8e72bc6d0283a97",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1337981
+    },
+    {
+      "key": "1fec7976ccd7f4b3aa5458f6",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 336762
+    },
+    {
+      "key": "26c7ea706e9c9afa7cb858d2",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 328318
+    },
+    {
+      "key": "69e8c10a22ca1987dd1b1425",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 803934
+    },
+    {
+      "key": "9a14e990e6c94b15a7d9c13a",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": true,
+      "bytes": 246274
+    },
+    {
+      "key": "409dbfc137e183cf581a470a",
+      "width": 256,
+      "height": 256,
+      "sourceWidth": 256,
+      "sourceHeight": 256,
+      "linear": true,
+      "bytes": 33859
+    },
+    {
+      "key": "b38f597ec4e76db6490727fd",
+      "width": 512,
+      "height": 512,
+      "sourceWidth": 512,
+      "sourceHeight": 512,
+      "linear": false,
+      "bytes": 216841
+    },
+    {
+      "key": "62a92c6ae65226b58a95de6e",
+      "width": 256,
+      "height": 256,
+      "sourceWidth": 256,
+      "sourceHeight": 256,
+      "linear": true,
+      "bytes": 55647
+    },
+    {
+      "key": "54060dae9dadcce141101ae4",
+      "width": 256,
+      "height": 256,
+      "sourceWidth": 256,
+      "sourceHeight": 256,
+      "linear": true,
+      "bytes": 74161
+    },
+    {
+      "key": "f5b80d03511257496e2b817d",
+      "width": 256,
+      "height": 256,
+      "sourceWidth": 256,
+      "sourceHeight": 256,
+      "linear": false,
+      "bytes": 70913
+    },
+    {
+      "key": "3f1fce88d4965c6130c29287",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 753173
+    },
+    {
+      "key": "318a621682572787d2adc538",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1224159
+    },
+    {
+      "key": "6a4949f1bd9aa968437df308",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 764347
+    },
+    {
+      "key": "173e66ec57829257b2656fa7",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1129197
+    },
+    {
+      "key": "45ae18ad9f4a25f24cc1d54c",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 443971
+    },
+    {
+      "key": "0a31a5625f8821a107722c75",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 928282
+    },
+    {
+      "key": "771396a7a93bf29c54d59908",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 874689
+    },
+    {
+      "key": "54aa007dc4a8f618923d2129",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1333990
+    },
+    {
+      "key": "37d657bed14be44d2b1889c6",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1273873
+    },
+    {
+      "key": "1f28ece75c03b8b941df1dba",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 610970
+    },
+    {
+      "key": "1628e1cae92fa3b3b387a89f",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1236631
+    },
+    {
+      "key": "d755ca2dd82c66b1339b6df1",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": true,
+      "bytes": 920330
+    },
+    {
+      "key": "197d6a0ea80c1a63f0de561e",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1244467
+    },
+    {
+      "key": "eda88993567ce16b6f9fd630",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1273335
+    },
+    {
+      "key": "974bce6bbf302697856f6ff3",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1308700
+    },
+    {
+      "key": "70462b073f84a1d326a1befa",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1239297
+    },
+    {
+      "key": "bd7cc04c431ac353f8dff872",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 922486
+    },
+    {
+      "key": "a7d0090d0386b7bf14c8d3b7",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 449785
+    },
+    {
+      "key": "136441efc3b702b951b781ef",
+      "width": 1024,
+      "height": 1024,
+      "sourceWidth": 1024,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 1127519
+    },
+    {
+      "key": "048742f872f09039c3ed8b46",
+      "width": 1024,
+      "height": 256,
+      "sourceWidth": 1024,
+      "sourceHeight": 256,
+      "linear": false,
+      "bytes": 80926
+    },
+    {
+      "key": "3e9062d21f5106ce144645d8",
+      "width": 1256,
+      "height": 1256,
+      "sourceWidth": 1254,
+      "sourceHeight": 1254,
+      "linear": false,
+      "bytes": 1796374
+    },
+    {
+      "key": "ec4e7efae25774df0d4055bc",
+      "width": 1256,
+      "height": 1256,
+      "sourceWidth": 1254,
+      "sourceHeight": 1254,
+      "linear": true,
+      "bytes": 1779587
+    },
+    {
+      "key": "c88f44ed20228d02c41da20a",
+      "width": 1256,
+      "height": 1256,
+      "sourceWidth": 1254,
+      "sourceHeight": 1254,
+      "linear": false,
+      "bytes": 1878713
+    },
+    {
+      "key": "fe528f1a070031122cc1724f",
+      "width": 2048,
+      "height": 1024,
+      "sourceWidth": 2048,
+      "sourceHeight": 1024,
+      "linear": false,
+      "bytes": 476384
+    }
+  ]
+}

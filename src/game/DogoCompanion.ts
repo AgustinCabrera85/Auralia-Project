@@ -1,4 +1,5 @@
-import { AnimationGroup, AssetContainer, LoadAssetContainerAsync, Quaternion, Scene, TransformNode, type Observer } from '@babylonjs/core';
+import { loadGpuAssetContainerAsync as LoadAssetContainerAsync } from '../world/GpuAssets';
+import { AnimationGroup, AssetContainer, Quaternion, Scene, TransformNode, type Observer } from '@babylonjs/core';
 import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { DOGO, DOGO_LOCOMOTION, DOGO_NLA_ACTIONS, type DogoActionName } from './DogoCatalog';

@@ -1,0 +1,119 @@
+{
+  "total": 2058,
+  "b18": 67,
+  "buildings": [
+    {
+      "id": "B02",
+      "components": 123
+    },
+    {
+      "id": "B01",
+      "components": 245
+    },
+    {
+      "id": "B03",
+      "components": 97
+    },
+    {
+      "id": "B04",
+      "components": 78
+    },
+    {
+      "id": "B05",
+      "components": 74
+    },
+    {
+      "id": "B06",
+      "components": 11
+    },
+    {
+      "id": "B07",
+      "components": 50
+    },
+    {
+      "id": "B08",
+      "components": 79
+    },
+    {
+      "id": "B09",
+      "components": 67
+    },
+    {
+      "id": "B10",
+      "components": 65
+    },
+    {
+      "id": "B11",
+      "components": 48
+    },
+    {
+      "id": "B12",
+      "components": 85
+    },
+    {
+      "id": "B13",
+      "components": 50
+    },
+    {
+      "id": "B14",
+      "components": 48
+    },
+    {
+      "id": "B15",
+      "components": 85
+    },
+    {
+      "id": "B16",
+      "components": 44
+    },
+    {
+      "id": "B17",
+      "components": 79
+    },
+    {
+      "id": "B18",
+      "components": 67
+    },
+    {
+      "id": "B19",
+      "components": 71
+    },
+    {
+      "id": "B20",
+      "components": 48
+    },
+    {
+      "id": "B21",
+      "components": 85
+    },
+    {
+      "id": "B22",
+      "components": 44
+    },
+    {
+      "id": "B23",
+      "components": 79
+    },
+    {
+      "id": "B24",
+      "components": 67
+    },
+    {
+      "id": "B25",
+      "components": 50
+    },
+    {
+      "id": "B26",
+      "components": 79
+    },
+    {
+      "id": "B27",
+      "components": 140
+    },
+    {
+      "id": "B28",
+      "components": 0
+    }
+  ],
+  "positionsAndUVsPreserved": true
+}

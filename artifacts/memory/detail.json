@@ -1,0 +1,15 @@
+{
+  "bufferTypes": {
+    "String": 2,
+    "Uint8Array": 1071
+  },
+  "uniqueBuffers": 779,
+  "encodedMiB": 407.72240352630615,
+  "collections": [
+    {
+      "p": "world.ocean.nearPositions",
+      "type": "Array",
+      "size": 43923
+    }
+  ]
+}

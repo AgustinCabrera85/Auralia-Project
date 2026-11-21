@@ -1,0 +1,761 @@
+{
+  "at": "2026-11-21T04:30:45.159Z",
+  "buildings": 28,
+  "lamps": 27,
+  "heapMiB": {
+    "used": 539,
+    "total": 595.5
+  },
+  "meshes": 1134,
+  "geometries": 979,
+  "materials": 608,
+  "textureWrappers": 951,
+  "gpuTextures": 240,
+  "estimatedRgbaTextureMiB": 957,
+  "geometryCpuMiB": 113.2,
+  "encodedImageMiB": 112.3,
+  "groups": [
+    {
+      "name": "buildings/brisalia-rev3-final",
+      "count": 62,
+      "estimatedMiB": 325.8
+    },
+    {
+      "name": "buildings/brisalia-castle-rev5",
+      "count": 23,
+      "estimatedMiB": 122.7
+    },
+    {
+      "name": "characters/dogo",
+      "count": 1,
+      "estimatedMiB": 85.3
+    },
+    {
+      "name": "vegetation/brisalia-lods",
+      "count": 9,
+      "estimatedMiB": 84
+    },
+    {
+      "name": "generated/other",
+      "count": 47,
+      "estimatedMiB": 69.6
+    },
+    {
+      "name": "world/rocks",
+      "count": 7,
+      "estimatedMiB": 37.3
+    },
+    {
+      "name": "terrain/biomes",
+      "count": 5,
+      "estimatedMiB": 26.7
+    },
+    {
+      "name": "world/crystals",
+      "count": 4,
+      "estimatedMiB": 21.3
+    },
+    {
+      "name": "world/vegetation",
+      "count": 2,
+      "estimatedMiB": 16
+    },
+    {
+      "name": "world/cliffs",
+      "count": 3,
+      "estimatedMiB": 16
+    },
+    {
+      "name": "characters/santi",
+      "count": 3,
+      "estimatedMiB": 14.7
+    },
+    {
+      "name": "wayfinding/wood-v2-color.png",
+      "count": 1,
+      "estimatedMiB": 8
+    },
+    {
+      "name": "wayfinding/wood-v2-normal.png",
+      "count": 1,
+      "estimatedMiB": 8
+    },
+    {
+      "name": "wayfinding/wood-v2-endgrain.png",
+      "count": 1,
+      "estimatedMiB": 8
+    },
+    {
+      "name": "water/caustics-refractive-1k.png",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "water/waterfall-foam-plates-1k.png",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "world/structures",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "world/landmarks",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "vegetation/Arbolito_1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "vegetation/Arbolito_2.glb#image0",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "vegetation/Arbolito_3.glb#image0",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "grass/grass-sprites.png",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "vegetation/plantitas_1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "wayfinding/Lamp.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "wayfinding/Pointer1.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "wayfinding/Pointer2.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "wayfinding/Board.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_01_Soft_Emerald_LOD1.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_02_Broad_Meadow_LOD1.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_03_Tall_Clouds_LOD1.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image0",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image1",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image2",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image3",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image4",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "foliage-v4/Tree_04_Leaning_Sunlit_LOD1.glb#image5",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "ivy/Auralia_Leaf_green_mid_512.png",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "wayfinding/Lamp.glb#image4",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Lamp.glb#image5",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Lamp.glb#image6",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Pointer1.glb#image4",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Pointer1.glb#image5",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Pointer2.glb#image4",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Pointer2.glb#image5",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Board.glb#image4",
+      "count": 1,
+      "estimatedMiB": 0.3
+    },
+    {
+      "name": "wayfinding/Board.glb#image5",
+      "count": 1,
+      "estimatedMiB": 0.3
+    }
+  ],
+  "largest": [
+    {
+      "name": "data:/assets/characters/dogo/Dogo_Auralia.glb#image0",
+      "width": 4096,
+      "height": 4096,
+      "references": 1,
+      "estimatedBytes": 89478485.33333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/vegetation/brisalia-lods/margaritas_1_LOD0.glb#image0",
+      "width": 2048,
+      "height": 2048,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/vegetation/brisalia-lods/Matorral_1_LOD0.glb#image0",
+      "width": 2048,
+      "height": 2048,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/vegetation/brisalia-lods/Yuyos_1_LOD0.glb#image0",
+      "width": 2048,
+      "height": 2048,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "",
+      "width": 2048,
+      "height": 2048,
+      "references": 1,
+      "estimatedBytes": 16777216,
+      "retainedImage": false,
+      "source": 3
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/2ad8ef00accdb36d.webp",
+      "width": 1536,
+      "height": 1536,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/440d2e7311ad13b6.webp",
+      "width": 1536,
+      "height": 1536,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/7e0854d8c24c6949.webp",
+      "width": 1536,
+      "height": 1536,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "/assets/world/vegetation/impostors/v4-trees.png",
+      "width": 2048,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 11184810.666666666,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/wayfinding/wood-v2-color.png",
+      "width": 1254,
+      "height": 1254,
+      "references": 1,
+      "estimatedBytes": 8386752,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/wayfinding/wood-v2-normal.png",
+      "width": 1254,
+      "height": 1254,
+      "references": 1,
+      "estimatedBytes": 8386752,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/wayfinding/wood-v2-endgrain.png",
+      "width": 1254,
+      "height": 1254,
+      "references": 1,
+      "estimatedBytes": 8386752,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 4
+    },
+    {
+      "name": "/assets/water/caustics-refractive-1k.png",
+      "width": 1024,
+      "height": 1024,
+      "references": 5,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/water/waterfall-foam-plates-1k.png",
+      "width": 1024,
+      "height": 1024,
+      "references": 4,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 5,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/normal/biome_volcanico_basalto_normal_gl_1k.png",
+      "width": 1024,
+      "height": 1024,
+      "references": 3,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_valle_cultivo_tierra_fertil_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_sierra_grava_pasto_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/normal/biome_valle_cultivo_tierra_fertil_normal_gl_1k.png",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/vegetation/Tronco_1.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/crystals/Cristal_azul_flotante.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Pack_rocas_1_closed.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/structures/Crisol_Herrero.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Set_Rocas_Rectanculares_Piezas_1K_closed.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Escalon_rocoso_closed.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Meseta_rocosa_pasto_closed.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image1",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/rocks/Formacion_rocosa_1_closed.glb#image2",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/world/landmarks/Isla_flotante_2.glb#image0",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/a9220690d19deace.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 26,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/3e57033da8fca235.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 26,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/68e0e7a03065f249.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 30,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/buildings/brisalia-rev3-final/shared_gltf/../shared_textures/18c7fb962f5ea055.webp",
+      "width": 1024,
+      "height": 1024,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    }
+  ]
+}

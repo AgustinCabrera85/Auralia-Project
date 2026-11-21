@@ -26,6 +26,7 @@ const copyPose=(pose:AssetPlacementPose):AssetPlacementPose=>({
 
 /** Development-only transform editor. Register another asset to expose it in F9. */
 export class AssetPlacementDebug {
+  get capturesControls():boolean{return this.panel!==null;}
   private readonly targets=new Map<string,AssetPlacementTarget>();
   private selectedId:string|null=null;
   private panel:HTMLDivElement|null=null;

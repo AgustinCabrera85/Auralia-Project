@@ -49,13 +49,17 @@ doubleJumper.step(.02,input({jumpPressed:true}),flat);
 assert.equal(doubleJumper.jumpCount,1);
 for(let i=0;i<10;i++)doubleJumper.step(.02,input(),flat);
 const beforeSecondJump=doubleJumper.position.y;
+let boostedApex=beforeSecondJump;
 doubleJumper.step(.02,input({jumpPressed:true}),flat);
 assert.equal(doubleJumper.jumpCount,2,'second Space press spends the air jump');
 assert.ok(doubleJumper.position.y>beforeSecondJump,'second impulse lifts the player');
 doubleJumper.step(.02,input({jumpPressed:true}),flat);
 assert.equal(doubleJumper.jumpCount,2,'a third jump is rejected');
-for(let i=0;i<200&&doubleJumper.mode!=='grounded';i++)
-  doubleJumper.step(.02,input(),flat);
+for(let i=0;i<200&&doubleJumper.mode!=='grounded';i++){
+  doubleJumper.step(.02,input(),flat);boostedApex=Math.max(boostedApex,doubleJumper.position.y);
+}
+assert.ok(boostedApex-beforeSecondJump>3.7&&boostedApex-beforeSecondJump<3.9,
+  'second impulse provides about 3.8 metres of additional rise');
 assert.equal(doubleJumper.mode,'grounded');
 assert.equal(doubleJumper.jumpCount,0,'landing restores both jumps');
 
@@ -80,7 +84,7 @@ for(let i=0;i<8;i++)directedDouble.step(.02,input(),flat);
 directedDouble.step(.02,input({moveZ:1,forwardX:1,jumpPressed:true}),flat);
 const dashStart=directedDouble.position.z;
 for(let i=0;i<8;i++)directedDouble.step(.02,input({moveX:-1}),flat);
-assert.ok(directedDouble.position.z>dashStart+3,'double jump launches strongly in chosen direction');
+assert.ok(directedDouble.position.z>dashStart+5.5,'boosted second jump advances over 5.5 m in 160 ms');
 assert.ok(directedDouble.position.x>-.1,'initial dash resists immediate side steering');
 assert.ok(directedDouble.airTravelDirection.z>.99,'facing can follow real air velocity');
 
@@ -92,6 +96,24 @@ for(let i=0;i<8;i++)verticalDouble.step(.02,input(),flat);
 assert.ok(Math.abs(verticalDouble.position.x)<1e-6&&
   Math.abs(verticalDouble.position.z)<1e-6,
   'double jump without movement input stays vertical');
+
+const lowCeiling={...flat,headroom:(x,y,z,height)=>y+height<=6};
+const ceilingJumper=new CharacterTraversalController();ceilingJumper.teleport(0,0,0);
+let highestUnderRoof=0;
+for(let i=0;i<120;i++){
+  ceilingJumper.step(.02,input({jumpPressed:i===0||i===8}),lowCeiling);
+  highestUnderRoof=Math.max(highestUnderRoof,ceilingJumper.position.y);
+}
+assert.ok(highestUnderRoof+TRAVERSAL.playerHeight<=6.01,'stronger impulse respects overhead collision');
+assert.equal(ceilingJumper.mode,'grounded','ceiling impact still lands');
+
+const kickJumper=new CharacterTraversalController();kickJumper.teleport(0,0,0);
+kickJumper.step(.02,input({jumpPressed:true}),flat);
+for(let i=0;i<10;i++)kickJumper.step(.02,input(),flat);
+const kickStart=kickJumper.position.y;let kickApex=kickStart;
+kickJumper.step(.02,input({airKickPressed:true}),flat);
+for(let i=0;i<70;i++){kickJumper.step(.02,input(),flat);kickApex=Math.max(kickApex,kickJumper.position.y);}
+assert.ok(kickApex-kickStart>1.7&&kickApex-kickStart<1.85,'Q kick retains its previous impulse');
 
 const sweep=new CharacterTraversalController();sweep.teleport(0,0,0);
 assert.equal(sweep.beginActionMotion('sweep',1,0,1.5,.9),true);

@@ -1,4 +1,5 @@
-import { AbstractMesh, ImportMeshAsync, Matrix, Mesh, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core';
+import { importGpuMeshAsync as ImportMeshAsync } from '../GpuAssets';
+import { AbstractMesh, Matrix, Mesh, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { ASSET_CATALOG, type AssetDefinition, type AssetId } from '../assetCatalog';
 import { AuraliaFoliageWind } from '../AuraliaFoliageWind';

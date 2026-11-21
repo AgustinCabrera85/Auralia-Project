@@ -106,4 +106,15 @@ assert.equal(crystalStore.collectResourceNode('crystal:altapiedra','fireCrystal'
 assert.equal(new GameStore(local).state.inventory.fireCrystal,1,'fire crystals persist in inventory');
 assert.equal(new GameStore(local).resourceReadyAt('crystal:altapiedra'),1180000,'respawn timestamp persists');
 assert.equal(new GameStore(local).collectResourceNode('crystal:altapiedra','fireCrystal',1,180000,1180001),true,'node reappears after cooldown');
+// Legacy harvested crystals are preserved, but possession alone grants no realm power.
+const fireStore=new GameStore(local);
+assert.equal(fireStore.hasFirePower,false);
+const fragments=fireStore.state.inventory.fireCrystal;
+assert.equal(fireStore.awakenFirePower(),true);
+const fireReload=new GameStore(local);
+assert.equal(fireReload.hasFirePower,true,'realm affinity survives a real localStorage round trip');
+assert.equal(fireReload.state.inventory.fireCrystal,fragments+1);
+assert.equal(fireReload.awakenFirePower(),false,'the awakening cannot be harvested repeatedly');
+assert.equal(fireReload.state.inventory.fireCrystal,fragments+1);
+fireReload.reset();assert.equal(fireReload.hasFirePower,false,'new game starts without the realm power');
 console.log('✓ localStorage v1: piezas y coordenadas conservadas');

@@ -1,4 +1,5 @@
-import { Color3, ImportMeshAsync, Matrix, Mesh, MeshBuilder, Quaternion, Scene, StandardMaterial, TransformNode, Vector3 } from '@babylonjs/core';
+import { importGpuMeshAsync as ImportMeshAsync } from './GpuAssets';
+import { Color3, Matrix, Mesh, MeshBuilder, Quaternion, Scene, StandardMaterial, TransformNode, Vector3 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { type MaterialId } from '../domain/types';
 import { GameStore } from '../domain/GameStore';
@@ -18,13 +19,12 @@ import { ForgeFire } from './ForgeFire';
 import { activeGeography } from './geography/ActiveGeography';
 
 type Cell={cx:number;cz:number};
-type CrystalKind='cristalAzul'|'cristalCeleste'|'cristalFuego';
+type CrystalKind='cristalAzul'|'cristalCeleste';
 type ResourceVisual={placement:PropPlacement;root:TransformNode;glow:Mesh;phase:number};
 export type NearbyCrystal={id:string;label:string;resource:MaterialId;amount:number;x:number;z:number;visual:TransformNode};
 const crystalInfo:Record<CrystalKind,{label:string;resource:MaterialId;amount:number;color:string}>={
   cristalAzul:{label:'Cristal azul',resource:'spark',amount:1,color:'#8bb9ff'},
-  cristalCeleste:{label:'Cristal celeste',resource:'spark',amount:2,color:'#a4edfa'},
-  cristalFuego:{label:'Cristal ígneo',resource:'fireCrystal',amount:1,color:'#ff9a59'}
+  cristalCeleste:{label:'Cristal celeste',resource:'spark',amount:2,color:'#a4edfa'}
 };
 const isCrystal=(kind:PropKind):kind is CrystalKind=>CRYSTAL_KINDS.includes(kind);
 

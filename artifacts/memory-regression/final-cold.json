@@ -1,0 +1,488 @@
+{
+  "at": "2026-11-21T05:09:05.046Z",
+  "buildings": 28,
+  "lamps": 27,
+  "heapMiB": {
+    "used": 891.4,
+    "total": 941.7
+  },
+  "meshes": 1226,
+  "geometries": 1023,
+  "materials": 608,
+  "textureWrappers": 951,
+  "gpuTextures": 196,
+  "estimatedRgbaTextureMiB": 896.9,
+  "estimatedGpuTextureMiB": 351.9,
+  "compressedImages": 139,
+  "geometryCpuMiB": 97.5,
+  "encodedImageMiB": 136.4,
+  "groups": [
+    {
+      "name": "gpu/models",
+      "count": 136,
+      "estimatedMiB": 752.6
+    },
+    {
+      "name": "generated/other",
+      "count": 47,
+      "estimatedMiB": 69.6
+    },
+    {
+      "name": "terrain/biomes",
+      "count": 5,
+      "estimatedMiB": 26.7
+    },
+    {
+      "name": "gpu/textures",
+      "count": 3,
+      "estimatedMiB": 24.1
+    },
+    {
+      "name": "world/vegetation",
+      "count": 1,
+      "estimatedMiB": 10.7
+    },
+    {
+      "name": "water/caustics-refractive-1k.png",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "water/waterfall-foam-plates-1k.png",
+      "count": 1,
+      "estimatedMiB": 5.3
+    },
+    {
+      "name": "grass/grass-sprites.png",
+      "count": 1,
+      "estimatedMiB": 1.3
+    },
+    {
+      "name": "ivy/Auralia_Leaf_green_mid_512.png",
+      "count": 1,
+      "estimatedMiB": 1.3
+    }
+  ],
+  "largest": [
+    {
+      "name": "data:/assets/gpu/models/../textures/88b60aa4d26e27e306e0bd78.ktx2",
+      "width": 4096,
+      "height": 4096,
+      "format": 36492,
+      "gpuBytes": 22369648,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 89478485.33333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/8aa694330381e5e002c6d376.ktx2",
+      "width": 2048,
+      "height": 2048,
+      "format": 36492,
+      "gpuBytes": 5592432,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/7732b704c6a586e36e68568a.ktx2",
+      "width": 2048,
+      "height": 2048,
+      "format": 36492,
+      "gpuBytes": 5592432,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/fc0101e21b30410bab9783be.ktx2",
+      "width": 2048,
+      "height": 2048,
+      "format": 36492,
+      "gpuBytes": 5592432,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 22369621.333333332,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "",
+      "width": 2048,
+      "height": 2048,
+      "format": 6,
+      "gpuBytes": 4194304,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 16777216,
+      "retainedImage": false,
+      "source": 3
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/6377aa1bbf0ad74840053307.ktx2",
+      "width": 1536,
+      "height": 1536,
+      "format": 36492,
+      "gpuBytes": 3145776,
+      "compressed": true,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/e9e9b17d22afa79b27fe34d5.ktx2",
+      "width": 1536,
+      "height": 1536,
+      "format": 36492,
+      "gpuBytes": 3145776,
+      "compressed": true,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/3a835d1671a91eec45c3f08c.ktx2",
+      "width": 1536,
+      "height": 1536,
+      "format": 36492,
+      "gpuBytes": 3145776,
+      "compressed": true,
+      "references": 25,
+      "estimatedBytes": 12582912,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "/assets/world/vegetation/impostors/v4-trees.png",
+      "width": 2048,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 11184812,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 11184810.666666666,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/gpu/textures/3e9062d21f5106ce144645d8.ktx2",
+      "width": 1256,
+      "height": 1256,
+      "format": 36492,
+      "gpuBytes": 2105968,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 8413525.333333332,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/gpu/textures/ec4e7efae25774df0d4055bc.ktx2",
+      "width": 1256,
+      "height": 1256,
+      "format": 36492,
+      "gpuBytes": 2105968,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 8413525.333333332,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/gpu/textures/c88f44ed20228d02c41da20a.ktx2",
+      "width": 1256,
+      "height": 1256,
+      "format": 36492,
+      "gpuBytes": 2105968,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 8413525.333333332,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 4
+    },
+    {
+      "name": "/assets/water/caustics-refractive-1k.png",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 5,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/water/waterfall-foam-plates-1k.png",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 4,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_volcanico_basalto_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 5,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/normal/biome_volcanico_basalto_normal_gl_1k.png",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 3,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_valle_cultivo_tierra_fertil_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/albedo/biome_sierra_grava_pasto_albedo_1k.webp",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "/assets/terrain/biomes/textures/normal/biome_valle_cultivo_tierra_fertil_normal_gl_1k.png",
+      "width": 1024,
+      "height": 1024,
+      "format": 5,
+      "gpuBytes": 5592404,
+      "compressed": false,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": false,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/45ae18ad9f4a25f24cc1d54c.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/0a31a5625f8821a107722c75.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/771396a7a93bf29c54d59908.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/1f28ece75c03b8b941df1dba.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/d755ca2dd82c66b1339b6df1.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/019a9a44b3525e13cd1d5d6b.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/0b402c53996823206d03ea8e.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 2,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/e4e40f3d222823327814a761.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 2,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/7afe4541ddf886c8c689f206.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/e072a5bd8ac92d2ce4f3321e.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 2,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/2e23dc9f2eb60dcfed02baea.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/09fda60acbd4dc6569706be0.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/96af7bc9c1db9b74a7c806bf.ktx2",
+      "width": 2048,
+      "height": 512,
+      "format": 36492,
+      "gpuBytes": 1398160,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/bad1409ed83eef955175a333.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    },
+    {
+      "name": "data:/assets/gpu/models/../textures/dff706e3d5147d4c299ee24c.ktx2",
+      "width": 1024,
+      "height": 1024,
+      "format": 36492,
+      "gpuBytes": 1398128,
+      "compressed": true,
+      "references": 1,
+      "estimatedBytes": 5592405.333333333,
+      "retainedImage": true,
+      "source": 1
+    }
+  ]
+}

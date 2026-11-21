@@ -1,0 +1,456 @@
+{
+  "supported": [
+    {
+      "id": "A0",
+      "supported": true,
+      "delta": 0,
+      "headroom": true
+    },
+    {
+      "id": "A1",
+      "supported": true,
+      "delta": -0.0136472861026391,
+      "headroom": true
+    },
+    {
+      "id": "A2",
+      "supported": true,
+      "delta": 0.012389112132495939,
+      "headroom": true
+    },
+    {
+      "id": "A3",
+      "supported": true,
+      "delta": -0.010145359884347727,
+      "headroom": true
+    },
+    {
+      "id": "A4",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "B1",
+      "supported": true,
+      "delta": 0.043447248027575824,
+      "headroom": true
+    },
+    {
+      "id": "B2",
+      "supported": true,
+      "delta": 0.04195366557956959,
+      "headroom": true
+    },
+    {
+      "id": "B3",
+      "supported": true,
+      "delta": 0.04185014684281896,
+      "headroom": true
+    },
+    {
+      "id": "B4",
+      "supported": true,
+      "delta": 0.042043163701293906,
+      "headroom": true
+    },
+    {
+      "id": "B5",
+      "supported": true,
+      "delta": 0.041839166414376905,
+      "headroom": true
+    },
+    {
+      "id": "P",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "C1",
+      "supported": true,
+      "delta": 0.06904760205861749,
+      "headroom": true
+    },
+    {
+      "id": "C2",
+      "supported": true,
+      "delta": 0.06280477102683335,
+      "headroom": true
+    },
+    {
+      "id": "C3",
+      "supported": true,
+      "delta": 0.06818963981879733,
+      "headroom": true
+    },
+    {
+      "id": "C4",
+      "supported": true,
+      "delta": 0.06342127272165499,
+      "headroom": true
+    },
+    {
+      "id": "C5",
+      "supported": true,
+      "delta": 0.05762084676354107,
+      "headroom": true
+    },
+    {
+      "id": "C6",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "D1",
+      "supported": true,
+      "delta": 0.10859264303644522,
+      "headroom": true
+    },
+    {
+      "id": "D2",
+      "supported": true,
+      "delta": 0.10695743061364738,
+      "headroom": true
+    },
+    {
+      "id": "D3",
+      "supported": true,
+      "delta": 0.10613363741310877,
+      "headroom": true
+    },
+    {
+      "id": "D4",
+      "supported": true,
+      "delta": 0.10728746440781833,
+      "headroom": true
+    },
+    {
+      "id": "D5",
+      "supported": true,
+      "delta": 0.106651674460295,
+      "headroom": true
+    },
+    {
+      "id": "Q",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "K",
+      "supported": true,
+      "delta": 0.12908686791712398,
+      "headroom": true
+    },
+    {
+      "id": "W1",
+      "supported": true,
+      "delta": 0.12375483649395846,
+      "headroom": true
+    },
+    {
+      "id": "W2",
+      "supported": true,
+      "delta": 0.1418921245817728,
+      "headroom": true
+    },
+    {
+      "id": "W3",
+      "supported": true,
+      "delta": 0.13043970777141567,
+      "headroom": true
+    },
+    {
+      "id": "W4",
+      "supported": true,
+      "delta": 0.12891445352454411,
+      "headroom": true
+    },
+    {
+      "id": "W5",
+      "supported": true,
+      "delta": 0.12388302647718774,
+      "headroom": true
+    },
+    {
+      "id": "W6",
+      "supported": true,
+      "delta": 0.24157746631738064,
+      "headroom": true
+    },
+    {
+      "id": "W7",
+      "supported": true,
+      "delta": 0.13299684795651956,
+      "headroom": true
+    },
+    {
+      "id": "W8",
+      "supported": true,
+      "delta": 0.12659326185399777,
+      "headroom": true
+    },
+    {
+      "id": "F1",
+      "supported": true,
+      "delta": 0.1292779786541587,
+      "headroom": true
+    },
+    {
+      "id": "F2",
+      "supported": true,
+      "delta": 0.13278790267708018,
+      "headroom": true
+    },
+    {
+      "id": "F3",
+      "supported": true,
+      "delta": 0.1281407459989623,
+      "headroom": true
+    },
+    {
+      "id": "F4",
+      "supported": true,
+      "delta": 0.1284145007606412,
+      "headroom": true
+    },
+    {
+      "id": "F5",
+      "supported": true,
+      "delta": 0.12425731666291995,
+      "headroom": true
+    },
+    {
+      "id": "F6",
+      "supported": true,
+      "delta": 0.2415753954817319,
+      "headroom": true
+    },
+    {
+      "id": "F7",
+      "supported": true,
+      "delta": 0.1311066021945635,
+      "headroom": true
+    },
+    {
+      "id": "F8",
+      "supported": true,
+      "delta": 0.1455042323058251,
+      "headroom": true
+    },
+    {
+      "id": "F9",
+      "supported": true,
+      "delta": 0.1305464793020974,
+      "headroom": true
+    },
+    {
+      "id": "L",
+      "supported": true,
+      "delta": 2.062859757287015,
+      "headroom": true
+    },
+    {
+      "id": "H",
+      "supported": true,
+      "delta": 2.75499409794827,
+      "headroom": true
+    },
+    {
+      "id": "entrada",
+      "supported": true,
+      "delta": 0,
+      "headroom": true
+    },
+    {
+      "id": "pozo",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "vapor",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "fuego",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "cornisas",
+      "supported": true,
+      "delta": 0.24156297046829422,
+      "headroom": true
+    },
+    {
+      "id": "eco",
+      "supported": true,
+      "delta": 2.75499409794827,
+      "headroom": true
+    },
+    {
+      "id": "reja",
+      "supported": true,
+      "delta": 0.2415753954817319,
+      "headroom": true
+    },
+    {
+      "id": "mando",
+      "supported": true,
+      "delta": 2.062859757287015,
+      "headroom": true
+    },
+    {
+      "id": "mirador",
+      "supported": true,
+      "delta": 0.00542942026675064,
+      "headroom": true
+    },
+    {
+      "id": "puente",
+      "supported": true,
+      "delta": 0.005698843477830451,
+      "headroom": true
+    },
+    {
+      "id": "poblado",
+      "supported": true,
+      "delta": -0.05021126091946826,
+      "headroom": true
+    },
+    {
+      "id": "hogar",
+      "supported": true,
+      "delta": -6.212507059899508e-7,
+      "headroom": true
+    },
+    {
+      "id": "galeria",
+      "supported": true,
+      "delta": 0,
+      "headroom": true
+    },
+    {
+      "id": "atajo",
+      "supported": true,
+      "delta": 0,
+      "headroom": true
+    },
+    {
+      "id": "norte",
+      "supported": true,
+      "delta": 0.023170308353996916,
+      "headroom": true
+    },
+    {
+      "id": "forja",
+      "supported": true,
+      "delta": 0,
+      "headroom": true
+    },
+    {
+      "id": "bastion",
+      "supported": true,
+      "delta": -5.177089406060986e-7,
+      "headroom": true
+    },
+    {
+      "id": "torno",
+      "supported": true,
+      "delta": -5.177089406060986e-7,
+      "headroom": true
+    },
+    {
+      "id": "salida",
+      "supported": true,
+      "delta": 0.0027135194029597187,
+      "headroom": true
+    },
+    {
+      "id": "palacio_umbral",
+      "supported": true,
+      "delta": -7.662091547899763e-7,
+      "headroom": true
+    },
+    {
+      "id": "palacio_salon",
+      "supported": true,
+      "delta": 0.024686230055749547,
+      "headroom": true
+    },
+    {
+      "id": "palacio_trono",
+      "supported": true,
+      "delta": -0.000002733502924456843,
+      "headroom": true
+    },
+    {
+      "id": "palacio_cristal",
+      "supported": true,
+      "delta": 5.798339088869398e-7,
+      "headroom": true
+    }
+  ],
+  "position": [
+    -41.00000124945666,
+    118.04421031062735,
+    158.00000481497932
+  ],
+  "render": {
+    "width": 1264,
+    "height": 625
+  },
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "samples": [
+    {
+      "ms": 279.69999999552965,
+      "draws": 2617,
+      "indices": 6924567
+    },
+    {
+      "ms": 24.700000002980232,
+      "draws": 361,
+      "indices": 1073514
+    },
+    {
+      "ms": 20.399999998509884,
+      "draws": 361,
+      "indices": 1073514
+    },
+    {
+      "ms": 21,
+      "draws": 361,
+      "indices": 1073514
+    },
+    {
+      "ms": 12.700000002980232,
+      "draws": 361,
+      "indices": 1073514
+    },
+    {
+      "ms": 11.800000004470348,
+      "draws": 361,
+      "indices": 1073514
+    },
+    {
+      "ms": 11.399999998509884,
+      "draws": 362,
+      "indices": 1073670
+    },
+    {
+      "ms": 10.5,
+      "draws": 362,
+      "indices": 1073670
+    }
+  ]
+}

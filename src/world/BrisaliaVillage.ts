@@ -1,27 +1,39 @@
 import { LoadAssetContainerAsync, Material, Mesh, Quaternion, Ray, Scene,
   TransformNode, Vector3, VertexData } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
+import '@babylonjs/loaders/glTF/2.0/Extensions/EXT_texture_webp.js';
 import { BRISALIA_BUILDINGS, BRISALIA_SCALE, brisaliaRoadEdge, inBrisaliaFootprint,
   type BrisaliaBuilding } from './brisaliaLayout';
 import { createVillageRoadMaterial } from './materials/VillageRoadMaterial';
 import { BrisaliaCastleIvy } from './BrisaliaCastleIvy';
+import { brisaliaRev3ResourceUrl } from './BrisaliaAssetUrls';
+import { BrisaliaEntranceLanterns, entranceLampMount } from './BrisaliaEntranceLanterns';
+import { shareTextureSourceBuffers } from './SharedTextureBuffers';
+import { gpuAssetUrl, gpuBuildingResourceUrl } from './GpuAssets';
+import { repairWoodSolids } from './RepairWoodSolids';
 
 /** The playable settlement, with one independent prefab per building ID. */
 export class BrisaliaVillage {
   readonly buildings=new Map<string,{root:TransformNode;meshes:Mesh[];sourceMeshes:number}>();
   readonly errors:string[]=[];
   readonly ready:Promise<void>;
+  readonly lanterns:BrisaliaEntranceLanterns;
   private disposed=false;
   private roads:Mesh|null=null;
   private castleIvy:BrisaliaCastleIvy|null=null;
+  private readonly buildingHeights=new Map<string,number>();
   constructor(private scene:Scene,private parent:TransformNode,
     readonly origin:{x:number;z:number},private heightAt:(x:number,z:number)=>number){
+    this.lanterns=new BrisaliaEntranceLanterns(scene);
     this.createRoads();
+    // These terrain tiles can be evicted while the asynchronous GLBs load.
+    for(const b of BRISALIA_BUILDINGS)this.buildingHeights.set(b.id,heightAt(origin.x+b.x,origin.z+b.z));
     this.ready=this.load();
   }
   private async load():Promise<void>{
     const queue=[...BRISALIA_BUILDINGS];
-    // Bound simultaneous GLB decoding/upload; the castle loads once, last.
+    // Shared glTF image URLs reuse Babylon's internal GPU texture cache.
+    // Bound simultaneous decoding/upload; the castle loads once, last.
     await Promise.all([0,1].map(async()=>{
       while(queue.length&&!this.disposed){
         const b=queue.shift()!;
@@ -32,10 +44,18 @@ export class BrisaliaVillage {
     }));
   }
   private async loadBuilding(b:BrisaliaBuilding):Promise<void>{
-    const asset=await LoadAssetContainerAsync(`/assets/buildings/${b.assetRoot}/${b.file}`,this.scene);
+    const originalUrl=`/assets/buildings/${b.assetRoot}/${b.file}`;
+    const url=gpuAssetUrl(originalUrl,this.scene);
+    const asset=await LoadAssetContainerAsync(url,this.scene,
+      b.revision===3||url!==originalUrl?{pluginOptions:{gltf:{preprocessUrlAsync:async resource=>
+        url!==originalUrl?gpuBuildingResourceUrl(resource,location.href):
+          brisaliaRev3ResourceUrl(resource,location.href)}}}:undefined);
     if(this.disposed){asset.dispose();return;}
-    asset.addAllToScene();
+    shareTextureSourceBuffers(asset.textures);
     const axes=new TransformNode(`${b.id}:axis-conversion`,this.scene);
+    let placedRoot:TransformNode|undefined;
+    try{
+    asset.addAllToScene();
     // Babylon's glTF LH root flips X. This cancels that half-turn so Blender
     // (X,Y,Z) maps to game (X,Z,Y), retaining the source UVs and metre scale.
     axes.rotation.y=Math.PI;
@@ -47,6 +67,16 @@ export class BrisaliaVillage {
         Quaternion.RotationAxis(Vector3.Up(),-side*100*Math.PI/180));
     }
     const parts=asset.meshes.filter((m):m is Mesh=>m instanceof Mesh&&m.getTotalVertices()>0);
+    if(b.revision===3)for(const mesh of parts){
+      if(!/oak/i.test(mesh.material?.name??''))continue;
+      const positions=mesh.getVerticesData('position'),normals=mesh.getVerticesData('normal'),indices=mesh.getIndices();
+      if(!positions||!normals||!indices)continue;
+      const repair=repairWoodSolids(positions,normals,indices);if(!repair)continue;
+      mesh.makeGeometryUnique();mesh.setIndices(repair.indices);mesh.setVerticesData('normal',repair.normals);
+      const tangents=mesh.getVerticesData('tangent');
+      if(tangents){const fixed=new Float32Array(tangents);for(const v of repair.flippedVertices)fixed[v*4+3]*=-1;mesh.setVerticesData('tangent',fixed);}
+      mesh.metadata={...mesh.metadata,repairedWoodComponents:repair.components};
+    }
     const gateLanding=b.id==='B28'&&b.revision===5?parts.find(m=>m.name==='R5_GATE_threshold_landing'):undefined;
     if(gateLanding)parts.splice(parts.indexOf(gateLanding),1);
     if(b.id==='B28'&&b.revision===5)for(const mesh of parts){
@@ -60,12 +90,14 @@ export class BrisaliaVillage {
       mesh.scaling.z*=(half.z+.25)/half.z;
     }
     const root=new TransformNode(`brisalia:${b.id}`,this.scene);
+    placedRoot=root;
     root.parent=this.parent;
-    root.position.set(this.origin.x+b.x,this.heightAt(this.origin.x+b.x,this.origin.z+b.z)-
+    root.position.set(this.origin.x+b.x,this.buildingHeights.get(b.id)!-
       (b.id==='B28'?1.35*BRISALIA_SCALE:0),this.origin.z+b.z);
     root.scaling.setAll(BRISALIA_SCALE);
     root.rotation.y=b.yaw*Math.PI/180;
-    root.metadata={buildingId:b.id,revision:b.revision,sourceMetersToWorldUnits:BRISALIA_SCALE};
+    root.metadata={buildingId:b.id,revision:b.revision,sourceAsset:`${b.assetRoot}/${b.file}`,
+      sourceMetersToWorldUnits:BRISALIA_SCALE};
     if(b.id==='B28'){
       axes.setEnabled(false);root.setEnabled(false);
       const ivy=new BrisaliaCastleIvy(this.scene,parts,root);this.castleIvy=ivy;
@@ -91,21 +123,30 @@ export class BrisaliaVillage {
       passage.material=gateLanding.material;
     }
     const groups=new Map<string,Mesh[]>();
+    const anchors:{name:string;min:number[];max:number[]}[]=[];
     for(const mesh of parts){
       mesh.computeWorldMatrix(true);
-      const center=mesh.getBoundingInfo().boundingBox.centerWorld;
+      const bounds=mesh.getBoundingInfo().boundingBox,center=bounds.centerWorld;
+      if(b.revision===3&&/entry_leaf|arched_leaf|PUERTA_Puerta_principal|west_portal_leaf|daisies|herbs|herb_volume|window/i.test(mesh.name))
+        anchors.push({name:mesh.name,min:bounds.minimumWorld.asArray(),max:bounds.maximumWorld.asArray()});
       // Spatial batches keep castle culling and triangle collision local.
       const cell=b.id==='B28'?`${Math.floor(center.x/12)}:${Math.floor(center.z/12)}`:'all';
-      const key=`${mesh.material?.uniqueId}:${cell}`;
+      // Baked wear and crossed foliage are visual layers, not physical walls.
+      const decorative=b.revision===3&&/corner_wear|joint_wear|foundation_weathering|stone_joint_moss|herbs|herb_volume|daisies/i.test(mesh.name);
+      const attributes=mesh.getVerticesDataKinds().sort().join(',');
+      const key=`${mesh.material?.uniqueId}:${cell}:${attributes}:${decorative?'visual':'solid'}`;
       const list=groups.get(key)??[];list.push(mesh);groups.set(key,list);
     }
+    if(b.revision===3)root.metadata.authoredAnchors=anchors;
+    const lampMount=b.revision===3?entranceLampMount(b.id,parts):null;
     const meshes:Mesh[]=[];
     for(const [key,group] of groups){
       const mesh=Mesh.MergeMeshes(group,false,true,undefined,false,true);
       if(!mesh)throw new Error(`Cannot batch ${b.id}/${key}`);
       mesh.name=`${b.id}:batch:${key}`;mesh.parent=root;
       mesh.isPickable=true;mesh.checkCollisions=false;
-      mesh.metadata={buildingId:b.id};
+      mesh.metadata={buildingId:b.id,buildingCollision:!key.endsWith(':visual'),
+        sourceNames:group.map(part=>part.name),repairedWoodComponents:group.reduce((n,part)=>n+(part.metadata?.repairedWoodComponents??0),0)};
       mesh.computeWorldMatrix(true);mesh.freezeWorldMatrix();meshes.push(mesh);
     }
     if(passage){
@@ -118,7 +159,11 @@ export class BrisaliaVillage {
     // draw objects and transform hierarchy are discarded.
     axes.dispose(false,false);
     root.setEnabled(true);
+    if(lampMount)this.lanterns.add(b.id,root,meshes,lampMount);
     this.buildings.set(b.id,{root,meshes,sourceMeshes:parts.length+(gateLanding?1:0)});
+    }catch(error){
+      placedRoot?.dispose(false,false);axes.dispose(false,false);asset.dispose();throw error;
+    }
   }
   private createRoads():void{
     // Signed union with a feathered, irregular shoulder. It is baked once,
@@ -143,8 +188,9 @@ export class BrisaliaVillage {
       indices.push(a,b,c,b,d,c);
     }
     const mesh=new Mesh('brisalia:connected-streets',this.scene),data=new VertexData();
-    data.positions=positions;data.indices=indices;data.uvs=uvs;data.colors=colors;
-    const normals:number[]=[];VertexData.ComputeNormals(positions,indices,normals);data.normals=normals;data.applyToMesh(mesh);
+    data.positions=new Float32Array(positions);data.indices=new Uint32Array(indices);
+    data.uvs=new Float32Array(uvs);data.colors=new Float32Array(colors);
+    const normals:number[]=[];VertexData.ComputeNormals(positions,indices,normals);data.normals=new Float32Array(normals);data.applyToMesh(mesh);
     mesh.material=createVillageRoadMaterial(this.scene);mesh.parent=this.parent;mesh.isPickable=false;
     mesh.hasVertexAlpha=true;mesh.freezeWorldMatrix();
     this.roads=mesh;
@@ -154,6 +200,7 @@ export class BrisaliaVillage {
     const end=ray.origin.add(ray.direction.scale(ray.length));
     const lo=Vector3.Minimize(ray.origin,end),hi=Vector3.Maximize(ray.origin,end);
     for(const {meshes} of this.buildings.values())for(const mesh of meshes){
+      if(mesh.metadata?.buildingCollision===false)continue;
       const bounds=mesh.getBoundingInfo().boundingBox;
       const a=bounds.minimumWorld,b=bounds.maximumWorld;
       if(b.x<lo.x||a.x>hi.x||b.y<lo.y||a.y>hi.y||b.z<lo.z||a.z>hi.z)continue;
@@ -186,6 +233,7 @@ export class BrisaliaVillage {
   }
   dispose():void{
     this.disposed=true;
+    this.lanterns.dispose();
     this.castleIvy?.dispose();this.castleIvy=null;
     const materials=new Set<Material>();
     for(const b of this.buildings.values()){

@@ -135,7 +135,10 @@ export class TerrainStream {
     }
     const mesh=new Mesh(`terreno-${lod}-${cell.cx}-${cell.cz}`,this.scene);
     const data=new VertexData();
-    data.positions=positions;data.normals=normals;data.colors=colors;data.uvs=extras;data.indices=indices;
+    // Match the GPU's existing float32 representation instead of retaining
+    // boxed/double JS arrays per streamed tile. Topology indices remain shared.
+    data.positions=new Float32Array(positions);data.normals=new Float32Array(normals);
+    data.colors=new Float32Array(colors);data.uvs=new Float32Array(extras);data.indices=indices;
     data.applyToMesh(mesh);
     mesh.parent=this.parent;
     mesh.position.set(centerX,0,centerZ);

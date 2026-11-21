@@ -1,0 +1,725 @@
+{
+  "revision": "Casas Rev3 corner wear WebP",
+  "source_blend": "../Brisalia_Casas_Rev2/Brisalia_Casas_Rev2.blend",
+  "terrain_included": false,
+  "prefabs": [
+    {
+      "id": "B01",
+      "type": "casa_taller",
+      "source_meshes": 388,
+      "runtime_meshes": 69,
+      "meshes_merged": 322,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 76,
+      "bounds_min_m": [
+        -6.775,
+        -5.215,
+        -0.18
+      ],
+      "bounds_max_m": [
+        6.775,
+        5.215,
+        9.05
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 14575736,
+      "shared_gltf": "shared_gltf/B01_casa_taller.gltf",
+      "shared_bin": "shared_gltf/B01_casa_taller.bin"
+    },
+    {
+      "id": "B02",
+      "type": "posada",
+      "runtime_meshes": 60,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "triangles": 8203,
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 12742240,
+      "shared_gltf": "shared_gltf/B02_posada.gltf",
+      "shared_bin": "shared_gltf/B02_posada.bin"
+    },
+    {
+      "id": "B03",
+      "type": "salon",
+      "source_meshes": 157,
+      "runtime_meshes": 16,
+      "meshes_merged": 142,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 1,
+      "bounds_min_m": [
+        -9.52,
+        -6.9647,
+        -0.04
+      ],
+      "bounds_max_m": [
+        9.52,
+        6.9648,
+        7.955
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13016852,
+      "shared_gltf": "shared_gltf/B03_salon.gltf",
+      "shared_bin": "shared_gltf/B03_salon.bin"
+    },
+    {
+      "id": "B04",
+      "type": "taller",
+      "source_meshes": 133,
+      "runtime_meshes": 24,
+      "meshes_merged": 110,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 1,
+      "bounds_min_m": [
+        -6.98,
+        -5.7569,
+        -0.04
+      ],
+      "bounds_max_m": [
+        6.98,
+        5.7569,
+        5.015
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13350492,
+      "shared_gltf": "shared_gltf/B04_taller.gltf",
+      "shared_bin": "shared_gltf/B04_taller.bin"
+    },
+    {
+      "id": "B05",
+      "type": "taller",
+      "source_meshes": 135,
+      "runtime_meshes": 23,
+      "meshes_merged": 113,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 1,
+      "bounds_min_m": [
+        -5.98,
+        -5.2576,
+        -0.04
+      ],
+      "bounds_max_m": [
+        5.98,
+        5.2576,
+        5.015
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13347928,
+      "shared_gltf": "shared_gltf/B05_taller.gltf",
+      "shared_bin": "shared_gltf/B05_taller.bin"
+    },
+    {
+      "id": "B06",
+      "type": "torre",
+      "source_meshes": 38,
+      "runtime_meshes": 10,
+      "meshes_merged": 29,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -3.1981,
+        -3.1981,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.1981,
+        3.1981,
+        13.12
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 7323604,
+      "shared_gltf": "shared_gltf/B06_torre.gltf",
+      "shared_bin": "shared_gltf/B06_torre.bin"
+    },
+    {
+      "id": "B07",
+      "type": "vivienda",
+      "source_meshes": 82,
+      "runtime_meshes": 18,
+      "meshes_merged": 66,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5508,
+        -4.0401,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5508,
+        4.04,
+        4.67
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10921268,
+      "shared_gltf": "shared_gltf/B07_vivienda.gltf",
+      "shared_bin": "shared_gltf/B07_vivienda.bin"
+    },
+    {
+      "id": "B08",
+      "type": "vivienda",
+      "source_meshes": 137,
+      "runtime_meshes": 32,
+      "meshes_merged": 108,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.7734,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.7735,
+        8.99
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 14653296,
+      "shared_gltf": "shared_gltf/B08_vivienda.gltf",
+      "shared_bin": "shared_gltf/B08_vivienda.bin"
+    },
+    {
+      "id": "B09",
+      "type": "vivienda",
+      "source_meshes": 108,
+      "runtime_meshes": 15,
+      "meshes_merged": 94,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -5.0641,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        5.0641,
+        5.07
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13182740,
+      "shared_gltf": "shared_gltf/B09_vivienda.gltf",
+      "shared_bin": "shared_gltf/B09_vivienda.bin"
+    },
+    {
+      "id": "B10",
+      "type": "vivienda",
+      "source_meshes": 117,
+      "runtime_meshes": 35,
+      "meshes_merged": 85,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5495,
+        -4.0391,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5495,
+        4.0391,
+        7.41
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10995288,
+      "shared_gltf": "shared_gltf/B10_vivienda.gltf",
+      "shared_bin": "shared_gltf/B10_vivienda.bin"
+    },
+    {
+      "id": "B11",
+      "type": "vivienda",
+      "source_meshes": 88,
+      "runtime_meshes": 22,
+      "meshes_merged": 67,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -3.98,
+        -4.5242,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.5243,
+        6.25
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13160336,
+      "shared_gltf": "shared_gltf/B11_vivienda.gltf",
+      "shared_bin": "shared_gltf/B11_vivienda.bin"
+    },
+    {
+      "id": "B12",
+      "type": "vivienda",
+      "source_meshes": 142,
+      "runtime_meshes": 30,
+      "meshes_merged": 115,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.6455,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6455,
+        7.45
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13514872,
+      "shared_gltf": "shared_gltf/B12_vivienda.gltf",
+      "shared_bin": "shared_gltf/B12_vivienda.bin"
+    },
+    {
+      "id": "B13",
+      "type": "vivienda",
+      "source_meshes": 82,
+      "runtime_meshes": 18,
+      "meshes_merged": 66,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5542,
+        -4.0425,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5542,
+        4.0425,
+        5.21
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10921284,
+      "shared_gltf": "shared_gltf/B13_vivienda.gltf",
+      "shared_bin": "shared_gltf/B13_vivienda.bin"
+    },
+    {
+      "id": "B14",
+      "type": "vivienda",
+      "source_meshes": 88,
+      "runtime_meshes": 22,
+      "meshes_merged": 67,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -3.98,
+        -4.0246,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.0246,
+        5.74
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13160348,
+      "shared_gltf": "shared_gltf/B14_vivienda.gltf",
+      "shared_bin": "shared_gltf/B14_vivienda.bin"
+    },
+    {
+      "id": "B15",
+      "type": "vivienda",
+      "source_meshes": 130,
+      "runtime_meshes": 18,
+      "meshes_merged": 115,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.6446,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6445,
+        7.6
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13486828,
+      "shared_gltf": "shared_gltf/B15_vivienda.gltf",
+      "shared_bin": "shared_gltf/B15_vivienda.bin"
+    },
+    {
+      "id": "B16",
+      "type": "vivienda",
+      "source_meshes": 76,
+      "runtime_meshes": 21,
+      "meshes_merged": 57,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.553,
+        -3.0429,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.553,
+        3.0429,
+        5.06
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10894488,
+      "shared_gltf": "shared_gltf/B16_vivienda.gltf",
+      "shared_bin": "shared_gltf/B16_vivienda.bin"
+    },
+    {
+      "id": "B17",
+      "type": "vivienda",
+      "source_meshes": 137,
+      "runtime_meshes": 32,
+      "meshes_merged": 108,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.7715,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.7715,
+        8.78
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 14653284,
+      "shared_gltf": "shared_gltf/B17_vivienda.gltf",
+      "shared_bin": "shared_gltf/B17_vivienda.bin"
+    },
+    {
+      "id": "B18",
+      "type": "vivienda",
+      "source_meshes": 114,
+      "runtime_meshes": 21,
+      "meshes_merged": 94,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.0679,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.0679,
+        5.1
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13197284,
+      "shared_gltf": "shared_gltf/B18_vivienda.gltf",
+      "shared_bin": "shared_gltf/B18_vivienda.bin"
+    },
+    {
+      "id": "B19",
+      "type": "vivienda",
+      "source_meshes": 111,
+      "runtime_meshes": 19,
+      "meshes_merged": 95,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5548,
+        -3.5435,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5548,
+        3.5435,
+        7.74
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10961480,
+      "shared_gltf": "shared_gltf/B19_vivienda.gltf",
+      "shared_bin": "shared_gltf/B19_vivienda.bin"
+    },
+    {
+      "id": "B20",
+      "type": "vivienda",
+      "source_meshes": 88,
+      "runtime_meshes": 22,
+      "meshes_merged": 67,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -3.98,
+        -4.023,
+        -0.04
+      ],
+      "bounds_max_m": [
+        3.98,
+        4.023,
+        5.38
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13160336,
+      "shared_gltf": "shared_gltf/B20_vivienda.gltf",
+      "shared_bin": "shared_gltf/B20_vivienda.bin"
+    },
+    {
+      "id": "B21",
+      "type": "vivienda",
+      "source_meshes": 130,
+      "runtime_meshes": 18,
+      "meshes_merged": 115,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.6472,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.6472,
+        8.14
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13486828,
+      "shared_gltf": "shared_gltf/B21_vivienda.gltf",
+      "shared_bin": "shared_gltf/B21_vivienda.bin"
+    },
+    {
+      "id": "B22",
+      "type": "vivienda",
+      "source_meshes": 76,
+      "runtime_meshes": 21,
+      "meshes_merged": 57,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5488,
+        -4.0385,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5488,
+        4.0386,
+        4.7
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10915436,
+      "shared_gltf": "shared_gltf/B22_vivienda.gltf",
+      "shared_bin": "shared_gltf/B22_vivienda.bin"
+    },
+    {
+      "id": "B23",
+      "type": "vivienda",
+      "source_meshes": 137,
+      "runtime_meshes": 32,
+      "meshes_merged": 108,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.2746,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.2746,
+        9.32
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 14653320,
+      "shared_gltf": "shared_gltf/B23_vivienda.gltf",
+      "shared_bin": "shared_gltf/B23_vivienda.bin"
+    },
+    {
+      "id": "B24",
+      "type": "vivienda",
+      "source_meshes": 114,
+      "runtime_meshes": 21,
+      "meshes_merged": 94,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.5649,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.5649,
+        4.74
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13197272,
+      "shared_gltf": "shared_gltf/B24_vivienda.gltf",
+      "shared_bin": "shared_gltf/B24_vivienda.bin"
+    },
+    {
+      "id": "B25",
+      "type": "vivienda",
+      "source_meshes": 82,
+      "runtime_meshes": 18,
+      "meshes_merged": 66,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 1,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.5496,
+        -4.0391,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.5496,
+        4.0392,
+        4.49
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 10921280,
+      "shared_gltf": "shared_gltf/B25_vivienda.gltf",
+      "shared_bin": "shared_gltf/B25_vivienda.bin"
+    },
+    {
+      "id": "B26",
+      "type": "vivienda",
+      "source_meshes": 137,
+      "runtime_meshes": 32,
+      "meshes_merged": 108,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 1,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -4.48,
+        -4.274,
+        -0.04
+      ],
+      "bounds_max_m": [
+        4.48,
+        4.274,
+        8.81
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 14653320,
+      "shared_gltf": "shared_gltf/B26_vivienda.gltf",
+      "shared_bin": "shared_gltf/B26_vivienda.bin"
+    },
+    {
+      "id": "B27",
+      "type": "iglesia_monasterio",
+      "source_meshes": 445,
+      "runtime_meshes": 18,
+      "meshes_merged": 429,
+      "roof_triangles_before": 0,
+      "roof_triangles_after": 0,
+      "corner_wear_shells": 2,
+      "joint_wear_interfaces": 0,
+      "chamfered_cut_stone_meshes": 0,
+      "bounds_min_m": [
+        -11.64,
+        -13.1174,
+        -0.04
+      ],
+      "bounds_max_m": [
+        11.64,
+        13.1173,
+        14.06
+      ],
+      "pivot": "footprint center XY; ground Z=0",
+      "units": "meters",
+      "standalone_glb_bytes": 13253684,
+      "shared_gltf": "shared_gltf/B27_iglesia_monasterio.gltf",
+      "shared_bin": "shared_gltf/B27_iglesia_monasterio.bin"
+    }
+  ],
+  "shared_textures_unique": 62,
+  "shared_texture_bytes": 24756935,
+  "geometry_bytes_total": 7680752
+}

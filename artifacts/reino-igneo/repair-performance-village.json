@@ -1,0 +1,27 @@
+{
+  "label": "poblado-1080p",
+  "mode": "engine.runRenderLoop with real delta time",
+  "fps": 59.81625723986419,
+  "seconds": 10.014,
+  "frames": 600,
+  "medianMs": 8.399999998509884,
+  "p95Ms": 11.899999998509884,
+  "ms": 8.899999998509884,
+  "draws": 263,
+  "triangles": 213709,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "avatar": true,
+  "companion": {
+    "visible": true,
+    "distance": 4.4058804079732266
+  },
+  "loadMs": 18993,
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  }
+}

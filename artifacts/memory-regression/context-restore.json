@@ -1,0 +1,15 @@
+{
+  "restored": true,
+  "before": {
+    "textures": 196,
+    "buildings": 28,
+    "images": 150
+  },
+  "after": {
+    "textures": 197,
+    "buildings": 28,
+    "images": 150
+  },
+  "compressed": 139,
+  "externalTextureRequests": []
+}

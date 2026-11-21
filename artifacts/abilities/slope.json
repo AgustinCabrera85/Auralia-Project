@@ -1,0 +1,22 @@
+{
+  "grade": 0.7,
+  "sequence": [
+    6,
+    16,
+    30,
+    48
+  ],
+  "inclinations": [
+    0.15055156763272334,
+    -0.15055157126780724,
+    0.15055156651463333,
+    -0.15055156552121074
+  ],
+  "roots": 48,
+  "uphillRoots": 22,
+  "minEmergence": 3.9334661609612085,
+  "minAnchorY": -4.480035140939574,
+  "maxAnchorY": 8.480035140939574,
+  "allAnchoredOnCollider": true,
+  "allModelsEmerged": true
+}

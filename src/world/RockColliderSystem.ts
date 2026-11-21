@@ -3,6 +3,7 @@ import { isWalkableRockFace } from './rectRockData';
 import { sameGeologyFormation } from './geologyData';
 import type { PropKind, PropPlacement } from './worldPropsData';
 import { MAX_WATER_CONTACTS, rockWaterContact, type WaterContact } from './water/WaterContacts';
+import { StaticTriangleIndex } from './StaticTriangleIndex';
 
 const COLLIDABLE_ROCKS:readonly PropKind[]=[
   'rocasRectangulares','formacionRocosa','escalonRocoso','mesetaPasto','acantilado2','packRocas'
@@ -24,6 +25,8 @@ export class RockColliderSystem {
   private readonly sourceHeight=new Map<number,number>();
   private readonly colliderSources=new Map<number,Mesh>();
   private readonly focusRadius=125;
+  private readonly staticTriangles=new StaticTriangleIndex();
+  private readonly staticMeshes=new Set<Mesh>();
   get activeColliderCount():number{
     let total=0;
     for(const entry of this.colliders.values())total+=entry.instances.length;
@@ -34,7 +37,7 @@ export class RockColliderSystem {
 
   /** Keep the exact procedural shell before the visible meshes are merged.
    * Geometry/material are shared; the hidden proxy follows its streamed parent. */
-  registerGeneratedMesh(source:Mesh,spatialPicking=false):void{
+  registerGeneratedMesh(source:Mesh,spatialPicking=false,dynamic=false):void{
     const id=`generated-rock:${source.uniqueId}`;
     if(this.colliders.has(id))return;
     const proxy=source.clone(`collider-${source.name}`,source.parent,true);
@@ -46,16 +49,18 @@ export class RockColliderSystem {
     const placement:PropPlacement={id,kind:'formacionRocosa',x:(min.x+max.x)*.5,
       y:min.y,z:(min.z+max.z)*.5,scale:1,yaw:0,climbable:true};
     proxy.metadata={rockCollider:true,rockId:id};
-    proxy.freezeWorldMatrix();
-    if(spatialPicking){
+    if(!dynamic)proxy.freezeWorldMatrix();
+    if(spatialPicking&&!dynamic){
       // Static interiors receive many foot, wall and camera rays per frame.
-      // Small indexed batches plus an octree keep exact-triangle picking local.
-      proxy.subdivide(Math.max(1,Math.ceil(proxy.getTotalIndices()/(3*96))));
-      proxy.createOrUpdateSubmeshesOctree(16,4);
+      // World-space triangle cells keep exact picking local, even for large meshes.
+      this.staticTriangles.add(proxy);
+      if(this.staticTriangles.has(proxy))this.staticMeshes.add(proxy);
     }
     const entry:Collider={placement,radius,height,instances:[proxy],generated:true};
     this.colliders.set(id,entry);
     proxy.onDisposeObservable.addOnce(()=>{
+      this.staticTriangles.remove(proxy);
+      this.staticMeshes.delete(proxy);
       if(this.colliders.get(id)===entry)this.colliders.delete(id);
     });
   }
@@ -146,6 +151,9 @@ export class RockColliderSystem {
   }
 
   private nearby(x:number,z:number,reach=0,rockId?:string):Set<Mesh|InstancedMesh>{
+    // In a fully indexed interior, the triangle cells already do the spatial
+    // filtering. Reuse this set instead of scanning every mesh for each foot ray.
+    if(!rockId&&this.staticMeshes.size===this.colliders.size)return this.staticMeshes;
     const candidates=new Set<Mesh|InstancedMesh>();
     for(const entry of this.colliders.values()){
       if(rockId&&entry.placement.id!==rockId)continue;
@@ -183,20 +191,27 @@ export class RockColliderSystem {
     return result;
   }
 
-  private hits(ray:Ray,candidates:Set<Mesh|InstancedMesh>){
-    const meshes=[...candidates];
+  private hits(ray:Ray,candidates:Set<Mesh|InstancedMesh>,minNormalY=-Infinity){
+    if(candidates===this.staticMeshes)return this.staticTriangles.hits(ray,this.staticMeshes,minNormalY).sort((a,b)=>a.distance-b.distance);
+    const indexed=new Set<Mesh>(),meshes:(Mesh|InstancedMesh)[]=[];
+    for(const mesh of candidates)if(mesh instanceof Mesh&&this.staticTriangles.has(mesh))indexed.add(mesh);else meshes.push(mesh);
     for(const mesh of meshes)mesh.computeWorldMatrix();
-    return ray.intersectsMeshes(meshes,false);
+    return [...this.staticTriangles.hits(ray,indexed,minNormalY),...ray.intersectsMeshes(meshes,false)
+      .filter(h=>(h.getNormal(true)?.y??0)>=minNormalY)].sort((a,b)=>a.distance-b.distance);
   }
 
-  private topAt(x:number,z:number,originY:number,maxDistance:number,rockId?:string):RockSurface|null{
+  private topAt(x:number,z:number,originY:number,maxDistance:number,rockId?:string,minNormalY=-Infinity):RockSurface|null{
     const candidates=this.nearby(x,z,0,rockId);
     if(!candidates.size)return null;
     const ray=new Ray(new Vector3(x,originY,z),Vector3.Down(),maxDistance);
-    for(const hit of this.hits(ray,candidates)){
+    for(const hit of this.hits(ray,candidates,minNormalY)){
       const point=hit.pickedPoint,mesh=hit.pickedMesh;
-      const normal=hit.getNormal(true);
+      let normal=hit.getNormal(true);
       if(!point||!mesh||!normal)continue;
+      if(Number.isFinite(minNormalY)){
+        const face=hit.getNormal(true,false);
+        if(face){if(Vector3.Dot(face,normal)<0)face.negateInPlace();normal=face;}
+      }
       const entry=this.colliders.get(mesh.metadata?.rockId);
       if(!entry||rockId&&entry.placement.id!==rockId)continue;
       return {height:point.y,normal,rockId:entry.placement.id,kind:entry.placement.kind,
@@ -210,6 +225,31 @@ export class RockColliderSystem {
   /** Upper shell at a point, including steep faces; used to keep feet out of solid rock. */
   querySolidTop(x:number,z:number,originY:number,maxDistance:number,rockId?:string):RockSurface|null{
     return this.topAt(x,z,originY,maxDistance,rockId);
+  }
+
+  /** Authored steps are discrete treads, not a smoothed geological slope.
+   * Use face normals and the highest supported tread, never an average below
+   * its visible surface. Only opposing samples may close a tiny mesh seam. */
+  queryStepGround(x:number,z:number,originY:number,maxDistance:number,footRadius=0,maxStep=1.05):RockSurface|null{
+    const at=(dx:number,dz:number)=>this.topAt(x+dx,z+dz,originY,maxDistance,undefined,Math.cos(42*Math.PI/180));
+    const center=at(0,0);if(footRadius<=0)return center;
+    const rim=[at(footRadius,0),at(-footRadius,0),at(0,footRadius),at(0,-footRadius)];
+    let precise=center?rim.reduce<RockSurface>((best,h)=>h&&h.height>best.height&&h.height<=center.height+maxStep+.001?h:best,center):null;
+    const pairs=[[rim[0],rim[1]],[rim[2],rim[3]]];
+    const supports=pairs.filter((p):p is [RockSurface,RockSurface]=>!!p[0]&&!!p[1]&&Math.abs(p[0].height-p[1].height)<.03).flat();
+    precise??=supports.sort((a,b)=>b.height-a.height)[0]??null;
+    if(precise&&originY-precise.height<=.95)return precise;
+    // The caller's inner foot probe is 55% of the capsule radius. At seams and
+    // stair corners use its real rim too, requiring two separated contacts.
+    const radius=footRadius*1.7,d=radius*Math.SQRT1_2;
+    const offsets=[[radius,0],[-radius,0],[0,radius],[0,-radius],[d,d],[d,-d],[-d,d],[-d,-d]];
+    const outer=offsets.map(([dx,dz])=>at(dx,dz));
+    for(let i=0;i<outer.length;i++){
+      const h=outer[i];if(!h||precise&&h.height<=precise.height||center&&h.height>center.height+maxStep+.001)continue;
+      if(outer.some((other,j)=>j!==i&&other&&Math.abs(other.height-h.height)<.03&&
+        offsets[i][0]*offsets[j][0]+offsets[i][1]*offsets[j][1]<=1e-5))precise=h;
+    }
+    return precise;
   }
 
   /** Smooth only across the character's footprint; all samples still hit the real shell. */
@@ -334,6 +374,8 @@ export class RockColliderSystem {
   }
 
   dispose():void{
+    this.staticTriangles.clear();
+    this.staticMeshes.clear();
     for(const entry of this.colliders.values())for(const instance of entry.instances)instance.dispose(false,false);
     this.colliders.clear();
     for(const source of this.colliderSources.values())source.dispose(false,false);

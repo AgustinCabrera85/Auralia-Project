@@ -1,0 +1,13 @@
+{
+  "firstJumpUnchanged": true,
+  "secondRise": 3.796666666666667,
+  "peakSamples": 17,
+  "noThirdJump": true,
+  "landingReset": true,
+  "blurReset": true,
+  "pauseReset": true,
+  "zoneReset": true,
+  "meshes": 3,
+  "fxTextures": 0,
+  "activeAtCapture": true
+}

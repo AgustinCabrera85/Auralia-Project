@@ -215,9 +215,10 @@ export class BrisaliaIvyVolume {
   private addMesh(name:string,buffer:Buffer,material:PBRMaterial,root:TransformNode,layer:number):void {
     if(!buffer.indices.length||this.disposed)return;
     const mesh=new Mesh(`brisalia:ivy-volume:${name}`,this.scene),data=new VertexData();
-    data.positions=buffer.positions;data.normals=buffer.normals;data.indices=buffer.indices;
-    if(layer>=0)data.uvs=buffer.uvs;data.applyToMesh(mesh);
-    if(layer>=0)mesh.setVerticesData('aurIvyLeaf',buffer.seeds,false,1);
+    data.positions=new Float32Array(buffer.positions);data.normals=new Float32Array(buffer.normals);
+    data.indices=new Uint32Array(buffer.indices);
+    if(layer>=0)data.uvs=new Float32Array(buffer.uvs);data.applyToMesh(mesh);
+    if(layer>=0)mesh.setVerticesData('aurIvyLeaf',new Float32Array(buffer.seeds),false,1);
     mesh.parent=root;mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;
     mesh.metadata={ivyVolume:true,ivyLeaves:layer>=0,ivyLayer:layer};mesh.computeWorldMatrix(true);mesh.freezeWorldMatrix();
     this.stats.triangles+=buffer.indices.length/3;this.meshes.push(mesh);

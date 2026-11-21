@@ -1,0 +1,72 @@
+{
+  "configuration": {
+    "intensity": 2.8,
+    "scale": 3.6,
+    "capacity": 72
+  },
+  "suppression": {
+    "walk": true,
+    "run": true,
+    "idle": true,
+    "blocked": true,
+    "sprintOff": true,
+    "airborne": true,
+    "swimming": true,
+    "water": true,
+    "wood": true,
+    "paved": true,
+    "snow": true,
+    "lava": true,
+    "wet": true
+  },
+  "surfaces": {
+    "dirt": 90,
+    "grass": 50,
+    "sand": 90
+  },
+  "frameRates": [
+    {
+      "fps": 24,
+      "emitted": 260
+    },
+    {
+      "fps": 60,
+      "emitted": 260
+    },
+    {
+      "fps": 144,
+      "emitted": 270
+    }
+  ],
+  "slope": {
+    "grade": 0.7,
+    "queriesPerSecond": 9
+  },
+  "sharedTexture": true,
+  "supportAdapter": {
+    "zoneOffset": true,
+    "supportPriority": true,
+    "paint": true,
+    "rain": true
+  },
+  "game": {
+    "emitted": 33,
+    "peak": 23,
+    "surface": "grass",
+    "displacement": 18.90000000000191,
+    "jumpSuppressed": true,
+    "blurReset": true,
+    "pauseReset": true,
+    "worldSpace": true,
+    "zoneReset": true
+  },
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "resources": {
+    "particleSystems": 2,
+    "textures": 1
+  },
+  "disposed": true
+}

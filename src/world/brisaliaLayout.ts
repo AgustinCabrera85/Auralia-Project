@@ -1,5 +1,6 @@
 import { TRAVERSAL } from '../game/traversalRules';
-/** Rev4 metre-scale placements relative to PlayableWorld.town. Original parcel
+import { BRISALIA_REV3_ASSETS } from './brisaliaRev3Assets';
+/** Existing metre-scale placements relative to PlayableWorld.town. Original parcel
  * corners are converted with manifest bounds before arranging clear streets.
  * Blender XY becomes Babylon XZ; no model is rescaled to fit the old site. */
 const METRIC_BUILDINGS = [
@@ -397,10 +398,12 @@ const METRIC_BUILDINGS = [
 // remain metric and byte-identical; scale the whole settlement coherently.
 export const BRISALIA_REFERENCE_HEIGHT_M=1.4;
 export const BRISALIA_SCALE=TRAVERSAL.playerHeight/BRISALIA_REFERENCE_HEIGHT_M;
-export const BRISALIA_BUILDINGS=METRIC_BUILDINGS.map(b=>({revision:4,assetRoot:'brisalia-rev4',...b,
- x:b.x*BRISALIA_SCALE,z:b.z*BRISALIA_SCALE,width:b.width*BRISALIA_SCALE,
- depth:b.depth*BRISALIA_SCALE,height:b.height*BRISALIA_SCALE,
- footprintOffsetZ:('footprintOffsetZ' in b?b.footprintOffsetZ:0)*BRISALIA_SCALE}));
+export const BRISALIA_BUILDINGS=METRIC_BUILDINGS.map(b=>{
+ const asset=b.id==='B28'?b:{...BRISALIA_REV3_ASSETS[b.id],revision:3,assetRoot:'brisalia-rev3-final'};
+ return {...b,...asset,x:b.x*BRISALIA_SCALE,z:b.z*BRISALIA_SCALE,width:asset.width*BRISALIA_SCALE,
+  depth:asset.depth*BRISALIA_SCALE,height:asset.height*BRISALIA_SCALE,
+  footprintOffsetZ:('footprintOffsetZ' in b?b.footprintOffsetZ:0)*BRISALIA_SCALE};
+});
 export type BrisaliaBuilding=typeof BRISALIA_BUILDINGS[number];
 // Door centres measured in the individual GLBs, before the placement yaw.
 // B01's authored facade faces +Z; the other prefabs face -Z.

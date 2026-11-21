@@ -1,0 +1,58 @@
+{
+  "at": "2026-11-21T05:11:15.832Z",
+  "label": "final-route-2",
+  "rendererMiB": 790.7,
+  "gpuProcessMiB": 995.2,
+  "rendererPlusGpuMiB": 1785.9,
+  "note": "Measured native private footprints in isolated Chrome; not the Chrome tab-hover figure. GPU process includes driver allocations.",
+  "processes": [
+    {
+      "type": "browser",
+      "pid": 20300,
+      "cpuSeconds": 6.601333,
+      "privateMiB": 97.6
+    },
+    {
+      "type": "renderer",
+      "pid": 25084,
+      "cpuSeconds": 0.104316,
+      "privateMiB": 22.6
+    },
+    {
+      "type": "renderer",
+      "pid": 26156,
+      "cpuSeconds": 178.77819,
+      "privateMiB": 790.7
+    },
+    {
+      "type": "renderer",
+      "pid": 11748,
+      "cpuSeconds": 0.371786,
+      "privateMiB": 26.6
+    },
+    {
+      "type": "GPU",
+      "pid": 31396,
+      "cpuSeconds": 36.46975,
+      "privateMiB": 995.2
+    },
+    {
+      "type": "network.mojom.NetworkService",
+      "pid": 22524,
+      "cpuSeconds": 3.739607,
+      "privateMiB": 18.7
+    },
+    {
+      "type": "storage.mojom.StorageService",
+      "pid": 13184,
+      "cpuSeconds": 0.058954,
+      "privateMiB": 8.1
+    },
+    {
+      "type": "tracing.mojom.TracingService",
+      "pid": 10832,
+      "cpuSeconds": 1.881962,
+      "privateMiB": 13.6
+    }
+  ]
+}

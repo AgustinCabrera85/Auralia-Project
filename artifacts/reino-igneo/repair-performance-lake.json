@@ -1,0 +1,27 @@
+{
+  "label": "puente-lago-1080p",
+  "mode": "engine.runRenderLoop with real delta time",
+  "fps": 59.978842737652066,
+  "seconds": 10.02020000000298,
+  "frames": 602,
+  "medianMs": 6.100000001490116,
+  "p95Ms": 10.199999995529652,
+  "ms": 5.600000001490116,
+  "draws": 122,
+  "triangles": 310492,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "avatar": true,
+  "companion": {
+    "visible": true,
+    "distance": 5.339188286870758
+  },
+  "loadMs": 18993,
+  "renderer": {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 (0x00002204) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  }
+}

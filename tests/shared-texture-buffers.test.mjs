@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { InternalTexture, NullEngine, Scene, Texture } from '@babylonjs/core';
+import { shareTextureSourceBuffers } from '../src/world/SharedTextureBuffers.ts';
+
+const engine=new NullEngine(),scene=new Scene(engine);
+const internal=new InternalTexture(engine,1),source=new Uint8Array([7,11,19]);
+internal._buffer=source;internal.isReady=true;
+const first=new Texture(null,scene),second=new Texture(null,scene),pending=new Texture(null,scene);
+first._texture=internal;second._texture=internal;internal.incrementReferences();
+first._buffer=source;second._buffer=source.slice();pending._buffer=new Uint8Array([31]);
+second.uScale=2;second.wrapU=Texture.CLAMP_ADDRESSMODE;second.gammaSpace=false;
+shareTextureSourceBuffers([first,second,pending]);
+assert.equal(second._buffer,source,'shared GPU image also shares its encoded source');
+assert.equal(internal._buffer,source,'context restoration keeps a live source');
+assert.equal(second.getInternalTexture(),internal,'GPU image unchanged');
+assert.equal(second.uScale,2);assert.equal(second.wrapU,Texture.CLAMP_ADDRESSMODE);assert.equal(second.gammaSpace,false);
+assert.deepEqual([...pending._buffer],[31],'unfinished texture source is preserved');
+shareTextureSourceBuffers([first,second,pending]);assert.equal(second._buffer,source,'idempotent');
+scene.dispose();engine.dispose();
+console.log('Shared texture buffers: ownership, restoration source, sampler state, pending load and idempotence OK');

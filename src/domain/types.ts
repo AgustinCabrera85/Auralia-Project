@@ -1,5 +1,6 @@
 import type { ZoneId } from '../data/world';
 import { START_HOUR } from '../world/climate/ClimateModel';
+import type { AbilityProgress } from './abilities/types';
 
 export type ItemId = 'wood' | 'stone' | 'copper' | 'spark' | 'fireCrystal' | 'hammer' | 'pickaxe' | 'lantern' | 'sword';
 export const EQUIPMENT_IDS=['unarmed','sword','pickaxe','hammer','lantern'] as const;
@@ -29,6 +30,8 @@ export type Structure = {
 
 export type SaveGameV1 = {
   version: 1;
+  /** Learned powers are permanent, independent of consumable crafting crystals. */
+  abilities?:AbilityProgress;
   zone: ZoneId;
   inventory: Inventory;
   /** The selected combat or tool mode. Old saves default to unarmed. */
@@ -37,6 +40,8 @@ export type SaveGameV1 = {
   visited: ZoneId[];
   /** Optional so saves created before geographic discoveries load unchanged. */
   discoveredPlaces?: string[];
+  /** Last safe rest in the imported volcano; old v1 saves start at its entrance. */
+  igneousCheckpoint?:string;
   /** Stable crystal node IDs mapped to the millisecond when each node becomes available. */
   resourceRespawns?: Record<string,number>;
   /** Global clock; optional so existing v1 saves remain readable. */
