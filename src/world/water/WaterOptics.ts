@@ -47,10 +47,10 @@ vec3 throughWater(vec3 colour,vec2 uv){
   float a=waterLevel-waterEye.y;
   float b=waterLevel+dot(end.xz-waterEye.xz,waterSlope)-end.y;
   float localWeight=waterOpticsWeight;
-  if(waterSurfaceMode>.5&&a<=0.0){
-    // The opaque-depth pass is local (100 m), while the interface pass also
-    // contains distant rivers. Its clear depth is missing information, not a
-    // deep water column. Leave those pixels to the water material and fog.
+  if(a<=0.0){
+    // The opaque-depth pass is local (100 m). For oceans as well as rivers,
+    // its clear depth is missing information, not a submerged far-plane point.
+    // Otherwise stepping into shallow water paints blue bands over dry coasts.
     if(texture2D(waterSceneDepth,uv).r>=.999999)return colour;
     // Fade before the depth culling boundary, including large terrain tiles
     // whose bounds intersect the pass but extend beyond its useful range.
@@ -152,9 +152,12 @@ export class WaterOptics {
       };
     }
     if(this.surfaceDepth){
-      const surface=this.surfaceDepth.getDepthMap(),index=scene.customRenderTargets.indexOf(surface);
-      if(this.surfaceMode&&index<0)scene.customRenderTargets.push(surface);
-      else if(!this.surfaceMode&&index>=0)scene.customRenderTargets.splice(index,1);
+      // Camera targets run after this frame's visible meshes are evaluated.
+      // Scene targets run earlier and sample the previous river-sector list,
+      // causing a one-frame absorption flash as the submerged camera advances.
+      const surface=this.surfaceDepth.getDepthMap(),targets=this.camera.customRenderTargets,index=targets.indexOf(surface);
+      if(this.surfaceMode&&index<0)targets.push(surface);
+      else if(!this.surfaceMode&&index>=0)targets.splice(index,1);
       const engine=scene.getEngine();
       if(this.surfaceMode&&(surface.getSize().width!==engine.getRenderWidth()||surface.getSize().height!==engine.getRenderHeight()))
         surface.resize({width:engine.getRenderWidth(),height:engine.getRenderHeight()});

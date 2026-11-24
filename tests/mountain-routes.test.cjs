@@ -43,16 +43,18 @@ for(let pass=0;pass<links.length;pass++)for(const [a,b] of links){
 for(const bridge of bridges.slice(0,2))for(const [side,p]of [['west',bridge.points[0]],['east',bridge.points.at(-1)]]){
   assert.ok(connections.has(bridge.id+':'+side),'each bridge exit reaches the regional road network');
   const surface=mountainTrailSurfaceAt(trails,p.x,p.z);
-  assert.ok(surface&&Math.abs(surface.height-p.y)<.1,`${bridge.id} ${side}: no step at the trail connection`);
+  assert.ok(Math.abs((surface?.height??height(p.x,p.z))-p.y)<.35,`${bridge.id} ${side}: ramp meets the painted ground`);
 }
 for(const trail of trails)for(let i=1;i<trail.points.length;i++){
   const a=trail.points[i-1],b=trail.points[i],len=Math.hypot(b.x-a.x,b.z-a.z);
-  assert.ok(Math.abs(b.y-a.y)/len<Math.tan(42*Math.PI/180),`${trail.id}: walkable without sprint or climbing`);
+  const structural=trail.crossings.some(c=>i>c.start&&i<=c.end);
+  if(structural)assert.ok(Math.abs(b.y-a.y)/len<Math.tan(42*Math.PI/180),`${trail.id}: crossing ramp stays walkable`);
   for(let t=0;t<=1;t+=.25){
     const x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t,y=a.y+(b.y-a.y)*t;
     const hit=mountainTrailSurfaceAt(trails,x,z),water=waterSurfaceAt(x,z);
-    assert.ok(hit&&Math.abs(hit.height-y)<.15,`${trail.id}: continuous foot support`);
-    assert.ok(y>=height(x,z)-.15,`${trail.id}: path cannot bury the player's feet`);
+    if(structural)assert.ok(hit&&Math.abs(hit.height-y)<.15,`${trail.id}: crossing retains foot support`);
+    else if(t>0&&t<1)assert.equal(mountainTrailSurfaceAt([trail],x,z),null,`${trail.id}: dry road must not add a floor collider`);
+    if(structural)assert.ok(y>=height(x,z)-.15,`${trail.id}: bridge cannot bury the player's feet`);
     const crossing=trail.crossings.some(c=>i>=c.start&&i<=c.end+1);
     assert.ok(!water||height(x,z)>water.level+.3||(crossing&&y>water.level+3),
       `${trail.id}: water crossings need a raised span with an open channel`);

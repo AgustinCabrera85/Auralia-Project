@@ -2,6 +2,8 @@ node_modules/
 dist/
 .test-build/
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
 .env
 .env.local
 .DS_Store

@@ -1,4 +1,4 @@
-import { PBRMaterial, StandardMaterial, type Material, type Scene } from '@babylonjs/core';
+import { PBRMaterial, StandardMaterial, type Light, type Material, type Scene } from '@babylonjs/core';
 import { registerGLTFExtension } from '@babylonjs/loaders/glTF/2.0/glTFLoaderExtensionRegistry.js';
 import { shareTextureSourceBuffers } from './SharedTextureBuffers';
 
@@ -7,6 +7,12 @@ const budgets=new WeakMap<Material,number>();
 type LitMaterial=PBRMaterial|StandardMaterial;
 const lit=(material:Material):material is LitMaterial=>
   material instanceof PBRMaterial||material instanceof StandardMaterial;
+
+/** Babylon Light.setEnabled rescans scene meshes even for an unchanged value.
+ * Compare the local flag; parent changes already resync inherited light state. */
+export function setLightEnabled(light:Light,enabled:boolean):void {
+  if(light.isEnabled(false)!==enabled)light.setEnabled(enabled);
+}
 
 /** Declare the lights a surface can receive, independently of total scene lights. */
 export function setMaterialLightBudget(material:Material,lights:number):void {

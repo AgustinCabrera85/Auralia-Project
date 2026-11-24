@@ -1,0 +1,14 @@
+{
+  "stats": {
+    "quality": "medium",
+    "drops": 5200,
+    "splashes": 800,
+    "drawCalls": 2,
+    "surfaceReady": true,
+    "surfaceProgress": 1,
+    "surfaceBudget": 128,
+    "intensity": 1,
+    "disposed": false
+  },
+  "brightness": 0.32
+}

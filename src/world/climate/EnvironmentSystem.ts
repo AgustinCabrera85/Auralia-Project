@@ -6,6 +6,8 @@ import {
 } from './ClimateModel';
 import { SkyDome } from './SkyDome';
 import { Precipitation } from './Precipitation';
+import { ClimateRainbow } from './ClimateRainbow';
+import type { RainOptions, RainQuality } from './RainFX.js';
 import { LANDSCAPE_ATMOSPHERE_CONFIG } from '../LandscapeAtmosphere';
 import { getAuraliaWind, type AuraliaWindState } from '../AuraliaWindSystem';
 import { getAuraliaTreeColors, type AuraliaTreeColors } from '../AuraliaFoliageWind';
@@ -16,6 +18,7 @@ export class EnvironmentSystem {
   private readonly sky:SkyDome;
   private readonly moon:DirectionalLight;
   private readonly precipitation:Precipitation;
+  private readonly rainbow:ClimateRainbow;
   private readonly wind:AuraliaWindState;
   private readonly treeColors:AuraliaTreeColors;
   private elapsed:number;
@@ -33,6 +36,7 @@ export class EnvironmentSystem {
   private current:ClimateFrame;
   private sheltered=false;
   setSheltered(value:boolean):void{this.sheltered=value;}
+  get rainStats(){return this.precipitation.rainStats;}
 
   constructor(
     private readonly scene:Scene,
@@ -54,12 +58,26 @@ export class EnvironmentSystem {
     this.moon.specular=new Color3(.14,.19,.28);
     this.moon.intensity=0;
     this.precipitation=new Precipitation(scene,camera);
+    this.rainbow=new ClimateRainbow(scene);
     if(new URLSearchParams(location.search).has('climateDebug'))this.createDebugPanel();
     this.update(0);
   }
 
   get elapsedHours():number{return this.elapsed;}
   get frame():ClimateFrame{return this.current;}
+  setAudioVolume(volume:number):void{this.precipitation.setAudioVolume(volume);}
+  configureRain(surface:NonNullable<RainOptions['getSurfaceAt']>,quality:RainQuality):void{
+    this.precipitation.configureRain(surface,quality);this.rainbow.configureSurface(surface);
+  }
+  invalidateRainSurfaces():void{this.precipitation.invalidateSurfaces();this.rainbow.invalidateSurface();}
+  resetRain():void{this.precipitation.reset();this.rainbow.reset();}
+  pauseRain(paused:boolean):void{this.precipitation.setPaused(paused);this.rainbow.setPaused(paused);}
+  updatePrecipitation(dt:number,paused:boolean):void{
+    const speed=this.wind.effectiveStrength*1.8;
+    this.precipitation.setWind(this.wind.direction[0]*speed,this.wind.direction[1]*speed);
+    this.precipitation.setPaused(paused);this.precipitation.update(this.current,this.sheltered,dt);
+    this.rainbow.update(dt,this.scene.activeCamera,this.current,this.precipitation.rainAmount,this.sheltered,paused);
+  }
 
   /** Reset on a new game; environmental settings are always serialized separately. */
   setElapsedHours(hours:number):void {
@@ -89,7 +107,6 @@ export class EnvironmentSystem {
       this.nextLightning=this.animationSeconds+8;
 
     this.sky.update(frame,this.flash,this.animationSeconds);
-    this.precipitation.update(frame,this.sheltered,step);
 
     // Existing sun and hemispheric lights are modified; no duplicate light sources.
     this.sun.direction.set(-frame.sunDirection[0],-frame.sunDirection[1],-frame.sunDirection[2]);
@@ -189,6 +206,7 @@ export class EnvironmentSystem {
   dispose():void {
     this.debugPanel?.remove();
     this.precipitation.dispose();
+    this.rainbow.dispose();
     this.moon.dispose();
     this.sky.dispose();
   }

@@ -15,6 +15,8 @@ export interface GeographicSource {
   weightsAt?(x:number,z:number,height:number,slope:number):GeographicWeights;
   /** Preserve the canonical surface in geographic corridors at every LOD. */
   preserveDetail?(bounds:GeographicBounds):boolean;
+  /** Bounded distant silhouettes, rendered with ordinary far tiles as a whole. */
+  horizonLandmarksAt?(x:number,z:number):readonly GeographicBounds[];
   isReady(bounds:GeographicBounds):boolean;
   prepare(bounds:GeographicBounds):Promise<void>;
 }

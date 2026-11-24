@@ -11,6 +11,7 @@ import { waterSurfaceAt } from '../geographicFeatures';
 import { visualWaterLevel } from '../water/riverFlow';
 import { lagoonRadius } from '../lagoonData';
 import { getWorldDocument, type PlacedAsset } from './WorldEditState';
+import { treePerchGeometry, type BirdTree } from '../wildlife/BirdHabitat';
 
 const placementVariation=(id:string):number=>{
   let hash=2166136261;
@@ -39,6 +40,7 @@ export class AuthoredAssets {
   private disposed=false;
   private readonly failures=new Set<string>();
   private readonly foliageWind:AuraliaFoliageWind;
+  private readonly birdPerches=new WeakMap<Mesh,ReturnType<typeof treePerchGeometry>>();
   constructor(private readonly scene:Scene,private readonly parent:TransformNode){
     this.foliageWind=new AuraliaFoliageWind(scene);
   }
@@ -234,6 +236,27 @@ export class AuthoredAssets {
   idFromPick(mesh:Mesh,thinInstanceIndex:number):string|null{
     if(thinInstanceIndex<0)return null;
     return this.idsByMesh.get(mesh.name)?.[thinInstanceIndex]??null;
+  }
+  /** Same transform used by the visible, hand-placed tree instances. */
+  birdTrees(x:number,z:number,radius:number):BirdTree[]{
+    const trees:BirdTree[]=[];
+    for(const p of getWorldDocument().assets){
+      if(!/Tree|arbolito|Willow|Oak|Pine|Palm/.test(p.assetId)||Math.hypot(p.x-x,p.z-z)>radius)continue;
+      const parts=this.sources.get(p.assetId);if(!parts)continue;
+      const catalog=ASSET_CATALOG[p.assetId as AssetId];
+      const matrix=Matrix.FromArray(this.placementMatrix(p.assetId,p,catalog));
+      for(const [index,part] of parts.entries()){
+        let geometry=this.birdPerches.get(part);
+        if(!geometry){geometry=treePerchGeometry(part);this.birdPerches.set(part,geometry);}
+        const points=geometry.points.map(q=>Vector3.TransformCoordinates(new Vector3(q.x,q.y,q.z),matrix));
+        if(!points.length)continue;
+        const r=geometry.radius*Math.max(Math.hypot(matrix.m[0],matrix.m[2]),Math.hypot(matrix.m[8],matrix.m[10]));
+        const top=Vector3.TransformCoordinates(new Vector3(0,geometry.top,0),matrix).y,id=`authored-tree:${p.id}:${index}`;
+        trees.push({id,canopy:!/Seco|Dead|Stump/i.test(p.assetId),perches:points,
+          obstacle:{id,minX:p.x-r,maxX:p.x+r,minZ:p.z-r,maxZ:p.z+r,top}});
+      }
+    }
+    return trees;
   }
   /** Useful for a selection marker and in-editor property panels. */
   find(id:string):PlacedAsset|undefined{return getWorldDocument().assets.find(p=>p.id===id);}

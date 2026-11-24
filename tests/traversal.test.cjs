@@ -199,6 +199,30 @@ for(let i=0;i<55;i++)walker.step(.02,input(),platform);
 assert.equal(walker.mode,'grounded','lands on terrain below');
 assert.equal(walker.position.y,0);
 
+// A raised bevel must slide on its own surface, never snap through it to terrain.
+const bevelHeight=x=>x<2?3:x<2.6?3-(x-2)*1.25:0;
+const bevelWorld={...flat,
+  ground:(x,z,origin,max)=>{
+    const height=bevelHeight(x);
+    return height<=origin&&height>=origin-max?{height,normalY:x>=2&&x<2.6?1/Math.hypot(1,1.25):1,
+      ...(height?{rockId:'raised-rim'}:{})}:null;
+  },
+  canMove:(x,z,fromX,fromZ,y)=>y>=bevelHeight(x)-.4
+};
+for(const hz of [30,60,144])for(const moving of [false,true]){
+  const avatar=new CharacterTraversalController();
+  avatar.teleport(2.2,bevelHeight(2.2),0);avatar.mode='airborne';
+  for(let i=0;i<hz*2;i++){
+    avatar.step(1/hz,input(moving?{moveX:1,vertical:1}:{}),bevelWorld);
+    if(avatar.position.x<2.6)assert.ok(avatar.position.y>=bevelHeight(avatar.position.x)-.05,
+      'bevel contact cannot put the capsule inside its support');
+  }
+  assert.ok(avatar.position.x>=2.6-1e-6,`input or natural sliding can leave the raised rim: ${hz} Hz, moving=${moving}, ${JSON.stringify(avatar.position)}`);
+  assert.equal(avatar.mode,'grounded');assert.equal(avatar.position.y,0);
+  avatar.step(1/hz,input({jumpPressed:true}),bevelWorld);
+  assert.equal(avatar.mode,'airborne','jump remains available after leaving the bevel');
+}
+
 const nearbyLedge={
   ...flat,
   ground:(x,z,origin,max)=>{

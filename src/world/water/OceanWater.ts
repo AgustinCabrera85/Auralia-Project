@@ -73,10 +73,10 @@ export class OceanWater {
     // Until the first mask is complete, the far surface covers the whole ocean.
     this.near.setEnabled(false);
     const waveAmp=WATER_PROFILES.ocean.params.uWaveAmp;
-    // The continent's coastal inlets share the clear-water palette. Keep the
-    // same two mutually exclusive ocean patches and inland ownership mask.
-    const coastal:WaterConfig=geography?{uClearWater:1,uDeepColor:'#164951',uShallowColor:'#55978f',
-      uCaustics:.32,uFoamIntensity:.65}:{};
+    // Turquoise shelves transition to blue open sea. Actual bed depth is carried
+    // in vertex B; transparency is restricted to nearby, shallow water.
+    const coastal:WaterConfig=geography?{uClearWater:1,uDeepColor:'#073750',uShallowColor:'#48a6a2',
+      uCaustics:.22,uFoamIntensity:.65,uFresnel:.58}:{};
     this.nearMaterial=createWorldWaterMaterial(scene,'ocean',this.masks,{
       ...coastal,
       uWaveAmp:waveAmp*(options.waveStrength??1),
@@ -89,6 +89,9 @@ export class OceanWater {
       uNormalStrength:(options.normalStrength??1)*.65,
       uExcludeInland:exclusion?1:0,
     });
+    // The flat horizon and a very shallow beach can quantize to the same depth
+    // several kilometres away. Bias the far water behind dry shore triangles.
+    this.farMaterial.zOffset=2;
     if(exclusion&&this.inlandMask)for(const material of [this.nearMaterial,this.farMaterial]){
       material.setTexture('uInlandMask',this.inlandMask);
       material.setVector4('uInlandBounds',new Vector4(exclusion.bounds[0],exclusion.bounds[1],
@@ -107,7 +110,7 @@ export class OceanWater {
     this.near.checkCollisions = false;
     this.far.checkCollisions = false;
     const farColors = new Float32Array(4 * this.far.getTotalVertices());
-    for (let i=0;i<farColors.length;i+=4) farColors[i+3]=1;
+    for (let i=0;i<farColors.length;i+=4){farColors[i+2]=180;farColors[i+3]=1;}
     this.far.setVerticesData(VertexBuffer.ColorKind,farColors);
   }
 
@@ -156,15 +159,14 @@ export class OceanWater {
     const sampleCache = new Map<number,Map<number,number>>();
     const inlandCache = new Map<number,Map<number,number>>();
     const cacheStep = 16;
-    const shoreAt = (sx:number,sz:number):number => {
+    const depthAt = (sx:number,sz:number):number => {
       let row=sampleCache.get(sz);
       const known=row?.get(sx);
       if(known!==undefined)return known;
-      const depth=Math.max(0,this.level-sampleMainlandHeight(sx*cacheStep,sz*cacheStep));
-      const shallow=1-Math.min(1,depth/3.2);
+      const depth=Math.max(0,Math.min(180,this.level-sampleMainlandHeight(sx*cacheStep,sz*cacheStep)));
       if(!row)sampleCache.set(sz,row=new Map());
-      row.set(sx,shallow);
-      return shallow;
+      row.set(sx,depth);
+      return depth;
     };
     const inlandAt = (wx:number,wz:number):number => {
       const sx=Math.round(wx),sz=Math.round(wz);
@@ -187,20 +189,23 @@ export class OceanWater {
           wx===this.lastX+positions[oldIndex*3]&&wz===this.lastZ+positions[oldIndex*3+2]) {
         data[i*4]=this.colors[oldIndex*4];
         data[i*4+1]=this.colors[oldIndex*4+1];
-        data[i*4+2]=0;data[i*4+3]=1;
+        data[i*4+2]=this.colors[oldIndex*4+2];data[i*4+3]=1;
         continue;
       }
       const gx=wx/cacheStep,gz=wz/cacheStep;
       const sx=Math.floor(gx),sz=Math.floor(gz);
       const tx=gx-sx,tz=gz-sz;
-      const a=shoreAt(sx,sz),b=shoreAt(sx+1,sz);
-      const c=shoreAt(sx,sz+1),d=shoreAt(sx+1,sz+1);
-      data[i*4]=(a+(b-a)*tx)*(1-tz)+(c+(d-c)*tx)*tz;
+      const a=depthAt(sx,sz),b=depthAt(sx+1,sz);
+      const c=depthAt(sx,sz+1),d=depthAt(sx+1,sz+1);
+      const depth=(a+(b-a)*tx)*(1-tz)+(c+(d-c)*tx)*tz;
+      const sa=1-Math.min(1,a/3.2),sb=1-Math.min(1,b/3.2);
+      const sc=1-Math.min(1,c/3.2),sd=1-Math.min(1,d/3.2);
+      data[i*4]=(sa+(sb-sa)*tx)*(1-tz)+(sc+(sd-sc)*tx)*tz;
       // Ocean crests must stay below lakes and rivers. A small margin also
       // keeps moving waves from poking through their shoreline vertices.
       data[i*4+1]=Math.max(inlandAt(wx,wz),inlandAt(wx-8,wz),inlandAt(wx+8,wz),
         inlandAt(wx,wz-8),inlandAt(wx,wz+8));
-      data[i*4+2]=0;
+      data[i*4+2]=depth;
       data[i*4+3]=1;
     }
   }

@@ -10,6 +10,11 @@ import { nearTerrainSurfaceAt, terrainFootprintAt } from './terrainLod';
 import { activeGeography } from './geography/ActiveGeography';
 import { worldForestCandidates, worldForestCover, worldForestEnabled } from './geography/WorldForest';
 import { castlePlantsForChunk } from './BrisaliaCastlePlanting';
+import { NACAR_PALACE } from './geography/NacarPalace';
+import { vegetationTouchesWater } from './geography/VegetationWater';
+import { vegetationTouchesBeach } from './geography/VegetationBeach';
+import { inBrisaliaCherryDistrict } from './BrisaliaCherryTrees';
+import { brisaliaRoadEdge, inBrisaliaFootprint } from './brisaliaLayout';
 
 export const VEGETATION_CONFIG = {
   seed: 89031,
@@ -97,13 +102,14 @@ function densityAt(kind:VegetationKind,x:number,z:number,wetness:number,cluster:
   }
   const grouping=kind==='plantitas1'||kind==='tronco1' ? .42+.58*cluster : .12+.88*cluster;
   const moisture=kind==='plantitas1'||kind==='tronco1' ? .72+.65*wetness : 1-.48*wetness;
-  const landscape=activeGeography()?{grass:1,trees:1}:landscapeVegetation(x,z);
+  const landscape=activeGeography()?.vegetationAt?.(x,z)??(activeGeography()?{grass:1,trees:1}:landscapeVegetation(x,z));
   return clamp01(probability*grouping*moisture*(kind==='plantitas1'?landscape.grass:landscape.trees));
 }
 
 /** Pure per-chunk distribution. Never reads the current player or load order. */
 export function vegetationForChunk(cx:number,cz:number,exclusions:readonly VegetationExclusion[]=[]):VegetationPlacement[]{
   const size=MAINLAND.chunkSize,placements:VegetationPlacement[]=[];
+  const world=activeGeography();
   const forest=worldForestEnabled(),forestCandidates=forest?worldForestCandidates(cx,cz):[];
   const grid=new Map<string,number>();
   const gridHeight=(x:number,z:number):number=>{
@@ -121,14 +127,25 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const candidate=candidates[i];
       const x=candidate?.x??(cx+hash01(cx,cz,seed+1))*size;
       const z=candidate?.z??(cz+hash01(cx,cz,seed+2))*size;
+      const desert=activeGeography()?.desertAt?.(x,z)??0;
+      const dryDensity=Math.pow(1-desert*(kind==='arbolitoSeco'?.82:1),2);
+      // The dry interior has only occasional dead wood; skip height sampling there.
+      if(dryDensity===0)continue;
       if(isStarterArea(x,z)||(!activeGeography()&&(geologyFaceExcludes(x,z)||insideFoliageForest(x,z)||
         mountainRouteExcludes(x,z)||!regionalAssetAllowed(kind,x,z))))continue;
       const water=activeGeography()?.source.seaLevel??MAINLAND.waterLevel;
       const surface=nearTerrainSurfaceAt(x,z,gridHeight),h=surface.height;
       const tree=kind!=='plantitas1'&&kind!=='tronco1';
+      if(tree&&world&&inBrisaliaCherryDistrict(x-world.town.x,z-world.town.z))continue;
       const variation=1+VEGETATION_CONFIG.scaleVariation*(2*(candidate?.variation??hash01(cx,cz,seed+4))-1);
       const scale=VEGETATION_CONFIG.baseScale[kind]*variation;
       const crownRadius=VEGETATION_CONFIG.crownRadius[kind]*scale;
+      if(world){
+        if((world.vegetationClearanceAt?.(x,z)??Infinity)<crownRadius+1)continue;
+        const tx=x-world.town.x,tz=z-world.town.z;
+        if(Math.abs(tx)<600&&Math.abs(tz)<600&&
+          (brisaliaRoadEdge(tx,tz)<crownRadius+1||inBrisaliaFootprint(tx,tz,crownRadius)))continue;
+      }else if(mountainRouteExcludes(x,z,crownRadius))continue;
       if(h<water+(tree?VEGETATION_CONFIG.minHeightAboveWater.trees:VEGETATION_CONFIG.minHeightAboveWater.plants))continue;
       const inlandWater=waterSurfaceAt(x,z);
       if(inlandWater&&h<inlandWater.level+(tree?1.7:.35))continue;
@@ -138,8 +155,11 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       const cluster=clusterAt(x,z);
       const w=biomeWeightsAt(x,z);
       const wetness=clamp01(masks.lake*.7+masks.river*.55+w.nacar*.65);
-      const probability=newTrees?(.06+.88*worldForestCover(x,z))*(.6+.4*cluster)*(1-.8*w.cumbres-.35*w.sierras):densityAt(kind,x,z,wetness,cluster);
-      if((candidate?.chance??hash01(cx,cz,seed+3))>=probability)continue;
+      const probability=newTrees?(.015+.925*worldForestCover(x,z))*(.6+.4*cluster)*(1-.8*w.cumbres-.35*w.sierras)*
+        (world?.vegetationAt?.(x,z).trees??1):densityAt(kind,x,z,wetness,cluster);
+      if((candidate?.chance??hash01(cx,cz,seed+3))>=probability*dryDensity)continue;
+      if(tree&&world&&vegetationTouchesBeach(world.source,x,z,crownRadius+1,gridHeight))continue;
+      if(world&&vegetationTouchesWater(world,x,z,crownRadius+(tree?1.5:.4)))continue;
       const radius=tree?VEGETATION_CONFIG.obstacleRadius[kind as keyof typeof VEGETATION_CONFIG.obstacleRadius]*variation:kind==='tronco1'?.7*variation:0;
       const support=terrainFootprintAt(x,z,tree?Math.max(.6,radius*.65):kind==='tronco1'?1.5:.35,gridHeight);
       if(support.maxSlope>(tree?VEGETATION_CONFIG.maxSlope.trees:VEGETATION_CONFIG.maxSlope.plants)||
@@ -184,6 +204,8 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
         if(support.maxSlope>.46||support.maxHeight-support.minHeight>.35)continue;
         const scale=VEGETATION_CONFIG.baseScale[kind]*(.85+.3*hash01(cx,cz,seed+4));
         const clearance=VEGETATION_CONFIG.crownRadius[kind]*scale;
+        if(world&&((world.vegetationClearanceAt?.(x,z)??Infinity)<clearance+.5||
+          brisaliaRoadEdge(x-town.x,z-town.z)<clearance+.5||vegetationTouchesWater(world,x,z,clearance+.4)))continue;
         if(exclusions.some(e=>Math.hypot(x-e.x,z-e.z)<e.radius+clearance)||
           placements.some(p=>p.obstacleRadius>0&&Math.hypot(x-p.x,z-p.z)<p.obstacleRadius+clearance))continue;
         placements.push({kind,x,y:support.minHeight-.03,z,scale,
@@ -191,6 +213,11 @@ export function vegetationForChunk(cx:number,cz:number,exclusions:readonly Veget
       }
     }
   }
-  placements.push(...castlePlantsForChunk(cx,cz,town??{x:0,z:0},exclusions,gridHeight));
+  for(const plant of world?castlePlantsForChunk(cx,cz,NACAR_PALACE,exclusions,gridHeight):[]){
+    const radius=VEGETATION_CONFIG.crownRadius[plant.kind]*plant.scale;
+    // These plants hug the actual walls, inside the coarse castle clearing.
+    if(world&&vegetationTouchesWater(world,plant.x,plant.z,radius+.4))continue;
+    placements.push(plant);
+  }
   return placements;
 }

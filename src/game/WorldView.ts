@@ -1,10 +1,18 @@
+import { paintTerrainRoads } from '../world/materials/TerrainRoadPaint';
+import { BrisaliaPalace } from '../world/palace/BrisaliaPalace';
+import { PALACE_APPROACH, palaceWorld } from '../world/palace/PalaceSite';
 import { BrisaliaVillage } from '../world/BrisaliaVillage';
+import { audioSettings } from '../audio/AudioSettings';
 import { installSceneLightBudget } from '../world/SceneLightBudget';
 import { installGpuAssets } from '../world/GpuAssets';
 import { SantiDoubleJumpFX } from './SantiDoubleJumpFX.js';
+import { GroundSlamFX } from './GroundSlamFX.js';
+import { captureImpactGround, type ImpactProbe } from './GroundImpactSurface';
 import { WayfindingSystem } from '../world/WayfindingSystem';
 import { brisaliaWayfinding } from '../world/wayfindingData';
-import { BRISALIA_BUILDINGS, BRISALIA_ROADS, BRISALIA_SCALE, brisaliaRoadEdge, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
+import { installBrisaliaCherryTrees } from '../world/BrisaliaCherryTrees';
+import { BRISALIA_BUILDINGS, CASTLE_BUILDING, BRISALIA_ROADS, BRISALIA_SCALE, brisaliaRoadEdge, distanceToRoad, inBrisaliaFootprint } from '../world/brisaliaLayout';
+import { inNacarPalaceFootprint } from '../world/geography/NacarPalace';
 import {
   ArcRotateCamera, ArcRotateCameraPointersInput, Color3, DirectionalLight, Engine, HemisphericLight,
   Mesh, MeshBuilder, Scene, SceneInstrumentation, StandardMaterial, TransformNode, Vector3,
@@ -19,12 +27,15 @@ import { BUILD_CATALOG, costAsText } from '../domain/recipes';
 import { BuildVisuals } from '../world/building/BuildVisuals';
 import { AuthoredWater } from '../world/editor/AuthoredWater';
 import { AuthoredAssets } from '../world/editor/AuthoredAssets';
-import { authoredAssetExclusions, blocksAuthoredMovement, surfaceWeightsAt } from '../world/editor/WorldEditState';
+import { authoredAssetExclusions, blocksAuthoredMovement, surfaceWeightsAt, getWorldDocument } from '../world/editor/WorldEditState';
+import type { RainSurface } from '../world/climate/RainFX.js';
 import { terrainMaterialWeightsAt } from '../world/materials/TerrainMaterial';
 import { TerrainStream } from '../world/TerrainStream';
 import { applyLandscapeAtmosphere, LANDSCAPE_ATMOSPHERE_CONFIG } from '../world/LandscapeAtmosphere';
 import { landscapeNameAt } from '../world/landscapeRegions';
 import { EnvironmentSystem } from '../world/climate/EnvironmentSystem';
+import { RareTornadoes } from '../world/climate/RareTornadoes';
+import { tornadoBiome, type TornadoSurface } from '../world/climate/TornadoSchedule';
 import type { ClimateFrame } from '../world/climate/ClimateModel';
 import { LandscapeDebug } from '../world/LandscapeDebug';
 import { FOLIAGE_FOREST } from '../world/foliageForestConfig';
@@ -33,11 +44,14 @@ import { GeographyStream } from '../world/GeographyStream';
 import { MountainPassSystem } from '../world/MountainPassSystem';
 import { LagoonSystem } from '../world/LagoonSystem';
 import { GROTTO_WATER, grottoSurfaceAt, lagoonWaterAt } from '../world/lagoonData';
-import { mountainTrailSurfaceAt } from '../world/mountainTrails';
+import { groundRoads, mountainTrailSurfaceAt } from '../world/mountainTrails';
 import { setWorldWaterContacts } from '../world/editor/LiveWaterProfiles';
-import { bridgeRailBlocks, bridgeSurfaceAt, tunnelSurfaceAt } from '../world/mountainRoutes';
+import { bridgeRailBlocks, bridgeSurfaceAt, tunnelSurfaceAt, MOUNTAIN_PORTALS } from '../world/mountainRoutes';
 import { OceanWater } from '../world/water/OceanWater';
 import { VegetationSystem } from '../world/VegetationSystem';
+import { BirdFlockSystem } from '../world/wildlife/BirdFlockSystem';
+import { birdRegionAllowsFlocks, woodlandBirdHabitatAllowed } from '../world/wildlife/BirdHabitatRules';
+import { regionAt } from '../world/RegionCatalog';
 import { GrassSectorSystem } from '../world/grass/GrassSectorSystem';
 import { WorldPropSystem } from '../world/WorldPropSystem';
 import { propsForChunk } from '../world/worldPropsData';
@@ -47,16 +61,18 @@ import { vegetationForChunk, type VegetationExclusion } from '../world/vegetatio
 import { bridgeDeckAt, isInlandWater, waterSurfaceAt } from '../world/geographicFeatures';
 import { sampleRiverFlow } from '../world/water/riverFlow';
 import { POINTS_OF_INTEREST, pointOfInterest } from '../world/pointsOfInterest';
-import { createPointOfInterestView } from '../world/PointOfInterestView';
+import { createPointOfInterestView, createPlacedPointOfInterestView } from '../world/PointOfInterestView';
 import { BIOME_NAMES, biomeAt, chunkOf, LANDMARKS, MAINLAND, isLand, sampleMainlandHeight } from '../world/terrainData';
 import { cameraRelativeMovement } from './movement';
 import { CharacterTraversalController, type ActionMotionKind,
   type TraversalWorld } from './CharacterTraversalController';
 import { TRAVERSAL, type GroundHit } from './traversalRules';
 import { terrainWallAt } from './TerrainTraversal';
-import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, cameraTerrainView, swimmingCameraOrbit } from './cameraTerrain';
+import { CAMERA_TERRAIN, THIRD_PERSON_CAMERA, CameraObstructionProbe, cameraRadiusAfterCollision,
+  cameraTerrainView, swimmingCameraOrbit } from './cameraTerrain';
 import { nearTerrainHeightAt, nearTerrainSurfaceAt } from '../world/terrainLod';
 import { GameTelemetry } from './GameTelemetry';
+import { FrameWorkScheduler } from '../world/FrameWorkScheduler';
 import { SantiCharacter } from './SantiCharacter';
 import { AssetPlacementDebug } from './AssetPlacementDebug';
 import { DogoCompanion } from './DogoCompanion';
@@ -67,6 +83,8 @@ import { SpeedMotionBlur } from './SpeedMotionBlur';
 import { SantiSprintDust, type DustGround, type DustSurface } from './SantiSprintDust.js';
 import { readRenderQuality, renderResolution, saveRenderQuality, type RenderQuality } from './renderResolution';
 import { PlayableWorld, regionPoint } from '../world/geography/PlayableWorld';
+import { findPlaceArrival, type PlayablePlace } from '../world/geography/PlayablePlaces';
+import { GeographicPrefetch } from '../world/geography/GeographicPrefetch';
 import { FloatingKingdoms } from '../world/geography/FloatingKingdoms';
 import { LagoonVegetation } from '../world/geography/LagoonVegetation';
 import { VolcanicCaveSystem } from '../world/VolcanicCaveSystem';
@@ -74,6 +92,7 @@ import { igneousFlag } from '../world/IgneousRealm';
 import { VOLCANIC_CAVE } from '../world/volcanicCaveData';
 import { AbilitySystem } from './abilities/AbilitySystem';
 import { RootsSurfaceAdapter } from './abilities/RootsSurfaceAdapter';
+import { FlameSurfaceAdapter } from './abilities/FlameSurfaceAdapter';
 import { PROVISIONAL_SWORD_DAMAGE } from '../domain/abilities/forestRoots';
 
 export type Interactable = {
@@ -116,6 +135,7 @@ type WorldCallbacks = {
   onExplore: (x: number, z: number, name: string, chunks: number) => void;
   onClimate: (frame: ClimateFrame) => void;
   onCameraHeading?: (radians: number) => void;
+  onStartupProgress?: (progress:number,message:string) => void;
 };
 
 const TOWN_OFFSET = { x: 0, z: 0 };
@@ -131,6 +151,8 @@ export class WorldView {
   readonly scene: Scene;
   readonly camera: ArcRotateCamera;
   private readonly climate:EnvironmentSystem;
+  private readonly unsubscribeAudio:()=>void;
+  private readonly tornadoes:RareTornadoes;
   private climateSaveTimer=0;
   private climateHudTimer=0;
   private readonly zones = new Map<ZoneId, IslandInfo>();
@@ -144,6 +166,8 @@ export class WorldView {
   private readonly speedMotionBlur:SpeedMotionBlur;
   private readonly sprintDust:SantiSprintDust;
   private readonly doubleJumpFX:SantiDoubleJumpFX;
+  private readonly groundImpactFX:GroundSlamFX;
+  private readonly attackBlade:Vector3[]=[];
   private sprintDustPaused=false;
   private player!: TransformNode;
   private playerBody!: TransformNode;
@@ -167,6 +191,7 @@ export class WorldView {
   private waterContactTimer=0;
   private get insideUnderground(){return this.mountainPasses.inside||this.lagoon.inside||this.volcanicCave.inside;}
   private readonly vegetation: VegetationSystem;
+  private readonly birds: BirdFlockSystem;
   private readonly grass: GrassSectorSystem;
   private readonly props: WorldPropSystem;
   private readonly authoredWater:AuthoredWater;
@@ -183,6 +208,7 @@ export class WorldView {
   private saveTimer = 0;
   private lastBiome = "";
   private vegetationCenter = '';
+  private readonly streamingWork=new FrameWorkScheduler();
   private grassStatsOverlay:HTMLDivElement|null=null;
   private grassInstrumentation:SceneInstrumentation|null=null;
   private landscapeDebug:LandscapeDebug|null=null;
@@ -191,16 +217,21 @@ export class WorldView {
   private cameraPreferredRadius:number=THIRD_PERSON_CAMERA.distance;
   private cameraAppliedRadius:number=THIRD_PERSON_CAMERA.distance;
   private sprintCameraOffset=0;
-  private cameraOcclusionTimer=0;
-  private cameraOcclusionDistance=Infinity;
+  private readonly cameraObstructionProbe=new CameraObstructionProbe();
+  private readonly cameraLiftProbe=new CameraObstructionProbe();
   private cameraFrameDt=0;
   private readonly closeCameraMeshes=new Map<AbstractMesh,boolean>();
   private renderQuality=readRenderQuality();
   private placingMainland=false;
   readonly village:BrisaliaVillage;
+  readonly brisaliaPalace:BrisaliaPalace|null;
   readonly wayfinding:WayfindingSystem;
   private geographyLoading=false;
   private geographyFailure:string|null=null;
+  private readonly geographyPrefetch:GeographicPrefetch|null;
+  private startupActive=false;
+  private avatarLoad:Promise<void>=Promise.resolve();
+  private companionLoad:Promise<void>=Promise.resolve();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -209,6 +240,8 @@ export class WorldView {
     private readonly blocked: () => boolean,
     readonly geographicWorld:PlayableWorld|null=null
   ) {
+    this.startupActive=!!callbacks.onStartupProgress;
+    this.geographyPrefetch=geographicWorld?new GeographicPrefetch(geographicWorld,geographicWorld.windowRadius):null;
     if(!geographicWorld)installExpansionBiomeAssets();
     if(geographicWorld){this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;}
     // Resolution is managed explicitly, including browser zoom / monitor DPR
@@ -217,6 +250,12 @@ export class WorldView {
     if(geographicWorld)this.engine.maxFPS=this.renderQuality==='performance'?30:60;
     this.resize();
     this.scene = new Scene(this.engine);
+    // Imports repeatedly change material/light flags. Batch that invalidation
+    // while nothing is rendered, then refresh every material once at reveal.
+    this.scene.blockMaterialDirtyMechanism=this.startupActive;
+    // Orbit controls consume pointer coordinates, not mesh hover hits. Building
+    // placement and selection already perform their own explicit scene.pick().
+    this.scene.skipPointerMovePicking=true;
     installSceneLightBudget(this.scene);
     installGpuAssets(this.scene);
     applyLandscapeAtmosphere(this.scene);
@@ -235,8 +274,10 @@ export class WorldView {
     // Occlusion may need to pull the camera closer than the player's zoom limit.
     this.camera.lowerRadiusLimit = .25;
     this.camera.upperRadiusLimit = THIRD_PERSON_CAMERA.maxDistance;
-    this.camera.lowerBetaLimit = 0.4;
-    this.camera.upperBetaLimit = 1.95;
+    this.camera.lowerAlphaLimit = null;
+    this.camera.upperAlphaLimit = null;
+    this.camera.lowerBetaLimit = THIRD_PERSON_CAMERA.minBeta;
+    this.camera.upperBetaLimit = THIRD_PERSON_CAMERA.maxBeta;
     this.camera.wheelPrecision = 32;
     this.camera.minZ = .15;
     this.camera.maxZ = LANDSCAPE_ATMOSPHERE_CONFIG.cameraFar;
@@ -244,9 +285,12 @@ export class WorldView {
     this.camera.inertia = 0.42;
     this.camera.attachControl(canvas, true);
     const pointerInput=this.camera.inputs.attached.pointers as ArcRotateCameraPointersInput;
-    pointerInput.angularSensibilityY=650;
+    pointerInput.angularSensibilityX=THIRD_PERSON_CAMERA.angularSensitivity;
+    pointerInput.angularSensibilityY=THIRD_PERSON_CAMERA.angularSensitivity;
     this.climate=new EnvironmentSystem(this.scene,this.camera,sun,hemi,
       store.state.environment?.elapsedHours);
+    this.unsubscribeAudio=audioSettings.subscribe(()=>this.climate.setAudioVolume(audioSettings.gain('ambience')));
+    this.tornadoes=new RareTornadoes(this.scene,(x,z)=>this.tornadoSurfaceAt(x,z));
     // Las flechas se reservan para el personaje, no para orbitar la cámara.
     this.camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
     this.speedMotionBlur=new SpeedMotionBlur(this.camera,this.engine);
@@ -254,6 +298,8 @@ export class WorldView {
       sampleGround:(x,z,y)=>this.sampleSprintDustGround(x,z,y)});
     this.doubleJumpFX=new SantiDoubleJumpFX(this.scene,{intensity:.9,scale:1});
     void this.doubleJumpFX.prepare().catch(error=>console.error('[Double jump FX]',error));
+    this.groundImpactFX=new GroundSlamFX(this.scene,{intensity:1,radius:3.4,poolSize:2});
+    void this.groundImpactFX.prepare().catch(error=>console.error('[Ground impact FX]',error));
 
     this.createSea();
     const continentRoot=new TransformNode('zona-brisalia',this.scene);
@@ -266,10 +312,13 @@ export class WorldView {
     this.geography=new GeographyStream(this.scene,continentRoot);
     this.mountainPasses=new MountainPassSystem(this.scene,continentRoot,
       (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.town);
+    paintTerrainRoads(this.mainland.material,[...groundRoads(this.mountainPasses.trails),...(geographicWorld?[PALACE_APPROACH]:[])]);
+    geographicWorld?.addVegetationRoutes([...this.mountainPasses.bridges,...this.mountainPasses.trails]);
     this.lagoon=new LagoonSystem(this.scene,continentRoot,
       (x,z)=>nearTerrainHeightAt(x,z,sampleMainlandHeight),geographicWorld?.lagoon);
     this.volcanicCave=new VolcanicCaveSystem(this.scene,
       (x,z)=>geographicWorld?.surface.heightAt(x,z)??nearTerrainHeightAt(x,z,sampleMainlandHeight),!!geographicWorld,true);
+    this.volcanicCave.setEffectMeshes(this.groundImpactFX.meshes);
     const islandOffset=geographicWorld?.firefly??ISLAND_OFFSET;
     this.createZone('luciernagas', new Vector3(islandOffset.x, 0, islandOffset.z), 78, 65, { x: -3, z: -20 });
     this.placingMainland=!!geographicWorld;
@@ -283,9 +332,13 @@ export class WorldView {
       this.plot.x+=geographicWorld.town.x;this.plot.z+=geographicWorld.town.z;
     }
     this.placingMainland=false;
+    if(geographicWorld)this.vegetationExclusions.push({...geographicWorld.palace,
+      radius:Math.hypot(CASTLE_BUILDING.width,CASTLE_BUILDING.depth)/2+2,excludeGrass:false,buildingId:'B28'});
     this.vegetationExclusions.push({...this.volcanicCave.entrance,radius:30});
     this.village=new BrisaliaVillage(this.scene,continentRoot,geographicWorld?.town??{x:0,z:0},
-      (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z));
+      (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z),geographicWorld?.palace);
+    this.brisaliaPalace=geographicWorld?new BrisaliaPalace(this.scene,continentRoot,geographicWorld.brisaliaPalace.groundHeight,this.characterShadows.generator):null;
+    if(geographicWorld)this.vegetationExclusions.push({...palaceWorld(0,28),radius:150});
     const guideSites=brisaliaWayfinding(geographicWorld?.town??{x:0,z:0});
     this.wayfinding=new WayfindingSystem(this.scene,continentRoot,guideSites,
       (x,z)=>geographicWorld?.surface.heightAt(x,z)??sampleMainlandHeight(x,z));
@@ -294,6 +347,8 @@ export class WorldView {
       this.buildObstacles.push({x:s.at[0],z:s.at[1],radius:1.2,kind:'resource'});
     }
     this.populateFireflyIsland();
+    if(geographicWorld)installBrisaliaCherryTrees(geographicWorld,[...this.vegetationExclusions,
+      ...this.store.state.structures.map(footprint)]);
     this.createPlayer();
     this.wayfinding.addCharacter(this.player);
     for(const zone of this.zones.values())for(const node of zone.nodes)
@@ -324,6 +379,20 @@ export class WorldView {
     this.authoredWater=new AuthoredWater(this.scene,continentRoot);
     this.authoredWater.sync();
     this.authoredAssets=new AuthoredAssets(this.scene,continentRoot);
+    this.birds=new BirdFlockSystem(this.scene,continentRoot,{
+      ground:geographicWorld?(x,z)=>geographicWorld.heightAt(x,z):buildHeight,
+      groundSpacing:geographicWorld?.meshSpacing,
+      water:(x,z)=>waterSurfaceAt(x,z)?.level??null,
+      habitatAllowed:(x,z)=>geographicWorld?
+        woodlandBirdHabitatAllowed(x,z,geographicWorld.desertAt(x,z),geographicWorld.regions):
+        birdRegionAllowsFlocks(regionAt(x,z).id),
+      trees:(x,z,radius)=>[...this.vegetation.birdTrees(x,z,radius),...this.authoredAssets.birdTrees(x,z,radius)],
+      foodAllowed:(x,z)=>buildHeight(x,z)>(this.geographicWorld?.seaLevel??MAINLAND.waterLevel)+.1&&
+        !inBrisaliaFootprint(x-(this.geographicWorld?.town.x??0),z-(this.geographicWorld?.town.z??0))&&
+        !(this.geographicWorld&&inNacarPalaceFootprint(x,z))&&
+        !this.store.state.structures.some(s=>Math.hypot(s.x-x,s.z-z)<footprint(s).radius+1)&&
+        !blocksAuthoredMovement(x,z)
+    },readRenderQuality()==='performance');
     this.lagoonVegetation=geographicWorld?new LagoonVegetation(geographicWorld):null;
     void this.authoredAssets.sync();
     if(new URLSearchParams(window.location.search).has('landscapeDebug'))
@@ -340,6 +409,9 @@ export class WorldView {
       }
       this.rockVisualRequests.length=0;
     });
+    const flameSurfaces=new FlameSurfaceAdapter(()=>this.traversalWorld(this.zones.get(store.state.zone)!),
+      ()=>this.zones.get(store.state.zone)!.offset,(from,to)=>store.state.zone==='brisalia'&&!this.insideUnderground&&
+        (blocksAuthoredMovement(to.x,to.z)||buildingBlocksMove(from.x,from.z,to.x,to.z,from.y-1.2,store.state.structures)));
     this.abilities=new AbilitySystem(this.scene,store,()=>this.santi,()=>{
       const zone=this.zones.get(store.state.zone)!,p=this.traversal.position;
       return {position:{x:p.x+zone.offset.x,y:p.y+zone.offset.y,z:p.z+zone.offset.z},
@@ -355,8 +427,9 @@ export class WorldView {
           if(buildingFloorAt(x,z,y+.1,store.state.structures)!==null||this.village.ground(x,z,y+.1,.3))return false;
         }
         return this.insideUnderground||!!this.floating?.id||y>(this.geographicWorld?.seaLevel??MAINLAND.waterLevel)+.05;
-      },()=>PROVISIONAL_SWORD_DAMAGE),callbacks.notify);
+      },()=>PROVISIONAL_SWORD_DAMAGE),callbacks.notify,(origin,direction,length)=>flameSurfaces.trace(origin,direction,length));
     this.activateZone(store.state.zone);
+    this.climate.configureRain((x,z)=>this.rainSurfaceAt(x,z),this.renderQuality==='performance'?'low':'medium');
     this.callbacks.onClimate(this.climate.frame);
     if(new URLSearchParams(window.location.search).has('grassStats')){
       this.grassInstrumentation=new SceneInstrumentation(this.scene);
@@ -375,23 +448,39 @@ export class WorldView {
     document.addEventListener('visibilitychange',this.onVisibility);
     window.addEventListener('resize', this.resize);
     canvas.addEventListener('pointerdown', this.onPointerDown);
+    let rainDocument=getWorldDocument(),rainBuildings=0;
     this.scene.onBeforeRenderObservable.add(()=>{
-      if(this.geographyLoading||this.geographyFailure)return;
+      const document=getWorldDocument(),buildings=this.village.surfaceRevision;
+      if(document!==rainDocument||buildings!==rainBuildings)this.climate.invalidateRainSurfaces();
+      rainDocument=document;rainBuildings=buildings;
+      const paused=!this.abilityFocus||globalThis.document.hidden||this.blocked()||this.geographyLoading||!!this.geographyFailure||this.igneousTransition;
+      if(this.geographyLoading||this.geographyFailure){this.climate.pauseRain(true);this.tornadoes.reset();return;}
       const start=this.telemetry?.recording?performance.now():0;
       this.updateCameraOcclusion(this.cameraFrameDt,this.zones.get(this.store.state.zone)!);
       // Evaluate immersion after the orbit/occlusion has placed the active camera.
       this.scene.activeCamera?.getViewMatrix(true);
+      const collisionEnd=start?performance.now():0;
+      this.climate.updatePrecipitation(this.cameraFrameDt,paused);
+      this.tornadoes.update(this.cameraFrameDt,this.climate.frame,this.player.position,this.camera,
+        this.store.state.zone==='brisalia'&&!!this.geographicWorld&&!this.insideUnderground&&!this.floating?.id,
+        paused,this.renderQuality==='performance');
+      const precipitationEnd=start?performance.now():0;
       if(this.volcanicCave.inside){
         // Interior coordinates lie below sea level. Clear the exterior water
         // depth pass before rendering so it cannot cover the dry arrival view.
         const eye=this.scene.activeCamera?.globalPosition??this.camera.position;
         this.lagoon.updateView(eye,this.player.position,null,this.player);
         this.speedMotionBlur.updateWaterSurface(this.cameraFrameDt,null);
+        if(start)this.telemetry?.recordCamera(performance.now()-start,collisionEnd-start,precipitationEnd-collisionEnd);
         return;
       }
       const eye=this.scene.activeCamera?.globalPosition??this.camera.position;
       const surface=this.lagoon.inside?null:waterSurfaceAt(eye.x,eye.z);
-      const water=this.lagoon.inside?GROTTO_WATER:surface?.level;
+      // Unnamed lowland pools already have a bed and an OceanWater surface,
+      // but no inland field. Resolve that surface for immersion as well.
+      const exterior=this.store.state.zone==='brisalia'&&!this.insideUnderground&&!this.floating?.id;
+      const water=this.lagoon.inside?GROTTO_WATER:surface?.level??
+        (exterior?this.geographicWorld?.oceanLevelAt(eye.x,eye.z):null);
       const flow=surface?sampleRiverFlow(eye.x,eye.z,surface.kind):null;
       // Lakes are level; rivers follow their own descending surface. Using a
       // horizontal lake plane for a sloped river creates a false blue horizon.
@@ -404,12 +493,17 @@ export class WorldView {
       this.speedMotionBlur.updateWaterSurface(this.cameraFrameDt,water??null,
         flow?flow.directionX*flow.velocity:0,flow?flow.directionZ*flow.velocity:0,slopeX,slopeZ,
         !!this.geographicWorld&&!this.lagoon.inside&&!!this.geographicWorld.waterFieldAt(eye.x,eye.z));
-      if(start)this.telemetry?.recordCamera(performance.now()-start);
+      if(start)this.telemetry?.recordCamera(performance.now()-start,collisionEnd-start,precipitationEnd-collisionEnd);
     },-1,true); // Other materials consume the resolved atmosphere this frame.
     this.engine.runRenderLoop(() => {
+      // Initial entry and explicit travel keep the previous image until the
+      // destination has a complete horizon. Ordinary streaming never gates here.
+      if(this.startupActive||this.geographyLoading||this.geographyFailure)return;
       this.telemetry?.beginFrame();
       const rawDt=this.engine.getDeltaTime()/1000;
-      if(rawDt>.25)this.resetMovementEffects();
+      // The special attack uses simulation time: a slow frame must not erase
+      // its impact or cancel the animation's pending ground-strike marker.
+      if(rawDt>.25){this.sprintDust.reset();this.doubleJumpFX.reset();}
       const dt = Math.min(rawDt, 0.045);
       this.cameraFrameDt=dt;
       this.update(dt);
@@ -420,14 +514,51 @@ export class WorldView {
       // Read after rendering so pointer input and camera inertia are included.
       this.callbacks.onCameraHeading?.(this.camera.alpha - Math.PI / 2);
       this.updateGrassStats(dt);
-      this.telemetry?.endFrame(this.mainland.pendingCount,this.player.position.x,this.player.position.z);
+      this.telemetry?.endFrame(this.mainland.pendingCount,this.player.position.x,this.player.position.z,this.santi?.renderMeshes);
     });
+  }
+
+  /** Build the exact arrival terrain while the DOM loader is visible. Rendering
+   * hundreds of hidden frames used to compete with this work and shader uploads. */
+  async prepareStartup():Promise<void>{
+    const next=()=>new Promise<void>(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+    const check=()=>{if(this.scene.isDisposed)throw new Error('Startup cancelled');
+      if(this.geographyFailure)throw new Error(this.geographyFailure);};
+    while(this.geographyLoading){check();await next();}check();
+    performance.mark('auralia:horizon-ready');
+    const p=this.traversal.position,total=Math.max(1,this.mainland.pendingCount);
+    while(this.mainland.pendingCount){
+      check();const deadline=performance.now()+12;
+      do{this.mainland.update(p.x,p.z,0,0,Math.max(0,deadline-performance.now()));}
+      while(this.mainland.pendingCount&&performance.now()<deadline);
+      this.callbacks.onStartupProgress?.(58+25*(1-this.mainland.pendingCount/total),'Preparando el suelo y los caminos…');
+      await next();
+    }
+    performance.mark('auralia:terrain-ready');
+    this.vegetationCenter='';this.streamMainland(p.x,p.z,0);
+    this.authoredAssets.update(p.x,p.z);
+    this.callbacks.onStartupProgress?.(85,'Recibiendo a los habitantes de Brisalia…');
+    await Promise.all([this.avatarLoad,this.companionLoad,this.village.ready,this.brisaliaPalace?.ensureNear(p.x,p.z)]);check();
+    const recovery=this.village.entryRecoveryAt(p.x,p.y,p.z);
+    if(recovery!==null){this.traversal.teleport(p.x,recovery,p.z);this.player.position.y=recovery;}
+    performance.mark('auralia:residents-ready');
+    this.callbacks.onStartupProgress?.(94,'Encendiendo los últimos faroles…');
+    this.startupActive=false;
+    // Compile and render the real scene before lifting the cover. The regular
+    // frame budget resumes here; controls remain blocked by LoadingScreen.
+    await new Promise<void>(resolve=>this.scene.onAfterRenderObservable.addOnce(()=>resolve()));
+    await this.scene.whenReadyAsync();check();
+    this.scene.blockMaterialDirtyMechanism=false;
+    await new Promise<void>(resolve=>this.scene.onAfterRenderObservable.addOnce(()=>resolve()));
+    this.pressed.clear();this.jumpRequested=false;this.airKickRequested=false;
+    performance.mark('auralia:first-world-frame');
   }
 
   setRenderQuality(quality:RenderQuality):void{
     this.renderQuality=quality;
     if(this.geographicWorld)this.engine.maxFPS=quality==='performance'?30:60;
     saveRenderQuality(quality);
+    this.climate.configureRain((x,z)=>this.rainSurfaceAt(x,z),quality==='performance'?'low':'medium');
     this.resize();
   }
 
@@ -439,6 +570,7 @@ export class WorldView {
     else this.engine.resize();
   };
   private readonly onBlur = () => {
+    this.climate.pauseRain(true);
     this.resetMovementEffects();
     this.abilityFocus=false;this.abilities?.interrupt();this.traversal.setAttackHold(0);
     this.pressed.clear();this.sprintTap.reset();
@@ -753,11 +885,7 @@ export class WorldView {
       for(let j=0;j<=n;j++)this.vegetationExclusions.push({x:ax+(bx-ax)*j/n,z:az+(bz-az)*j/n,radius:r.width/2+2,excludeGrass:false});
     }
     // Plaza del pueblo.
-    const plaza = this.host(zone, 'plaza', 0, -65*BRISALIA_SCALE);
     this.vegetationExclusions.push({x:0,z:-65*BRISALIA_SCALE,radius:15*BRISALIA_SCALE,excludeGrass:false});
-    this.cyl('estanque', plaza, 5.4, 0.7, 0, 0.3, 0, this.mat('piedra-plaza', '#b2b2a0'));
-    this.cyl('fuente', plaza, 3.5, 0.35, 0, 0.72, 0, this.mat('agua-fuente', '#6dbfdd', 0.25));
-    this.cyl('obelisco', plaza, 1.1, 3, 0, 2.2, 0, this.mat('cristal-plaza', '#d7c99a'));
 
     // Parcela de construcción visible, sin obstáculos.
     const plot = this.host(zone, 'claro-del-hogar', this.plot.x, this.plot.z);
@@ -772,7 +900,7 @@ export class WorldView {
     this.box('bandera', plot, 2.4, 1.2, 0.1, -13.8, 3.4, -15, this.mat('bandera', '#e0bd63'));
 
     // Bosques, recursos y rocas. Algunas instancias decorativas, otras recolectables.
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; !this.geographicWorld && i < 26; i++) {
       const a = i * 2.399;
       const x = -52 + Math.cos(a) * (11 + (i % 5) * 3.5);
       const z = -4 + Math.sin(a) * (11 + (i % 6) * 4);
@@ -839,8 +967,20 @@ export class WorldView {
 
   private populatePointsOfInterest(zone:IslandInfo):void {
     for(const place of POINTS_OF_INTEREST){
+      if(MOUNTAIN_PORTALS.some(p=>p.id===place.id))continue;
       if(this.geographicWorld&&(place.kind==='waterfall'||place.id.startsWith('gruta-')))continue;
       if(place.kind==='dock')continue; // El muelle jugable ya existe y conserva su viaje.
+      if(this.geographicWorld){
+        const destination=this.geographicWorld.destination(place.id);if(!destination)continue;
+        const visual=createPlacedPointOfInterestView(this.scene,zone.root,place,destination,
+          (x,z)=>bridgeSurfaceAt(this.mountainPasses.bridges,x,z)?.height??this.geographicWorld!.surface.heightAt(x,z),
+          this.mountainPasses.visualFor(destination.visualId??destination.id));
+        // populateMainland translates interactions once, after all local content.
+        this.markInteraction(zone,{id:place.id,label:destination.name,verb:`Examinar: ${destination.name}`,type:'lore',
+          localPosition:new Vector3(destination.x-this.geographicWorld.town.x,0,destination.z-this.geographicWorld.town.z),
+          visual,dialogue:place.dialogue,enabled:true});
+        continue;
+      }
       const visual=['laguna-tres-vertientes','gruta-mirador','gruta-bosque'].includes(place.id)
         ?new TransformNode(place.id,this.scene):this.mountainPasses.visualFor(place.id)??
         createPointOfInterestView(this.scene,zone.root,place,(x,z)=>this.y(zone,x,z));
@@ -947,16 +1087,17 @@ export class WorldView {
     this.ball('ojo-der', this.playerBody, 0.18, 0.24, 3.34, 0.67, eye);
     const santi=new SantiCharacter(this.scene,this.player,undefined,this.assetPlacement);
     this.santi=santi;
-    void santi.load().then(ready=>{
+    this.avatarLoad=santi.load().then(ready=>{
       if(ready&&this.santi===santi){
         this.playerBody.setEnabled(false);this.characterShadows.add(this.player);
+        santi.onAbilityPose=()=>{this.sampleAbilityGroundImpact();this.abilities.afterPose();};
       }
     }).catch(error=>{
       if(this.santi===santi)console.warn('No se pudo cargar Santi; se conserva el personaje provisional.',error);
     });
     const dogo=new DogoCompanion(this.scene);
     this.dogo=dogo;
-    void dogo.load().then(()=>{
+    this.companionLoad=dogo.load().then(()=>{
       if(this.dogo===dogo)this.characterShadows.add(dogo.root);
     }).catch(error=>{
       if(this.dogo===dogo){dogo.failure=String(error);console.warn('No se pudo cargar Dogo.',error);}
@@ -964,6 +1105,8 @@ export class WorldView {
   }
 
   activateZone(id: ZoneId): void {
+    this.climate.resetRain();
+    this.tornadoes.reset();
     this.resetMovementEffects();
     this.abilities?.resetScene();
     if(this.volcanicCave.inside)this.leaveVolcanicCave();
@@ -972,7 +1115,8 @@ export class WorldView {
       const saved=this.store.state.playerPosition;
       if(saved?.realm&&this.floating?.id!==saved.realm){void this.travelFloating(saved.realm).catch(()=>{});return;}
       const p=saved?.zone==='brisalia'?saved:this.geographicWorld.spawn;
-      if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))){
+      if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))||
+        !this.mainland.hasHorizonAt(p.x,p.z)){
         void this.prepareGeography(p.x,p.z).then(()=>this.activateZone(id)).catch(()=>{});return;
       }
     }
@@ -1012,6 +1156,8 @@ export class WorldView {
 
   /** Old saves have only X/Z; keep a saved foot out of a newly generated rock base. */
   private safeSavedStart(x:number,z:number):{x:number;z:number}{
+    const fountainSafe=this.village.fountain.safeSavedPosition(x,z,TRAVERSAL.playerRadius);
+    x=fountainSafe.x;z=fountainSafe.z;
     if(this.geographicWorld)return {x,z};
     // Saves store X/Z only. A saved position on the exposed rock face would
     // otherwise respawn at the terrain height, underneath the visible mesh.
@@ -1053,22 +1199,54 @@ export class WorldView {
 
   private async prepareGeography(x:number,z:number):Promise<void>{
     if(!this.geographicWorld)return;
+    this.tornadoes.reset();
     this.geographyLoading=true;this.geographyFailure=null;
     this.callbacks.hint('Cargando la región…');
-    try{await this.geographicWorld.prepareAround(x,z);}
+    try{
+      await this.geographicWorld.prepareAround(x,z);
+      await this.brisaliaPalace?.ensureNear(x,z);
+      await this.mainland.prepareHorizon(x,z,undefined,this.startupActive?
+        (done,total)=>this.callbacks.onStartupProgress?.(28+30*done/Math.max(1,total),'Dibujando las montañas y el horizonte…'):undefined);
+    }
     catch(error){this.geographyFailure=String(error);this.callbacks.notify(`No se pudo cargar la región: ${String(error)}`);throw error;}
     finally{this.geographyLoading=false;this.previousHint='';}
   }
 
-  async travelGeographic(x:number,z:number,name='Nueva región'):Promise<void>{
+  async travelGeographic(x:number,z:number,name='Nueva región',place?:PlayablePlace):Promise<void>{
     if(!this.geographicWorld)return;
     if(this.geographyLoading)return;
+    this.pressed.clear();
+    await this.prepareGeography(x,z);
+    if(place){
+      this.props.setColliderFocus(x,z,null);
+      const collision=this.traversalWorld(this.zones.get('brisalia')!,this.geographicWorld.surface.heightAt(x,z),true);
+      const arrival=findPlaceArrival(place,{
+        town:this.geographicWorld.town,
+        sample:(xx,zz)=>{
+          const bridge=bridgeSurfaceAt(this.mountainPasses.bridges,xx,zz);
+          return bridge?{height:bridge.height,slopeX:Math.sqrt(1/(bridge.normalY*bridge.normalY)-1),slopeZ:0}:
+            this.geographicWorld!.surface.surfaceAt(xx,zz);
+        },
+        waterLevel:(xx,zz)=>this.geographicWorld!.waterAt(xx,zz)?.level??this.geographicWorld!.oceanLevelAt(xx,zz),
+        clear:(xx,y,zz)=>{
+          if(!collision.headroom(xx,y,zz,TRAVERSAL.playerHeight)||blocksAuthoredMovement(xx,zz))return false;
+          for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]])
+            if(collision.wall?.(xx,y+1.2,zz,dx,dz,1.1))return false;
+          return true;
+        }
+      });
+      if(!arrival){
+        this.props.setColliderFocus(this.player.position.x,this.player.position.z,null);
+        this.callbacks.notify(`No hay un punto de llegada libre cerca de ${place.name}.`);return;
+      }
+      x=arrival.x;z=arrival.z;
+    }
+    // Keep interiors and floating geometry alive until the arrival is accepted.
     this.abilities.resetScene();
     if(this.volcanicCave.inside)this.leaveVolcanicCave();
-    this.cancelPlacement();this.pressed.clear();this.floating?.clear();
+    this.cancelPlacement();this.floating?.clear();
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
     if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
-    await this.prepareGeography(x,z);
     if(this.store.state.zone!=='brisalia')this.store.travel('brisalia');
     this.store.setPlayerPosition('brisalia',x,z);
     this.activateZone('brisalia');
@@ -1089,6 +1267,7 @@ export class WorldView {
         if(support){p.x=saved.x;p.z=saved.z;p.y=support.height;}
       }
       await this.geographicWorld.prepareAround(p.x,p.z);
+      await this.mainland.prepareHorizon(p.x,p.z);
       this.store.setPlayerPosition('brisalia',p.x,p.z,id);
       this.activateZone('brisalia');
       this.resetMovementEffects();this.traversal.teleport(p.x,p.y,p.z);this.player.position.set(p.x,p.y,p.z);
@@ -1105,26 +1284,21 @@ export class WorldView {
     sourceData:this.geographicWorld?.stats,avatarReady:this.santi?.isReady,vegetation:this.vegetation.instanceCount,grass:this.grass.instanceCount,
     resources:this.props.activeCrystalCount,waterChunks:this.geography.activeCount+this.geography.farActiveCount,
     lagoonInside:this.lagoon.inside,cave:this.volcanicCave.status,realm:this.floating?.id,hydrology:this.lagoon.hydrology.intensity,
-    companion:this.dogo?.status};}
+    companion:this.dogo?.status,birds:this.birds.status,tornado:this.tornadoes.status};}
+
+  get birdStatus(){return this.birds.status;}
 
   /** Desplazamiento de desarrollo: recorrer los biomas antes de crear las ciudades. */
   teleportToLandmark(id:string):void {
-    this.abilities.resetScene();
-    if(this.volcanicCave.inside)this.leaveVolcanicCave();
-    if(id===VOLCANIC_CAVE.id&&this.geographicWorld){
-      void this.travelGeographic(this.volcanicCave.entrance.x,this.volcanicCave.entrance.z+5,VOLCANIC_CAVE.name).catch(()=>{});return;
-    }
     if(this.geographicWorld){
-      const destination=this.geographicWorld.destinations.find(p=>p.id===id);
-      if(destination){void (destination.floating?this.travelFloating(destination.floating):
-        this.travelGeographic(destination.x,destination.z,destination.name)).catch(()=>{});return;}
-      const old=LANDMARKS.find(p=>p.id===id)??pointOfInterest(id);
-      const special=id==='laguna-tres-vertientes'?regionPoint(this.geographicWorld.lagoon,-160,-650):
-        id==='nacar'?{x:400,z:-400}:null;
-      if(special||old){const point=special??{x:old!.x+this.geographicWorld.town.x,z:old!.z+this.geographicWorld.town.z};
-        void this.travelGeographic(point.x,point.z,old?.name??id).catch(()=>{});}
+      const destination=this.geographicWorld.destination(id);
+      if(destination){const arrival=destination.arrival??destination;
+        void (destination.floating?this.travelFloating(destination.floating):
+          this.travelGeographic(arrival.x,arrival.z,destination.name,destination)).catch(()=>{});}
       return;
     }
+    this.abilities.resetScene();
+    if(this.volcanicCave.inside)this.leaveVolcanicCave();
     if(this.mountainPasses.inside)this.mountainPasses.leave(this.mountainPasses.returnPortal.id);
     if(this.lagoon.inside)this.lagoon.leave(this.lagoon.returnPortal.id);
     const point=LANDMARKS.find(p=>p.id===id)??pointOfInterest(id);
@@ -1152,15 +1326,14 @@ export class WorldView {
     const x=this.player.position.x-zone.offset.x,z=this.player.position.z-zone.offset.z;
     const name=this.volcanicCave.inside?'Reino \u00cdgneo':this.lagoon.inside?'Gruta de las Vertientes':this.mountainPasses.inside?'Galerías de Ferragrís':
       zone.id==='brisalia'?(this.geographicWorld?
-        this.geographicWorld.destinations.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b).name:
+        (this.geographicWorld.destinations.find(p=>p.floating===this.floating?.id&&p.floating)?.name??
+          this.geographicWorld.locationNameAt(x,z)):
         landscapeNameAt(x,z,BIOME_NAMES[biomeAt(x,z)])):'Isla de las Luciérnagas';
     if(this.lastBiome!==name){this.lastBiome=name;}
     this.callbacks.onExplore(x,z,name,zone.id==='brisalia'?this.mainland.activeCount:1);
     const swordLevel=this.store.swordLevel;
     if(zone.id==='brisalia'&&!this.insideUnderground)for(const place of this.geographicWorld?
-      this.geographicWorld.destinations.map(d=>({...d,discoverRadius:
-        d.id===FOLIAGE_FOREST.id||d.id===FOLIAGE_FOREST.flowerMeadow.id
-          ?pointOfInterest(d.id)?.discoverRadius??120:120})):POINTS_OF_INTEREST){
+      this.geographicWorld.destinations:POINTS_OF_INTEREST){
       if(Math.hypot(x-place.x,z-place.z)<place.discoverRadius)this.store.discoverPlace(place.id);
     }
     this.notifySwordEvolution(swordLevel);
@@ -1211,9 +1384,52 @@ export class WorldView {
     return {height:hit.height,normalY:hit.normalY,surface,wetness};
   }
 
-  private traversalWorld(zone:IslandInfo,feetY=this.traversal.position.y):TraversalWorld{
-    if(this.volcanicCave.inside)return this.volcanicCave.traversalWorld();
+  /** Only resident, open mainland terrain can host a rare weather event. */
+  private tornadoSurfaceAt(x:number,z:number):TornadoSurface|null{
+    const world=this.geographicWorld;
+    if(!world||this.geographyLoading||this.insideUnderground||this.floating?.id||
+      !this.mainland.coverageAt(x,z)||!world.isReady([x-16,z-16,x+16,z+16]))return null;
+    const ground=world.surface.surfaceAt(x,z),weights=world.biomeWeights(x,z);
+    const protectedArea=inBrisaliaFootprint(x-world.town.x,z-world.town.z,80)||
+      Math.hypot(x-this.plot.x,z-this.plot.z)<80||
+      world.destinations.some(p=>!p.floating&&Math.hypot(x-p.x,z-p.z)<Math.max(90,p.discoverRadius+50))||
+      this.store.state.structures.some(s=>Math.hypot(x-s.x,z-s.z)<60);
+    const biome=tornadoBiome({height:ground.height,
+      waterLevel:world.waterAt(x,z)?.level??world.seaLevel,
+      desert:world.desertAt(x,z),valley:weights.valle,coast:weights.costa,
+      mountain:weights.sierras+weights.cumbres,trees:world.vegetationAt(x,z).trees,
+      protected:protectedArea,roadClearance:world.vegetationClearanceAt(x,z)});
+    return biome?{...ground,biome}:null;
+  }
+
+  /** Topmost loaded support in world coordinates, sampled only by the rain cache. */
+  private rainSurfaceAt(x:number,z:number):RainSurface|null{
+    if(this.insideUnderground||this.geographyLoading)return null;
+    const zone=this.zones.get(this.store.state.zone)!,o=zone.offset,lx=x-o.x,lz=z-o.z;
     if(this.floating?.id){
+      const hit=this.floating.colliders.queryGround(lx,lz,768-o.y,1024,0);
+      return hit?{height:hit.height+o.y,kind:'ground'}:null;
+    }
+    let height:number,water:number|null=null;
+    if(zone.id==='brisalia'){
+      if(!this.mainland.coverageAt(lx,lz)||this.geographicWorld&&!this.geographicWorld.isReady([lx,lz,lx+.01,lz+.01]))return null;
+      height=nearTerrainHeightAt(lx,lz,sampleMainlandHeight);
+      water=waterSurfaceAt(lx,lz)?.level??(this.geographicWorld?.seaLevel??MAINLAND.waterLevel);
+      const bridge=bridgeSurfaceAt(this.mountainPasses.bridges,lx,lz,768)?.height;
+      const trail=mountainTrailSurfaceAt(this.mountainPasses.trails,lx,lz,768)?.height;
+      const built=buildingFloorAt(lx,lz,768,this.store.state.structures);
+      const roof=Math.max(this.village.rainHeight(x,z)??-Infinity,this.brisaliaPalace?.collision.rainHeight(x,z)??-Infinity);
+      height=Math.max(height,bridge??-Infinity,trail??-Infinity,built??-Infinity,(roof??-Infinity)-o.y);
+    }else{
+      height=this.y(zone,lx,lz);
+      if((lx/zone.radiusX)**2+(lz/zone.radiusZ)**2>1)water=0;
+    }
+    return water!==null&&water>height?{height:water+o.y,kind:'water'}:{height:height+o.y,kind:'ground'};
+  }
+
+  private traversalWorld(zone:IslandInfo,feetY=this.traversal.position.y,exterior=false):TraversalWorld{
+    if(!exterior&&this.volcanicCave.inside)return this.volcanicCave.traversalWorld();
+    if(!exterior&&this.floating?.id){
       const c=this.floating.colliders;
       return {
         ground:(x,z,origin,max,radius)=>{const h=c.queryGround(x,z,origin,max,radius);return h?{height:h.height,normalY:h.normal.y,rockId:h.rockId}:null;},
@@ -1236,7 +1452,7 @@ export class WorldView {
       return hit?{height:hit.height,normalX:hit.normal.x,normalZ:hit.normal.z,
         rockId:hit.rockId,centerX:hit.centerX,centerZ:hit.centerZ}:null;
     };
-    if(this.lagoon.inside)return {
+    if(!exterior&&this.lagoon.inside)return {
       ground:(x,z,origin,max,footRadius)=>{const s=grottoSurfaceAt(x,z);
         const rock=generated.queryGround(x,z,origin,max,footRadius);
         if(rock&&(!s||rock.height>s.height))return {height:rock.height,normalY:rock.normal.y,rockId:rock.rockId};
@@ -1248,7 +1464,7 @@ export class WorldView {
       canMove:(x,z)=>grottoSurfaceAt(x,z,.6)!==null,
       fallbackHeight:(x,z)=>grottoSurfaceAt(x,z)?.height??feetY
     };
-    if(this.mountainPasses.inside)return {
+    if(!exterior&&this.mountainPasses.inside)return {
       ground:(x,z,origin,max)=>{const s=tunnelSurfaceAt(x,z);
         return s&&s.height<=origin+.001&&s.height>=origin-max-.001?{height:s.height,normalY:s.normalY}:null;},
       wall:()=>null,solidTop:()=>null,
@@ -1277,8 +1493,10 @@ export class WorldView {
       routeDeck(x,z)?.height??trailDeck(x,z)?.height??(this.geographicWorld?null:bridgeDeckAt(x,z))??wallHeight(x,z):this.y(zone,x,z);
     return {
       // Prefab steps use source metres, calibrated to Santi's 1.40 m height.
-      stepHeightAt:(x,z)=>isMainland&&inBrisaliaFootprint(x-(this.geographicWorld?.town.x??0),
-        z-(this.geographicWorld?.town.z??0),2)?Math.max(TRAVERSAL.stepHeight,.22*BRISALIA_SCALE):TRAVERSAL.stepHeight,
+      stepHeightAt:(x,z)=>isMainland&&this.village.entryStepHeightAt(x,z)!==null?this.village.entryStepHeightAt(x,z)!:
+        isMainland&&(inBrisaliaFootprint(x-(this.geographicWorld?.town.x??0),
+        z-(this.geographicWorld?.town.z??0),2)||!!this.geographicWorld&&inNacarPalaceFootprint(x,z,2))?
+        Math.max(TRAVERSAL.stepHeight,.22*BRISALIA_SCALE):TRAVERSAL.stepHeight,
       waterLevel:(x,z)=>isMainland?(this.geographicWorld?waterSurfaceAt(x,z)?.level??
         (wallHeight(x,z)<this.geographicWorld.seaLevel?this.geographicWorld.seaLevel:null):lagoonWaterAt(x,z)?.level??null):null,
       ground:(x,z,originY,maxDistance,footRadius)=>{
@@ -1299,7 +1517,8 @@ export class WorldView {
         const built=builtY!==null&&builtY>=originY-maxDistance-.001?
           {height:builtY,normalY:1,surface:'paved' as const}:null;
         const village=isMainland?this.village.ground(x,z,originY,maxDistance):null;
-        const surfaces=[terrain,root?{...root,surface:'wood' as const}:null,built,
+        const palace=isMainland?this.brisaliaPalace?.collision.ground(x,z,originY,maxDistance):null;
+        const surfaces=[palace?{...palace,surface:'paved' as const}:null,terrain,root?{...root,surface:'wood' as const}:null,built,
           village?{...village,surface:'paved' as const}:null,...[rock,generatedRock].map(hit=>hit?
           {height:hit.height,normalY:hit.normal.y,rockId:hit.rockId,surface:'stone' as const}:null)]
           .filter((hit):hit is NonNullable<typeof hit>=>hit!==null);
@@ -1329,17 +1548,19 @@ export class WorldView {
           normalZ:tree.normal.z,rockId:tree.id,climbable:false
         }:null;
         let nearest=terrain;
-        for(const wall of [rock,trunk,generatedWall(x,y,z,dx,dz,reach),this.village.wall(x,y,z,dx,dz,reach)])
+        for(const wall of [rock,trunk,generatedWall(x,y,z,dx,dz,reach),this.village.wall(x,y,z,dx,dz,reach),this.brisaliaPalace?.collision.wall(x,y,z,dx,dz,reach)])
           if(wall&&(!nearest||wall.distance<nearest.distance))nearest=wall;
         return nearest;
       },
       headroom:(x,y,z,room,ignoreRockId)=>!isMainland||
-        height(x,z)<=y+.08&&this.volcanicCave.exteriorHeadroom(x,y,z,room)&&this.village.headroom(x,y,z,room)&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
+        height(x,z)<=y+.08&&this.volcanicCave.exteriorHeadroom(x,y,z,room)&&this.village.headroom(x,y,z,room)&&(this.brisaliaPalace?.collision.headroom(x,y,z,room)??true)&&this.props.hasRockHeadroom(x,y,z,room,ignoreRockId)&&
         generated.hasOverheadClearance(x,y,z,room,ignoreRockId)&&
         buildingHeadroom(x,y,z,room,this.store.state.structures),
       sameSupport:sameGeologyFormation,
       canMove:(nextX,nextZ,fromX,fromZ,feetY)=>{
-        if(this.geographicWorld&&isMainland&&(!this.geographicWorld.isReady([nextX-12,nextZ-12,nextX+12,nextZ+12])||this.mainland.coverageAt(nextX,nextZ)!=='near'))return false;
+        // Collision samples the canonical height grid, independently of visual
+        // LOD. A loaded coarse surface is traversable while detail refines.
+        if(this.geographicWorld&&isMainland&&!this.mainland.canTraverse(nextX,nextZ))return false;
         const oldDeck=routeDeck(fromX,fromZ),nextDeck=routeDeck(nextX,nextZ);
         if(oldDeck&&!nextDeck&&feetY<oldDeck.height+1.8&&
           bridgeRailBlocks(oldDeck.route,nextX,nextZ))return false;
@@ -1354,7 +1575,8 @@ export class WorldView {
         const travel=Math.hypot(nextX-fromX,nextZ-fromZ);
         const houses=isMainland&&travel>0&&this.village.wall(fromX,feetY+1.2,fromZ,
           nextX-fromX,nextZ-fromZ,travel+.35)!==null;
-        return canWalk&&!houses&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
+        const palaceWall=isMainland&&travel>0&&this.brisaliaPalace?.collision.wall(fromX,feetY+1.2,fromZ,nextX-fromX,nextZ-fromZ,travel+.35);
+        return canWalk&&!houses&&!palaceWall&&(!isMainland||!blocksAuthoredMovement(nextX,nextZ))&&
           (!isMainland||this.volcanicCave.canMoveOutside(nextX,nextZ,fromX,fromZ,feetY))&&
           (!isMainland||this.wayfinding.canMove(nextX,nextZ,fromX,fromZ,feetY))&&
           (!isMainland||elevated||!this.props.blocksMovement(nextX,nextZ,fromX,fromZ,false))&&
@@ -1365,14 +1587,14 @@ export class WorldView {
     };
   }
 
-  private streamMainland(x:number,z:number):void {
+  private streamMainland(x:number,z:number,budgetMs?:number,velocityX=0,velocityZ=0):void {
     if(this.lagoonVegetation?.ensure(x,z))this.authoredAssets.markDirty();
     if(this.floating?.id){
       if(this.grass.activeSectorCount||this.grass.pendingCount)this.grass.deactivate();
     }else this.grass.setFocus(x,z);
     const view=this.camera.getTarget().subtract(this.camera.position);
     if(this.geographicWorld)this.vegetation.setViewDirection(view.x,view.z);
-    const changed=this.mainland.update(x,z,view.x,view.z);
+    const changed=this.mainland.update(x,z,velocityX,velocityZ,budgetMs);
     const cell=chunkOf(x,z);
     const center=`${cell.cx}:${cell.cz}`;
     if(this.geographicWorld&&!changed&&center===this.vegetationCenter)this.vegetation.setActiveChunks([],x,z);
@@ -1413,19 +1635,59 @@ export class WorldView {
 
   private resetMovementEffects():void{
     this.sprintDust.reset();this.doubleJumpFX.reset();
+    this.groundImpactFX.reset();
+  }
+
+  private sampleAbilityGroundImpact():void{
+    if(this.sprintDustPaused||!this.abilityFocus||this.blocked()||this.traversal.mode!=='grounded'||
+      this.placement||this.geographyLoading||this.igneousTransition)return;
+    const execution=this.abilities.manager.execution,marker='ground-slam';
+    const strikeAt=execution?.definition.animation?.groundStrikeAt;
+    if(!execution?.committed||strikeAt===undefined||execution.elapsed<strikeAt||execution.markers.has(marker))return;
+    execution.markers.add(marker);
+    if(!this.santi?.sampleAbilityBlade(this.attackBlade))return;
+    const zone=this.zones.get(this.store.state.zone)!,o=zone.offset,world=this.traversalWorld(zone);
+    const probe:ImpactProbe=(x,z,y,range)=>{
+      const lx=x-o.x,lz=z-o.z,hit=world.ground(lx,lz,y-o.y+range*.5,range,0);
+      if(!hit||!Number.isFinite(hit.height)||hit.normalY<.55)return null;
+      const water=world.waterLevel?.(lx,lz);
+      if(water!=null&&hit.height<=water+.05)return null;
+      return {...hit,height:hit.height+o.y};
+    };
+    // Animation event, sampled after the rig: anchor the burst on support
+    // beneath the striking blade. Shorter sword variants share this same slam.
+    let point:{x:number;y:number;z:number}|null=null,clearance=Infinity;
+    for(const blade of this.attackBlade){
+      const support=probe(blade.x,blade.z,blade.y,3);if(!support)continue;
+      const distance=Math.abs(blade.y-support.height);
+      if(distance<clearance){clearance=distance;point={x:blade.x,y:support.height,z:blade.z};}
+    }
+    if(!point)return;
+    const ground=captureImpactGround(point,Math.min(3.4,execution.profile.radius),probe);if(!ground)return;
+    const stone=ground.surface==='stone'||ground.surface==='paved'||this.insideUnderground;
+    const sand=!stone&&zone.id==='luciernagas';
+    this.groundImpactFX.trigger(ground.point,ground.normal,{
+      radius:ground.radius,intensity:1+.15*(execution.profile.level-1),sampleHeight:ground.sampleHeight,
+      dustColor:stone?[.48,.46,.42]:sand?[.66,.57,.39]:[.52,.43,.32],
+      earthColor:stone?[.29,.28,.26]:sand?[.48,.37,.22]:[.34,.24,.15],
+      brightness:this.insideUnderground?.35:.28+.72*this.climate.frame.dayLight
+    });
   }
 
   private update(dt: number): void {
+    // Keep equipment in sync even when local collision streaming waits.
+    // Testing a power/level must not force a weapon over the HUD selection.
+    if(this.store.state.inventory.sword>0)
+      this.santi?.prepareSword(this.abilities.visualSwordLevel as 1|2|3|4);
+    this.santi?.setSwordLevel(this.abilities.equippedSwordLevel);
     const dustPaused=!this.abilityFocus||document.hidden||this.blocked()||this.geographyLoading||
       !!this.geographyFailure||this.igneousTransition;
     if(dustPaused&&!this.sprintDustPaused)this.resetMovementEffects();
     this.sprintDustPaused=dustPaused;
+    if(this.geographyLoading||this.geographyFailure)this.birds.update(0,{
+      focus:this.traversal.position,threats:[],night:0,rain:0,active:false,paused:true});
     this.abilities.update(dt,!this.abilityFocus||document.hidden||this.blocked()||this.geographyLoading||this.igneousTransition);
     if(this.geographyLoading||this.geographyFailure)return;
-    if(this.geographicWorld&&this.store.state.zone==='brisalia'&&!this.insideUnderground){
-      const p=this.traversal.position;
-      if(!this.geographicWorld.isReady(this.geographicWorld.windowAt(p.x,p.z))){void this.prepareGeography(p.x,p.z).catch(()=>{});return;}
-    }
     this.lagoon.restoreAtmosphere();
     this.volcanicCave.restoreAtmosphere();
     this.climate.setSheltered(this.insideUnderground);
@@ -1453,6 +1715,15 @@ export class WorldView {
     const direction=cameraRelativeMovement({x:forwardX,z:forwardZ},horizontal,vertical);
     const running=controls&&this.pressed.has('shift');
     const sprinting=running&&this.sprintTap.active;
+    const streamSpeed=sprinting?27:running?19:11;
+    const velocityX=direction.x*streamSpeed,velocityZ=direction.z*streamSpeed;
+    if(this.geographicWorld&&zone.id==='brisalia'&&!this.insideUnderground){
+      const p=this.traversal.position;
+      this.geographyPrefetch?.update(p.x,p.z,velocityX,velocityZ);
+      // Only absent local collision data requires waiting. Missing distant
+      // sectors no longer pause movement, animation, or the streaming queue.
+      if(!this.geographicWorld.isReady([p.x-12,p.z-12,p.x+12,p.z+12]))return;
+    }
     this.santi?.prepareCombat(this.store.state.equippedItem??'unarmed',controls);
     const combat=this.santi?.combatState;
     this.traversal.setAttackHold(Math.max(combat?.remainingSeconds??0,this.abilities.manager.holdSeconds));
@@ -1473,6 +1744,10 @@ export class WorldView {
     const actionDriven=this.traversal.actionMotionActive;
     const jumpsBeforeStep=this.traversal.jumpCount;
     const feetBeforeStep=this.traversal.position.y;
+    if(zone.id==='brisalia'&&!this.insideUnderground&&!this.floating?.id){
+      const p=this.traversal.position,recovery=this.village.entryRecoveryAt(p.x,p.y,p.z);
+      if(recovery!==null)this.traversal.teleport(p.x,recovery,p.z);
+    }
     const walking=this.traversal.step(dt,{
       moveX:direction.x,moveZ:direction.z,forwardX,forwardZ,
       horizontal,vertical,run:running,sprint:sprinting,
@@ -1498,8 +1773,13 @@ export class WorldView {
       }
     }
     this.player.position.set(zone.offset.x+localX,localY,zone.offset.z+localZ);
+    this.telemetry?.mark('movimiento');
     if(!this.volcanicCave.inside)this.wayfinding.update(climateFrame.night,this.player.position,dt);
+    this.brisaliaPalace?.update(dt,this.player.position,climateFrame.night);
     this.village.lanterns.update(this.volcanicCave.inside?0:climateFrame.night,this.player.position,this.player,dt);
+    this.village.fountain.update(dt,this.player.position,climateFrame.dayLight,
+      zone.id==='brisalia'&&!this.insideUnderground,dustPaused);
+    this.telemetry?.mark('ambiente');
     if(zone.id==='brisalia'&&!this.insideUnderground){
       this.props.setColliderFocus(localX,localZ,this.traversal.supportRockId);
       this.vegetation.setColliderFocus(localX,localZ);
@@ -1511,10 +1791,16 @@ export class WorldView {
       const groundFacing=groundTravel.speed>1e-5
         ?{x:groundTravel.x/groundTravel.speed,z:groundTravel.z/groundTravel.speed}:null;
       const facing=slopeSlide??this.traversal.climbFacing??this.traversal.airTravelDirection??
+        this.traversal.swimTravelDirection??
         (this.traversal.rollCarryActive?groundFacing:
           movementIntent?direction:walking?groundFacing:null);
-      if(facing)
-        this.player.rotation.y=Math.atan2(facing.x,facing.z);
+      if(facing){
+        const yaw=Math.atan2(facing.x,facing.z);
+        if(this.traversal.mode==='swimming'){
+          const turn=yaw-this.player.rotation.y;
+          this.player.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-dt*8));
+        }else this.player.rotation.y=yaw;
+      }
     }
     if(!this.insideUnderground&&this.traversal.mode==='grounded'&&!this.traversal.supportRockId&&
       (zone.id!=='brisalia'||!GEOLOGY_FORMATIONS.some(formation=>{
@@ -1525,11 +1811,13 @@ export class WorldView {
       this.lastSafePosition={x:localX,z:localZ};
     const doubleJumpStarted=(jumpPressed||airKickPressed)&&jumpsBeforeStep===1&&
       this.traversal.jumpCount===2;
+    this.telemetry?.mark('movimiento');
     this.dogo?.update(dt,{
       x:localX,y:localY,z:localZ,heading:this.player.rotation.y,
       supported:this.traversal.mode==='grounded'||this.traversal.mode==='swimming',
       context:`${zone.id}:${this.floating?.id??''}:${this.lagoon.inside}:${this.mountainPasses.inside}:${this.volcanicCave.inside}:${this.volcanicCave.inside?this.volcanicCave.realm.checkpointId:''}`
     },this.traversalWorld(zone,this.dogo.follow.visible?this.dogo.follow.position.y:localY),zone.offset);
+    this.telemetry?.mark('companero');
     const dog=this.dogo?.follow;
     this.characterShadows.update(this.player.position,dog?.visible?this.dogo!.root.position:undefined,!this.insideUnderground);
     this.grass.setCompanionContact(dog?.position.x??0,dog?.position.z??0,
@@ -1538,6 +1826,7 @@ export class WorldView {
     if(!dustPaused){
       if(doubleJumpStarted&&!airKickPressed)this.doubleJumpFX.trigger(this.player.position,direction);
       this.doubleJumpFX.update(dt);
+      this.groundImpactFX.update(dt);
     }
     const sprintVisual=sprinting&&walking&&
       this.traversal.mode==='grounded'&&!actionDriven&&
@@ -1552,13 +1841,12 @@ export class WorldView {
     const descending=this.traversal.mode==='airborne'&&localY<feetBeforeStep-.001;
     const landingGround=descending?contactWorld.ground(localX,localZ,localY+.1,1.6,
       TRAVERSAL.playerRadius*.55):null;
-    this.santi?.setSwordLevel(this.abilities.sandbox||this.store.state.equippedItem==='sword'?
-      this.abilities.visualSwordLevel as 1|2|3|4:0);
     const landing=this.santi?.update(dt,{
       mode:this.traversal.mode,moving:walking,
       movementIntent:Math.hypot(direction.x,direction.z)>1e-5,
       run:running,sprint:sprinting,
       groundGrade:this.traversal.groundGrade,
+      swimPitch:this.traversal.swimPitch,
       sliding:slopeSlide!==null,
       slideGrade:slopeSlide?.grade,
       descending,groundDistance:landingGround?localY-landingGround.height:null,
@@ -1592,7 +1880,7 @@ export class WorldView {
     target.y=swimming?this.player.position.y+focusHeight:
       Math.max(target.y,this.player.position.y+focusHeight);
     this.camera.setTarget(target,false,false,true);
-    this.telemetry?.mark('movimiento');
+    this.telemetry?.mark('personaje');
     if(!this.insideUnderground)this.ocean?.update(dt,this.player.position);
     this.telemetry?.mark('oceano');
     this.mountainPasses.update(localX,localY,localZ,dt);
@@ -1613,20 +1901,33 @@ export class WorldView {
         ?this.props.waterContacts(localX,localZ,(x,z)=>waterSurfaceAt(x,z)?.level??null):[]);
     }
     this.telemetry?.mark('dinamica');
+    this.birds.update(dt,{
+      focus:{x:localX,y:localY,z:localZ},
+      threats:[{x:localX,y:localY+1,z:localZ},...(this.dogo?.follow.visible?[this.dogo.root.position]:[])],
+      night:climateFrame.night,rain:climateFrame.weatherMix.rain,
+      active:zone.id==='brisalia'&&!this.insideUnderground&&!this.floating?.id,
+      paused:dustPaused
+    });
+    this.telemetry?.mark('aves');
     if(zone.id==='brisalia'&&!this.insideUnderground){
-      this.streamMainland(localX,localZ);
-      this.telemetry?.mark('terreno');
-      this.vegetation.update();
-      this.telemetry?.mark('vegetacion');
-      this.grass.update();
-      this.telemetry?.mark('pasto');
-      this.props.update(dt);
+      // Terrain gets a slice EVERY frame, ahead of optional scenery. Rotating
+      // it with grass/props starved ground generation during sustained sprint.
+      this.props.update(dt,false);
       this.telemetry?.mark('props');
-      this.authoredAssets.update(localX,localZ);
-      this.telemetry?.mark('assets');
       this.authoredWater.update(dt);
-      this.geography.update(dt);
+      this.geography.update(dt,0);
       this.telemetry?.mark('agua');
+      const streamingStart=performance.now();
+      this.streamMainland(localX,localZ,3,velocityX,velocityZ);
+      this.telemetry?.mark('terreno');
+      const remaining=(deadline:number)=>Math.max(0,deadline-performance.now());
+      this.streamingWork.run([
+        deadline=>{this.vegetation.update(remaining(deadline));this.telemetry?.mark('vegetacion');},
+        deadline=>{this.grass.update(remaining(deadline));this.telemetry?.mark('pasto');},
+        ()=>{this.props.update(0);this.telemetry?.mark('props');},
+        ()=>{this.authoredAssets.update(localX,localZ);this.telemetry?.mark('assets');},
+        deadline=>{this.geography.update(0,remaining(deadline));this.telemetry?.mark('agua');}
+      ],Math.max(0,4-(performance.now()-streamingStart)));
       this.landscapeDebug?.update(dt,localX,localZ);
     }
     this.exploreTimer+=dt;
@@ -1641,13 +1942,16 @@ export class WorldView {
   }
 
   private updateCameraOcclusion(dt:number,zone:IslandInfo):void{
+    const zoomChange=this.camera.radius-this.cameraAppliedRadius;
+    if(Math.abs(zoomChange)>.001)this.cameraPreferredRadius=Math.max(THIRD_PERSON_CAMERA.minDistance,
+      Math.min(THIRD_PERSON_CAMERA.maxDistance,this.cameraPreferredRadius+zoomChange));
     if(this.volcanicCave.inside){
       const t=this.camera.getTarget(),a=this.camera.alpha,b=this.camera.beta;
       const d=new Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b));
       const preferred=Math.min(18,this.cameraPreferredRadius);
       const hit=this.volcanicCave.cameraObstruction(t,t.add(d.scale(preferred)));
       const safe=hit===null?preferred:Math.max(.25,hit-.7);
-      this.camera.radius=safe<this.camera.radius?safe:this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*6);
+      this.camera.radius=cameraRadiusAfterCollision(this.camera.radius,safe,dt);
       this.hidePlayerForCloseCamera(this.camera.radius<1.6);
       this.cameraAppliedRadius=this.camera.radius;return;
     }
@@ -1663,24 +1967,23 @@ export class WorldView {
     if(this.lagoon.inside){
       const t=this.camera.getTarget(),a=this.camera.alpha,b=this.camera.beta;
       const d=new Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b));
-      let radius=1.5;
-      for(let r=1.5;r<=preferred;r+=.25){const p=t.add(d.scale(r)),s=grottoSurfaceAt(p.x,p.z,.6);
+      let radius:number=CAMERA_TERRAIN.minRadius;
+      for(let r=CAMERA_TERRAIN.minRadius;r<=preferred;r+=.25){const p=t.add(d.scale(r)),s=grottoSurfaceAt(p.x,p.z,.6);
         if(!s||p.y>s.ceiling-.6||p.y<s.height+.4)break;radius=r;}
       const hit=this.lagoon.rockColliders.queryCameraObstruction(t,t.add(d.scale(radius)),.45);
       if(hit!==null)radius=Math.min(radius,Math.max(.25,hit-.65));
-      this.camera.radius=radius;this.cameraAppliedRadius=radius;return;
+      this.camera.radius=cameraRadiusAfterCollision(this.camera.radius,radius,dt);
+      this.cameraAppliedRadius=this.camera.radius;return;
     }
     if(this.mountainPasses.inside){
       const target=this.camera.getTarget(),a=this.camera.alpha,b=this.camera.beta;
       const direction=new Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b));
-      let radius=1.5;
-      for(let r=1.5;r<=8;r+=.25){const p=target.add(direction.scale(r)),s=tunnelSurfaceAt(p.x,p.z,.7);
+      let radius:number=CAMERA_TERRAIN.minRadius;
+      for(let r=CAMERA_TERRAIN.minRadius;r<=Math.min(preferred,8);r+=.25){const p=target.add(direction.scale(r)),s=tunnelSurfaceAt(p.x,p.z,.7);
         if(!s||p.y>s.ceiling-.7||p.y<s.height+.5)break;radius=r;}
-      this.camera.radius=radius;this.cameraAppliedRadius=radius;return;
+      this.camera.radius=cameraRadiusAfterCollision(this.camera.radius,radius,dt);
+      this.cameraAppliedRadius=this.camera.radius;return;
     }
-    const changed=this.camera.radius-this.cameraAppliedRadius;
-    if(Math.abs(changed)>.001)this.cameraPreferredRadius=Math.max(THIRD_PERSON_CAMERA.minDistance,
-      Math.min(THIRD_PERSON_CAMERA.maxDistance,this.cameraPreferredRadius+changed));
     const {alpha,beta}=this.camera;
     const radius=Math.min(THIRD_PERSON_CAMERA.maxDistance,
       (swimming?preferred:this.cameraPreferredRadius)+this.sprintCameraOffset);
@@ -1701,9 +2004,20 @@ export class WorldView {
       return Math.max(terrain,this.traversal.mode==='swimming'?-Infinity:MAINLAND.waterLevel,zone.id==='brisalia'
         ?bridgeDeckAt(localX,localZ)??-Infinity:-Infinity);
     };
-    const terrainView=swimming?{targetY:target.y,maxRadius:radius}:
+    let terrainView=swimming?{targetY:target.y,maxRadius:radius}:
       cameraTerrainView(target,direction,radius,groundAt,
         this.player.position.y+THIRD_PERSON_CAMERA.targetHeight);
+    const focusY=this.player.position.y+THIRD_PERSON_CAMERA.targetHeight;
+    if(!swimming&&terrainView.targetY>focusY+.03){
+      const focus=new Vector3(target.x,focusY,target.z);
+      const raised=new Vector3(target.x,terrainView.targetY,target.z);
+      const ceiling=this.cameraLiftProbe.resolve(focus,raised,dt,()=>this.outdoorCameraObstruction(focus,raised));
+      if(ceiling!==null){
+        const cap=Math.max(focusY,focusY+ceiling-.35);
+        terrainView=cameraTerrainView({x:target.x,y:Math.min(target.y,cap),z:target.z},
+          direction,radius,groundAt,focusY,cap);
+      }
+    }
     if(swimming){
       // Shorten the orbit at the bank/bed; raising the target would lose the diver.
       for(let r=CAMERA_TERRAIN.minRadius;r<=radius;r+=.3){
@@ -1712,29 +2026,24 @@ export class WorldView {
         }
       }
     }
-    if(terrainView.targetY>target.y){
+    if(Math.abs(terrainView.targetY-target.y)>.001){
       target.y=terrainView.targetY;
       this.camera.setTarget(target,false,false,true);
     }
-    this.cameraOcclusionTimer-=dt;
-    if(this.cameraOcclusionTimer<=0){
-      this.cameraOcclusionTimer=.12;
-      const desired=target.add(direction.scale(radius));
-      const hits=[this.props.queryCameraObstruction(target,desired),this.village.cameraObstruction(target,desired)].filter((h):h is number=>h!==null);
-      const hit=hits.length?Math.min(...hits):null;
-      this.cameraOcclusionDistance=hit===null?Infinity:
-        Math.max(CAMERA_TERRAIN.minRadius,hit-1.1);
-    }
-    // Procedural boulders/arches are queried every frame: an orbit can cross a
-    // narrow rock in less than the slower distant-prop refresh interval.
-    const generatedHit=this.lagoon.rockColliders.queryCameraObstruction(target,target.add(direction.scale(radius)),.45);
-    const generatedDistance=generatedHit===null?Infinity:Math.max(.25,generatedHit-.65);
-    const caveHit=this.volcanicCave.exteriorCameraObstruction(target,target.add(direction.scale(radius)));
-    const caveDistance=caveHit===null?Infinity:Math.max(.25,caveHit-.65);
-    const safe=Math.min(radius,this.cameraOcclusionDistance,terrainView.maxRadius,generatedDistance,caveDistance);
-    this.camera.radius=safe<this.camera.radius?safe:
-      this.camera.radius+(safe-this.camera.radius)*Math.min(1,dt*5);
+    const desired=target.add(direction.scale(Math.min(radius,terrainView.maxRadius)));
+    const hit=this.cameraObstructionProbe.resolve(target,desired,dt,()=>this.outdoorCameraObstruction(target,desired));
+    const obstruction=hit===null?Infinity:Math.max(CAMERA_TERRAIN.minRadius,hit-.65);
+    const safe=Math.min(radius,obstruction,terrainView.maxRadius);
+    this.camera.radius=cameraRadiusAfterCollision(this.camera.radius,safe,dt);
     this.cameraAppliedRadius=this.camera.radius;
+  }
+
+  private outdoorCameraObstruction(from:Vector3,to:Vector3):number|null{
+    let nearest:number|null=null;
+    for(const hit of [this.props.queryCameraObstruction(from,to),this.village.cameraObstruction(from,to),this.brisaliaPalace?.collision.cameraObstruction(from,to)??null,
+      this.lagoon.rockColliders.queryCameraObstruction(from,to,.45),this.volcanicCave.exteriorCameraObstruction(from,to)])
+      if(hit!==null&&(nearest===null||hit<nearest))nearest=hit;
+    return nearest;
   }
 
   private hidePlayerForCloseCamera(hide:boolean):void{
@@ -1773,6 +2082,11 @@ export class WorldView {
       this.interactTarget=null;
       const label=portal?`E · ${this.mountainPasses.inside?'Salir por':'Entrar en'} ${portal.name}`:
         'Galerías de Ferragrís · Seguí las balizas · Hay tres salidas y una cámara de cristales';
+      if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
+    }
+    const palaceDoor=this.brisaliaPalace?.nearestDoor(this.player.position);
+    if(palaceDoor&&this.traversal.canInteract){
+      const label=`E ? ${palaceDoor.open?'Cerrar':'Abrir'} puerta`;this.interactTarget=null;
       if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
     }
     let nearest: Interactable | null = null;
@@ -1851,6 +2165,9 @@ export class WorldView {
   }
 
   interact(): void {
+    if(!this.blocked()&&!this.placement&&this.traversal.canInteract&&this.brisaliaPalace?.nearestDoor(this.player.position)){
+      if(!this.brisaliaPalace.toggleDoor(this.player.position))this.callbacks.notify('Alejate un paso de la hoja para cerrar la puerta.');return;
+    }
     if(this.abilities.manager.controlLocked)return;
     if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement&&this.traversal.canInteract&&
       !this.lagoon.inside&&!this.mountainPasses.inside){
@@ -1978,6 +2295,7 @@ export class WorldView {
   }
 
   private syncBuildExclusions():void{
+    this.climate.invalidateRainSurfaces();
     this.grass?.refreshExclusions();
     this.vegetation?.refreshExclusions();
   }
@@ -2114,7 +2432,7 @@ export class WorldView {
       zone:this.store.state.zone,near:this.mainland.activeCount,mid:this.mainland.activeMidCount,
       far:this.mainland.activeFarCount,vegetation:this.vegetation.instanceCount,
       vegetationLod:this.vegetation.farInstanceCount,grass:this.grass.instanceCount,
-      grassSectors:this.grass.activeSectorCount,secondaryDynamics:{...this.mountainPasses.secondaryDynamics.metrics}
+      grassSectors:this.grass.activeSectorCount,secondaryDynamics:{...this.mountainPasses.secondaryDynamics.metrics},rain:this.climate.rainStats
     }));
   }
 
@@ -2130,17 +2448,23 @@ export class WorldView {
   }
 
   dispose(): void {
+    this.unsubscribeAudio();
+    this.tornadoes.dispose();
+    this.geographyPrefetch?.dispose();
+    this.birds.dispose();
     this.abilities.dispose();
     window.removeEventListener('focus',this.onFocus);
     document.removeEventListener('visibilitychange',this.onVisibility);
     this.volcanicCave.dispose();
     this.wayfinding.dispose();
+    this.brisaliaPalace?.dispose();
     this.village.dispose();
     this.floating?.dispose();this.geographicWorld?.dispose();
     this.engine.stopRenderLoop();
     this.speedMotionBlur.dispose();
     this.sprintDust.dispose();
     this.doubleJumpFX.dispose();
+    this.groundImpactFX.dispose();
     this.santi?.dispose();
     this.assetPlacement?.dispose();
     this.characterShadows.dispose();

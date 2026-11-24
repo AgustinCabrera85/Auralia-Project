@@ -40,7 +40,10 @@ function assertCanonicalMask(ocean){
     assert.equal(colors[i*4],Math.fround((a+(b-a)*tx)*(1-tz)+(c+(d-c)*tx)*tz),`shore at ${x},${z}`);
     assert.equal(colors[i*4+1],Math.max(inland(x,z),inland(x-8,z),inland(x+8,z),inland(x,z-8),inland(x,z+8)),
       `river/lake mask at ${x},${z}`);
-    assert.equal(colors[i*4+2],0);assert.equal(colors[i*4+3],1);
+    const depth=(x,z)=>Math.min(180,Math.max(0,MAINLAND.waterLevel-sampleMainlandHeight(x*16,z*16)));
+    const da=depth(sx,sz),db=depth(sx+1,sz),dc=depth(sx,sz+1),dd=depth(sx+1,sz+1);
+    assert.equal(colors[i*4+2],Math.fround((da+(db-da)*tx)*(1-tz)+(dc+(dd-dc)*tx)*tz),'cached optical depth follows the same terrain');
+    assert.equal(colors[i*4+3],1);
   }
 }
 

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {captureImpactGround} from '../src/game/GroundImpactSurface.ts';
+let calls=0;const slope=(x,z,y,range)=>{calls++;const height=10+.3*(x-120)-.15*(z+80);return Math.abs(height-y)<=range/2?{height,normalY:1/Math.hypot(1,.3,.15)}:null;};
+const patch=captureImpactGround({x:120,y:10,z:-80},3.4,slope);
+assert.ok(patch);assert.equal(patch.radius,3.4);assert.equal(calls,292);
+const before=calls;for(let i=0;i<10000;i++)assert.ok(Math.abs(patch.sampleHeight(120.2,-80.4)-10.12)<1e-6);
+assert.equal(calls,before,'drawing interpolation never queries colliders');
+assert.ok(Math.abs(patch.normal.x+.3/Math.hypot(1,.3,.15))<1e-6);
+const edge=captureImpactGround({x:0,y:0,z:0},3.4,(x,z)=>x<3?{height:0,normalY:1}:null);
+assert.ok(edge&&edge.radius<3.4&&edge.radius>=.6,'radius reduced at platform edge');
+assert.equal(captureImpactGround({x:0,y:0,z:0},3.4,(x,z)=>Math.abs(x)<.4?{height:0,normalY:1}:null),null,'no floating ring on a narrow ledge');
+assert.equal(captureImpactGround({x:0,y:0,z:0},3.4,()=>null),null);
+console.log('Ground impact surface: world slopes, cached heights and platform edges OK.');

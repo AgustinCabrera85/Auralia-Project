@@ -1,6 +1,18 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode, VertexData } from '@babylonjs/core';
 import { BRIDGE, WATERFALL } from './geographicFeatures';
 import type { PointOfInterest } from './pointsOfInterest';
+import type { PlayablePlace } from './geography/PlayablePlaces';
+
+/** Existing bridges/portals own their world-space geometry; only their marker
+ * needs an anchor. Other POIs are authored directly at the resolved position. */
+export function createPlacedPointOfInterestView(scene:Scene,parent:TransformNode,place:PointOfInterest,
+  destination:PlayablePlace,heightAt:(x:number,z:number)=>number,owner?:TransformNode):TransformNode{
+  if(!owner)return createPointOfInterestView(scene,parent,{...place,x:destination.x,z:destination.z,name:destination.name},heightAt);
+  const anchor=new TransformNode(`lugar-${place.id}-marcador`,scene);
+  anchor.parent=parent;anchor.position.set(destination.x,heightAt(destination.x,destination.z),destination.z);
+  anchor.setParent(owner);
+  return anchor;
+}
 
 /** Reusable low-poly placeholders; place definitions live in pointsOfInterest.ts. */
 export function createPointOfInterestView(

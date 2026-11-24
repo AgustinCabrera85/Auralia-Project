@@ -1,0 +1,29 @@
+{
+  "scene": "Reino Igneo stairs",
+  "active": "Idle (1)",
+  "foot": "mixamorig:LeftFoot",
+  "beforeToeInDegrees": 16.3836808696042,
+  "afterToeInDegrees": -0.0005070011755850848,
+  "kneeAndShinUnchanged": true,
+  "anklePivotUnchanged": true,
+  "contact": {
+    "enabled": true,
+    "pelvis": 0.017922323370209367,
+    "feet": [
+      {
+        "name": "mixamorig:LeftFoot",
+        "lift": 0.00054931640625,
+        "targetY": -561.3863315601347,
+        "actualY": -561.3863525390625,
+        "error": -0.000020978927750547882
+      },
+      {
+        "name": "mixamorig:RightFoot",
+        "lift": 0,
+        "targetY": -561.386880876541,
+        "actualY": -561.3869018554688,
+        "error": -0.000020978927750547882
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 import { ArcRotateCamera, Color3, Color4, DirectionalLight, Engine, HemisphericLight, Matrix,
   MeshBuilder, PBRMaterial, Ray, Scene, StandardMaterial, TransformNode, Vector3 } from '@babylonjs/core';
 import { BrisaliaVillage } from '../src/world/BrisaliaVillage.ts';
-import { BRISALIA_BUILDINGS, BRISALIA_SCALE } from '../src/world/brisaliaLayout.ts';
+import { CASTLE_BUILDING, BRISALIA_SCALE } from '../src/world/brisaliaLayout.ts';
 import { EnvironmentSystem } from '../src/world/climate/EnvironmentSystem.ts';
 import { DAYS_PER_SEASON, SEASONS } from '../src/world/climate/ClimateModel.ts';
 import { getSeasonalIvyState, IVY_SEASONS } from '../src/world/materials/SeasonalIvyMaterial.ts';
@@ -20,8 +20,10 @@ const groundMaterial=new StandardMaterial('review-ground',scene);groundMaterial.
 const parent=new TransformNode('village',scene);
 // A nonzero parent translation verifies that projection follows world placement.
 parent.position.set(12,0,-9);
-const village=new BrisaliaVillage(scene,parent,{x:0,z:0},()=>0);
-const castle=BRISALIA_BUILDINGS.find(b=>b.id==='B28');
+const castle=CASTLE_BUILDING;
+// Isolated material fixture: the castle now needs an explicit placement.
+const village=new BrisaliaVillage(scene,parent,{x:0,z:0},()=>0,
+  {x:castle.x,z:castle.z,yaw:castle.yaw,groundHeight:-1.35*BRISALIA_SCALE});
 camera.setTarget(new Vector3(castle.x+12,26,castle.z-9));
 // setTarget preserves the old eye position; move the review into the detail LOD.
 camera.alpha=.3;camera.beta=1.24;camera.radius=185;

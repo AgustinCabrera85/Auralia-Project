@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict');
+const {NullEngine,Scene,MeshBuilder,Matrix}=require('@babylonjs/core');
+const {updateInstanceBuffer}=require('../.test-build/world/DynamicInstanceBuffers.js');
+const engine=new NullEngine(),scene=new Scene(engine),mesh=MeshBuilder.CreateBox('instances',{},scene);
+const matrices=xs=>Float32Array.from(xs.flatMap(x=>Array.from(Matrix.Translation(x,0,0).m)));
+let creates=0,bounds=0;
+const originalSet=mesh.thinInstanceSetBuffer.bind(mesh),originalBounds=mesh.thinInstanceRefreshBoundingInfo.bind(mesh);
+mesh.thinInstanceSetBuffer=(...args)=>{creates++;return originalSet(...args)};
+mesh.thinInstanceRefreshBoundingInfo=(...args)=>{bounds++;return originalBounds(...args)};
+try{
+  updateInstanceBuffer(mesh,'matrix',matrices([100,110,120]),16);
+  assert.equal(mesh.thinInstanceCount,3);
+  assert.equal(creates,1);assert.equal(bounds,1);
+  assert.ok(mesh.getBoundingInfo().minimum.x>99,'unused capacity must not pull the bounds to the origin');
+  updateInstanceBuffer(mesh,'matrix',matrices([200,210]),16);
+  assert.equal(creates,1,'reuse the same GPU allocation while walking');
+  assert.equal(bounds,2,'one bounds evaluation per refresh');
+  assert.equal(mesh.thinInstanceCount,2);
+  assert.ok(mesh.getBoundingInfo().minimum.x>199,'removed instances do not retain old bounds');
+  assert.ok(mesh.getBoundingInfo().maximum.x<211);
+  updateInstanceBuffer(mesh,'matrix',new Float32Array(),16);
+  assert.equal(mesh.thinInstanceCount,0);assert.equal(creates,1);
+  updateInstanceBuffer(mesh,'matrix',matrices([300,310,320,330]),16);
+  assert.equal(creates,1,'a temporarily empty selection retains its allocation');
+  updateInstanceBuffer(mesh,'matrix',matrices([0,10,20,30,40]),16);
+  assert.equal(creates,2,'grow only when capacity is exceeded');
+  updateInstanceBuffer(mesh,'treeView',new Float32Array([0,1,2,3,4]),1);
+  updateInstanceBuffer(mesh,'treeView',new Float32Array([4,3,2,1,0]),1);
+  assert.equal(creates,3,'reuse additional instance attributes');
+  assert.equal(mesh.thinInstanceCount,5,'additional attributes do not change matrix count');
+  assert.equal(mesh.doNotSyncBoundingInfo,false);
+  console.log('Dynamic instances: stable GPU storage, growth, shrink, empty selection and exact active bounds passed.');
+}finally{scene.dispose();engine.dispose();}

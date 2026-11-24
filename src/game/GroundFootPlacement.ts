@@ -126,14 +126,17 @@ export class GroundFootPlacement {
     }
     const wantedKnee=hip.add(direction.scale(along)).addInPlace(pole.scale(bend));
     // Preserve the ankle's authored world orientation while changing the leg.
-    const forward=Vector3.TransformNormal(new Vector3(0,0,1),leg.foot.getWorldMatrix());
-    const up=Vector3.TransformNormal(new Vector3(0,1,0),leg.foot.getWorldMatrix());
+    const orientation=leg.foot.getWorldMatrix().clone();
     this.aim(leg.upper,knee.subtract(hip),wantedKnee.subtract(hip));
     const newKnee=this.point(leg.knee),newFoot=this.point(leg.foot);
     this.aim(leg.knee,newFoot.subtract(newKnee),target.subtract(newKnee));
+    // Restore the whole ankle frame against its new parent in one operation.
+    // Two successive axis alignments undo each other and introduce toe-in.
+    const parent=leg.foot.parent as TransformNode;
+    const local=orientation.multiply(Matrix.Invert(parent.computeWorldMatrix(true)));
+    this.remember(leg.foot);
+    local.decompose(undefined,leg.foot.rotationQuaternion!);
     leg.foot.computeWorldMatrix(true);
-    this.aim(leg.foot,Vector3.TransformNormal(new Vector3(0,0,1),leg.foot.getWorldMatrix()),forward);
-    this.aim(leg.foot,Vector3.TransformNormal(new Vector3(0,1,0),leg.foot.getWorldMatrix()),up);
   }
 
   private apply():void{

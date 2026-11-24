@@ -7,7 +7,7 @@ import { WAYFINDING_ASSETS, type WayfindingAsset } from './wayfindingAssets';
 import type { GuideRoute, WayfindingSite } from './wayfindingData';
 import { WayfindingSway } from './WayfindingSway';
 import { addWayfindingEndGrain } from './wayfindingGeometry';
-import { setMaterialLightBudget } from './SceneLightBudget';
+import { setLightEnabled, setMaterialLightBudget } from './SceneLightBudget';
 import { gpuAssetUrl } from './GpuAssets';
 
 /** Region-independent road furniture, with inscriptions painted on both faces.
@@ -197,7 +197,7 @@ export class WayfindingSystem {
       setReceivers(lamp.light,[...lamp.furniture,...pbr]);
       setReceivers(lamp.characterLight,standard);
       // An empty Babylon inclusion list means every mesh, not no meshes.
-      if(!standard.length)lamp.characterLight.setEnabled(false);
+      if(!standard.length)setLightEnabled(lamp.characterLight,false);
     }
     this.characterRefresh=0;
   }
@@ -215,8 +215,8 @@ export class WayfindingSystem {
       return {l,d:Math.hypot(p.x-observer.x,p.z-observer.z)};}).sort((a,b)=>a.d-b.d);
     for(let i=0;i<nearby.length;i++){
       const {l,d}=nearby[i],strength=i<2&&d<90&&l.root.isEnabled()?Math.max(0,Math.min(1,night)):0;
-      l.light.intensity=60*strength;l.light.setEnabled(strength>0);
-      l.characterLight.intensity=1.5*strength;l.characterLight.setEnabled(strength>0&&this.standardCharacters.length>0);
+      l.light.intensity=60*strength;setLightEnabled(l.light,strength>0);
+      l.characterLight.intensity=1.5*strength;setLightEnabled(l.characterLight,strength>0&&this.standardCharacters.length>0);
     }
     for(const asset of this.assets.values())for(const material of asset.materials)if(material instanceof PBRMaterial&&material.name==='Vidrio ámbar')
       material.emissiveColor.set(.82*(.3+.7*night),.69*(.3+.7*night),.52*(.3+.7*night));

@@ -5,6 +5,7 @@ import {nearTerrainHeightAt,nearTerrainSurfaceAt} from '../terrainLod';
 import {grassHabitatSampler} from './GrassHabitat';
 import {TRAVERSAL} from '../../game/traversalRules';
 import {brisaliaPlatformWeight,brisaliaRoadEdge,inBrisaliaFootprint} from '../brisaliaLayout';
+import {vegetationTouchesWater} from '../geography/VegetationWater';
 
 export const GRASS_PATCH={size:24,spacing:1.5,nearStart:30,nearEnd:46,
  detailFadeStart:72,detailEnd:96,fadeStart:180,farEnd:240,prefetch:48,
@@ -44,22 +45,28 @@ export function* generateGrassPatchSteps(px:number,pz:number,world:ActiveWorldGe
   if(!detail&&!distant)continue;
   const x=(gx+.15+.7*hash01(gx,gz,300))*GRASS_PATCH.spacing;
   const z=(gz+.15+.7*hash01(gx,gz,301))*GRASS_PATCH.spacing;
+  const dryDensity=Math.pow(1-(world.desertAt?.(x,z)??0),2);
+  if(dryDensity===0)continue;
   const localX=x-(world.town?.x??Infinity),localZ=z-(world.town?.z??Infinity);
   const village=world.town?brisaliaPlatformWeight(localX,localZ):0;
+  const regionalGrass=world.vegetationAt?.(x,z).grass??1;
   // Broad, tall clumps cover the verge with fewer instances than short turf.
   const density=grassPatchDensity(x,z)*(1-village)+(.56+.18*noise(x,z,18))*village;
-  if(hash01(gx,gz,302)>density*fertility)continue;
+  if(hash01(gx,gz,302)>density*fertility*dryDensity*(regionalGrass*(1-village)+village))continue;
+  const width=.85+hash01(gx,gz,305)*.4+village*.35;
+  const radius=width*.85+.15;
+  if((world.vegetationClearanceAt?.(x,z)??Infinity)<radius+.4)continue;
   // The old geography mask clears a whole circle around town. Only this
   // settlement uses its exact layout; other geographic road masks still apply.
-  if(village>0&&(inBrisaliaFootprint(localX,localZ,.9)||brisaliaRoadEdge(localX,localZ)<1.1))continue;
+  if(village>0&&(inBrisaliaFootprint(localX,localZ,radius)||brisaliaRoadEdge(localX,localZ)<Math.max(1.1,radius)))continue;
   const surface=nearTerrainSurfaceAt(x,z,heightAt),slope=Math.hypot(surface.slopeX,surface.slopeZ);
   if(slope>.65||surface.height<=world.source.seaLevel+1.1)continue;
-  if(!isGreen(x,z)||!isGreen(x-.6,z)||!isGreen(x+.6,z)||!isGreen(x,z-.6)||!isGreen(x,z+.6))continue;
+  if(!isGreen(x,z)||!isGreen(x-radius,z)||!isGreen(x+radius,z)||!isGreen(x,z-radius)||!isGreen(x,z+radius))continue;
   const water=world.waterAt(x,z),mask=world.masks(x,z);
   if(water&&surface.height<=water.level+.55||village===0&&(mask.road>.4||mask.existingRoadClearance<2))continue;
+  if(vegetationTouchesWater(world,x,z,radius+.4))continue;
   const flowers=.015+village*(.025+.08*smooth((noise(x,z,14)-.35)/.4));
   const variant=hash01(gx,gz,303)>1-flowers?'flower':GRASS_VARIANTS[Math.floor(hash01(gx,gz,304)*3)];
-  const width=.85+hash01(gx,gz,305)*.4+village*.35;
   const height=GRASS_HEIGHT.min+hash01(gx,gz,306)*(GRASS_HEIGHT.max-GRASS_HEIGHT.min);
   const matrix=Float32Array.from(Matrix.Compose(new Vector3(width,height,width),
    Quaternion.RotationAxis(Vector3.Up(),hash01(gx,gz,307)*Math.PI*2),new Vector3(x,surface.height,z)).m);

@@ -1,7 +1,7 @@
 import { Color3, Light, Material, Mesh, MeshBuilder, MultiMaterial, PBRMaterial,
   PointLight, Ray, Scene, StandardMaterial, TransformNode, Vector3,
   type AbstractMesh } from '@babylonjs/core';
-import { setMaterialLightBudget } from './SceneLightBudget';
+import { setLightEnabled, setMaterialLightBudget } from './SceneLightBudget';
 
 export interface EntranceLampMount { x:number; y:number; z:number; front:number; doorMin:number[]; doorMax:number[] }
 
@@ -114,7 +114,7 @@ export class BrisaliaEntranceLanterns {
       const receivers=[...l.receivers,...l.meshes,...(i===0&&d<22?this.characterMeshes:[])];
       if(receivers.length!==l.light.includedOnlyMeshes.length||receivers.some((m,j)=>m!==l.light.includedOnlyMeshes[j]))
         l.light.includedOnlyMeshes=receivers;
-      l.light.intensity=active?95*strength*fade:0;l.light.setEnabled(active);
+      l.light.intensity=active?95*strength*fade:0;setLightEnabled(l.light,active);
     }
   }
 

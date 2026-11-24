@@ -1,0 +1,37 @@
+{
+  "quality": "medium",
+  "stats": {
+    "quality": "medium",
+    "drops": 5200,
+    "splashes": 800,
+    "drawCalls": 2,
+    "surfaceReady": true,
+    "surfaceProgress": 1,
+    "surfaceBudget": 128,
+    "intensity": 1,
+    "disposed": false
+  },
+  "resources": {
+    "meshes": 2,
+    "textures": 1,
+    "oldRain": 0
+  },
+  "roof": {
+    "id": "B19",
+    "x": -1165.857142857143,
+    "z": 1644.4285714285713,
+    "height": 32.057337446893946,
+    "sampled": 32.057337446893946,
+    "indexedComparisons": 81,
+    "solidBatches": 415
+  },
+  "unloadedNull": true,
+  "pause": true,
+  "lightIntensity": 0.6790619232662174,
+  "cpuMs": {
+    "samples": 290,
+    "median": 0,
+    "p95": 4.9000000059604645,
+    "max": 11.199999988079071
+  }
+}

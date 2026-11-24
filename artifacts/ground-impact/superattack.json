@@ -1,0 +1,168 @@
+{
+  "normalQNoEffect": true,
+  "levels": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "oneImpactPerX": true,
+  "cancelBeforeImpact": true,
+  "stableResources": {
+    "meshes": 6,
+    "textures": 1
+  },
+  "events": [
+    {
+      "phase": "flat-X-level-1",
+      "accepted": true,
+      "point": {
+        "x": -1184.8355796916655,
+        "y": 11.04876628796277,
+        "z": 2029.1180824727448
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 1,
+      "elapsed": 1.1157000000178816,
+      "marker": 1.1,
+      "frame": 96.39648000154497,
+      "animation": "Sword And Shield Casting"
+    },
+    {
+      "phase": "flat-X-level-2",
+      "accepted": true,
+      "point": {
+        "x": -1184.8394884815464,
+        "y": 11.04876628796277,
+        "z": 2029.1538085173447
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 2,
+      "elapsed": 1.1090000000000002,
+      "marker": 1.1,
+      "frame": 95.81760000000003,
+      "animation": "Sword And Shield Casting"
+    },
+    {
+      "phase": "flat-X-level-3",
+      "accepted": true,
+      "point": {
+        "x": -1184.8346425320142,
+        "y": 11.04876628796277,
+        "z": 2029.1437505753956
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 3,
+      "elapsed": 1.1160000000298025,
+      "marker": 1.1,
+      "frame": 96.42240000257493,
+      "animation": "Sword And Shield Casting"
+    },
+    {
+      "phase": "flat-X-level-4",
+      "accepted": true,
+      "point": {
+        "x": -1184.8694784684667,
+        "y": 11.04876628796277,
+        "z": 2029.186917667129
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 4,
+      "elapsed": 1.1212999999523166,
+      "marker": 1.1,
+      "frame": 96.88031999588016,
+      "animation": "Sword And Shield Casting"
+    },
+    {
+      "phase": "repeat-X",
+      "accepted": true,
+      "point": {
+        "x": -1184.8714197270651,
+        "y": 11.04876628796277,
+        "z": 2029.1937846654437
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 4,
+      "elapsed": 1.1030000000298021,
+      "marker": 1.1,
+      "frame": 95.29920000257492,
+      "animation": "Sword And Shield Casting"
+    },
+    {
+      "phase": "capture-X",
+      "accepted": true,
+      "point": {
+        "x": -1184.8697397534174,
+        "y": 11.04876628796277,
+        "z": 2029.1850944318337
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 4,
+      "elapsed": 1.1272999999821183,
+      "marker": 1.1,
+      "frame": 97.39871999845502,
+      "animation": "Sword And Shield Casting"
+    }
+  ],
+  "captured": {
+    "event": {
+      "phase": "capture-X",
+      "accepted": true,
+      "point": {
+        "x": -1184.8697397534174,
+        "y": 11.04876628796277,
+        "z": 2029.1850944318337
+      },
+      "normal": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "radius": 3.4,
+      "level": 4,
+      "elapsed": 1.1272999999821183,
+      "marker": 1.1,
+      "frame": 97.39871999845502,
+      "animation": "Sword And Shield Casting"
+    },
+    "stats": {
+      "activeBursts": 1,
+      "dustPuffs": 0,
+      "debris": 22,
+      "maxDrawCalls": 6,
+      "maxDustPuffs": 96,
+      "maxDebris": 44
+    },
+    "age": 0
+  }
+}

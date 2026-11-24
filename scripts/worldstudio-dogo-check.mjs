@@ -2,8 +2,12 @@ import assert from 'node:assert/strict';
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 export async function checkDogo(evaluate,capture,save){
   await evaluate(`(()=>{const w=window.__auraliaGame.world;w.engine.maxFPS=30;w.climate.setElapsedHours(10);const update=w.climate.update.bind(w.climate);w.climate.update=()=>update(0);})()`);
+  // Isolate companion travel from BirdHabitat scanning tiles evicted by travel.
+  // The bird streaming failure is outside this companion regression check.
+  await evaluate(`window.__auraliaGame.world.birds.update=()=>{}`);
   const initial=await evaluate('window.__auraliaGame.world.geographicStatus.companion');
-  assert.ok(initial.ready&&initial.registeredActions.length===22,JSON.stringify(initial));
+  assert.ok(initial.ready&&initial.registeredActions.length===36,JSON.stringify(initial));
+  assert.ok(['Trot','Sniff','Swim_Forward','Swim_Idle'].every(action=>initial.registeredActions.includes(action)));
   await capture('dogo-brisalia');
   // Same frozen pose/light/camera: validate visible shadows, not just flags.
   await evaluate(`(()=>{const w=window.__auraliaGame.world;window.__loops=[...w.engine._activeRenderLoops];w.engine.stopRenderLoop();w.scene.animationsEnabled=false;w.scene.render();})()`);
@@ -26,7 +30,7 @@ export async function checkDogo(evaluate,capture,save){
   await evaluate(`window.__auraliaGame.world.setVirtualKey('d',false)`);
   await delay(1400);
   const motion=await evaluate(`(()=>{const w=window.__auraliaGame.world;w.scene.onAfterRenderObservable.remove(window.__dogObserver);return window.__dogMotion;})()`);
-  assert.ok(motion.some(s=>s.angularSpeed>.3&&s.animationWeights.Walk>.05),'turns animate the paws');
+  assert.ok(motion.some(s=>s.angularSpeed>.3&&['Walk','Trot','Run'].some(a=>s.animationWeights[a]>.05)),'turns animate the paws');
   assert.ok(motion.every(s=>s.recoveries===walking.dog.recoveries),'turns never respawn Dogo');
   const curious=[];
   let sniffCapture=false;
@@ -53,16 +57,17 @@ export async function checkDogo(evaluate,capture,save){
     terrainReceivers:w.scene.meshes.filter(m=>m.name.startsWith('terreno-')&&m.receiveShadows).length,
     enabled:w.scene.getLightByName('sol').shadowEnabled};})()`);
   assert.ok(shadows.enabled&&shadows.size.width===1024&&shadows.terrainReceivers>0);
-  assert.ok(shadows.casters.includes('Dogo_primitive0')&&shadows.casters.some(n=>!n.startsWith('Dogo')),'both models cast real shadows');
-  await evaluate(`window.__auraliaGame.world.travelGeographic(1580,-688,'Lago de Nácar')`);await delay(6000);
+  assert.ok(shadows.casters.includes('Dogo_LP')&&shadows.casters.some(n=>!n.startsWith('Dogo')),'both models cast real shadows');
+  // The old coordinate is now a shallow island shelf. Test the deep basin.
+  await evaluate(`window.__auraliaGame.world.travelGeographic(1700,-1000,'Lago de Nácar')`);await delay(6000);
   const water=await evaluate('window.__auraliaGame.world.geographicStatus');
-  assert.ok(['swim','swimIdle'].includes(water.companion.locomotion),'water uses the NLA swim clips');
+  assert.ok(['swim','swimIdle'].includes(water.companion.locomotion),'water uses the adapted swim cycles: '+JSON.stringify({position:water.position,companion:water.companion}));
   await capture('dogo-nadando');
   await evaluate(`window.__auraliaGame.world.travelFloating('albor')`);await delay(6000);
   const realm=await evaluate('window.__auraliaGame.world.geographicStatus');
   assert.ok(realm.companion.visible&&Math.abs(realm.companion.position.y-realm.position.y)<8,'companion follows realm travel');
   await capture('dogo-albor');
-  const metrics=await evaluate(`(()=>{const w=window.__auraliaGame.world,d=w.dogo;return {fps:w.engine.getFps(),heapBytes:performance.memory?.usedJSHeapSize,meshTriangles:d.asset.meshes.reduce((n,m)=>n+m.getTotalIndices()/3,0),activeClips:d.status.activeClips,scale:d.root.getChildMeshes().find(m=>m.name==='Dogo_primitive0').getBoundingInfo().boundingBox.extendSizeWorld.y*2};})()`);
-  await save('validation',{initial,walking,motion,curious,grass,shadows,feet,water:{position:water.position,companion:water.companion},realm:{position:realm.position,companion:realm.companion},metrics});
+  const metrics=await evaluate(`(()=>{const w=window.__auraliaGame.world,d=w.dogo;return {fps:w.engine.getFps(),heapBytes:performance.memory?.usedJSHeapSize,meshTriangles:d.asset.meshes.reduce((n,m)=>n+m.getTotalIndices()/3,0),activeClips:d.status.activeClips,scale:d.root.getChildMeshes().find(m=>m.name==='Dogo_LP').getBoundingInfo().boundingBox.extendSizeWorld.y*2};})()`);
+  await save('validation',{isolatedBirdUpdates:true,initial,walking,motion,curious,grass,shadows,feet,water:{position:water.position,companion:water.companion},realm:{position:realm.position,companion:realm.companion},metrics});
   console.log('Dogo browser: follow, turns, braking, sniff, curiosity, grass, shadows, swim and realm travel OK',metrics);
 }

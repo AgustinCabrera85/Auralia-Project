@@ -3,10 +3,12 @@ import { BIOME_MATERIALS, BIOME_TEXTURE_SIZE } from './BiomeMaterialCatalog';
 
 /** Two shared GPU textures instead of 34 independently bound maps per chunk. */
 export function createBiomeTextureArrays(scene:Scene):{
-  albedo:RawTexture2DArray;normal:RawTexture2DArray;ready:Promise<void>;dispose:()=>void
+  albedo:RawTexture2DArray;normal:RawTexture2DArray;meanColors:Float32Array;ready:Promise<void>;dispose:()=>void
 }{
   const size=BIOME_TEXTURE_SIZE,depth=BIOME_MATERIALS.length,stride=size*size*4;
   const colors=new Uint8Array(stride*depth),normals=new Uint8Array(stride*depth);
+  const meanColors=new Float32Array(depth*3);
+  for(let i=0;i<depth;i++)meanColors.set([.4,.47,.3],i*3);
   for(let i=0;i<colors.length;i+=4){
     colors[i]=102;colors[i+1]=120;colors[i+2]=77;colors[i+3]=255;
     normals[i]=128;normals[i+1]=128;normals[i+2]=255;normals[i+3]=255;
@@ -34,13 +36,21 @@ export function createBiomeTextureArrays(scene:Scene):{
         try {
           if(disposed)return;
           ctx.clearRect(0,0,size,size);ctx.drawImage(bitmap,0,0,size,size);
-          (channel==='albedo'?colors:normals).set(ctx.getImageData(0,0,size,size).data,layer*stride);
+          const pixels=ctx.getImageData(0,0,size,size).data;
+          (channel==='albedo'?colors:normals).set(pixels,layer*stride);
+          if(channel==='albedo'){
+            // Small, evenly dispersed sample of the already decoded image.
+            // Distant cliffs retain this material's colour without a tiled motif.
+            let r=0,g=0,b=0,count=0;
+            for(let i=0;i<pixels.length;i+=4*65){r+=pixels[i];g+=pixels[i+1];b+=pixels[i+2];count++;}
+            meanColors.set([r/(count*255),g/(count*255),b/(count*255)],layer*3);
+          }
         } finally {bitmap.close();}
       }
       if(!disposed){albedo.update(colors);normal.update(normals);}
     } finally {canvas.width=canvas.height=1;}
   })();
-  return {albedo,normal,ready,dispose:()=>{
+  return {albedo,normal,meanColors,ready,dispose:()=>{
     disposed=true;controller.abort();albedo.dispose();normal.dispose();
   }};
 }

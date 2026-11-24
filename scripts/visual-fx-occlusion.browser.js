@@ -2,10 +2,10 @@
  const w=window.__auraliaGame.world;w.engine.stopRenderLoop();
  const source=await(await fetch('/src/world/BrisaliaVillage.ts')).text();
  const B=await import(source.match(/from\s+["']([^"']+@babylonjs_core[^"']*)["']/)[1]);
- const {RainField}=await import('/src/world/climate/RainField.ts');
+ const {RainFX}=await import('/src/world/climate/RainFX.js');
  const scene=new B.Scene(w.engine),camera=new B.ArcRotateCamera('fx-depth-test',-Math.PI/2,1.1,9,new B.Vector3(0,1,0),scene);
  camera.minZ=.01;
- const fx=new w.doubleJumpFX.constructor(scene,{poolSize:1}),rain=new RainField(scene,camera);
+ const fx=new w.doubleJumpFX.constructor(scene,{poolSize:1}),rain=new RainFX(scene,{quality:'low',intensity:0,groundY:0});
  scene.clearColor=new B.Color4(.1,.1,.1,1);scene.getAnimationRatio=()=>1;
  const cover=B.MeshBuilder.CreatePlane('opaque-depth-cover',{size:40,sideOrientation:B.Mesh.DOUBLESIDE},scene);
  cover.position.copyFrom(camera.position.scale(.6).add(camera.target.scale(.4)));
@@ -24,7 +24,8 @@
   // Rain uses the same normal depth pipeline. Put the cover within its 0.8m near fade,
   // so all rain is behind it and compare GPU pixels, not only material flags.
   fx.reset();cover.setEnabled(true);cover.position.copyFrom(camera.position.scale(.97).add(camera.target.scale(.03)));
-  const rainBase=await pixels();rain.update({...w.climate.frame,weatherMix:{...w.climate.frame.weatherMix,rain:1}},false,.1);
+  const rainBase=await pixels();rain.setIntensity(1,0);
+  for(let i=0;i<12;i++)rain.update(.1,camera);
   await scene.whenReadyAsync();const rainHiddenPixels=difference(rainBase,await pixels());
   if(rainHiddenPixels)throw Error(`Rain visible through opaque cover: ${rainHiddenPixels} pixels`);
   return {doubleJumpHiddenPixels:hiddenPixels,doubleJumpVisiblePixels:visiblePixels,rainHiddenPixels,resolution:[w.engine.getRenderWidth(),w.engine.getRenderHeight()]};

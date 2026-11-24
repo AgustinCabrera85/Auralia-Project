@@ -72,20 +72,53 @@ class MemoryRepository{
     const gripRoot=scene.meshes.find(candidate=>candidate.name==='__root__'&&
       candidate.metadata?.swordLevel===level);
     gripRoot.computeWorldMatrix(true);hand.computeWorldMatrix(true);
+    const lengthScale=Vector3.TransformNormal(Vector3.Up(),gripRoot.getWorldMatrix()).length();
+    const widthScale=Vector3.TransformNormal(Vector3.Right(),gripRoot.getWorldMatrix()).length();
+    assert.ok(Math.abs(lengthScale/widthScale-(level===4?1.3:1))<1e-5,
+      'only level four is 30 percent longer along the blade, without widening its grip');
     const palmSurface=Vector3.TransformCoordinates(
       fingerBase.position.scale(.75).add(new Vector3(0,0,3.7)),hand.getWorldMatrix());
     const handleCenter=Vector3.TransformCoordinates(new Vector3(0,-.07,0),
       gripRoot.getWorldMatrix());
     assert.ok(Vector3.Distance(handleCenter,palmSurface)<.001,
       'the middle of the handle rests against the inner palm surface');
+    const points=[];assert.equal(visual.bladeWorldToRef(points),true);
+    assert.ok(points.length>6&&points.length<=13,'bounded contact coverage along the actual blade');
+    const tip=new Vector3();visual.tipWorldToRef(tip);
+    assert.ok(points[0].equalsWithEpsilon(tip,1e-6));
+    const positions=mesh.getVerticesData('position'),matrix=mesh.computeWorldMatrix(true),vertex=new Vector3();
+    for(const point of points){
+      let nearest=Infinity;
+      for(let i=0;i<positions.length;i+=3){vertex.set(positions[i],positions[i+1],positions[i+2]);Vector3.TransformCoordinatesToRef(vertex,matrix,vertex);nearest=Math.min(nearest,Vector3.Distance(point,vertex));}
+      assert.ok(nearest<1e-4,'each contact sample belongs to the rendered weapon');
+    }
+    const original=points.map(p=>p.clone());hand.position.x+=2;visual.bladeWorldToRef(points);
+    assert.ok(points.every((p,i)=>Math.abs(p.x-original[i].x-2)<1e-4),'contact samples follow the animated parent');
+    hand.position.x-=2;
   }
   assert.ok(firstLength>.8&&firstLength<1.6);
-  assert.ok(lastLength>1.5&&lastLength<2.7,'the fourth blade remains proportional to Santi');
+  assert.ok(lastLength>1.5&&lastLength<3.5,'the fourth blade includes the requested 1.3x length');
   assert.deepEqual(imports,BRISALIA_SWORD_MODELS);
   visual.setLevel(0);assert.equal(visual.level,0);
   visual.setLevel(4);assert.equal(visual.level,4,'re-equipping reuses the current model');
   assert.equal(imports.length,4);
   visual.dispose();assert.equal(scene.meshes.filter(mesh=>mesh.metadata?.brisaliaSword&&!mesh.isDisposed()).length,0);
+
+  // Loading an owned sword while unarmed must not equip it or load it twice.
+  const prepared=new BrisaliaSwordVisual(scene,hand,importer),beforePreload=imports.length;
+  const preparing=prepared.preload(3);
+  prepared.setLevel(3);prepared.setLevel(0);prepared.setLevel(3);prepared.setLevel(0);
+  await preparing;
+  assert.equal(imports.length,beforePreload+1,'rapid toggles share the pending import');
+  assert.equal(prepared.level,0,'preloading keeps the weapon hidden');
+  const equippedAt=performance.now();prepared.setLevel(3);
+  assert.equal(prepared.level,3,'prepared sword is visible synchronously on selection');
+  const preparedEquipMs=performance.now()-equippedAt;
+  assert.equal(imports.length,beforePreload+1,'equipping a prepared weapon requires no import');
+  prepared.setLevel(4);prepared.setLevel(3);await prepared.whenReady();
+  assert.equal(prepared.level,3,'a late obsolete import cannot replace the selected cached sword');
+  prepared.dispose();
+  console.log('Prepared sword equip (CPU ms):',preparedEquipMs.toFixed(3));
 
   // The actual rig rotates the hand and changes its pose while walking.
   const santiBytes=fs.readFileSync('public/assets/characters/santi/Santi_NLA_SK_Opt.glb');

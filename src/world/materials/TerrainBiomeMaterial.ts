@@ -5,7 +5,10 @@ import { createTerrainMaterial as createLegacyMaterial } from './TerrainMaterial
 import type { TerrainMaterialConfig } from './TerrainMaterial';
 import { LANDSCAPE_REGIONS } from '../landscapeRegions';
 import { CASCADE_LAGOON } from '../lagoonData';
+import { OCASO_DESERT_GLSL } from '../geography/OcasoDesert';
 import { bindCharacterShadow, CHARACTER_SHADOW_GLSL, CHARACTER_SHADOW_UNIFORMS } from './CharacterShadowSampling';
+import { MOUNTAIN_APPEARANCE_GLSL } from './MountainAppearance';
+import { TerrainRoadPaint, ROAD_GLSL, ROAD_UNIFORMS, ROAD_SAMPLERS } from './TerrainRoadPaint';
 
 const SHADER='auraliaBiomeTerrain';
 const regionsGLSL=Object.entries(LANDSCAPE_REGIONS).map(([name,r])=>
@@ -41,6 +44,7 @@ uniform sampler2DArray biomeAlbedos;
 uniform sampler2DArray biomeNormals;
 uniform sampler2D bedCaustics;
 uniform vec3 surfaceParams[${BIOME_MATERIALS.length}];
+uniform vec3 surfaceMeans[${BIOME_MATERIALS.length}];
 uniform vec3 cameraPosition;
 uniform vec3 sunDirection;
 uniform vec3 sunColor;
@@ -49,9 +53,11 @@ uniform float fogDensity;
 uniform float macroStrength;
 uniform float waterTime;
 uniform float legacyGeography;
+${ROAD_GLSL}
 ${CHARACTER_SHADOW_GLSL}
+${OCASO_DESERT_GLSL}
 vec3 geometricNormal,dpdx,dpdy;
-float bumpFade;
+float bumpFade,stoneTextureDetail;
 struct Surface {vec3 color;vec3 normal;float roughness;};
 vec2 rotateUV(vec2 p,float a){float c=cos(a),s=sin(a);return vec2(c*p.x-s*p.y,s*p.x+c*p.y);}
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -92,14 +98,23 @@ Surface layer(float index,vec2 plane,vec2 du,vec2 dv){
 Surface mixSurface(Surface a,Surface b,float weight){
   return Surface(mix(a.color,b.color,weight),mix(a.normal,b.normal,weight),mix(a.roughness,b.roughness,weight));
 }
+${MOUNTAIN_APPEARANCE_GLSL}
 Surface floorLayer(float index){return layer(index,vWorldPos.xz,dpdx.xz,dpdy.xz);}
+Surface cliffProjection(float index,vec2 plane,vec2 du,vec2 dv){
+  if(legacyGeography>.5)return layer(index,plane,du,dv);
+  return stoneLayer(index,plane,du,dv);
+}
 Surface cliffLayer(float index){
   vec3 axes=pow(abs(geometricNormal),vec3(4.0));axes/=max(dot(axes,vec3(1.0)),.00001);
-  Surface x=layer(index,vWorldPos.zy,dpdx.zy,dpdy.zy);
-  Surface y=floorLayer(index);
-  Surface z=layer(index,vWorldPos.xy,dpdx.xy,dpdy.xy);
+  // Drop negligible projections before texture fetches. On a steep face this
+  // usually removes the floor projection; gradients were computed beforehand.
+  axes*=step(vec3(.01),axes);axes/=max(dot(axes,vec3(1.0)),.00001);
+  Surface x=Surface(vec3(0.0),vec3(0.0),0.0),y=x,z=x;
+  if(axes.x>0.0)x=cliffProjection(index,vWorldPos.zy,dpdx.zy,dpdy.zy);
+  if(axes.y>0.0)y=cliffProjection(index,vWorldPos.xz,dpdx.xz,dpdy.xz);
+  if(axes.z>0.0)z=cliffProjection(index,vWorldPos.xy,dpdx.xy,dpdy.xy);
   return Surface(x.color*axes.x+y.color*axes.y+z.color*axes.z,
-    x.normal*axes.x+y.normal*axes.y+z.normal*axes.z,y.roughness);
+    x.normal*axes.x+y.normal*axes.y+z.normal*axes.z,x.roughness*axes.x+y.roughness*axes.y+z.roughness*axes.z);
 }
 void paint(inout Surface ground,float index,float amount){
   if(amount>.001)ground=mixSurface(ground,floorLayer(index),amount);
@@ -110,9 +125,15 @@ void main(){
   dpdx=dFdx(vWorldPos);dpdy=dFdy(vWorldPos);
   float distanceToCamera=length(vWorldPos-cameraPosition);
   bumpFade=1.0-smoothstep(70.0,240.0,distanceToCamera);
+  // Keep filtered grain on distant slopes; stochastic cells break the motif
+  // without flattening the material to a single colour at landscape distance.
+  stoneTextureDetail=mix(1.0,.55,smoothstep(65.0,800.0,distanceToCamera));
   vec2 p=vWorldPos.xz;
   ${regionsGLSL}
-  if(legacyGeography<.5){forest=wetland=lake=steppe=sierra=alpine=desert=volcanic=cursed=jungle=0.0;}
+  if(legacyGeography<.5){
+    forest=wetland=lake=steppe=sierra=alpine=volcanic=cursed=jungle=0.0;
+    desert=ocasoDesertMask(p);
+  }
   wetland=max(wetland,lake);
   vec4 weights=max(vWeights,vec4(0.0));vec2 extra=max(vExtras,vec2(0.0));
   float total=max(dot(weights,vec4(1.0))+extra.x+extra.y,.00001);
@@ -138,8 +159,10 @@ void main(){
   Surface rock=ground;
   if(weights.z>.001){
     rock=cliffLayer(${materialLayer('volcanico_basalto')}.0);
-    float stoneValue=dot(rock.color,vec3(.299,.587,.114));
-    rock.color=mix(rock.color,vec3(stoneValue)*vec3(1.10,1.12,1.10),.78)*1.22;
+    if(legacyGeography>.5){
+      float stoneValue=dot(rock.color,vec3(.299,.587,.114));
+      rock.color=mix(rock.color,vec3(stoneValue)*vec3(1.10,1.12,1.10),.78)*1.22;
+    }else weatherMountain(rock,desert,volcanic,cursed);
     if(desert>.001)rock=mixSurface(rock,cliffLayer(${materialLayer('badlands_arcilla_roja')}.0),desert);
     if(volcanic>.001)rock=mixSurface(rock,cliffLayer(${materialLayer('volcanico_basalto')}.0),volcanic);
     if(cursed>.001)rock=mixSurface(rock,cliffLayer(${materialLayer('tierra_maldita')}.0),cursed*.75);
@@ -165,6 +188,15 @@ void main(){
     smoothstep(.48,.86,geometricNormal.y)*(1.0-volcanic)*(1.0-extra.y);
   if(snowCover>.001){Surface snow=floorLayer(${materialLayer('snow')}.0);
     albedo=mix(albedo,snow.color,snowCover);normal=mix(normal,snow.normal,snowCover);roughness=mix(roughness,.97,snowCover);}
+  vec4 road=terrainRoad(p);
+  if(road.a>.001){
+    vec2 uv=p/7.27;
+    vec3 cobbles=texture2D(roadAlbedo,uv).rgb*road.rgb;
+    vec3 detail=texture2D(roadNormal,uv).rgb*2.0-1.0;detail.xy*=.55*bumpFade;
+    albedo=mix(albedo,cobbles,road.a);
+    normal=mix(normal,tangentNormal(normalize(detail),dpdx.xz/7.27,dpdy.xz/7.27),road.a);
+    roughness=mix(roughness,.92,road.a);
+  }
   vec3 N=normalize(normal),L=normalize(sunDirection),V=normalize(cameraPosition-vWorldPos);
   float ambient=clamp(.65+.25*N.y,.36,1.0);
   float sunVisibility=characterSunVisibility(vWorldPos);
@@ -201,19 +233,24 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,u
   const textures=createBiomeTextureArrays(scene);
   const material=new ShaderMaterial('auralia-biome-terrain',scene,{vertex:SHADER,fragment:SHADER},{
     attributes:['position','normal','color','uv'],
-    uniforms:['world','worldViewProjection','surfaceParams','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime','legacyGeography',...CHARACTER_SHADOW_UNIFORMS],
-    samplers:['biomeAlbedos','biomeNormals','bedCaustics','characterShadowMap']});
+    uniforms:['world','worldViewProjection','surfaceParams','surfaceMeans','cameraPosition','sunDirection','sunColor','fogColor','fogDensity','macroStrength','waterTime','legacyGeography',...CHARACTER_SHADOW_UNIFORMS,...ROAD_UNIFORMS],
+    samplers:['biomeAlbedos','biomeNormals','bedCaustics','characterShadowMap',...ROAD_SAMPLERS]});
+  const roads=new TerrainRoadPaint(scene,material);
   material.backFaceCulling=false;
   material.setTexture('biomeAlbedos',textures.albedo);material.setTexture('biomeNormals',textures.normal);
   // Babylon shares the existing water mask's internal GPU texture by URL.
   const caustics=new Texture('/assets/water/caustics-refractive-1k.png',scene);
   caustics.wrapU=caustics.wrapV=Texture.WRAP_ADDRESSMODE;material.setTexture('bedCaustics',caustics);
   material.setArray3('surfaceParams',BIOME_MATERIALS.flatMap(m=>[m.scale,m.normalStrength,m.roughness]));
+  material.setArray3('surfaceMeans',Array.from(textures.meanColors));
   material.setFloat('macroStrength',config.macroStrength);
   material.setFloat('legacyGeography',useLegacyGeography?1:0);
   material.metadata={biomeMaterials:{status:'loading',layers:BIOME_MATERIALS.length,
-    samplers:4,gpuBytes:BIOME_TEXTURE_GPU_BYTES,sharedWaterMask:true,sourceSize:1024,runtimeSize:512}};
-  void textures.ready.then(()=>{material.metadata.biomeMaterials.status='ready';}).catch(error=>{
+    samplers:7,gpuBytes:BIOME_TEXTURE_GPU_BYTES,sharedWaterMask:true,sourceSize:1024,runtimeSize:512}};
+  void textures.ready.then(()=>{
+    material.setArray3('surfaceMeans',Array.from(textures.meanColors));
+    material.metadata.biomeMaterials.status='ready';
+  }).catch(error=>{
     if(error?.name==='AbortError')return;
     material.metadata.biomeMaterials.status='failed';
     console.error('[Auralia] No se pudieron cargar los materiales de biomas',error);
@@ -229,5 +266,5 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig,u
     material.setColor3('fogColor',scene.fogColor);
     material.setFloat('fogDensity',scene.fogMode===Scene.FOGMODE_EXP2?scene.fogDensity:0);
   });
-  return {material,dispose:()=>{scene.onBeforeRenderObservable.remove(observer);textures.dispose();caustics.dispose();material.dispose();}};
+  return {material,dispose:()=>{scene.onBeforeRenderObservable.remove(observer);roads.dispose();textures.dispose();caustics.dispose();material.dispose();}};
 }

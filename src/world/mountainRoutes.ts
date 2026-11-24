@@ -65,12 +65,6 @@ export function createBridgeRoutes(heightAt:(x:number,z:number)=>number):BridgeR
         const ground=heightAt(x,z),support=ground+(footprint(x,z)-ground)*endBlend;
         return {x,z,y:along>=0&&along<=length?deck:support+.18};
       });
-      for(const portal of MOUNTAIN_PORTALS){
-        if(Math.abs(portal.z-def.a.z)>6)continue;
-        const nearby=points.filter(p=>Math.abs(p.x-portal.x)<10);
-        const level=Math.max(...nearby.map(p=>p.y));
-        for(const p of nearby)p.y=level;
-      }
       const grade=.48*(length+2*approach)/count;
       for(let i=1;i<points.length;i++)points[i].y=Math.max(points[i].y,points[i-1].y-grade);
       for(let i=points.length-2;i>=0;i--)points[i].y=Math.max(points[i].y,points[i+1].y-grade);
@@ -98,14 +92,12 @@ export function bridgeSurfaceAt(routes:readonly BridgeRoute[],x:number,z:number,
 }
 /** Rails block lateral exits, but the two ramp ends remain open. */
 export function bridgeRailBlocks(route:BridgeRoute,x:number,z:number):boolean{
-  if(MOUNTAIN_PORTALS.some(p=>Math.abs(p.z-z)<route.width+3&&Math.abs(p.x-x)<8))return false;
   const a=route.points[0],b=route.points.at(-1)!,dx=b.x-a.x,dz=b.z-a.z;
   const along=((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz);
   return along>0&&along<1;
 }
 export function mountainRouteExcludes(x:number,z:number,radius=0):boolean{
   if(mountainTrailExcludes(x,z,radius))return true;
-  if(MOUNTAIN_PORTALS.some(p=>Math.hypot(x-p.x,z-p.z)<14+radius))return true;
   return BRIDGE_DEFINITIONS.some(b=>{
     const length=Math.hypot(b.b.x-b.a.x,b.b.z-b.a.z),dx=(b.b.x-b.a.x)/length,dz=(b.b.z-b.a.z)/length;
     return routeProjection(x,z,{x:b.a.x-dx*b.maxApproach,z:b.a.z-dz*b.maxApproach,y:0},

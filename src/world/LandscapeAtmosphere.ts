@@ -6,7 +6,9 @@ export const LANDSCAPE_ATMOSPHERE_CONFIG={
   fogDensity:.00072,
   fogColor:'#8db8c7',
   skyColor:'#70afe4',
-  cameraFar:1900,
+  // Enclose the entire loaded terrain cylinder, including tile corners and
+  // high summits. A shorter rotating far plane slices the distant silhouette.
+  cameraFar:3200,
   importedDirectIntensity:.62,
   cliffMetallic:0,
   cliffRoughness:.88,

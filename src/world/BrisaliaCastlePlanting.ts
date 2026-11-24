@@ -1,10 +1,10 @@
 import { ASSET_CATALOG } from './assetCatalog';
-import { BRISALIA_BUILDINGS, BRISALIA_SCALE, brisaliaRoadEdge } from './brisaliaLayout';
+import { CASTLE_BUILDING, BRISALIA_SCALE } from './brisaliaLayout';
 import { hash01, MAINLAND } from './terrainData';
 import { terrainFootprintAt } from './terrainLod';
 import type { VegetationExclusion, VegetationPlacement } from './vegetationData';
 
-const castle=BRISALIA_BUILDINGS.find(b=>b.id==='B28')!;
+const castle=CASTLE_BUILDING;
 const towers=[[-30,-26,5.22],[-30,26,5.22],[30,-26,5.22],[30,26,5.22],[-11.4,-27,4.45],[11.4,-27,4.45]];
 
 /** Signed distance to the outside of the curtain and tower bases, in source metres.
@@ -48,8 +48,7 @@ export function castleBorderCandidates():readonly Candidate[] {
       x-=(d-contact)*nx/length;z-=(d-contact)*nz/length;
     }
     if(z<-24&&Math.abs(x)<8.8)continue;
-    const localX=castle.x+(c*x+s*z)*BRISALIA_SCALE,localZ=castle.z+(-s*x+c*z)*BRISALIA_SCALE;
-    if(brisaliaRoadEdge(localX,localZ)<radius+.4)continue;
+    const localX=(c*x+s*z)*BRISALIA_SCALE,localZ=(-s*x+c*z)*BRISALIA_SCALE;
     candidates.push({kind,x:localX,z:localZ,scale,yaw:hash01(ix,iz,827)*Math.PI*2,
       obstacleRadius:0,castleBorder:true});
   }
@@ -58,13 +57,13 @@ export function castleBorderCandidates():readonly Candidate[] {
 
 /** Uses the existing streamed plant assets, LODs and terrain support. Only B28's
  * coarse tree exclusion is bypassed; player structures and other obstacles still win. */
-export function castlePlantsForChunk(cx:number,cz:number,town:{x:number;z:number},
+export function castlePlantsForChunk(cx:number,cz:number,origin:{x:number;z:number},
   exclusions:readonly VegetationExclusion[],heightAt:(x:number,z:number)=>number):VegetationPlacement[] {
   const result:VegetationPlacement[]=[],size=MAINLAND.chunkSize;
-  if(Math.abs((cx+.5)*size-town.x-castle.x)>150+size/2||
-    Math.abs((cz+.5)*size-town.z-castle.z)>150+size/2)return result;
+  if(Math.abs((cx+.5)*size-origin.x)>150+size/2||
+    Math.abs((cz+.5)*size-origin.z)>150+size/2)return result;
   for(const candidate of castleBorderCandidates()){
-    const x=town.x+candidate.x,z=town.z+candidate.z;
+    const x=origin.x+candidate.x,z=origin.z+candidate.z;
     if(Math.floor(x/size)!==cx||Math.floor(z/size)!==cz)continue;
     const radius=(candidate.kind==='brisaliaMatorral'?.52:.45)*candidate.scale;
     if(exclusions.some(e=>e.buildingId!=='B28'&&Math.hypot(x-e.x,z-e.z)<e.radius+radius))continue;

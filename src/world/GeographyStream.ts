@@ -112,7 +112,7 @@ export class GeographyStream {
   }
 
   /** Build water cooperatively; retain the previous LOD until its replacement is complete. */
-  update(dt=1/60):void{
+  update(dt=1/60,budgetMs=WATER_BUILD_BUDGET_MS):void{
     if(this.usesAuthoredFall()&&this.waterfall){
       this.waterfall.dispose();this.waterfall=null;
     }
@@ -122,9 +122,9 @@ export class GeographyStream {
       impactA:this.impacts[0],impactB:this.impacts[1]});
     this.poolMaterial.setVector4('uImpactC',this.impacts[2]);
     this.waterfall?.update(this.time);
-    const deadline=performance.now()+WATER_BUILD_BUDGET_MS;
+    const deadline=performance.now()+Math.max(0,budgetMs);
     let completed=0;
-    while((this.activeBuild||this.pending.length)&&completed<2){
+    while((this.activeBuild||this.pending.length)&&completed<2&&performance.now()<deadline){
       if(!this.activeBuild){
         const job=this.pending.shift()!;
         this.activeBuild={job,steps:this.createWater(job.cx,job.cz,activeGeography()?(job.lod==='near'?3:12):(job.lod==='near'?1.5:3),job.lod)};

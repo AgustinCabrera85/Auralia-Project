@@ -1,5 +1,5 @@
 import {
-  Color3, Effect, Mesh, MeshBuilder, RawTexture, Scene, ShaderMaterial, Texture,
+  Color3, Constants, Effect, Mesh, MeshBuilder, RawTexture, Scene, ShaderMaterial, Texture,
   Vector2, Vector3, type ArcRotateCamera
 } from '@babylonjs/core';
 import type { ClimateFrame, RGB } from './ClimateModel';
@@ -18,6 +18,9 @@ varying vec3 vDirection;
 void main(void){
   vDirection=normalize(position);
   gl_Position=worldViewProjection*vec4(position,1.0);
+  // The dome is a backdrop, not a 1,840 m sphere that can cover mountains.
+  // Keep its depth behind all terrain regardless of draw order/camera yaw.
+  gl_Position.z=gl_Position.w;
 }`;
 
 const FRAGMENT_SHADER=`
@@ -127,6 +130,7 @@ export class SkyDome {
       ],samplers:['uCloudField']});
     this.material.backFaceCulling=false;
     this.material.disableDepthWrite=true;
+    this.material.depthFunction=Constants.LEQUAL;
     this.material.fogEnabled=false;
     this.dome=MeshBuilder.CreateSphere('auralia-climate-sky-dome',
       {diameter:3680,segments:24,sideOrientation:Mesh.BACKSIDE},scene);

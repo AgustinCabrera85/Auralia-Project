@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises');
+require('./regional-vegetation.test.cjs');
 const {NullEngine,Scene,TransformNode,ImportMeshAsync}=require('@babylonjs/core');
 const {WorldStudioSource}=require('../.test-build/world/geography/WorldStudioSource.js');
 const {PlayableWorld}=require('../.test-build/world/geography/PlayableWorld.js');
@@ -43,7 +44,7 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
  const blockedPlant=townPlants[0],blockedCell=chunkOf(blockedPlant.x,blockedPlant.z);
  assert.ok(!vegetationForChunk(blockedCell.cx,blockedCell.cz,[{x:blockedPlant.x,z:blockedPlant.z,radius:8}]).some(p=>brisaliaKinds.has(p.kind)&&Math.hypot(p.x-blockedPlant.x,p.z-blockedPlant.z)<8),'new plants respect building exclusions');
  for(const p of townPlants){
-  assert.ok(Math.hypot(p.x-world.town.x,p.z-world.town.z)<=300);
+  assert.ok(p.castleBorder||Math.hypot(p.x-world.town.x,p.z-world.town.z)<=300);
   assert.equal(world.waterAt(p.x,p.z),null,'plants stay off water');
   assert.ok(p.y<=world.surface.heightAt(p.x,p.z)+.001,'plants rest on terrain');
  }
@@ -56,8 +57,9 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
  assert.ok(!vegetationForChunk(21,-6).some(p=>brisaliaKinds.has(p.kind)),'town plants do not spread to other regions');
  const engine=new NullEngine(),scene=new Scene(engine),root=new TransformNode('forest',scene);
  const system=new VegetationSystem(scene,root,()=>[],async(url,scene)=>ImportMeshAsync(new Uint8Array(await fs.readFile('public'+url)),scene,{pluginExtension:'.glb'}));
+ const settle=()=>{let frames=0;while((system.pending.length||system.bufferWork||system.buffersDirty)&&frames++<10000)system.update();assert.ok(frames<10000,'placement and incremental uploads finish');};
  system.setViewDirection(Math.sin(144*Math.PI/180),-Math.cos(144*Math.PI/180));system.setActiveChunks([],1524,-434);await system.load();
- for(let i=0;i<2000&&system.pending.length;i++)system.update();assert.equal(system.pending.length,0);
+ settle();assert.equal(system.pending.length,0);
  report.render=system.stats;assert.ok(report.render.fullTrees<=WORLD_FOREST.maxFullTrees+WORLD_FOREST.maxFrontTrees);assert.ok(report.render.mediumTrees<=WORLD_FOREST.maxMediumTrees);
  assert.ok(report.render.frontTrees>0&&report.render.frontTrees<=WORLD_FOREST.maxFrontTrees,'visible forest edge gets detailed trees');
  assert.ok(system.canopyInstanceCount>100,'distant groves use cheap silhouettes');
@@ -75,7 +77,7 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
  const beforeCount=system.instanceCount;
  await world.prepareAround(world.town.x,world.town.z);
  const plantFocus=townPlants[0];system.setActiveChunks([],plantFocus.x,plantFocus.z);
- for(let i=0;i<120&&system.pending.length;i++)system.update();
+ settle();
  const plantMeshes=[...brisaliaKinds].flatMap(kind=>['','-far','-low'].map(suffix=>scene.getMeshByName(`vegetacion-${kind}${suffix}`)));
  assert.ok(plantMeshes.every(Boolean),'every Brisalia plant LOD has a shared render batch');
  for(let level=0;level<3;level++)assert.ok(plantMeshes.filter((_,i)=>i%3===level).some(mesh=>mesh.thinInstanceCount>0),`plant LOD${level} is populated near Brisalia`);
@@ -87,9 +89,9 @@ const {treeSpriteView}=require('../.test-build/world/TreeSprite.js');
    assert.ok(!plantPositions.has(key),'one plant LOD per instance');plantPositions.add(key);
   }
  }
- await world.prepareAround(-4000,4000);system.setActiveChunks([],-4000,4000);assert.equal(system.activeChunkCount,0,'distant sectors released');assert.equal(system.instanceCount,0);
+ await world.prepareAround(-4000,4000);system.setActiveChunks([],-4000,4000);assert.equal(system.activeChunkCount,0,'distant sectors released');assert.equal(system.buffersDirty,true,'departed sectors queue a budgeted upload');
  await world.prepareAround(1524,-434);system.setActiveChunks([],1524,-434);
- for(let i=0;i<2000&&system.pending.length;i++)system.update();assert.equal(system.instanceCount,beforeCount,'reloading restores identical forest');
+ settle();assert.equal(system.instanceCount,beforeCount,'reloading restores identical forest');
  assert.ok(world.stats.residentTiles<=9);
  await fs.mkdir('artifacts/geographic-source/forest',{recursive:true});await fs.writeFile('artifacts/geographic-source/forest/geometry.json',JSON.stringify(report,null,2));
  console.log(JSON.stringify({...report,bySector:undefined}));system.dispose();scene.dispose();engine.dispose();world.dispose();setActiveGeography(null);

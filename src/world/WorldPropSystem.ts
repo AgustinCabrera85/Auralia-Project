@@ -263,9 +263,9 @@ export class WorldPropSystem {
   }
 
   /** One deterministic placement batch per frame, only while new terrain cells arrive. */
-  update(dt:number):void{
+  update(dt:number,build=true):void{
     if(!this.ready||this.disposed)return;
-    if(this.pending.length){
+    if(build&&this.pending.length){
       const cell=this.pending.shift()!;
       const placements=propsForChunk(cell.cx,cell.cz,this.exclusions());
       this.chunks.set(chunkKey(cell.cx,cell.cz),placements);

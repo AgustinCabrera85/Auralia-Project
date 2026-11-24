@@ -3,7 +3,8 @@ import {
   type ArcRotateCamera
 } from '@babylonjs/core';
 import type { ClimateFrame } from './ClimateModel';
-import { RainField } from './RainField';
+import { RainFX, type RainOptions, type RainQuality } from './RainFX.js';
+import { RainAudio } from './RainAudio';
 
 function makeSnowTexture(scene:Scene):DynamicTexture{
   const width=32,height=64;
@@ -19,16 +20,37 @@ function makeSnowTexture(scene:Scene):DynamicTexture{
 
 /** Rain is a shader field; the separate, bounded snow system is unchanged. */
 export class Precipitation {
-  private readonly rain:RainField;
+  private rain:RainFX;
+  private readonly audio=new RainAudio();
+  private surface:RainOptions['getSurfaceAt']=()=>null;
+  private paused=false;
   private readonly snow:ParticleSystem;
   private readonly snowTexture:DynamicTexture;
   private readonly emitter=new Vector3(0,0,0);
   private snowActive=false;
 
   constructor(private readonly scene:Scene,private readonly camera:ArcRotateCamera){
-    this.rain=new RainField(scene,camera);
+    this.rain=this.createRain('medium');
     this.snowTexture=makeSnowTexture(scene);
     this.snow=this.makeSnowSystem();
+  }
+  private createRain(quality:RainQuality):RainFX{
+    return new RainFX(this.scene,{quality,intensity:0,getSurfaceAt:(x,z)=>this.surface?.(x,z),surfaceBudget:32,surfaceTimeBudgetMs:.75});
+  }
+  configureRain(surface:NonNullable<RainOptions['getSurfaceAt']>,quality:RainQuality):void{
+    this.surface=surface;
+    if(quality!==this.rain.quality){this.rain.dispose();this.rain=this.createRain(quality);}
+    this.rain.invalidateSurfaces();
+  }
+  invalidateSurfaces():void{this.rain.invalidateSurfaces();}
+  setWind(x:number,z:number):void{this.rain.setWind(x,z);}
+  get rainAmount():number{return this.rain.intensity;}
+  setAudioVolume(volume:number):void{this.audio.setVolume(volume);}
+  get rainStats(){return this.rain.getStats();}
+  reset():void{this.rain.reset();}
+  setPaused(value:boolean):void{
+    if(this.paused===value)return;
+    this.paused=value;this.rain.setPaused(value);this.audio.update(this.rain.intensity,value);
   }
   private makeSnowSystem():ParticleSystem{
     const p=new ParticleSystem('auralia-snow',350,this.scene);
@@ -51,7 +73,15 @@ export class Precipitation {
   }
 
   update(frame:ClimateFrame,sheltered=false,dt=1/60):void{
-    this.rain.update(frame,sheltered,dt);
+    const intensity=sheltered||frame.weatherMix.rain<.002?0:frame.weatherMix.rain;
+    // The climate blend can finish inside the 0.001 update deadband, leaving
+    // invisible drizzle above RainFX's enabled threshold forever. Zero is exact.
+    if(intensity===0&&this.rain.targetIntensity!==0||Math.abs(this.rain.targetIntensity-intensity)>.001)
+      this.rain.setIntensity(intensity,1.5);
+    this.rain.setBrightness(.32+.68*frame.dayLight);
+    this.rain.update(dt,this.scene.activeCamera??this.camera);
+    this.audio.update(this.rain.intensity,this.paused||sheltered);
+    if(this.paused)return;
     if(sheltered){
       if(this.snowActive){this.snow.stop();this.snow.reset();this.snowActive=false;}
       return;
@@ -66,6 +96,7 @@ export class Precipitation {
 
   dispose():void{
     this.rain.dispose();
+    this.audio.dispose();
     this.snow.dispose();
     this.snowTexture.dispose();
   }

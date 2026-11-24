@@ -56,3 +56,16 @@ assert.equal(memory.push(sample),true,'reset allows a new relative clock');
 sample.jsUsedBytes=0;
 assert.equal(memory.exportRows()[0].jsUsedBytes,128*1024*1024,'samples own their historical values');
 console.log('Telemetry memory: bounded history, one-second sampling, missing readings and reset OK');
+
+const persistent=new TelemetryHistory(2);
+const hitch=frame(100,92,{animationMs:40,renderTargetsMs:10,heroActive:0,heroVisible:9});
+persistent.push(hitch);hitch[T.animationMs]=999;
+for(let i=0;i<10;i++)persistent.push(frame(200+i*17,17));
+assert.equal(persistent.exportRows().length,2);
+assert.equal(persistent.exportHitches()[0].animationMs,40,'quiet frames must not erase or mutate hitch evidence');
+assert.equal(persistent.exportHitches()[0].heroActive,0,'retain character visibility alongside the hitch');
+for(let i=0;i<130;i++)persistent.push(frame(1000+i*60,60));
+assert.equal(persistent.exportHitches().length,120,'hitch archive has a fixed resource budget');
+assert.equal(persistent.exportHitches()[0].timeMs,1600);
+persistent.clear();assert.deepEqual(persistent.exportHitches(),[]);
+console.log('Telemetry: persistent bounded hitch archive and render breakdown passed.');

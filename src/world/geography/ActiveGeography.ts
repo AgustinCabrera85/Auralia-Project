@@ -13,7 +13,7 @@ export interface ActiveWorldGeography {
   town:{x:number;z:number};
   firefly:{x:number;z:number};
   destinations:readonly {id:string;name:string;x:number;z:number;floating?:string}[];
-  mapMarkup():string;
+  mapMarkup(selected?:string):string;
   waterAt(x:number,z:number):WaterSample|null;
   /** Metadata waterline, including dry banks; mesh clipping uses real terrain. */
   waterFieldAt?(x:number,z:number):WaterSample|null;
@@ -28,6 +28,11 @@ export interface ActiveWorldGeography {
   riverLevelAt?(x:number,z:number):number|null;
   ownsLagoon(x:number,z:number):boolean;
   biomeWeights(x:number,z:number):Readonly<Record<Biome,number>>;
+  /** Aridity in the current continent, independent of the legacy biome palette. */
+  desertAt?(x:number,z:number):number;
+  vegetationAt?(x:number,z:number):{trees:number;grass:number};
+  /** Signed edge distance for actual roads, trails and bridge ramps/decks. */
+  vegetationClearanceAt?(x:number,z:number):number;
   masks(x:number,z:number):{lake:number;river:number;road:number;existingRoadClearance:number};
 }
 let active:ActiveWorldGeography|null=null;

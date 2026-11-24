@@ -15,6 +15,10 @@ export type AbilityCondition =
 export type AbilityAnimation = {
   /** 'santi' uses the loaded rig. An external GLB must use matching bone names/rest rig. */
   file:string;clip:string;speed:number;blendSeconds:number;loop?:boolean;
+  /** Playback seconds at the authored ground strike, separate from ring damage. */
+  groundStrikeAt?:number;
+  /** Procedural left-hand reach over the loaded standing clip; seconds. */
+  handCast?:{extendBy:number;retractFrom:number;end:number};
 };
 export type AbilityTimeline = {
   commit:number;fx:readonly number[];impacts:readonly number[];recovery:number;release:number;

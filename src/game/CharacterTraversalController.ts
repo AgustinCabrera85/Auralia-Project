@@ -59,6 +59,12 @@ export class CharacterTraversalController {
   private slideHeading:{x:number;z:number;grade:number}|null=null;
   private swimVelocityX=0;
   private swimVelocityZ=0;
+  private swimFlowX=0;
+  private swimFlowZ=0;
+  private swimSlopeX=0;
+  private swimSlopeZ=0;
+  private swimSlopeSampled=false;
+  private swimTravel={x:0,y:0,z:0};
   private swimDepthTarget:number|null=null;
   private climbTravel={vertical:0,side:0};
   private lastClimbWall:TraversalWall|null=null;
@@ -84,6 +90,8 @@ export class CharacterTraversalController {
     this.slideHeading=null;
     this.climbTravel={vertical:0,side:0};
     this.swimVelocityX=0;this.swimVelocityZ=0;
+    this.swimFlowX=0;this.swimFlowZ=0;
+    this.swimTravel={x:0,y:0,z:0};
     this.swimDepthTarget=null;
   }
 
@@ -94,6 +102,17 @@ export class CharacterTraversalController {
   }
   get canBuild():boolean{return this.mode==='grounded';}
   get swimSubmerged():boolean{return this.mode==='swimming'&&this.swimDepthTarget!==null;}
+  get swimTravelDirection():{x:number;z:number}|null{
+    if(this.mode!=='swimming')return null;
+    const speed=Math.hypot(this.swimTravel.x,this.swimTravel.z);
+    return speed>.15?{x:this.swimTravel.x/speed,z:this.swimTravel.z/speed}:null;
+  }
+  /** Positive pitch points the swimmer's head down. Use actual travel, including
+   * depth changes, rather than the lakebed normal or the requested input. */
+  get swimPitch():number{
+    return this.mode==='swimming'?Math.atan2(-this.swimTravel.y,
+      Math.max(1.5,Math.hypot(this.swimTravel.x,this.swimTravel.z))):0;
+  }
   get jumpCount():number{return this.jumpsUsed;}
   get airKickActive():boolean{return this.verticalAirKick&&this.airDashRemaining>0;}
   get actionMotionActive():boolean{return this.actionMotion!==null;}
@@ -139,6 +158,7 @@ export class CharacterTraversalController {
 
   step(dt:number,input:TraversalInput,world:TraversalWorld):boolean{
     this.slideHeading=null;
+    this.swimSlopeSampled=false;
     const startX=this.position.x,startY=this.position.y,startZ=this.position.z;
     const startedMode=this.mode;
     const count=Math.max(1,Math.ceil(Math.min(dt,.1)/.025));
@@ -151,6 +171,11 @@ export class CharacterTraversalController {
     this.grade=this.mode==='grounded'&&startedMode==='grounded'&&distance>.001
       ?(this.position.y-startY)/distance:0;
     const elapsed=Math.max(.001,Math.min(dt,.1));
+    if(this.mode==='swimming'){
+      this.swimTravel.x=(this.position.x-startX)/elapsed;
+      this.swimTravel.y=(this.position.y-startY)/elapsed;
+      this.swimTravel.z=(this.position.z-startZ)/elapsed;
+    }else{this.swimTravel.x=0;this.swimTravel.y=0;this.swimTravel.z=0;}
     this.climbTravel=this.mode==='climbing'&&startedMode==='climbing'?{
       vertical:(this.position.y-startY)/(elapsed*TRAVERSAL.climbUpSpeed),
       side:((this.position.x-startX)*-this.climbNormal.z+
@@ -498,8 +523,13 @@ export class CharacterTraversalController {
         }
         if(floor&&!slopeAllowed(floor.normalY,input.sprint)&&floor.height>=nextY-TRAVERSAL.groundSnap){
           const d=.5;
-          const gx=world.fallbackHeight(p.x+d,p.z)-world.fallbackHeight(p.x-d,p.z);
-          const gz=world.fallbackHeight(p.x,p.z+d)-world.fallbackHeight(p.x,p.z-d);
+          // A bevel on masonry is still solid. Sliding against the terrain
+          // below it would teleport the feet inside the supporting structure.
+          const slideHeight=(x:number,z:number)=>floor.rockId?
+            world.ground(x,z,floor.height+1,Math.max(2,floor.height-world.fallbackHeight(x,z)+1.05),0)?.height??
+              world.fallbackHeight(x,z):world.fallbackHeight(x,z);
+          const gx=slideHeight(p.x+d,p.z)-slideHeight(p.x-d,p.z);
+          const gz=slideHeight(p.x,p.z+d)-slideHeight(p.x,p.z-d);
           const length=Math.hypot(gx,gz);
           if(length>1e-5){
             const slideX=p.x-gx/length*4*dt,slideZ=p.z-gz/length*4*dt;
@@ -508,7 +538,7 @@ export class CharacterTraversalController {
               this.slideHeading={x:-gx/length,z:-gz/length,grade:length/(2*d)};
             }
           }
-          p.y=world.fallbackHeight(p.x,p.z)+.02;this.velocityY=0;
+          p.y=(floor.rockId?floor.height:world.fallbackHeight(p.x,p.z))+.02;this.velocityY=0;
           return true;
         }
         if(floor&&slopeAllowed(floor.normalY,input.sprint)&&floor.height<=oldY+.06&&
@@ -533,10 +563,44 @@ export class CharacterTraversalController {
 
   private swimStep(dt:number,input:TraversalInput,world:TraversalWorld,water:number|null):boolean{
     const p=this.position,oldX=p.x,oldY=p.y,oldZ=p.z;
-    if(water===null){this.mode='airborne';this.velocityY=0;this.swimDepthTarget=null;return false;}
+    if(water===null){
+      this.mode='airborne';this.velocityY=Math.min(0,this.swimTravel.y);
+      this.airVelocityX=this.swimVelocityX;this.airVelocityZ=this.swimVelocityZ;
+      this.swimVelocityX=0;this.swimVelocityZ=0;this.swimFlowX=0;this.swimFlowZ=0;
+      this.swimDepthTarget=null;return false;
+    }
+    // Four local water samples per frame, shared by physics substeps. A sloping
+    // lakebed does not create a current in a level lake; missing shore samples
+    // use a one-sided derivative instead of inventing a drop to zero.
+    if(!this.swimSlopeSampled){
+      const r=1.25;
+      const left=world.waterLevel?.(p.x-r,p.z)??null,right=world.waterLevel?.(p.x+r,p.z)??null;
+      const back=world.waterLevel?.(p.x,p.z-r)??null,front=world.waterLevel?.(p.x,p.z+r)??null;
+      this.swimSlopeX=left!==null&&right!==null?(right-left)/(2*r):
+        right!==null?(right-water)/r:left!==null?(water-left)/r:0;
+      this.swimSlopeZ=back!==null&&front!==null?(front-back)/(2*r):
+        front!==null?(front-water)/r:back!==null?(water-back)/r:0;
+      this.swimSlopeSampled=true;
+    }
+    const gx=this.swimSlopeX,gz=this.swimSlopeZ;
     const speed=input.run?8:5.5,blend=1-Math.exp(-dt*5);
-    this.swimVelocityX+=(input.moveX*speed-this.swimVelocityX)*blend;
-    this.swimVelocityZ+=(input.moveZ*speed-this.swimVelocityZ)*blend;
+    const inputLength=Math.hypot(input.moveX,input.moveZ);
+    const inputGrade=inputLength>1e-5?(gx*input.moveX+gz*input.moveZ)/inputLength:0;
+    const strokeSpeed=speed/Math.sqrt(1+inputGrade*inputGrade);
+    let strokeX=this.swimVelocityX-this.swimFlowX,strokeZ=this.swimVelocityZ-this.swimFlowZ;
+    strokeX+=(input.moveX*strokeSpeed-strokeX)*blend;
+    strokeZ+=(input.moveZ*strokeSpeed-strokeZ)*blend;
+    // Gravity projected onto the water surface, with water drag. Integrating
+    // drag exponentially keeps the same acceleration at different frame rates.
+    const drag=1.25,flowBlend=1-Math.exp(-dt*drag);
+    const gravity=TRAVERSAL.gravity/(1+gx*gx+gz*gz);
+    this.swimFlowX+=(-gravity*gx/drag-this.swimFlowX)*flowBlend;
+    this.swimFlowZ+=(-gravity*gz/drag-this.swimFlowZ)*flowBlend;
+    const flowSpeed=Math.hypot(this.swimFlowX,this.swimFlowZ,
+      gx*this.swimFlowX+gz*this.swimFlowZ);
+    if(flowSpeed>18){this.swimFlowX*=18/flowSpeed;this.swimFlowZ*=18/flowSpeed;}
+    this.swimVelocityX=strokeX+this.swimFlowX;
+    this.swimVelocityZ=strokeZ+this.swimFlowZ;
     // Swimming uses the same solid shells as walking. Remove only the inward
     // velocity so the swimmer can still slide along a submerged rock face.
     for(let pass=0;pass<2;pass++){
@@ -551,25 +615,32 @@ export class CharacterTraversalController {
         if(hit&&(!nearest||hit.distance<nearest.distance))nearest=hit;
       }
       if(!nearest)break;
-      if(pass===1){this.swimVelocityX=0;this.swimVelocityZ=0;break;}
       const n=Math.hypot(nearest.normalX,nearest.normalZ);
-      if(n<1e-5){this.swimVelocityX=0;this.swimVelocityZ=0;break;}
+      if(pass===1||n<1e-5){
+        this.swimVelocityX=0;this.swimVelocityZ=0;this.swimFlowX=0;this.swimFlowZ=0;break;
+      }
       const nx=nearest.normalX/n,nz=nearest.normalZ/n;
       const inward=Math.min(0,this.swimVelocityX*nx+this.swimVelocityZ*nz);
       this.swimVelocityX-=nx*inward;this.swimVelocityZ-=nz*inward;
+      const flowInward=Math.min(0,this.swimFlowX*nx+this.swimFlowZ*nz);
+      this.swimFlowX-=nx*flowInward;this.swimFlowZ-=nz*flowInward;
     }
     const x=p.x+this.swimVelocityX*dt,z=p.z+this.swimVelocityZ*dt;
     const bed=world.fallbackHeight(x,z);
     if(world.canMove(x,z,p.x,p.z,p.y)&&bed<p.y+1.2){p.x=x;p.z=z;}
+    else{this.swimVelocityX=0;this.swimVelocityZ=0;this.swimFlowX=0;this.swimFlowZ=0;}
     const nextWater=world.waterLevel?.(p.x,p.z)??water;
     // A distinct Space press toggles dive / resurface. Releasing it holds the
     // chosen depth; the controller owns the transition, not keyboard repeats.
     if(input.jumpPressed)this.swimDepthTarget=this.swimDepthTarget===null?8:null;
     const vertical=input.swimVertical??0;
     const target=this.swimDepthTarget===null?nextWater-1.65:nextWater-this.swimDepthTarget;
-    const verticalSpeed=vertical!==0?vertical*4:Math.max(-4,Math.min(4,(target-p.y)*3));
+    // Carry the selected depth down the river with the surface. Buoyancy and
+    // diving remain relative to that moving level, including underwater travel.
+    const carriedY=p.y+nextWater-water;
+    const verticalSpeed=vertical!==0?vertical*4:Math.max(-4,Math.min(4,(target-carriedY)*3));
     let nextY=Math.max(world.fallbackHeight(p.x,p.z)+.3,
-      Math.min(nextWater-1.65,p.y+verticalSpeed*dt));
+      Math.min(nextWater-1.65,carriedY+verticalSpeed*dt));
     if(nextY>p.y&&!world.headroom(p.x,p.y+.2,p.z,1.6+nextY-p.y))nextY=p.y;
     if(nextY<p.y){
       const floor=world.solidTop(p.x,p.z,p.y+.1,p.y-nextY+.4);
@@ -580,6 +651,7 @@ export class CharacterTraversalController {
     if(nextWater-world.fallbackHeight(p.x,p.z)<1.8){
       p.y=world.fallbackHeight(p.x,p.z);this.mode='grounded';
       this.swimVelocityX=0;this.swimVelocityZ=0;
+      this.swimFlowX=0;this.swimFlowZ=0;
       this.swimDepthTarget=null;
     }
     return Math.hypot(p.x-oldX,p.y-oldY,p.z-oldZ)>.001;

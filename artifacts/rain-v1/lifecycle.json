@@ -1,0 +1,37 @@
+{
+  "before": {
+    "meshes": 2,
+    "textures": 1
+  },
+  "low": {
+    "quality": "low",
+    "drops": 2400,
+    "splashes": 360,
+    "drawCalls": 0,
+    "surfaceReady": false,
+    "surfaceProgress": 0.15993336109954187,
+    "surfaceBudget": 128,
+    "intensity": 0.022842,
+    "disposed": false
+  },
+  "lowResources": {
+    "meshes": 2,
+    "textures": 1
+  },
+  "medium": {
+    "quality": "medium",
+    "drops": 5200,
+    "splashes": 800,
+    "drawCalls": 0,
+    "surfaceReady": false,
+    "surfaceProgress": 0.9997633136094675,
+    "surfaceBudget": 128,
+    "intensity": 0.9961355947407408,
+    "disposed": false
+  },
+  "after": {
+    "meshes": 2,
+    "textures": 1
+  },
+  "daylight": 0
+}

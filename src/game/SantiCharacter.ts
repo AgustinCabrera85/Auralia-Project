@@ -1,12 +1,13 @@
 import { importGpuMeshAsync as ImportMeshAsync } from '../world/GpuAssets';
 import {
-  AnimationGroup, Mesh, MorphTarget, Quaternion, Scene, TransformNode, Vector3,
+  AnimationGroup, Matrix, Mesh, MorphTarget, Quaternion, Scene, TransformNode, Vector3,
   type MorphTargetManager, type Observer, type AssetContainer
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { GLTFLoaderAnimationStartMode } from '@babylonjs/loaders/glTF/glTFFileLoader.js';
 import { TRAVERSAL, type LocomotionMode } from './traversalRules';
 import { GroundFootPlacement } from './GroundFootPlacement';
+import { SantiFlamePose } from './SantiFlamePose';
 import type { TraversalWorld } from './CharacterTraversalController';
 import type { EquipmentId } from '../domain/types';
 import type { SwordLevel } from '../domain/brisaliaSword';
@@ -83,6 +84,7 @@ export type SantiMotion={
   sprint:boolean;
   backward:boolean;
   groundGrade?:number;
+  swimPitch?:number;
   sliding?:boolean;
   slideGrade?:number;
   onStairs?:boolean;
@@ -134,12 +136,15 @@ export class SantiCharacter {
   private slideContactDt=0;
   private slideFeet:TransformNode[]=[];
   private feet:GroundFootPlacement|null=null;
+  private idleFeet:{foot:TransformNode;toe:TransformNode;side:number}[]=[];
+  private idleShoulders:TransformNode[]=[];
   private contactRoot:TransformNode|null=null;
   private landingApproach:'normal'|'highFall'|null=null;
   private climbContact:ClimbContact|null=null;
   private hangingContact=false;
   private contactObserver:Observer<Scene>|null=null;
   private contactHands:TransformNode[]=[];
+  private flamePose:SantiFlamePose|null=null;
   private swordVisual:BrisaliaSwordVisual|null=null;
   private swordHand:TransformNode|null=null;
   private swordRunWristWeight=0;
@@ -159,6 +164,8 @@ export class SantiCharacter {
   private repeatBlink=false;
   private readonly eyelidBase=new Map<string,number>();
   isReady=false;
+  /** Sample after the rig and grip have evaluated, before this frame is drawn. */
+  onAbilityPose:(()=>void)|null=null;
 
   constructor(private readonly scene:Scene,private readonly parent:TransformNode,
     private readonly modelPath=MODEL_PATH,
@@ -194,6 +201,10 @@ export class SantiCharacter {
     for(const mesh of result.meshes){
       mesh.isPickable=false;
       mesh.checkCollisions=false;
+      // Skinned poses move beyond the bind-pose bounds (especially shirt/face).
+      // The followed player is a handful of meshes; keep their render selection
+      // stable instead of skinning every vertex on the CPU to rebuild bounds.
+      if(mesh.getTotalVertices()>0)mesh.alwaysSelectAsActiveMesh=true;
       const manager=mesh.morphTargetManager;
       if(!manager||!(mesh instanceof Mesh))continue;
       const channels=Number(manager.hasPositions)+Number(manager.hasNormals)+
@@ -299,6 +310,7 @@ export class SantiCharacter {
        ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot',1]],.55);
     this.contactHands=result.transformNodes.filter(node=>
       node.name==='mixamorig:LeftHand'||node.name==='mixamorig:RightHand');
+    this.flamePose=new SantiFlamePose(this.scene,this.parent,result.transformNodes);
     const swordHand=this.contactHands.find(node=>node.name==='mixamorig:RightHand');
     this.swordHand=swordHand??null;
     if(swordHand){
@@ -323,10 +335,21 @@ export class SantiCharacter {
     }
     this.slideFeet=result.transformNodes.filter(node=>
       node.name==='mixamorig:LeftFoot'||node.name==='mixamorig:RightFoot');
+    this.idleFeet=['Left','Right'].flatMap((side,i)=>{
+      const foot=result.transformNodes.find(n=>n.name===`mixamorig:${side}Foot`);
+      const toe=result.transformNodes.find(n=>n.name===`mixamorig:${side}ToeBase`);
+      return foot&&toe?[{foot,toe,side:i===0?-1:1}]:[];
+    });
+    this.idleShoulders=['Left','Right'].flatMap(side=>{
+      const node=result.transformNodes.find(n=>n.name===`mixamorig:${side}Shoulder`);return node?[node]:[];
+    });
     this.contactObserver=this.scene.onAfterAnimationsObservable.add(()=>{
       this.alignClimbContact();this.alignSlideContact();
+      this.alignIdleAnkle();
       this.alignSwordRunWrist();
       this.swordVisual?.applyGrip();
+      this.flamePose?.apply();
+      this.onAbilityPose?.();
     });
     this.loaded=result;
     this.isReady=true;
@@ -344,6 +367,40 @@ export class SantiCharacter {
     this.slideContactDt=Math.max(0,Math.min(dt,.1));
   }
   get footContact(){return this.feet?.status;}
+  get renderMeshes(){return this.loaded?.meshes;}
+
+  /** The idle clip turns its leading shoe inward. Correct only that ankle,
+   * following the visible torso heading and the idle blend, before ground IK. */
+  private alignIdleAnkle():void{
+    if(this.previousMode!=='grounded'||this.special||this.combat||this.overrideSeconds>0)return;
+    const idle=this.actions.get(SANTI_LOCOMOTION.idle);
+    const weight=this.active===idle?this.blend:this.fading===idle?1-this.blend:0;
+    if(weight<=0||this.idleFeet.length!==2||this.idleShoulders.length!==2)return;
+    for(const node of [...this.idleShoulders,...this.idleFeet.map(f=>f.foot)])node.computeWorldMatrix(true);
+    const right=this.idleShoulders[1].absolutePosition.subtract(this.idleShoulders[0].absolutePosition);
+    const forward=new Vector3(-right.z,0,right.x).normalize();
+    if(forward.lengthSquared()<.5)return;
+    for(let i=0;i<2;i++){
+      const {foot,toe,side}=this.idleFeet[i],other=this.idleFeet[1-i].foot;
+      const lead=Vector3.Dot(foot.absolutePosition.subtract(other.absolutePosition),forward);
+      if(lead<=0)continue;
+      toe.computeWorldMatrix(true);
+      const heading=toe.absolutePosition.subtract(foot.absolutePosition);heading.y=0;
+      if(heading.lengthSquared()<1e-8)continue;heading.normalize();
+      const angle=Math.atan2(forward.z*heading.x-forward.x*heading.z,Vector3.Dot(forward,heading));
+      if(-side*angle<=0)continue; // retain a natural outward stance
+      const turn=-angle*weight*Math.min(1,lead/.25);
+      const desired=Vector3.TransformCoordinates(heading,Matrix.RotationY(turn));
+      const inverse=Matrix.Invert(foot.getWorldMatrix()),a=Vector3.TransformNormal(heading,inverse).normalize(),b=Vector3.TransformNormal(desired,inverse).normalize();
+      const axis=Vector3.Cross(a,b);if(axis.lengthSquared()<1e-10)continue;
+      foot.rotationQuaternion!.multiplyInPlace(Quaternion.RotationAxis(axis.normalize(),Math.acos(Math.max(-1,Math.min(1,Vector3.Dot(a,b))))));
+      foot.computeWorldMatrix(true);
+    }
+  }
+
+  prepareSword(level:Exclude<SwordLevel,0>):void{
+    void this.swordVisual?.preload(level);
+  }
 
   setSwordLevel(level:SwordLevel):void{
     if(level===this.desiredSwordLevel)return;
@@ -510,6 +567,14 @@ export class SantiCharacter {
       remainingSeconds:Math.max(0,this.combat.duration-this.combat.elapsed)}:null;
   }
 
+  sampleAbilityBlade(out:Vector3[]):boolean{
+    return !!this.special&&!!this.swordVisual?.bladeWorldToRef(out);
+  }
+  /** The animated palm is the single world-space source for both FX and damage. */
+  sampleFlameEmitter(origin:Vector3,direction:Vector3):boolean{
+    return this.isReady&&!!this.flamePose?.sampleEmitter(origin,direction);
+  }
+
   /** Equipment changes invalidate both the current weapon action and its queued hit. */
   prepareCombat(equipment:EquipmentId,enabled:boolean):void{
     if(this.combat&&this.combat.equipment!==equipment)this.cancelCombat();
@@ -556,7 +621,7 @@ export class SantiCharacter {
     return binding.file==='santi'?this.actions.get(binding.clip as SantiActionName):
       this.abilityClips.get(`${binding.file}#${binding.clip}`);
   }
-  hasAbilityAnimation(binding:AbilityAnimation):boolean{return this.isReady&&!!this.abilityClip(binding);}
+  hasAbilityAnimation(binding:AbilityAnimation):boolean{return this.isReady&&!!this.abilityClip(binding)&&(!binding.handCast||!!this.flamePose?.ready);}
   /** Strict matching-rig import. Incompatible clips fail closed; no arbitrary substitution. */
   installAbilityAnimation(container:AssetContainer,binding:AbilityAnimation):boolean{
     const source=container.animationGroups.find(g=>g.name===binding.clip);
@@ -591,18 +656,19 @@ export class SantiCharacter {
   startAbilityAnimation(binding:AbilityAnimation):boolean{
     const group=this.abilityClip(binding);
     if(!group||this.actionBusy||!this.isReady)return false;
-    this.special=group;this.swordRunWristWeight=0;
+    this.flamePose?.reset();this.special=group;this.swordRunWristWeight=0;
     this.transitionGroup(group,false,binding.speed,group.from,group.to,binding.blendSeconds);
     group.pause();return true;
   }
   sampleAbilityAnimation(binding:AbilityAnimation,elapsed:number):void{
     const group=this.special;if(!group)return;
+    this.flamePose?.restore();this.flamePose?.setTime(binding.handCast,elapsed);
     const progress=elapsed*binding.speed/group.getLength();
     const t=binding.loop?progress%1:Math.min(1,progress);
     group.goToFrame(group.from+(group.to-group.from)*t,true);group.pause();
   }
   endAbilityAnimation():void{
-    if(!this.special)return;this.special=null;
+    this.flamePose?.reset();if(!this.special)return;this.special=null;
     this.overrideSeconds=0;this.actionLockSeconds=0;
     this.transition(SANTI_LOCOMOTION.idle,true,1);
   }
@@ -630,17 +696,28 @@ export class SantiCharacter {
     const rawGrade=motion.groundGrade??0;
     const grade=motion.mode==='grounded'&&motion.moving&&Number.isFinite(rawGrade)?rawGrade:0;
     const groundPitch=Math.atan(grade);
+    const swimming=motion.mode==='swimming';
+    const swimPitch=Number.isFinite(motion.swimPitch)?motion.swimPitch!:0;
     this.climbContact=motion.mode==='climbing'||motion.mode==='hanging'?motion.climbContact??null:null;
     this.hangingContact=motion.mode==='hanging';
     const lean=sliding?Math.min(MAX_SLIDE_PITCH,Math.atan(this.slideGrade)):
+      swimming?Math.max(-Math.PI*4/9,Math.min(Math.PI*4/9,swimPitch)):
       this.climbContact?Math.asin(Math.max(-.3,Math.min(.6,this.climbContact.normalY)))+.15:
       motion.mode==='grounded'&&motion.moving&&this.overrideSeconds===0?
         -Math.max(-MAX_GROUND_PITCH,Math.min(MAX_GROUND_PITCH,groundPitch)):0;
     if(this.slopeOrientation)this.slopeOrientation.rotation.x+=
-      (lean-this.slopeOrientation.rotation.x)*(1-Math.exp(-dt*18));
-    if(this.slopeOrientation&&!sliding)this.slopeOrientation.position.y*=Math.exp(-dt*10);
-    if(this.slopeOrientation&&!this.climbContact)
-      this.slopeOrientation.position.z*=Math.exp(-dt*18);
+      (lean-this.slopeOrientation.rotation.x)*(1-Math.exp(-dt*(swimming?8:18)));
+    if(this.slopeOrientation){
+      if(swimming){
+        // Tilt around the torso instead of swinging the swimmer around the feet.
+        const pitch=this.slopeOrientation.rotation.x,pivot=1.25;
+        this.slopeOrientation.position.y=pivot*(1-Math.cos(pitch));
+        this.slopeOrientation.position.z=-pivot*Math.sin(pitch);
+      }else{
+        if(!sliding)this.slopeOrientation.position.y*=Math.exp(-dt*10);
+        if(!this.climbContact)this.slopeOrientation.position.z*=Math.exp(-dt*18);
+      }
+    }
     if(motion.mode!=='grounded')this.cancelCombat();
     if(motion.mode==='swimming'||motion.mode==='hanging'){
       this.overrideSeconds=0;this.actionLockSeconds=0;this.landingRecoverySeconds=0;
@@ -929,6 +1006,9 @@ export class SantiCharacter {
 
   dispose():void{
     this.disposed=true;
+    this.idleFeet=[];this.idleShoulders=[];
+    this.onAbilityPose=null;
+    this.flamePose?.dispose();this.flamePose=null;
     this.special=null;this.abilityClips.forEach(g=>g.dispose());this.abilityClips.clear();
     this.combat=null;
     this.debugPanel?.remove();

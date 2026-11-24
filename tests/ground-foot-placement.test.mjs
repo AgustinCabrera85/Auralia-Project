@@ -10,11 +10,12 @@ const {GroundFootPlacement}=await import('../.test-build/feet-runtime.mjs');
 const models=[
   ['santi/Santi_NLA_SK_Opt.glb','Santi_Mesh_primitive0',3.8,.55,
     [['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot',-1],['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot',1]]],
-  ['dogo/Dogo_Auralia.glb','Dogo_primitive0',1.35,.32,
-    [['front_upper.L','front_forearm.L','front_paw.L'],['front_upper.R','front_forearm.R','front_paw.R'],
-     ['hind_thigh.L','hind_shin.L','hind_paw.L'],['hind_thigh.R','hind_shin.R','hind_paw.R']]]
+  ['dogo/Dogo_Refined.glb','Dogo_LP',1.35,.32,
+    [['front_thigh.L','front_shin.L','front_toe.L'],['front_thigh.R','front_shin.R','front_toe.R'],
+     ['thigh.L','shin.L','toe.L'],['thigh.R','shin.R','toe.R']]]
 ];
 const results=[];
+let maxAnkleTwist=0;
 for(const [file,bodyName,height,adjust,chains] of models){
   const engine=new NullEngine(),scene=new Scene(engine);
   scene.activeCamera=new FreeCamera('qa',new Vector3(0,3,-8),scene);
@@ -57,6 +58,28 @@ for(const [file,bodyName,height,adjust,chains] of models){
   assert.ok(settled.every((y,i)=>i===0||Math.abs(y-settled[i-1])<adjust*.3),
     'landing support has no abrupt frame-to-frame foot snap');
   if(height>2){
+    // Moving the leg to another support must preserve the complete authored
+    // ankle orientation. Aligning two axes separately can leave a yaw error.
+    for(const action of ['Walking (6)','Ascending Stairs','Running Up Stairs']){
+      const group=asset.animationGroups.find(g=>g.name===action);group.start(true);
+      for(const yaw of [0,.8,2.2])for(let frame=0;frame<24;frame++){
+        root.rotation.y=yaw;solver.restore();
+        group.goToFrame(group.from+(group.to-group.from)*frame/24,true);
+        for(const leg of solver.legs){
+          leg.foot.computeWorldMatrix(true);const authored=leg.foot.getWorldMatrix().clone();
+          const target=leg.foot.absolutePosition.add(new Vector3(0,.3,0));
+          solver.solve(leg,target);const adjusted=leg.foot.computeWorldMatrix(true);
+          for(const axis of [Vector3.Right(),Vector3.Up(),Vector3.Forward()]){
+            const a=Vector3.TransformNormal(axis,authored).normalize(),b=Vector3.TransformNormal(axis,adjusted).normalize();
+            const angle=Math.acos(Math.max(-1,Math.min(1,Vector3.Dot(a,b))));
+            maxAnkleTwist=Math.max(maxAnkleTwist,angle*180/Math.PI);
+            if(!process.env.AURALIA_FOOT_AUDIT)assert.ok(angle<.001,`${action} yaw=${yaw} frame=${frame} ${leg.foot.name}: IK twists ankle ${angle*180/Math.PI} degrees`);
+          }
+        }
+      }
+      group.stop();
+    }
+    root.rotation.y=0;solver.restore();restore();
     // The real gait used to flip a nearly straight knee across the body and
     // backward when IK raised the foot, particularly on an ascending slope.
     const localPoint=(node,inverse)=>{
@@ -117,3 +140,4 @@ for(const [file,bodyName,height,adjust,chains] of models){
 fs.mkdirSync('artifacts/dogo',{recursive:true});
 fs.writeFileSync('artifacts/dogo/foot-contact-tests.json',JSON.stringify(results,null,2));
 console.log('Foot support: both actual rigs, flat/uphill/downhill/cross-slope/steps, 30/60/144 Hz, swing lift, release and realm offsets OK');
+console.log('Maximum ankle orientation error:',maxAnkleTwist,'degrees');

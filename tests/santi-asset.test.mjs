@@ -125,7 +125,8 @@ asset.dispose();
 const runtimeDir=resolve('.test-build');
 mkdirSync(runtimeDir,{recursive:true});
 const modules=['SantiCatalog','traversalRules','SantiCharacter','CharacterTraversalController','GroundFootPlacement','BrisaliaSwordVisual'];
-const runtimeFiles=modules.map(name=>resolve(runtimeDir,`santi-${name}.mjs`));
+modules.push('SantiFlamePose','../world/GpuAssets','../world/gpuAssetManifest');
+const runtimeFiles=modules.map(name=>resolve(runtimeDir,`santi-${name.split('/').at(-1)}.mjs`));
 for(const [index,name] of modules.entries()){
   const source=readFileSync(new URL(`../src/game/${name}.ts`,import.meta.url),'utf8');
   const javascript=ts.transpileModule(source,{compilerOptions:{
@@ -134,6 +135,9 @@ for(const [index,name] of modules.entries()){
     .replace("from './GroundFootPlacement'","from './santi-GroundFootPlacement.mjs'")
     .replace("from './traversalRules'","from './santi-traversalRules.mjs'")
     .replace("from './SantiCatalog'","from './santi-SantiCatalog.mjs'")
+    .replace("from './SantiFlamePose'","from './santi-SantiFlamePose.mjs'")
+    .replace("from '../world/GpuAssets'","from './santi-GpuAssets.mjs'")
+    .replace("from './gpuAssetManifest'","from './santi-gpuAssetManifest.mjs'")
     .replace("from './BrisaliaSwordVisual'","from './santi-BrisaliaSwordVisual.mjs'");
   writeFileSync(runtimeFiles[index],javascript);
 }
@@ -154,6 +158,26 @@ try{
   santi.blinkTime=-1000; // Isolate existing exact expression-count assertions.
   assert.equal(santi.actions.size,35);
   assert.ok(santi.shapeKeys.size>=52);
+  // The leading idle shoe must follow the torso rather than pointing inward.
+  // Only the ankle rotates: its pivot, knee and shin retain their source pose.
+  const idlePose=santi.actions.get(SANTI_LOCOMOTION.idle);
+  const at=node=>{node.computeWorldMatrix(true);return node.absolutePosition.clone();};
+  for(const yaw of [0,.9,2.2])for(const fraction of [0,.25,.5,.75]){
+    parent.rotation.y=yaw;idlePose.goToFrame(idlePose.from+(idlePose.to-idlePose.from)*fraction,true);
+    const kneePose=santi.idleFeet.map(({foot})=>({node:foot.parent,rotation:foot.parent.rotationQuaternion.clone(),pivot:at(foot)}));
+    santi.alignIdleAnkle();
+    const right=at(santi.idleShoulders[1]).subtract(at(santi.idleShoulders[0]));
+    const forward=new Vector3(-right.z,0,right.x).normalize();
+    santi.idleFeet.forEach(({foot,toe,side},i)=>{
+      assert.ok(kneePose[i].node.rotationQuaternion.equalsWithEpsilon(kneePose[i].rotation,1e-7),'idle ankle fix leaves tibia rotation intact');
+      assert.ok(Vector3.Distance(at(foot),kneePose[i].pivot)<1e-5,'ankle pivot does not move');
+      if(Vector3.Dot(at(foot).subtract(at(santi.idleFeet[1-i].foot)),forward)<=0)return;
+      const heading=at(toe).subtract(at(foot));heading.y=0;heading.normalize();
+      const angle=Math.atan2(forward.z*heading.x-forward.x*heading.z,Vector3.Dot(forward,heading));
+      assert.ok(-side*angle<.001,'leading shoe no longer turns inward relative to the torso');
+    });
+  }
+  parent.rotation.y=0;idlePose.goToFrame(idlePose.from,true);
   // Exercise the same after-animation hand grip and sword loading used in game.
   const sword=santi.swordVisual;
   assert.ok(sword);

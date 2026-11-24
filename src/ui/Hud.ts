@@ -18,6 +18,11 @@ import { SEASON_LABELS, WEATHER_ICONS, WEATHER_LABELS, type ClimateFrame } from 
 import { readRenderQuality, RENDER_QUALITIES, type RenderQuality } from '../game/renderResolution';
 import { AbilitiesHud } from './AbilitiesHud';
 import type { AbilitySystem } from '../game/abilities/AbilitySystem';
+import { MapViewport, initialMapView } from './MapViewport';
+import { icon, type HudIcon } from './HudIcons';
+import { SoundControls } from './SoundControls';
+import type { GameMusic } from '../audio/GameMusic';
+import './hud.css';
 
 type HudActions = {
   interact: () => void;
@@ -33,7 +38,7 @@ type HudActions = {
   setRenderQuality: (quality:RenderQuality) => void;
 };
 
-type Panel = 'map' | 'craft' | 'build' | 'equip' | 'graphics' | 'help' | null;
+type Panel = 'map' | 'craft' | 'build' | 'equip' | 'graphics' | 'sound' | 'help' | null;
 
 const COMPASS_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'] as const;
 
@@ -47,12 +52,16 @@ const QUEST: Record<Milestone, { number: string; title: string; detail: string; 
 };
 
 export class Hud {
+  private sound:SoundControls|null=null;
+  attachAudio(music:GameMusic):void{this.sound?.dispose();this.sound=new SoundControls(music);}
   private abilities:AbilitiesHud|null=null;
-  attachAbilities(system:AbilitySystem):void{this.abilities?.dispose();this.abilities=new AbilitiesHud(system);}
+  attachAbilities(system:AbilitySystem):void{this.abilities?.dispose();this.abilities=new AbilitiesHud(system,()=>this.close());}
   readonly canvas: HTMLCanvasElement;
   private panel: Panel = null;
   private mapSelection = 'brisalia';
   private mapView: 'regional' | 'illustrated' = 'regional';
+  private readonly atlasView=initialMapView();
+  private atlas:MapViewport|null=null;
   private local={x:1,z:10,region:'Valle de los Faroles',chunks:0};
   private toastTimeout = 0;
   private dialogueVisible = false;
@@ -61,26 +70,26 @@ export class Hud {
   private readonly compassRotor: HTMLElement;
   private readonly compassHeading: HTMLElement;
   private compassDegrees = NaN;
+  private readonly unsubscribe:()=>void;
+  private focusBeforePanel:HTMLElement|null=null;
+  private readonly compact=matchMedia('(max-width:600px)');
+  private questTouched=false;
+  private readonly onCompact=()=>{if(!this.questTouched)this.setQuestCollapsed(this.compact.matches);};
 
   constructor(private readonly store: GameStore, private readonly actions: HudActions) {
     document.getElementById('app')!.innerHTML = `
       <canvas id="game-canvas" aria-label="Mundo 3D de Auralia"></canvas>
       <div class="hud-root">
         <header class="topbar">
-          <div class="brand"><div class="brand-icon">✦</div><div><strong>AURALIA</strong><small>EL VALLE DE LOS FAROLES</small></div></div>
-            <div class="region-label"><span class="status-dot"></span><span id="zone-name">Brisalia</span><span class="prototype-pill">POC · Update 4</span></div>
+          <div class="brand"><div class="brand-icon">${icon('lantern')}</div><div><strong>AURALIA</strong><small>EL VALLE DE LOS FAROLES</small></div></div>
+          <div class="region-label"><span class="region-ornament" aria-hidden="true">✦</span><div><small>EXPLORANDO</small><span id="zone-name">Brisalia</span></div><span class="region-ornament" aria-hidden="true">✦</span></div>
           <nav class="main-actions" aria-label="Menú de juego">
-            <button data-panel="equip" aria-label="Equipo (V)" title="Equipo (V)">🗡️ <span>Equipo</span></button>
-            <button data-panel="map" aria-label="Mapa (M)" title="Mapa (M)">🗺️ <span>Mapa</span></button>
-            <button data-panel="craft" aria-label="Fabricación (C)" title="Fabricación (C)">⚒️ <span>Crafting</span></button>
-            <button data-panel="build" aria-label="Construcción (B)" title="Construcción (B)">🏠 <span>Construir</span></button>
-            <button data-panel="graphics" aria-label="Gráficos" title="Gráficos">⚙ <span>Gráficos</span></button>
-            <button data-panel="help" aria-label="Ayuda">❔</button>
+            ${([['equip','sword','Equipo','V'],['map','map','Mapa','M'],['craft','hammer','Taller','C'],['build','home','Construir','B'],['sound','volume','Sonido',''],['graphics','settings','Gráficos',''],['help','help','Guía','']] as const).map(([panel,glyph,label,key])=>`<button data-panel="${panel}" aria-label="${label}${key?` (${key})`:''}" title="${label}${key?` (${key})`:''}">${icon(glyph)}<span>${label}</span></button>`).join('')}
           </nav>
         </header>
         <section class="quest-card" aria-live="polite">
-          <div class="quest-eyebrow"><span>LA PRIMERA AVENTURA</span><span id="quest-number">01 / 05</span></div>
-          <div class="quest-heading"><span id="quest-icon">🪵</span><div><strong id="quest-title">Primeros materiales</strong><p id="quest-detail"></p></div></div>
+          <div class="quest-eyebrow"><span>DIARIO DE VIAJE</span><button data-action="toggle-quest" aria-label="Contraer misión" aria-expanded="true">${icon('chevron')}</button></div>
+          <div class="quest-heading"><span id="quest-icon">${icon('leaf')}</span><div><small id="quest-number">01 / 05</small><strong id="quest-title">Primeros materiales</strong><p id="quest-detail"></p></div></div>
           <div id="quest-progress" class="quest-progress"></div>
         </section>
         <div class="compass" id="compass" role="img" aria-label="Brújula" title="Orientación de la cámara">
@@ -99,7 +108,10 @@ export class Hud {
         <div class="terrain-status"><strong id="region-explore">Valle de los Faroles</strong><small><span id="position-explore">X 1 · Z 10</span><span> · </span><span id="chunks-explore">sectores…</span></small></div>
         <div class="interaction-pill" id="interaction-hint">WASD para caminar · E para interactuar · M para el mapa</div>
         <aside id="build-selection" class="build-selection" hidden></aside>
-        <div class="footer-hud"><div class="inventory-label">MOCHILA <span>recursos</span></div><div id="inventory" class="inventory-items"></div><button data-panel="equip" id="equipment-status" class="equipment-status" title="Cambiar equipo (V)">✊ Mano limpia</button><div class="key-help">W A S D <span>mover</span> · RATÓN <span>cámara</span> · SHIFT <span>correr</span> · DOBLE SHIFT <span>sprint</span></div></div>
+        <div id="sound-dock" class="sound-dock" aria-label="Banda sonora"></div>
+        <div class="footer-hud"><div class="inventory-tray"><div class="inventory-label">${icon('bag')}<span>MOCHILA</span></div><div id="inventory" class="inventory-items"></div></div>
+          <button data-panel="equip" id="equipment-status" class="equipment-status" title="Cambiar equipo (V)">${icon('fist')}<span>Mano limpia</span><kbd>V</kbd></button>
+          <div class="key-help"><kbd>W A S D</kbd> caminar <span>·</span> <kbd>Shift</kbd> correr <span>·</span> <button data-panel="help">Ver controles</button></div></div>
         <div id="toast" class="toast" role="status"></div>
         <div id="dialogue" class="dialogue" hidden>
           <div class="dialogue-icon">✦</div><div><strong id="dialogue-name"></strong><p id="dialogue-text"></p></div>
@@ -107,13 +119,13 @@ export class Hud {
         </div>
         <div class="touch-controls" aria-label="Controles táctiles">
           <div class="touch-cross"><button data-direction="w">▲</button><div><button data-direction="a">◀</button><button data-direction="s">▼</button><button data-direction="d">▶</button></div></div>
-          <button class="touch-action" data-action="interact">INTERACTUAR</button>
-          <button class="touch-action" data-direction="space">SALTAR</button>
+          <button class="touch-action" data-action="interact" aria-label="Interactuar" title="Interactuar">E</button>
+          <button class="touch-action" data-direction="space" aria-label="Saltar" title="Saltar">↑</button>
         </div>
       </div>
       <div id="panel-backdrop" class="panel-backdrop" hidden>
         <section id="panel-window" class="panel-window" role="dialog" aria-modal="true" aria-labelledby="panel-title">
-          <header class="panel-header"><div><span class="panel-kicker">CUADERNO DEL EXPLORADOR</span><h2 id="panel-title">Mapa de Auralia</h2></div><button data-action="close-panel" class="close-btn" aria-label="Cerrar">×</button></header>
+          <header class="panel-header"><div><span class="panel-kicker">✦ CUADERNO DEL EXPLORADOR</span><h2 id="panel-title">Mapa de Auralia</h2></div><button data-action="close-panel" class="close-btn" aria-label="Cerrar">${icon('close')}</button></header>
           <div id="panel-content" class="panel-content"></div>
         </section>
       </div>
@@ -122,6 +134,7 @@ export class Hud {
     this.compass = document.getElementById('compass')!;
     this.compassRotor = document.getElementById('compass-rotor')!;
     this.compassHeading = document.getElementById('compass-heading')!;
+    this.onCompact();this.compact.addEventListener('change',this.onCompact);
     document.addEventListener('click', this.onClick);
     document.addEventListener('keydown', this.onKeyDown);
     document.querySelectorAll<HTMLButtonElement>('[data-direction]').forEach(button => {
@@ -132,7 +145,7 @@ export class Hud {
       button.addEventListener('pointercancel', release);
       button.addEventListener('lostpointercapture', release);
     });
-    store.subscribe(() => this.render());
+    this.unsubscribe=store.subscribe(() => this.render());
   }
 
   get isModalOpen(): boolean { return this.panel !== null || this.dialogueVisible || !!this.abilities?.isOpen; }
@@ -177,7 +190,7 @@ export class Hud {
       }
       return;
     }
-    if (element.dataset.marker) { this.mapSelection = element.dataset.marker; this.renderPanel(); return; }
+    if (element.dataset.marker) { event.preventDefault();this.mapSelection = element.dataset.marker; this.renderPanel(); return; }
     if (element.dataset.mapView) {this.mapView=element.dataset.mapView as 'regional' | 'illustrated';this.renderPanel();return;}
     if (element.dataset.landmark) {this.close();this.actions.gotoLandmark(element.dataset.landmark);return;}
     if (element.dataset.recipe) {
@@ -198,6 +211,9 @@ export class Hud {
     }
     if(element.dataset.replace){this.actions.replaceSelected(element.dataset.replace as BuildType);return;}
     const action = element.dataset.action;
+    if(action==='toggle-quest'){
+      this.questTouched=true;this.setQuestCollapsed(!document.querySelector('.quest-card')!.classList.contains('is-collapsed'));
+    }
     if (action === 'close-panel') this.close();
     if (action === 'close-dialogue') this.closeDialogue();
     if (action === 'interact') this.actions.interact();
@@ -211,6 +227,14 @@ export class Hud {
   };
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
+    if(this.panel&&e.key==='Tab'){
+      const nodes=[...document.getElementById('panel-window')!.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,[tabindex="0"],a[href]')].filter(el=>el.offsetParent!==null);
+      const first=nodes[0],last=nodes.at(-1);
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+      return;
+    }
+    if(this.panel&&e.key==='Escape'){e.preventDefault();e.stopPropagation();this.close();return;}
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
       e.target instanceof HTMLSelectElement || e.target instanceof HTMLElement&&e.target.isContentEditable) return;
     const key = e.key.toLowerCase();
@@ -239,53 +263,68 @@ export class Hud {
     this.text('quest-number', `${quest.number} / 05`);
     this.text('quest-title', quest.title);
     this.text('quest-detail', quest.detail);
-    this.text('quest-icon', quest.emoji);
+    document.getElementById('quest-icon')!.innerHTML=icon(({collect:'wood',craft:'hammer',build:'home',sail:'map',light:'lantern',complete:'spark'} as const)[stage]);
     document.getElementById('quest-progress')!.innerHTML = this.getProgress(stage);
     document.getElementById('inventory')!.innerHTML = MATERIALS.map(item => `
-      <div class="inventory-item" title="${ITEM_LABEL[item]}"><div class="inventory-icon">${ITEM_ICON[item]}</div><div><small>${ITEM_LABEL[item]}</small><strong>${state.inventory[item]}</strong></div></div>
-    `).join('') + `${state.inventory.hammer > 0 ? `<div class="inventory-item special" title="Martillo">🔨 <strong>✓</strong></div>` : ''}` + `${state.inventory.lantern > 0 ? `<div class="inventory-item special" title="Linterna mágica">🏮 <strong>✓</strong></div>` : ''}` + `${state.inventory.sword > 0 ? `<div class="inventory-item special" title="Espada del Bosque Encantado · nivel ${this.store.swordLevel}">🗡️ <strong>${this.store.swordLevel}</strong></div>` : ''}`;
+      <div class="inventory-item item-${item}" title="${ITEM_LABEL[item]}"><div class="inventory-icon">${icon(({wood:'wood',stone:'stone',copper:'copper',spark:'spark',fireCrystal:'fire'} as const)[item])}</div><div><small>${ITEM_LABEL[item]}</small><strong>${state.inventory[item]}</strong></div></div>
+    `).join('');
     const equipped=state.equippedItem??'unarmed';
-    document.getElementById('equipment-status')!.textContent=equipped==='unarmed'
-      ?'✊ Mano limpia':`${ITEM_ICON[equipped]} ${ITEM_LABEL[equipped]}${equipped==='sword'?` · N${this.store.swordLevel}`:''}`;
+    const glyph:HudIcon=equipped==='unarmed'?'fist':equipped==='pickaxe'?'hammer':equipped;
+    document.getElementById('equipment-status')!.innerHTML=`${icon(glyph)}<span>${equipped==='unarmed'?'Mano limpia':ITEM_LABEL[equipped]}${equipped==='sword'?` · N${this.store.swordLevel}`:''}</span><kbd>V</kbd>`;
     if (this.panel === 'craft' || this.panel === 'build' ||
       this.panel === 'map' || this.panel === 'equip') this.renderPanel();
   }
 
   private getProgress(stage: Milestone): string {
     const { inventory: inv, structures } = this.store.state;
-    if (stage === 'collect') return `<span>🪵 ${Math.min(inv.wood, 2)}/2</span><span>🪨 ${Math.min(inv.stone, 1)}/1</span>`;
-    if (stage === 'build') return `<span>🏠 ${Math.min(structures.length, 3)}/3 piezas</span><span>Tecla B</span>`;
-    if (stage === 'light') return `<span>✨ ${Math.min(inv.spark, 2)}/2</span><span>Tecla C</span>`;
-    if (stage === 'complete') return `<span>🏮 Linterna conseguida</span><span>¡Seguí explorando!</span>`;
-    return stage === 'craft' ? '<span>🔨 Abrir recetas</span><span>Tecla C</span>' : '<span>⛵ Buscá el muelle</span><span>Al sur</span>';
+    if (stage === 'collect') return `<span>${icon('wood')} ${Math.min(inv.wood, 2)}/2</span><span>${icon('stone')} ${Math.min(inv.stone, 1)}/1</span>`;
+    if (stage === 'build') return `<span>${icon('home')} ${Math.min(structures.length, 3)}/3 piezas</span><span>Tecla B</span>`;
+    if (stage === 'light') return `<span>${icon('spark')} ${Math.min(inv.spark, 2)}/2</span><span>Tecla C</span>`;
+    if (stage === 'complete') return `<span>${icon('lantern')} Linterna conseguida</span><span>¡Seguí explorando!</span>`;
+    return stage === 'craft' ? `<span>${icon('hammer')} Abrir recetas</span><span>Tecla C</span>` : `<span>${icon('map')} Buscá el muelle</span><span>Al sur</span>`;
   }
 
   private text(id: string, value: string): void { document.getElementById(id)!.textContent = value; }
+  private setQuestCollapsed(collapsed:boolean):void{
+    document.querySelector('.quest-card')!.classList.toggle('is-collapsed',collapsed);
+    const button=document.querySelector('[data-action="toggle-quest"]')!;
+    button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Expandir misión':'Contraer misión');
+  }
 
   open(which: Exclude<Panel, null>): void {
     if(!this.actions.canOpenPanel())return;
+    this.abilities?.close();
     this.closeDialogue();
+    if(!this.panel)this.focusBeforePanel=document.activeElement as HTMLElement|null;
     this.panel = which;
     document.getElementById('panel-backdrop')!.hidden = false;
     this.renderPanel();
+    document.querySelector<HTMLButtonElement>('#panel-window .close-btn')?.focus();
   }
 
   close(): void {
+    this.atlas?.dispose();this.atlas=null;
     this.panel = null;
     document.getElementById('panel-backdrop')!.hidden = true;
+    this.focusBeforePanel?.focus();this.focusBeforePanel=null;
   }
 
   private renderPanel(): void {
     if (!this.panel) return;
+    this.atlas?.dispose();this.atlas=null;
     const panel = this.panel;
-    this.text('panel-title', ({ map: 'Mapa de Auralia', craft: 'Taller de fabricación', build: 'Construí tu hogar', equip:'Equipo de Santi', graphics:'Gráficos', help: 'Guía del aventurero' } as const)[panel]);
+    document.getElementById('panel-window')!.dataset.panel=panel;
+    this.text('panel-title', ({ map: 'Mapa de Auralia', craft: 'Taller de fabricación', build: 'Construí tu hogar', equip:'Equipo de Santi', graphics:'Gráficos', sound:'Los sonidos de Auralia', help: 'Guía del aventurero' } as const)[panel]);
     const target = document.getElementById('panel-content')!;
     if (panel === 'map') target.innerHTML = this.mapMarkup();
     else if (panel === 'craft') target.innerHTML = this.craftMarkup();
     else if (panel === 'build') target.innerHTML = this.buildMarkup();
     else if (panel === 'equip') target.innerHTML = this.equipmentMarkup();
     else if (panel === 'graphics') target.innerHTML = this.graphicsMarkup();
+    else if (panel === 'sound'){target.innerHTML=this.sound?.markup()??'';this.sound?.refresh();}
     else target.innerHTML = this.helpMarkup();
+    const atlas=target.querySelector<HTMLElement>('.atlas-shell');
+    if(atlas)this.atlas=new MapViewport(atlas,this.atlasView);
   }
 
   private graphicsMarkup():string{
@@ -299,12 +338,23 @@ export class Hud {
 
   private mapMarkup(): string {
     const geography=activeGeography();
-    if(geography){const p=this.projectPosition();return `<p class="panel-lead">Nuevo continente · Brisalia y sus sistemas trasladados. Elegí un destino para explorar.</p>
-      <div class="map-layout regional-layout"><div class="map-board regional-map-board">${geography.mapMarkup()}
-      <span id="map-player" class="player-map-marker" style="left:${p.left}%;top:${p.top}%">✦</span></div>
-      <div class="map-details"><h3>${this.local.region}</h3><p>X ${Math.round(this.local.x)} · Z ${Math.round(this.local.z)}</p>
-      <div class="landmark-list">${this.store.state.discoveredPlaces?.includes(VOLCANIC_CAVE.id)?`<button data-landmark="${VOLCANIC_CAVE.id}"><strong>◆ ${VOLCANIC_CAVE.name}</strong><small>Caverna descubierta · Volcán Ígneo${this.store.state.discoveredPlaces.includes(VOLCANIC_CAVE.rewardId)?' · Corazón recuperado':''}</small></button>`:''}${geography.destinations.map(d=>`<button data-landmark="${d.id}"><strong>${d.name}</strong></button>`).join('')}</div>
-      <p>Los traslados de esta rama de pruebas conservan las misiones. Esta partida es independiente del mundo actual.</p></div></div>`;}
+    if(geography){const p=this.projectPosition(),selected=geography.destinations.find(d=>d.id===this.mapSelection)??geography.destinations[0];
+      return `<p class="panel-lead">Seguí los valles, reconocé las cumbres y encontrá tu próximo destino.</p>
+      <div class="map-layout regional-layout atlas-layout"><div class="atlas-shell">
+        <div class="atlas-toolbar"><span>ATLAS DE AURALIA</span><div>
+          <button data-atlas="out" aria-label="Alejar mapa">−</button><button data-atlas="in" aria-label="Acercar mapa">+</button>
+          <button data-atlas="reset">Continente</button><button data-atlas="player">Mi ubicación</button></div></div>
+        <div class="map-board atlas-viewport"><div class="atlas-layer">${geography.mapMarkup(selected?.id)}
+          <span id="map-player" class="player-map-marker" style="left:${p.left}%;top:${p.top}%" title="Tu ubicación">✦</span></div>
+          <div class="atlas-north" aria-label="Norte"><span>N</span>↑</div>
+          <div class="atlas-scale"><span data-atlas-scale>2 km</span><i></i></div>
+        </div><div class="atlas-footer"><span>Arrastrá para recorrer · Rueda para acercar</span><span>● Lugares &nbsp; ◇ Reinos flotantes &nbsp; ✦ Vos</span></div>
+      </div><div class="map-details atlas-details"><span class="micro-title">ESTÁS EN</span><h3>${this.local.region}</h3>
+        <p class="atlas-coordinates">X ${Math.round(this.local.x)} · Z ${Math.round(this.local.z)}</p>
+        ${selected?`<div class="atlas-destination"><small>DESTINO SELECCIONADO</small><strong>${selected.name}</strong><button data-landmark="${selected.id}">Viajar aquí →</button></div>`:''}
+        <div class="landmark-list atlas-destinations">${this.store.state.discoveredPlaces?.includes(VOLCANIC_CAVE.id)?`<button data-landmark="${VOLCANIC_CAVE.id}"><strong>◆ ${VOLCANIC_CAVE.name}</strong><small>Caverna descubierta · Volcán Ígneo${this.store.state.discoveredPlaces.includes(VOLCANIC_CAVE.rewardId)?' · Corazón recuperado':''}</small></button>`:''}${geography.destinations.map((d,i)=>`<button data-marker="${d.id}" class="${d.id===selected?.id?'current':''}"><span>${String(i+1).padStart(2,'0')}</span><strong>${d.name}</strong></button>`).join('')}</div>
+        <p class="map-hint">Seleccioná un punto del mapa o un lugar de la lista para viajar.</p>
+      </div></div>`;}
     const tabs=`<div class="map-tabs"><button data-map-view="regional" class="${this.mapView==='regional'?'current':''}">🧭 Mapa del terreno jugable</button><button data-map-view="illustrated" class="${this.mapView==='illustrated'?'current':''}">🗺️ Atlas ilustrado de Auralia</button></div>`;
     if(this.mapView==='regional'){
       const pos=this.projectPosition();
@@ -481,7 +531,7 @@ export class Hud {
     return `<p class="panel-lead">Las Doce Coronas están en desarrollo sobre el continente actual. El tamaño definitivo del mundo sigue abierto. El mapa (M) permite visitar hitos para probar los recorridos. En las entradas de Ferragrís, presioná E para explorar las galerías o salir por otro acceso.</p><div class="help-grid">
       <article><h3>🧭 Exploración</h3><p><strong>WASD</strong> o flechas para moverte; arrastrá el ratón para girar la cámara; rueda para acercar y alejar; <strong>Shift</strong> para correr, dos pulsaciones rápidas de <strong>Shift</strong> y mantener la segunda para sprint, y <strong>Espacio</strong> para saltar o volver a saltar en el aire. Frente a una roca trepable, mantené <strong>W</strong> para subir, <strong>S</strong> para bajar, <strong>A/D</strong> para desplazarte y <strong>Espacio</strong> para soltarte.</p></article>
       <article><h3>⚔️ Acciones de Santi</h3><p>Abrí <strong>Equipo (V)</strong> o usá <strong>1–5</strong> para elegir mano limpia, espada o herramienta. <strong>Q</strong> alterna las patadas a mano limpia o los ataques de espada si está seleccionada. <strong>F</strong> ejecuta la barrida y <strong>R</strong> el roll. Las patadas no trasladan al personaje; el roll conserva la dirección con la que empezó. Patadas, barrida y rolls deben terminar antes de repetirse. Tras una caída muy alta, Santi hace automáticamente el roll de aterrizaje.</p></article>
-      <article><h3>🌿 Poderes</h3><p><strong>H</strong> abre selección y requisitos; <strong>X</strong> activa el especial y <strong>T</strong> solicita el definitivo independiente. <strong>Esc</strong> cancela. Las raíces requieren la espada equipada y siguen sus cuatro niveles. Cancelar antes del compromiso no consume enfriamiento; después lo conserva. Definitivo, fuego y vuelo permanecen pendientes.</p></article>
+      <article><h3>🌿 Poderes</h3><p><strong>H</strong> abre selección y requisitos; <strong>X</strong> activa el especial y <strong>T</strong> solicita el definitivo independiente. <strong>Esc</strong> cancela. Las raíces requieren la espada equipada y siguen sus cuatro niveles. La llamarada se aprende en el cristal sagrado del Reino Ígneo y se lanza desde suelo firme, con cualquier equipo. Cancelar antes del compromiso no consume enfriamiento; después lo conserva. Definitivo y vuelo permanecen pendientes.</p></article>
       <article><h3>🪵 Recolección</h3><p>Acercate a árboles con marcador, rocas y cristales, y presioná <strong>E</strong>. Los recursos reaparecen después de unos segundos.</p></article>
       <article><h3>⚒️ Fabricación</h3><p>Presioná <strong>C</strong>, elegí una receta y usá los materiales que reuniste. Fabricá primero el martillo.</p></article>
       <article><h3>🏡 Construcción</h3><p>Presioná <strong>B</strong>, elegí una pieza y caminá al Claro del Hogar. Click para colocar; R para girar y Esc para cancelar.</p></article>
@@ -490,7 +540,11 @@ export class Hud {
     </div><div class="data-actions"><button data-action="export">⬇ Exportar partida JSON</button><button data-action="reset" class="danger">Reiniciar POC</button></div>`;
   }
 
-  hint(message: string): void { this.text('interaction-hint', message); }
+  hint(message: string): void {
+    const passive=message.startsWith('WASD mover');
+    const el=document.getElementById('interaction-hint')!;
+    el.hidden=passive;el.textContent=message;
+  }
   notify(message: string): void {
     const toast = document.getElementById('toast')!;
     toast.textContent = message;
@@ -520,5 +574,10 @@ export class Hud {
     a.href = url; a.download = 'auralia-partida-v1.json'; a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     this.notify('Respaldo JSON exportado.');
+  }
+  dispose():void{
+    this.unsubscribe();this.sound?.dispose();this.abilities?.dispose();this.atlas?.dispose();
+    this.compact.removeEventListener('change',this.onCompact);
+    window.clearTimeout(this.toastTimeout);document.removeEventListener('click',this.onClick);document.removeEventListener('keydown',this.onKeyDown);
   }
 }

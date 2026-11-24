@@ -6,6 +6,9 @@ export const TERRAIN_LOD_CONFIG = {
   nearRadius: 252,
   midRadius: 720,
   farRadius: 1700,
+  // Two complete far tiles give the horizon over twenty seconds of head start
+  // at full sprint, within the existing 2600 m source-data window.
+  farPrefetchMargin: MAINLAND.chunkSize * 8,
   nearSize: MAINLAND.chunkSize,
   midSize: MAINLAND.chunkSize * 2,
   farSize: MAINLAND.chunkSize * 4,

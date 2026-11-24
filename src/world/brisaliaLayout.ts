@@ -398,13 +398,16 @@ const METRIC_BUILDINGS = [
 // remain metric and byte-identical; scale the whole settlement coherently.
 export const BRISALIA_REFERENCE_HEIGHT_M=1.4;
 export const BRISALIA_SCALE=TRAVERSAL.playerHeight/BRISALIA_REFERENCE_HEIGHT_M;
-export const BRISALIA_BUILDINGS=METRIC_BUILDINGS.map(b=>{
+const BUILDING_ASSETS=METRIC_BUILDINGS.map(b=>{
  const asset=b.id==='B28'?b:{...BRISALIA_REV3_ASSETS[b.id],revision:3,assetRoot:'brisalia-rev3-final'};
  return {...b,...asset,x:b.x*BRISALIA_SCALE,z:b.z*BRISALIA_SCALE,width:asset.width*BRISALIA_SCALE,
   depth:asset.depth*BRISALIA_SCALE,height:asset.height*BRISALIA_SCALE,
   footprintOffsetZ:('footprintOffsetZ' in b?b.footprintOffsetZ:0)*BRISALIA_SCALE};
 });
-export type BrisaliaBuilding=typeof BRISALIA_BUILDINGS[number];
+export type BrisaliaBuilding=typeof BUILDING_ASSETS[number];
+// B28 is now placed independently on Nácar; it is no longer a town footprint.
+export const CASTLE_BUILDING:BrisaliaBuilding=BUILDING_ASSETS.find(b=>b.id==='B28')!;
+export const BRISALIA_BUILDINGS:readonly BrisaliaBuilding[]=BUILDING_ASSETS.filter(b=>b.id!=='B28');
 // Door centres measured in the individual GLBs, before the placement yaw.
 // B01's authored facade faces +Z; the other prefabs face -Z.
 const ENTRY_X:Record<string,number>={B01:-.745,B02:0,B03:0,B04:-2.73,B05:-2.31,B06:0,
@@ -417,7 +420,7 @@ export function brisaliaApproach(b:BrisaliaBuilding):readonly [number,number]{
 export type VillageRoad={width:number;points:readonly (readonly [number,number])[]};
 const METRIC_ROADS:VillageRoad[]=[
  {width:4.5,points:[[-75,-98],[65,-98]]},
- {width:5,points:[[-110,-65],[86,-65],[86,-35],[135,-35],[135,-69]]},
+ {width:5,points:[[-110,-65],[86,-65],[86,-35]]},
  {width:4,points:[[-75,-35],[86,-35]]},
  {width:4,points:[[-75,-98],[-75,-35]]},
  {width:4,points:[[-29,-98],[-29,-35]]},
@@ -434,9 +437,10 @@ export function brisaliaPlatformWeight(x:number,z:number):number{
  const d=Math.hypot(Math.max(-128-x,0,x-176),Math.max(-144-z,0,z-38));
  return 1-smooth(0,36,d);
 }
-export function brisaliaCourtyardHeight(x:number,z:number):number{
+/** Castle-centred offsets, with its entrance facing +Z (yaw 180). */
+export function castleCourtyardHeight(x:number,z:number):number{
  x/=BRISALIA_SCALE;z/=BRISALIA_SCALE;
- const dx=Math.abs(x-135),dz=z+104;
+ const dx=Math.abs(x),dz=z;
  // Rev5: eight 0.36 m treads rise to 1.35 m, ending at source Z=-30.28.
  // The open courtyard remains map soil and meets the top landing without a drop.
  const t=Math.max(0,Math.min(1,(33.16-dz)/2.88));

@@ -33,6 +33,21 @@ export class AbilityTargets {
     }
   }
   clear():void{this.targets.clear();}
+  /** Fixed timeline pulses, with independent line-of-sight for each target. */
+  impactCone(e:AbilityExecution,index:number,origin:Point,direction:Point,length:number,width:number,
+    damage:number,clear:(from:Point,to:Point)=>boolean):void{
+    for(const target of this.targets.values()){
+      const key=`${index}:${target.id}`,p=target.position,r=target.radius;
+      if(e.hits.has(key)||!target.valid()||!Number.isFinite(r)||r<0||![p.x,p.y,p.z].every(Number.isFinite))continue;
+      const x=p.x-origin.x,y=p.y-origin.y,z=p.z-origin.z;
+      const along=x*direction.x+y*direction.y+z*direction.z;
+      if(along<0||along>length+r)continue;
+      const radius=.065+width*Math.pow(Math.min(1,along/Math.max(.01,e.profile.radius)),.66);
+      if(x*x+y*y+z*z-along*along>(radius+r)**2||!clear(origin,p))continue;
+      e.hits.add(key);target.receive({executionId:e.id,abilityId:e.definition.id,impactIndex:index,
+        damage:damage*e.profile.damageMultiplier,origin:{...origin},push:0,immobilize:0});
+    }
+  }
 }
 export interface RootsWorld {
   surface(x:number,z:number,nearY:number,horizontalReach?:number):SurfacePoint|null;

@@ -1,8 +1,8 @@
-import { LoadAssetContainerAsync, Material, Mesh, Quaternion, Ray, Scene,
+import { LoadAssetContainerAsync, Material, Matrix, Mesh, Quaternion, Ray, Scene,
   TransformNode, Vector3, VertexData } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import '@babylonjs/loaders/glTF/2.0/Extensions/EXT_texture_webp.js';
-import { BRISALIA_BUILDINGS, BRISALIA_SCALE, brisaliaRoadEdge, inBrisaliaFootprint,
+import { BRISALIA_BUILDINGS, CASTLE_BUILDING, BRISALIA_SCALE, brisaliaRoadEdge, inBrisaliaFootprint,
   type BrisaliaBuilding } from './brisaliaLayout';
 import { createVillageRoadMaterial } from './materials/VillageRoadMaterial';
 import { BrisaliaCastleIvy } from './BrisaliaCastleIvy';
@@ -11,27 +11,44 @@ import { BrisaliaEntranceLanterns, entranceLampMount } from './BrisaliaEntranceL
 import { shareTextureSourceBuffers } from './SharedTextureBuffers';
 import { gpuAssetUrl, gpuBuildingResourceUrl } from './GpuAssets';
 import { repairWoodSolids } from './RepairWoodSolids';
+import { BrisaliaFountain } from './BrisaliaFountain';
+import { StaticVerticalIndex } from './StaticVerticalIndex';
+import { CASTLE_ENTRIES, castleEntryGeometry, castleEntryHeight, type CastleEntry } from './CastleEntryGeometry';
+import type { PalacePlacement } from './geography/NacarPalace';
 
 /** The playable settlement, with one independent prefab per building ID. */
 export class BrisaliaVillage {
   readonly buildings=new Map<string,{root:TransformNode;meshes:Mesh[];sourceMeshes:number}>();
   readonly errors:string[]=[];
+  surfaceRevision=0;
   readonly ready:Promise<void>;
   readonly lanterns:BrisaliaEntranceLanterns;
+  readonly fountain:BrisaliaFountain;
   private disposed=false;
   private roads:Mesh|null=null;
   private castleIvy:BrisaliaCastleIvy|null=null;
   private readonly buildingHeights=new Map<string,number>();
+  private readonly rainCells=new Map<string,Mesh[]>();
+  private readonly solids:Mesh[]=[];
+  private readonly verticalIndices=new Map<Mesh,StaticVerticalIndex>();
+  private readonly entryFloors:{kind:CastleEntry;mesh:Mesh;inverse:Matrix}[]=[];
   constructor(private scene:Scene,private parent:TransformNode,
-    readonly origin:{x:number;z:number},private heightAt:(x:number,z:number)=>number){
+    readonly origin:{x:number;z:number},private heightAt:(x:number,z:number)=>number,
+    private palace?:PalacePlacement){
     this.lanterns=new BrisaliaEntranceLanterns(scene);
+    const fountainX=origin.x,fountainZ=origin.z-65*BRISALIA_SCALE;
+    this.fountain=new BrisaliaFountain(scene,parent,new Vector3(fountainX,heightAt(fountainX,fountainZ),fountainZ));
     this.createRoads();
     // These terrain tiles can be evicted while the asynchronous GLBs load.
     for(const b of BRISALIA_BUILDINGS)this.buildingHeights.set(b.id,heightAt(origin.x+b.x,origin.z+b.z));
-    this.ready=this.load();
+    this.ready=Promise.all([this.load(),this.fountain.ready.then(()=>{
+      if(this.disposed)return;
+      if(this.fountain.error)this.errors.push(`fountain: ${this.fountain.error}`);
+      else this.registerSolids(this.fountain.meshes);
+    })]).then(()=>{});
   }
   private async load():Promise<void>{
-    const queue=[...BRISALIA_BUILDINGS];
+    const queue=[...BRISALIA_BUILDINGS,...(this.palace?[CASTLE_BUILDING]:[])];
     // Shared glTF image URLs reuse Babylon's internal GPU texture cache.
     // Bound simultaneous decoding/upload; the castle loads once, last.
     await Promise.all([0,1].map(async()=>{
@@ -77,8 +94,20 @@ export class BrisaliaVillage {
       if(tangents){const fixed=new Float32Array(tangents);for(const v of repair.flippedVertices)fixed[v*4+3]*=-1;mesh.setVerticesData('tangent',fixed);}
       mesh.metadata={...mesh.metadata,repairedWoodComponents:repair.components};
     }
-    const gateLanding=b.id==='B28'&&b.revision===5?parts.find(m=>m.name==='R5_GATE_threshold_landing'):undefined;
-    if(gateLanding)parts.splice(parts.indexOf(gateLanding),1);
+    const entryMaterials=new Map<CastleEntry,{material:Material;transform:Matrix;bounds:{min:number[];max:number[]}}>();
+    if(b.id==='B28'&&b.revision===5)for(const kind of ['gate','hall'] as const){
+      const name=`R5_${kind.toUpperCase()}`;
+      const source=parts.find(m=>m.name===`${name}_continuous_vault`);
+      if(source?.material){
+        source.computeWorldMatrix(true);
+        const bounds=source.getBoundingInfo().boundingBox;
+        entryMaterials.set(kind,{material:source.material,
+          transform:Matrix.Scaling(1,1,-1).multiply(source.getWorldMatrix()),
+          bounds:{min:bounds.minimumWorld.asArray(),max:bounds.maximumWorld.asArray()}});
+        for(let i=parts.length-1;i>=0;i--)if([`${name}_continuous_vault`,`${name}_threshold_landing`].includes(parts[i].name)||
+          parts[i].name.startsWith(`${name}_parapet_pier_`)||parts[i].name.startsWith(`${name}_rising_parapet_`))parts.splice(i,1);
+      }
+    }
     if(b.id==='B28'&&b.revision===5)for(const mesh of parts){
       if(!/^AUR034_WING60_floor_-?1_0$/.test(mesh.name))continue;
       // The authored ground-floor slabs stop 17 cm short of the inner wall.
@@ -89,38 +118,21 @@ export class BrisaliaVillage {
       mesh.scaling.x*=(half.x+.25)/half.x;
       mesh.scaling.z*=(half.z+.25)/half.z;
     }
-    const root=new TransformNode(`brisalia:${b.id}`,this.scene);
+    const palace=b.id==='B28'?this.palace:undefined;
+    const root=new TransformNode(`${palace?'nacar':'brisalia'}:${b.id}`,this.scene);
     placedRoot=root;
     root.parent=this.parent;
-    root.position.set(this.origin.x+b.x,this.buildingHeights.get(b.id)!-
-      (b.id==='B28'?1.35*BRISALIA_SCALE:0),this.origin.z+b.z);
+    root.position.set(palace?.x??this.origin.x+b.x,palace?.groundHeight??this.buildingHeights.get(b.id)!,
+      palace?.z??this.origin.z+b.z);
     root.scaling.setAll(BRISALIA_SCALE);
-    root.rotation.y=b.yaw*Math.PI/180;
+    root.rotation.y=(palace?.yaw??b.yaw)*Math.PI/180;
     root.metadata={buildingId:b.id,revision:b.revision,sourceAsset:`${b.assetRoot}/${b.file}`,
-      sourceMetersToWorldUnits:BRISALIA_SCALE};
+      sourceMetersToWorldUnits:BRISALIA_SCALE,region:palace?'nacar':'brisalia'};
     if(b.id==='B28'){
       axes.setEnabled(false);root.setEnabled(false);
       const ivy=new BrisaliaCastleIvy(this.scene,parts,root);this.castleIvy=ivy;
       await ivy.volume.ready;
       if(this.disposed){axes.dispose(false,false);root.dispose(false,false);return;}
-    }
-    // Replace the short landing with a watertight slab through the gatehouse.
-    // Build in castle coordinates, alongside the converted source meshes, so
-    // the new box has its own indices and no imported/interleaved buffers.
-    let passage:Mesh|undefined;
-    if(gateLanding){
-      passage=new Mesh('B28:gate-passage-floor',this.scene);
-      // Seat each side 10 cm inside the 7.10 m opening instead of leaving seams.
-      const data=VertexData.CreateBox({width:7.3,height:.115,depth:7.3});
-      for(let i=0;i<data.positions!.length;i+=3){
-        const x=data.positions![i],y=data.positions![i+1],z=data.positions![i+2];
-        const top=Math.abs(data.normals![i+1])>.5;
-        data.uvs![i/3*2]=(top||Math.abs(data.normals![i+2])>.5?x:z)/1.3;
-        data.uvs![i/3*2+1]=top?1+(26.65-z)/1.3:y/1.3;
-      }
-      data.applyToMesh(passage);
-      passage.position.set(0,1.3175,-26.65);
-      passage.material=gateLanding.material;
     }
     const groups=new Map<string,Mesh[]>();
     const anchors:{name:string;min:number[];max:number[]}[]=[];
@@ -149,20 +161,38 @@ export class BrisaliaVillage {
         sourceNames:group.map(part=>part.name),repairedWoodComponents:group.reduce((n,part)=>n+(part.metadata?.repairedWoodComponents??0),0)};
       mesh.computeWorldMatrix(true);mesh.freezeWorldMatrix();meshes.push(mesh);
     }
-    if(passage){
-      // Keep its native Babylon winding separate from the imported glTF batches.
-      passage.parent=root;passage.isPickable=true;passage.checkCollisions=false;
-      passage.metadata={buildingId:b.id};
-      passage.computeWorldMatrix(true);passage.freezeWorldMatrix();meshes.push(passage);
+    for(const [kind,{material,transform,bounds}] of entryMaterials){
+      const mesh=new Mesh(`B28:${kind}-continuous-entry`,this.scene),data=new VertexData();
+      Object.assign(data,castleEntryGeometry(kind));data.applyToMesh(mesh);
+      mesh.material=material;mesh.parent=root;mesh.isPickable=true;mesh.checkCollisions=false;
+      mesh.rotationQuaternion=Quaternion.Identity();
+      transform.decompose(mesh.scaling,mesh.rotationQuaternion,mesh.position);
+      mesh.metadata={buildingId:b.id,castleEntry:kind,buildingCollision:true,sourceEntryBounds:bounds};
+      mesh.computeWorldMatrix(true);mesh.freezeWorldMatrix();meshes.push(mesh);
+      this.entryFloors.push({kind,mesh,inverse:Matrix.Invert(mesh.getWorldMatrix())});
     }
     // Materials/textures are still referenced by the batches; only the original
     // draw objects and transform hierarchy are discarded.
     axes.dispose(false,false);
     root.setEnabled(true);
     if(lampMount)this.lanterns.add(b.id,root,meshes,lampMount);
-    this.buildings.set(b.id,{root,meshes,sourceMeshes:parts.length+(gateLanding?1:0)});
+    this.buildings.set(b.id,{root,meshes,sourceMeshes:parts.length+entryMaterials.size});
+    this.registerSolids(meshes);
     }catch(error){
       placedRoot?.dispose(false,false);axes.dispose(false,false);asset.dispose();throw error;
+    }
+  }
+  private registerSolids(meshes:readonly Mesh[]):void{
+    this.surfaceRevision++;
+    for(const mesh of meshes){
+      if(mesh.metadata?.buildingCollision===false)continue;
+      this.solids.push(mesh);
+      this.verticalIndices.set(mesh,new StaticVerticalIndex(mesh));
+      const box=mesh.getBoundingInfo().boundingBox;
+      for(let x=Math.floor(box.minimumWorld.x/16);x<=Math.floor(box.maximumWorld.x/16);x++)
+        for(let z=Math.floor(box.minimumWorld.z/16);z<=Math.floor(box.maximumWorld.z/16);z++){
+          const key=`${x}:${z}`,cell=this.rainCells.get(key)??[];cell.push(mesh);this.rainCells.set(key,cell);
+        }
     }
   }
   private createRoads():void{
@@ -177,7 +207,8 @@ export class BrisaliaVillage {
       const key=`${x}:${z}`,existing=vertices.get(key);if(existing!==undefined)return existing;
       const n=positions.length/3,wx=this.origin.x+x,wz=this.origin.z+z,d=field(x,z);
       positions.push(wx,this.heightAt(wx,wz)+.045,wz);uvs.push(x/12,z/12);
-      colors.push(.94+variation(x*.22,z*.22)*.15,0,.27+smooth(-4,0,d)*.45,1-smooth(-1.1,1.3,d));
+      // Green is the inlay envelope; alpha still preserves the original dirt shoulder.
+      colors.push(.94+variation(x*.22,z*.22)*.15,1-smooth(-4,-1.4,d),.27+smooth(-4,0,d)*.45,1-smooth(-1.1,1.3,d));
       vertices.set(key,n);return n;
     };
     for(let z=Math.floor(-140*BRISALIA_SCALE);z<14*BRISALIA_SCALE;z++)for(let x=Math.floor(-128*BRISALIA_SCALE);x<178*BRISALIA_SCALE;x++){
@@ -191,7 +222,7 @@ export class BrisaliaVillage {
     data.positions=new Float32Array(positions);data.indices=new Uint32Array(indices);
     data.uvs=new Float32Array(uvs);data.colors=new Float32Array(colors);
     const normals:number[]=[];VertexData.ComputeNormals(positions,indices,normals);data.normals=new Float32Array(normals);data.applyToMesh(mesh);
-    mesh.material=createVillageRoadMaterial(this.scene);mesh.parent=this.parent;mesh.isPickable=false;
+    mesh.material=createVillageRoadMaterial(this.scene,BRISALIA_SCALE);mesh.parent=this.parent;mesh.isPickable=false;
     mesh.hasVertexAlpha=true;mesh.freezeWorldMatrix();
     this.roads=mesh;
   }
@@ -199,7 +230,14 @@ export class BrisaliaVillage {
     let nearest:ReturnType<Ray['intersectsMesh']>|null=null;
     const end=ray.origin.add(ray.direction.scale(ray.length));
     const lo=Vector3.Minimize(ray.origin,end),hi=Vector3.Maximize(ray.origin,end);
-    for(const {meshes} of this.buildings.values())for(const mesh of meshes){
+    // Reuse the existing spatial buckets for camera/ground rays as well as
+    // rain. Immediate orbit checks need not visit every building in town.
+    const candidates=new Set<Mesh>();
+    for(let x=Math.floor(lo.x/16);x<=Math.floor(hi.x/16);x++)
+      for(let z=Math.floor(lo.z/16);z<=Math.floor(hi.z/16);z++)
+        for(const mesh of this.rainCells.get(`${x}:${z}`)??[])candidates.add(mesh);
+    for(const mesh of candidates){
+      if(mesh.isDisposed()||!mesh.isEnabled())continue;
       if(mesh.metadata?.buildingCollision===false)continue;
       const bounds=mesh.getBoundingInfo().boundingBox;
       const a=bounds.minimumWorld,b=bounds.maximumWorld;
@@ -211,10 +249,42 @@ export class BrisaliaVillage {
     return nearest;
   }
   ground(x:number,z:number,origin:number,distance:number){
-    const hit=this.cast(new Ray(new Vector3(x,origin,z),new Vector3(0,-1,0),distance));
-    if(!hit?.pickedPoint)return null;
-    const normal=hit.getNormal(true);
-    return normal&&Math.abs(normal.y)>.55?{height:hit.pickedPoint.y,normalY:Math.abs(normal.y),rockId:`building:${hit.pickedMesh?.metadata?.buildingId}`}:null;
+    const hit=this.vertical(x,z,origin,distance);
+    return hit&&hit.normalY>.55?{height:hit.height,normalY:hit.normalY,rockId:`building:${hit.mesh.metadata?.buildingId}`}:null;
+  }
+  /** Rescue old saved positions/deep penetrations inside the repaired entries,
+   * without pulling a normally stepping or jumping player onto the landing. */
+  entryStepHeightAt(x:number,z:number):number|null{
+    for(const {kind,mesh,inverse} of this.entryFloors){
+      if(!mesh.isEnabled())continue;
+      const local=Vector3.TransformCoordinates(new Vector3(x,0,z),inverse),c=CASTLE_ENTRIES[kind];
+      if(Math.abs(local.x)<=c.width/2+.4&&local.z>=c.front-1&&local.z<=c.back+.5)
+        return .22*BRISALIA_SCALE;
+    }
+    return null;
+  }
+  entryRecoveryAt(x:number,y:number,z:number):number|null{
+    for(const {kind,mesh,inverse} of this.entryFloors){
+      if(mesh.isDisposed()||!mesh.isEnabled())continue;
+      const local=Vector3.TransformCoordinates(new Vector3(x,y,z),inverse);
+      const top=castleEntryHeight(kind,local.x,local.z),c=CASTLE_ENTRIES[kind];
+      if(top===null||Math.abs(local.x)>c.width/2-.1||local.y>=top-.26||local.y<c.base-.3)continue;
+      return Vector3.TransformCoordinates(new Vector3(local.x,top,local.z),mesh.getWorldMatrix()).y;
+    }
+    return null;
+  }
+  private vertical(x:number,z:number,origin:number,distance:number,up=false){
+    let nearest:({height:number;normalY:number;distance:number;mesh:Mesh})|null=null;
+    for(const mesh of this.rainCells.get(`${Math.floor(x/16)}:${Math.floor(z/16)}`)??[]){
+      if(mesh.isDisposed()||!mesh.isEnabled()||mesh.metadata?.buildingCollision===false)continue;
+      const hit=this.verticalIndices.get(mesh)?.hit(x,z,origin,distance,up);
+      if(hit&&(!nearest||hit.distance<nearest.distance))nearest={...hit,mesh};
+    }
+    return nearest;
+  }
+  /** Top exposed geometry; broad phase stores references, without copying triangles. */
+  rainHeight(x:number,z:number):number|null{
+    return this.vertical(x,z,768,1024)?.height??null;
   }
   wall(x:number,y:number,z:number,dx:number,dz:number,reach:number){
     const direction=new Vector3(dx,0,dz).normalize();
@@ -225,14 +295,18 @@ export class BrisaliaVillage {
       distance:hit.distance,normalX:n.x,normalY:n.y,normalZ:n.z,climbable:false,rockId:`building:${hit.pickedMesh?.metadata?.buildingId}`};
   }
   headroom(x:number,y:number,z:number,height:number):boolean{
-    return !this.cast(new Ray(new Vector3(x,y+.15,z),Vector3.Up(),height-.15));
+    return !this.vertical(x,z,y+.15,height-.15,true);
   }
   cameraObstruction(from:Vector3,to:Vector3):number|null{
     const d=to.subtract(from),length=d.length();
     return length>0?this.cast(new Ray(from,d.scale(1/length),length))?.distance??null:null;
   }
   dispose():void{
+    this.entryFloors.length=0;
+    this.verticalIndices.clear();
+    this.rainCells.clear();
     this.disposed=true;
+    this.solids.length=0;this.fountain.dispose();
     this.lanterns.dispose();
     this.castleIvy?.dispose();this.castleIvy=null;
     const materials=new Set<Material>();

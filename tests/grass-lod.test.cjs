@@ -1,8 +1,12 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises');
+const {createHash}=require('node:crypto');
+const matrixDigest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const {NullEngine,Scene,Mesh,VertexData,PBRMaterial,TransformNode}=require('@babylonjs/core');
 const {generateGrassPatch,generateGrassPatchSteps,grassPatchDensity,GRASS_PATCH,GRASS_HEIGHT}=require('../.test-build/world/grass/GrassPatchData.js');
 const {TRAVERSAL}=require('../.test-build/game/traversalRules.js');
 const {grassHabitatSampler}=require('../.test-build/world/grass/GrassHabitat.js');
+const {GrassPatchCache}=require('../.test-build/world/grass/GrassPatchCache.js');
+const {VegetationCorridors}=require('../.test-build/world/geography/VegetationCorridors.js');
 const {GrassSectorSystem}=require('../.test-build/world/grass/GrassSectorSystem.js');
 const {setActiveGeography}=require('../.test-build/world/geography/ActiveGeography.js');
 const {WorldStudioSource}=require('../.test-build/world/geography/WorldStudioSource.js');
@@ -18,6 +22,21 @@ function loader(scene){const material=new PBRMaterial('test-grass',scene);return
   biomeWeights:()=>({valle:1,ecos:0,sierras:0,nacar:0,costa:0,cumbres:0}),waterAt:()=>null,
   masks:()=>({lake:0,river:0,road:0,existingRoadClearance:1000})};
  const a=generateGrassPatch(0,0,world);assert.deepEqual(a,generateGrassPatch(0,0,world));assert.ok(a.length>0);
+ const cache=new GrassPatchCache(2,3),entry=a.slice(0,2);
+ cache.put('empty',[],true);cache.put('a',entry,true);
+ assert.deepEqual(cache.take('empty'),{placements:[],detail:true},'empty terrain sectors are cached too');
+ cache.put('empty',[],true);cache.put('b',entry,false);
+ assert.equal(cache.take('a'),undefined,'placement budget evicts the least recent sector');
+ assert.equal(cache.take('b').placements,entry,'reuse the original matrices without cloning');
+ cache.put('c',[],true);cache.put('d',[],true);assert.equal(cache.size,2,'empty sectors obey the key budget');
+ cache.clear();assert.equal(cache.size,0);assert.equal(cache.placementCount,0);
+ const routes=new VegetationCorridors();routes.add([{width:3,points:[{x:12,z:-100},{x:12,z:100}]}]);
+ const routed={...world,vegetationClearanceAt:(x,z)=>routes.clearanceAt(x,z)};
+ for(const p of generateGrassPatch(0,0,routed))assert.ok(routes.clearanceAt(p.x,p.z)>=1.27,'grass footprint clears the road/bridge');
+ assert.equal(generateGrassPatch(0,0,{...world,vegetationAt:()=>({trees:1,grass:0})}).length,0,'barren regions skip grass');
+ // A root can be on land while its wide clump crosses a narrow stream.
+ const river={...world,waterAt:(x,z)=>Math.abs(x-a[0].x-1)<.35?{level:12}:null};
+ assert.ok(!generateGrassPatch(0,0,river).some(p=>p.x===a[0].x&&p.z===a[0].z));
  const sparseSteps=generateGrassPatchSteps(0,0,world,false);let sparse=sparseSteps.next();while(!sparse.done)sparse=sparseSteps.next();
  assert.deepEqual(sparse.value,a.filter(p=>p.distant),'coarse background uses the same roots as the detailed grass');
  for(const p of a){assert.ok(Math.abs(p.matrix[13]-(12+p.x*.02+p.z*.01)+.018)<.00001);assert.ok(p.matrix[5]/TRAVERSAL.playerHeight>=.5&&p.matrix[5]/TRAVERSAL.playerHeight<=.75);}
@@ -41,20 +60,34 @@ function loader(scene){const material=new PBRMaterial('test-grass',scene);return
  assert.ok(system.metrics.near<=GRASS_PATCH.maxNear&&system.metrics.sprites<=GRASS_PATCH.maxSprites);
  const maxPatches=(2*Math.ceil((GRASS_PATCH.farEnd+GRASS_PATCH.prefetch)/GRASS_PATCH.size)+3)**2;
  assert.ok(system.drawCallsEstimate<=8&&system.activeSectorCount<=maxPatches);
- const matrices=()=>Object.fromEntries(scene.meshes.filter(m=>m.metadata?.grassSource||m.metadata?.grassSprite).map(m=>[m.name,Array.from(m.thinInstanceGetWorldMatrices(),p=>Array.from(p.m))]));
+ // Read the uploaded range: Babylon's convenience Matrix[] accessor retains
+ // its first snapshot when an existing dynamic instance buffer is updated.
+ const matrices=()=>Object.fromEntries(scene.meshes.filter(m=>m.metadata?.grassSource||m.metadata?.grassSprite).map(m=>
+  [m.name,Array.from({length:m.thinInstanceCount},(_,i)=>Array.from(m._thinInstanceDataStorage.matrixData.slice(i*16,i*16+16)))]));
  const initial=matrices(),generated=system.metrics.generatedPatches;
  const far=Object.entries(initial).filter(([name])=>name.startsWith('grass-sprite-')).flatMap(([,m])=>m);
  assert.ok(far.some(m=>Math.hypot(m[12],m[14])>GRASS_PATCH.farEnd*.85),'grass already covers the distant background');
  assert.ok(system.metrics.residentPatches>Math.PI*(GRASS_PATCH.farEnd/GRASS_PATCH.size)**2,'resident ring extends beyond the visible range');
- system.setFocus(.1,0);system.update();assert.deepEqual(matrices(),initial,'sub-cell movement only updates shader focus');
+ system.setFocus(.1,0);system.update();assert.equal(matrixDigest(matrices()),matrixDigest(initial),'sub-cell movement only updates shader focus');
  assert.equal(system.metrics.generatedPatches,generated);
  const sample=Object.values(initial).flat()[0],x=sample[12],z=sample[14];
- exclusions=[{x,z,radius:5}];system.refreshExclusions();system.update();
+ exclusions=[{x,z,radius:5}];system.refreshExclusions();settle();
  for(const m of Object.values(matrices()).flat())assert.ok(Math.hypot(m[12]-x,m[14]-z)>=5.49);
  exclusions=[];system.refreshExclusions();system.setFocus(0,0);system.update();
- system.setFocus(600,600);settle();assert.ok(system.activeSectorCount<=maxPatches);system.setFocus(0,0);settle();assert.deepEqual(matrices(),initial,'revisiting restores stable placement and LOD');
+ system.setFocus(600,600);settle();assert.ok(system.activeSectorCount<=maxPatches);
+ const beforeReturn=system.metrics.generatedPatches;
+ ready=false;exclusions=[{x,z,radius:5}];system.refreshExclusions();
+ system.setFocus(0,0);settle();
+ for(const m of Object.values(matrices()).flat())assert.ok(Math.hypot(m[12]-x,m[14]-z)>=5.49,'cached grass respects newly built obstacles');
+ exclusions=[];system.refreshExclusions();settle();ready=true;
+ assert.equal(matrixDigest(matrices()),matrixDigest(initial),'revisiting restores stable placement and LOD even before terrain reload');
+ assert.equal(system.metrics.generatedPatches,beforeReturn,'returning uses cached matrices without terrain regeneration');
+ assert.ok(system.metrics.cacheHits>0&&system.metrics.cachedPatches>0);
  system.deactivate();assert.equal(system.instanceCount,0);assert.equal(system.pendingCount,0);assert.equal(system.activeSectorCount,0);
- system.setFocus(0,0);settle();system.setEnabled(false);assert.equal(system.instanceCount,0);system.setEnabled(true);system.setFocus(0,0);settle();assert.ok(system.instanceCount>0);
+ system.setFocus(0,0);settle();assert.equal(system.metrics.generatedPatches,beforeReturn,'zone switches retain grass');
+ system.setEnabled(false);assert.equal(system.instanceCount,0);system.setEnabled(true);system.setFocus(0,0);settle();assert.ok(system.instanceCount>0);
+ system.refreshBakedGrass();assert.equal(system.metrics.cachedPatches,0,'terrain edits invalidate active and cached sectors');
+ settle();assert.ok(system.metrics.generatedPatches>beforeReturn);
  const mat=scene.getMaterialByName('grass-sprite-cutout');assert.ok(mat instanceof PBRMaterial,'same linear lighting as near grass');assert.equal(mat.needAlphaTesting(),true);assert.equal(mat.needAlphaBlending(),false);
  const plugin=mat.pluginManager.getPlugin('AuraliaGrassDistance'),code=plugin.getCustomCode('vertex').CUSTOM_VERTEX_UPDATE_WORLDPOS;
  const uniforms={};plugin.hardBindForSubMesh(null,null,null,{effect:{setFloat2:(name,a,b)=>uniforms[name]=[a,b],setFloat3:(name,a,b,c)=>uniforms[name]=[a,b,c]}});assert.deepEqual(uniforms.grassFocus,[0,0]);

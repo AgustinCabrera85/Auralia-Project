@@ -77,6 +77,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     return ImportMeshAsync(new Uint8Array(bytes),target,{pluginExtension:'.glb'});
   };
   const system=new VegetationSystem(scene,root,()=>[],importer);
+  const settle=()=>{let frames=0;while((system.pending.length||system.bufferWork||system.buffersDirty)&&frames++<10000)system.update();assert.ok(frames<10000,'budgeted vegetation work finishes');};
   const center={cx:-8,cz:-8};
   const cells=[];
   for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++)cells.push({cx:center.cx+dx,cz:center.cz+dz});
@@ -125,7 +126,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
   assert.equal(system.attachTreeVisual(decorativeNode,0,10),DECORATIVE_TREE_ASSETS.arbolito1);
   assert.equal(decorativeNode.getChildMeshes()[0].metadata.harvestableTree,false);
   assert.equal(imports.length,22,'fixed trees share the loaded GLBs');
-  for(let i=0;i<60;i++)system.update();
+  settle();
   assert.ok(system.activeChunkCount>cells.length&&
     system.activeChunkCount<=desiredChunks(center.cx*MAINLAND.chunkSize,
       center.cz*MAINLAND.chunkSize,VEGETATION_CONFIG.renderRadiusChunks.trees).length,
@@ -136,8 +137,6 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     farTree.getTotalIndices()<scene.getMeshByName('vegetacion-arbolito2').getTotalIndices(),
     'distant trees use a simplified version of the source GLB');
   // Chunks load nearest first; reach the distant ring before checking its LOD.
-  let loadedUpdates=60;
-  for(let i=0;i<300&&!farTree.thinInstanceCount;i++,loadedUpdates++)system.update();
   assert.ok(farTree.thinInstanceCount>0,'distant trees switch to the proxy');
   assert.equal(farTree.material,scene.getMeshByName('vegetacion-arbolito2').material,
     'near and far models share the original texture and PBR settings');
@@ -185,13 +184,13 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     assert.ok(mesh.thinInstanceCount>=0);
   }
   const before=system.instanceCount;
-  system.setActiveChunks([],1100,-900);
+  system.setActiveChunks([],3000,-900);
   assert.equal(system.activeChunkCount,0,'released all streamed vegetation chunks');
-  assert.equal(system.instanceCount,0);
+  assert.equal(system.buffersDirty,true,'departed sectors schedule a buffer refresh');
   assert.equal(system.sharedMeshCount,9,'shared GLBs survive chunk release');
   assert.ok(before>0);
   system.setActiveChunks(cells,center.cx*MAINLAND.chunkSize,center.cz*MAINLAND.chunkSize);
-  for(let i=0;i<loadedUpdates;i++)system.update();
+  settle();
   assert.equal(system.instanceCount,before,'reload restores deterministic instance count');
   assert.equal(imports.length,22,'reload makes no new GLB imports');
   const target={x:-509,z:32};
@@ -201,7 +200,7 @@ for(const [x,z,radius] of [[-8,-32,9],[9,-33,8],[24,-22,8],[-25,-27,8],[9,-12,8]
     targetCells.push({cx:targetChunk.cx+dx,cz:targetChunk.cz+dz});
   system.setActiveChunks(targetCells,target.x,target.z);
   system.setColliderFocus(target.x,target.z);
-  for(let i=0;i<60;i++)system.update();
+  settle();
   const specimen=targetCells.flatMap(cell=>vegetationForChunk(cell.cx,cell.cz))
     .filter(p=>p.kind==='arbolito2')
     .sort((a,b)=>Math.hypot(a.x-target.x,a.z-target.z)-Math.hypot(b.x-target.x,b.z-target.z))[0];

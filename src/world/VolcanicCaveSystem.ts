@@ -10,6 +10,8 @@ export class VolcanicCaveSystem {
   readonly realm:IgneousRealm;
   private readonly entranceColliders=new RockColliderSystem(()=>undefined);
   private readonly renderCandidates:{data:AbstractMesh[];length:number}={data:[],length:0};
+  private effectMeshes:readonly AbstractMesh[]=[];
+  setEffectMeshes(meshes:readonly AbstractMesh[]):void{this.effectMeshes=meshes;}
   private exteriorCandidates:Scene['getActiveMeshCandidates']|null=null;
   private readonly interiorCandidates=()=>this.renderCandidates;
   readonly entrance:{x:number;z:number};
@@ -101,7 +103,7 @@ export class VolcanicCaveSystem {
     if(image.exposure!==this.realm.meta.iluminacion.exposicion)image.exposure=this.realm.meta.iluminacion.exposicion;
     this.exteriorCandidates??=this.scene.getActiveMeshCandidates;
     this.scene.getActiveMeshCandidates=this.interiorCandidates;
-    this.renderCandidates.data=[...this.realm.meshes];this.renderCandidates.length=this.realm.meshes.length;
+    this.renderCandidates.data=[...this.realm.meshes,...this.effectMeshes];this.renderCandidates.length=this.renderCandidates.data.length;
     this.excludeExteriorLights();return spawn;
   }
   private excludeExteriorLights():void{
@@ -152,11 +154,11 @@ export class VolcanicCaveSystem {
       mode:this.scene.fogMode};
     this.scene.fogMode=Scene.FOGMODE_EXP2;this.scene.fogColor.set(.012,.010,.014);this.scene.clearColor.set(.009,.007,.010,1);
     this.scene.fogDensity=this.realm.meta.iluminacion.densidad/this.realm.root.scaling.x;
-    const actors=characters.flatMap(c=>c.getChildMeshes(false));
+    const actors=[...characters.flatMap(c=>c.getChildMeshes(false)),...this.effectMeshes];
     if(this.renderCandidates.length!==this.realm.meshes.length+actors.length||actors.some(m=>!this.renderCandidates.data.includes(m))){
       this.renderCandidates.data=[...this.realm.meshes,...actors];this.renderCandidates.length=this.renderCandidates.data.length;
     }
-    return this.realm.update(dt,p,characters,grounded);
+    return this.realm.update(dt,p,characters,grounded,this.effectMeshes);
   }
   traversalWorld(){return this.realm.traversalWorld();}
   ceilingAt(p:Vector3):number|null{return this.colliders.queryCeiling(p.x,p.y+.2,p.z,TRAVERSAL_HEIGHT);}

@@ -29,6 +29,8 @@ const loader=async()=>{
  return {container,meta,crystal};
 };
 const cave=new VolcanicCaveSystem(scene,()=>1120,true,false,loader);
+const impactFixture=B.MeshBuilder.CreateBox('ground-impact-fixture',{},scene);
+cave.setEffectMeshes([impactFixture]);
 cave.syncExterior(VOLCANIC_CAVE.entrance.x,VOLCANIC_CAVE.entrance.z);
 assert.equal(cave.nearestAction(new B.Vector3(VOLCANIC_CAVE.entrance.x,1120,VOLCANIC_CAVE.entrance.z)),'enter');
 const candidates=scene.getActiveMeshCandidates;
@@ -36,6 +38,7 @@ const p1=cave.realm.load(),p2=cave.realm.load();assert.equal(p1,p2,'cache the lo
 assert(!cave.inside&&sun.isEnabled(),'loading never teleports or isolates the exterior');release();await p1;
 assert.equal(IGNEOUS_SCALE,3.8/1.4,'user calibrated Santi scale');
 const spawn=await cave.enter();const world=cave.traversalWorld();assert(!sun.isEnabled());
+assert(scene.getActiveMeshCandidates().data.includes(impactFixture),'ground impact remains in the interior draw candidates');
 const crystalRoot=scene.getTransformNodeByName('cristal-unico-reino-igneo');
 assert(crystalRoot.isEnabled());assert(!scene.getMeshByName('old-caldera-gem').isEnabled());
 assert(cave.realm.meshes.includes(scene.getMeshByName('red-crystal-fixture')));
@@ -50,6 +53,8 @@ const hazard=meta.hazards[0],lake=cave.realm.point([1.5,-36.9,-4]);assert(inHaza
 assert(!inHazardPolygon(1000,1000,hazard.polygon));assert.equal(world.ground(lake.x,lake.z,lake.y+2,5,0),null,'lava never becomes floor');
 const actors=new B.TransformNode('Santi',scene),body=B.MeshBuilder.CreateBox('actor',{},scene);body.parent=actors;
 cave.update(.5,spawn,[actors],true);assert(scene.getActiveMeshCandidates().data.includes(body),'real actor retained');
+assert(scene.lights.some(l=>l.name==='igneo-personajes'&&l.includedOnlyMeshes.includes(impactFixture)),
+  'ground debris receives the existing interior actor lighting');
 const late=B.MeshBuilder.CreateBox('late-equipment',{},scene);late.parent=actors;cave.restoreAtmosphere();cave.update(.5,spawn,[actors],true);
 assert(scene.getActiveMeshCandidates().data.includes(late));assert(scene.lights.some(l=>l.name==='igneo-personajes'&&l.includedOnlyMeshes.includes(late)));
 const gate=scene.getTransformNodeByName('Gate_Sima');assert(!gate.isWorldMatrixFrozen);

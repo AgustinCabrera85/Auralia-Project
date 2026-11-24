@@ -1,9 +1,12 @@
-export const TELEMETRY_PHASES=['clima','movimiento','oceano','dinamica','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
+export const TELEMETRY_PHASES=['clima','movimiento','ambiente','companero','personaje','oceano','dinamica','aves','terreno','vegetacion','pasto','props','assets','agua','ui'] as const;
 export type TelemetryPhase=typeof TELEMETRY_PHASES[number];
-export const PHASE_LABELS:Record<TelemetryPhase,string>={clima:'Clima',movimiento:'Movimiento/colisiones',
+export const PHASE_LABELS:Record<TelemetryPhase,string>={clima:'Clima',movimiento:'Movimiento/colisiones',aves:'Aves/hábitat',
+  ambiente:'Faroles/señales/fuente',companero:'Compañero/seguimiento',personaje:'Personaje/efectos',
   terreno:'Terreno/streaming',vegetacion:'Vegetación',pasto:'Pasto',props:'Rocas/recursos',
   assets:'Assets GLB/LOD',agua:'Agua',oceano:'Océano',dinamica:'Pasos/física secundaria',ui:'UI/guardado'};
 export const TELEMETRY_COLUMNS=['timeMs','frameMs','updateMs','renderMs','cameraMs','activeMeshesMs','gpuMs',
+  'cameraCollisionMs','precipitationMs','immersionMs',
+  'animationMs','renderTargetsMs','drawMs','heroVisible','heroActive',
   'shaderMs','drawCalls','triangles','pendingTerrain','pendingLoads','x','z',...TELEMETRY_PHASES] as const;
 export const T=Object.fromEntries(TELEMETRY_COLUMNS.map((name,i)=>[name,i])) as
   Record<typeof TELEMETRY_COLUMNS[number],number>;
@@ -40,19 +43,27 @@ export class TelemetryMemoryHistory {
   }
 }
 
-/** Fixed storage: recording never allocates a new frame object or grows indefinitely. */
+/** Fixed frame storage plus a bounded archive that copies only hitch frames. */
 export class TelemetryHistory {
   private readonly values:Float64Array;
+  private readonly hitches:Float64Array[]=[];
+  private hitchCursor=0;
   private cursor=0;
   private length=0;
   constructor(readonly capacity=1800){this.values=new Float64Array(capacity*STRIDE);}
   get count():number{return this.length;}
-  clear():void{this.cursor=0;this.length=0;}
+  clear():void{this.cursor=0;this.length=0;this.hitches.length=0;this.hitchCursor=0;}
   push(frame:Float64Array):void{
     if(!Number.isFinite(frame[T.timeMs])||!Number.isFinite(frame[T.frameMs])||frame[T.frameMs]<=0)return;
     this.values.set(frame,this.cursor*STRIDE);
     this.cursor=(this.cursor+1)%this.capacity;
     this.length=Math.min(this.capacity,this.length+1);
+    // A stopped player used to overwrite the evidence of the preceding walk
+    // within ~30 seconds. Keep a separate bounded archive until reset/export.
+    if(frame[T.frameMs]>50){
+      this.hitches[this.hitchCursor]=frame.slice();
+      this.hitchCursor=(this.hitchCursor+1)%120;
+    }
   }
   private offset(i:number):number{
     return ((this.cursor-this.length+i+this.capacity)%this.capacity)*STRIDE;
@@ -109,6 +120,14 @@ export class TelemetryHistory {
         const value=this.values[o+c];
         return [name,Number.isFinite(value)?Math.round(value*100)/100:null];
       }));
+    });
+  }
+  exportHitches():Record<string,number|null>[] {
+    const start=this.hitches.length===120?this.hitchCursor:0;
+    return Array.from({length:this.hitches.length},(_,i)=>{
+      const row=this.hitches[(start+i)%this.hitches.length];
+      return Object.fromEntries(TELEMETRY_COLUMNS.map((name,c)=>
+        [name,Number.isFinite(row[c])?Math.round(row[c]*100)/100:null]));
     });
   }
 }

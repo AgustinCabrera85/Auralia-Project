@@ -2,17 +2,17 @@ import './brisalia-ivy.browser.mjs';
 import { Matrix, Ray, Vector3 } from '@babylonjs/core';
 import { VegetationSystem } from '../src/world/VegetationSystem.ts';
 import { castleBorderCandidates, castleExteriorDistance, castlePlantsForChunk } from '../src/world/BrisaliaCastlePlanting.ts';
-import { BRISALIA_BUILDINGS, BRISALIA_SCALE } from '../src/world/brisaliaLayout.ts';
+import { BRISALIA_BUILDINGS, CASTLE_BUILDING, BRISALIA_SCALE } from '../src/world/brisaliaLayout.ts';
 import { chunkOf } from '../src/world/terrainData.ts';
 
 const check=(ok,message)=>{if(!ok)throw new Error(message);};
 const {scene,village,camera,setSeason}=window.ivyReview;
-const castle=village.buildings.get('B28'),definition=BRISALIA_BUILDINGS.find(b=>b.id==='B28');
-const source=castleBorderCandidates(),exclusions=BRISALIA_BUILDINGS.map(b=>({
+const castle=village.buildings.get('B28'),definition=CASTLE_BUILDING;
+const source=castleBorderCandidates(),exclusions=[...BRISALIA_BUILDINGS,definition].map(b=>({
   x:b.x,z:b.z+b.footprintOffsetZ,radius:Math.hypot(b.width,b.depth)/2+2,buildingId:b.id}));
 const chunks=new Map(),placements=[];
 for(let z=-7;z<=-1;z++)for(let x=2;x<=7;x++){
-  const values=castlePlantsForChunk(x,z,{x:0,z:0},exclusions,()=>0);
+  const values=castlePlantsForChunk(x,z,definition,exclusions,()=>0);
   chunks.set(`${x}:${z}`,values);placements.push(...values);
 }
 check(placements.length>350&&placements.length<1100,`Bounded planted border: ${placements.length}`);
@@ -44,10 +44,10 @@ for(const p of placements){
 }
 check(Object.values(sides).every(n=>n>60),`All exterior sides planted: ${JSON.stringify(sides)}`);
 const blocked=placements[0],cell=chunkOf(blocked.x,blocked.z);
-const clear=castlePlantsForChunk(cell.cx,cell.cz,{x:0,z:0},[...exclusions,{x:blocked.x,z:blocked.z,radius:4}],()=>0);
+const clear=castlePlantsForChunk(cell.cx,cell.cz,definition,[...exclusions,{x:blocked.x,z:blocked.z,radius:4}],()=>0);
 check(clear.every(p=>Math.hypot(p.x-blocked.x,p.z-blocked.z)>4),'Player structures override decorative planting');
-check(castlePlantsForChunk(cell.cx,cell.cz,{x:0,z:0},[],(x,z)=>x*2+z).length===0,'Reject unsupported steep terrain');
-const shifted=castlePlantsForChunk(cell.cx+1,cell.cz-1,{x:72,z:-72},exclusions.map(e=>({...e,x:e.x+72,z:e.z-72})),()=>10);
+check(castlePlantsForChunk(cell.cx,cell.cz,definition,[],(x,z)=>x*2+z).length===0,'Reject unsupported steep terrain');
+const shifted=castlePlantsForChunk(cell.cx+1,cell.cz-1,{x:definition.x+72,z:definition.z-72},exclusions.map(e=>({...e,x:e.x+72,z:e.z-72})),()=>10);
 const original=chunks.get(`${cell.cx}:${cell.cz}`);
 check(shifted.length===original.length&&shifted.every((p,i)=>Math.abs(p.x-original[i].x-72)<1e-7&&Math.abs(p.z-original[i].z+72)<1e-7&&Math.abs(p.y-9.965)<1e-7),'Town translation retains planting and ground support');
 

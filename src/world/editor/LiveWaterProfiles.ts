@@ -45,7 +45,7 @@ function worldShader(profile:WaterProfile,localFallUV=false,clearWater=false,exc
     vertex=replaceOnce(vertex,wave,
       `float patchFade = 1.0-smoothstep(uPatchRadius*.72,uPatchRadius*.985,
         length(wp.xz-uPatchCenter));
-    ${wave.slice(0,-1)} * patchFade * uNearPatch * (1.0-color.g);`);
+    ${wave.slice(0,-1)} * patchFade * uNearPatch * (1.0-color.g) * smoothstep(.1,5.0,color.b);`);
   }else{
     vertex=replaceOnce(vertex,wave,
       `${wave.slice(0,-1)} * (1.0-color.r) * .2;`);
@@ -142,7 +142,7 @@ void main(void) {`);
     edgeDist = abs(edge - world.x);
     depth = clamp((edge - world.x) / 28.0, 0.0, 1.0);`,
       `edgeDist = (1.0-clamp(vWorldWaterInfo.r,0.0,1.0))*uFoamWidth*4.0;
-    depth = clamp(1.0-vWorldWaterInfo.r*.7,0.0,1.0);`);
+    depth = ${clearWater?'mix(smoothstep(0.0,32.0,vWorldWaterInfo.b),1.0,smoothstep(80.0,200.0,distance(uCameraPos,vWorldPos)))':'clamp(1.0-vWorldWaterInfo.r*.7,0.0,1.0)'};`);
   }else{
     fragment=replaceOnce(fragment,
       `edgeDist = min(vUV.x, 1.0-vUV.x) * 13.0;
@@ -181,7 +181,16 @@ void main(void) {`);
   gl_FragColor=vec4(col,alpha);` : clearWater?`// The two sides have different optical behaviour.
   float viewAngle=abs(dot(N,V));
   float surfaceAlpha=mix(.24,.54,depth)+pow(1.0-viewAngle,3.0)*.18;
-  surfaceAlpha=mix(surfaceAlpha,.88,foam*.65);
+  ${ocean?`
+  // Approximate the optical path through the real local water column. Distant
+  // water converges to opaque open sea before the moving near patch ends.
+  float waterPath=max(0.0,vWorldWaterInfo.b)/max(.12,viewAngle);
+  float seabedTransmission=exp(-waterPath*.14);
+  float nearby=1.0-smoothstep(80.0,200.0,distance(uCameraPos,vWorldPos));
+  surfaceAlpha=1.0-seabedTransmission*nearby*(1.0-pow(1.0-viewAngle,3.0)*.65);
+  surfaceAlpha=max(.12,surfaceAlpha);
+  `:''}
+  surfaceAlpha=mix(surfaceAlpha,${ocean?'1.0':'.88'},foam*.65);
   // Compare against the actual surface normal. A height-only comparison cuts
   // a sloping river into two colours exactly at the camera's horizontal plane.
   if(dot(face,V)<0.0) {

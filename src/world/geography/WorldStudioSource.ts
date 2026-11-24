@@ -7,7 +7,8 @@ export type StudioManifest={schema:string;resolution:number;tileSizeMeters:numbe
   tiles:StudioTile[];bookmarks:{name:string;x:number;z:number;floating?:string}[]};
 export type StudioSpline={id:string;type:string;width:number;resolvedLevels?:boolean;controlPoints:(Point&{y?:number})[]};
 export type StudioHydrology={lakes:{id:string;polygonXZ_m:readonly (readonly [number,number])[]}[]};
-type Reservation={points:Point[];closed:boolean;width:number;bounds:GeographicBounds};
+type ReservationEdge={a:Point;b:Point;dx:number;dz:number;lengthSquared:number;bounds:GeographicBounds};
+type Reservation={near:ReservationEdge[];crossings:ReservationEdge[];width:number;bounds:GeographicBounds};
 const clamp=(v:number,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const smooth=(a:number,b:number,v:number)=>{const t=clamp((v-a)/(b-a));return t*t*(3-2*t);};
 const overlaps=(a:GeographicBounds,b:GeographicBounds)=>a[0]<=b[2]&&a[2]>=b[0]&&a[1]<=b[3]&&a[3]>=b[1];
@@ -22,14 +23,15 @@ const noise=(x:number,z:number,seed:number)=>{
 };
 function distance(x:number,z:number,r:Reservation):number{
   let closest=Infinity,inside=false;
-  for(let i=0,j=r.points.length-1;i<r.points.length;j=i++){
-    const a=r.points[j],b=r.points[i];
-    if(r.closed&&(a.z>z)!==(b.z>z)&&x<(b.x-a.x)*(z-a.z)/(b.z-a.z)+a.x)inside=!inside;
-    if(i===0&&!r.closed)continue;
-    const dx=b.x-a.x,dz=b.z-a.z,t=clamp(((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1));
-    closest=Math.min(closest,Math.hypot(x-a.x-dx*t,z-a.z-dz*t));
+  for(const {a,b,dx,dz} of r.crossings)
+    if((a.z>z)!==(b.z>z)&&x<dx*(z-a.z)/dz+a.x)inside=!inside;
+  if(inside)return 0;
+  for(const {a,dx,dz,lengthSquared} of r.near){
+    const t=clamp(((x-a.x)*dx+(z-a.z)*dz)/(lengthSquared||1));
+    const px=x-a.x-dx*t,pz=z-a.z-dz*t;
+    closest=Math.min(closest,px*px+pz*pz);
   }
-  return inside?0:closest;
+  return Math.sqrt(closest);
 }
 export class GeographicDataUnavailable extends Error {
   constructor(readonly x:number,readonly z:number){super(`Geographic data not loaded at ${x}, ${z}`);}
@@ -46,6 +48,7 @@ export class WorldStudioSource implements GeographicSource {
   private readonly reservations=new Map<string,Reservation[]>();
   private desired=new Set<string>();private epoch=0;
   private lastLoadMs=0;private totalLoaded=0;
+  private lastSampleTile:StudioTile|undefined;
   constructor(readonly manifest:StudioManifest,splines:StudioSpline[],hydrology:StudioHydrology,
     private readonly readTile:(url:string)=>Promise<ArrayBuffer>=async url=>{
       const r=await fetch(url);if(!r.ok)throw new Error(`Heightmap ${r.status}: ${url}`);return r.arrayBuffer();
@@ -73,9 +76,20 @@ export class WorldStudioSource implements GeographicSource {
   private reserve(points:Point[],closed:boolean,width:number):void{
     if(points.length<2)return;
     const pad=width+48,bounds:GeographicBounds=[Math.min(...points.map(p=>p.x))-pad,Math.min(...points.map(p=>p.z))-pad,Math.max(...points.map(p=>p.x))+pad,Math.max(...points.map(p=>p.z))+pad];
-    const r={points,closed,width,bounds};
+    const edges:ReservationEdge[]=[];
+    for(let i=closed?0:1;i<points.length;i++){
+      const a=points[(i+points.length-1)%points.length],b=points[i],dx=b.x-a.x,dz=b.z-a.z;
+      edges.push({a,b,dx,dz,lengthSquared:dx*dx+dz*dz,
+        bounds:[Math.min(a.x,b.x)-pad,Math.min(a.z,b.z)-pad,Math.max(a.x,b.x)+pad,Math.max(a.z,b.z)+pad]});
+    }
     for(let z=Math.floor(bounds[1]/256);z<=Math.floor(bounds[3]/256);z++)for(let x=Math.floor(bounds[0]/256);x<=Math.floor(bounds[2]/256);x++){
-      const key=`${x}:${z}`,list=this.reservations.get(key)??[];list.push(r);this.reservations.set(key,list);
+      const cell:GeographicBounds=[x*256,z*256,(x+1)*256,(z+1)*256];
+      // Exact segment queries, restricted to this cell's influence radius.
+      // Point-in-polygon still sees every crossing of its horizontal ray.
+      const near=edges.filter(e=>overlaps(cell,e.bounds));
+      const crossings=closed?edges.filter(e=>Math.max(e.a.z,e.b.z)>=cell[1]&&Math.min(e.a.z,e.b.z)<=cell[3]&&Math.max(e.a.x,e.b.x)>=cell[0]):[];
+      const key=`${x}:${z}`,list=this.reservations.get(key)??[];
+      list.push({near,crossings,width,bounds});this.reservations.set(key,list);
     }
   }
   private needed(bounds:GeographicBounds):StudioTile[]{return this.manifest.tiles.filter(t=>overlaps(t.boundsXZ,bounds));}
@@ -99,12 +113,17 @@ export class WorldStudioSource implements GeographicSource {
   }
   baseHeightAt(x:number,z:number):number{
     x=clamp(x,this.bounds[0],this.bounds[2]);z=clamp(z,this.bounds[1],this.bounds[3]);
-    const tile=this.manifest.tiles.find(t=>x>=t.boundsXZ[0]&&x<=t.boundsXZ[2]&&z>=t.boundsXZ[1]&&z<=t.boundsXZ[3]);
+    const cached=this.lastSampleTile,b=cached?.boundsXZ;
+    // Terrain normals/detail repeatedly sample the same sector. Reuse its
+    // lookup, but preserve the original ownership rule on shared boundaries.
+    const tile=b&&x>b[0]&&x<b[2]&&z>b[1]&&z<b[3]?cached:
+      this.manifest.tiles.find(t=>x>=t.boundsXZ[0]&&x<=t.boundsXZ[2]&&z>=t.boundsXZ[1]&&z<=t.boundsXZ[3]);
+    this.lastSampleTile=tile;
     const data=tile&&this.tiles.get(tile.id);if(!tile||!data)throw new GeographicDataUnavailable(x,z);
     const n=this.manifest.resolution,fx=(x-tile.boundsXZ[0])/this.manifest.tileSizeMeters*(n-1),fz=(z-tile.boundsXZ[1])/this.manifest.tileSizeMeters*(n-1);
     const ix=Math.min(n-2,Math.floor(fx)),iz=Math.min(n-2,Math.floor(fz)),u=fx-ix,v=fz-iz;
-    const a=data[iz*n+ix],b=data[iz*n+ix+1],c=data[(iz+1)*n+ix],d=data[(iz+1)*n+ix+1];
-    const raw=(a+(b-a)*u)*(1-v)+(c+(d-c)*u)*v;
+    const a=data[iz*n+ix],right=data[iz*n+ix+1],c=data[(iz+1)*n+ix],d=data[(iz+1)*n+ix+1];
+    const raw=(a+(right-a)*u)*(1-v)+(c+(d-c)*u)*v;
     return this.manifest.heightEncoding.minMetres+raw/65535*(this.manifest.heightEncoding.maxMetres-this.manifest.heightEncoding.minMetres);
   }
   detailMaskAt(x:number,z:number,base=this.baseHeightAt(x,z)):number{

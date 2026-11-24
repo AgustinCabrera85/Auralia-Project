@@ -1,3 +1,4 @@
+import { createBridgeWoodMaterial } from './materials/BridgeWoodMaterial';
 import { Color3, DynamicTexture, Mesh, MeshBuilder, PointLight, Scene, StandardMaterial, Texture,
   TransformNode, Vector3, Vector4, VertexData, VertexBuffer } from '@babylonjs/core';
 import { bridgeRailBlocks, bridgeSurfaceAt, CHAMBER_RADIUS, createBridgeRoutes, MOUNTAIN_PORTALS,
@@ -19,6 +20,8 @@ export class MountainPassSystem {
   private lamp:PointLight|null=null;
   private readonly stone:StandardMaterial;
   private readonly deck:StandardMaterial;
+  private readonly wood:StandardMaterial;
+  private readonly railing:StandardMaterial;
   private readonly glow:StandardMaterial;
   private readonly dark:StandardMaterial;
   private readonly crystal:StandardMaterial;
@@ -37,15 +40,14 @@ export class MountainPassSystem {
     this.stone.diffuseColor=new Color3(.72,.76,.79);this.stone.specularColor=Color3.Black();
     this.stone.backFaceCulling=false;this.stone.twoSidedLighting=true;
     this.deck=new StandardMaterial('pasos-piedra-tallada',scene);
-    const masonry=new DynamicTexture('puente-losas',{width:256,height:256},scene,true);
-    const ctx=masonry.getContext();ctx.fillStyle='#494d46';ctx.fillRect(0,0,256,256);
-    for(let row=0;row<8;row++)for(let col=-1;col<4;col++){
-      const shade=139+Math.round(16*Math.sin(row*7+col*3));
-      ctx.fillStyle=`rgb(${shade},${shade+3},${shade-7})`;
-      ctx.fillRect(col*80+(row%2)*40+2,row*32+2,77,29);
-    }masonry.update();masonry.wrapU=masonry.wrapV=Texture.WRAP_ADDRESSMODE;this.deck.diffuseTexture=masonry;
-    this.deck.diffuseColor=new Color3(.92,.9,.82);this.deck.specularColor=Color3.Black();
+    const cobbles='/assets/terrain/brisalia/Brisalia_Adoquines_';
+    this.deck.diffuseTexture=new Texture(cobbles+'BaseColor_1K.jpg',scene);
+    this.deck.bumpTexture=new Texture(cobbles+'NormalGL_1K.png',scene);this.deck.bumpTexture.level=.45;
+    this.deck.diffuseColor=new Color3(.95,.91,.82);this.deck.specularColor=new Color3(.06,.06,.06);this.deck.specularPower=12;
     this.deck.backFaceCulling=false;this.deck.twoSidedLighting=true;
+    this.wood=createBridgeWoodMaterial(scene);
+    this.railing=new StandardMaterial('puentes-hierro-envejecido',scene);
+    this.railing.diffuseColor=new Color3(.23,.30,.28);this.railing.specularColor=new Color3(.18,.20,.19);this.railing.specularPower=32;
     this.glow=new StandardMaterial('pasos-faroles',scene);
     this.glow.emissiveColor=new Color3(.75,.53,.21);
     this.dark=new StandardMaterial('pasos-umbral',scene);this.dark.diffuseColor=new Color3(.015,.02,.025);
@@ -75,7 +77,7 @@ export class MountainPassSystem {
         backUVs:new Vector4(0,1-(label+1)/4,1,1-label/4)},scene);
       sign.position.set(x,y+3.5,z);sign.material=this.signs;sign.parent=root;sign.isPickable=false;
     }
-    for(const p of MOUNTAIN_PORTALS)this.portals.set(p.id,this.buildPortal(p.id,p.x+offset.x,p.z+offset.z));
+
   }
   get inside():boolean{return this.interior!==null;}
   visualFor(id:string):TransformNode|undefined{
@@ -85,6 +87,7 @@ export class MountainPassSystem {
   exteriorHeight(x:number,z:number):number{return bridgeSurfaceAt(this.bridges,x,z)?.height??
     mountainTrailSurfaceAt(this.trails,x,z)?.height??this.heightAt(x,z);}
   nearestPortal(x:number,y:number,z:number){
+    if(!this.inside)return undefined; // Removed prototype entrances have no invisible interaction.
     return MOUNTAIN_PORTALS.find(p=>{
       if(!this.inside&&Math.hypot(x-p.x-this.offset.x,z-p.z-this.offset.z)>=8)return false;
       const n=this.inside?TUNNEL_NODES[p.node]:{x:p.x+this.offset.x,z:p.z+this.offset.z,y:this.exteriorHeight(p.x+this.offset.x,p.z+this.offset.z)};
@@ -149,76 +152,66 @@ export class MountainPassSystem {
     }
   }
   private buildTrail(trail:MountainTrail):TransformNode{
-    const root=this.root(trail.id),positions:number[]=[],indices:number[]=[],uvs:number[]=[],normals:number[]=[];
-    const walls:number[]=[],wallIndices:number[]=[],wallUV:number[]=[],wallNormals:number[]=[];
-    let along=0;
-    for(let i=0;i<trail.points.length;i++){
-      const p=trail.points[i],prev=trail.points[Math.max(0,i-1)],next=trail.points[Math.min(i+1,trail.points.length-1)];
-      const dx=next.x-prev.x,dz=next.z-prev.z,len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len;
-      if(i)along+=Math.hypot(p.x-prev.x,p.z-prev.z);
-      for(const side of [-1,1]){
-        const x=p.x+nx*trail.width*.5*side,z=p.z+nz*trail.width*.5*side;
-        positions.push(x,p.y,z);uvs.push(side*trail.width/8,along/8);
-        let ground=Math.min(p.y-.15,this.heightAt(x,z)-.25);
-        // Leave an arched opening under stream crossings instead of extending
-        // retaining walls across the channel. Walking support remains shared.
-        const crossing=trail.crossings.find(c=>i>=c.start&&i<=c.end);
-        if(crossing){
-          const t=(i-crossing.start)/(crossing.end-crossing.start);
-          ground=Math.max(ground,p.y-.65-4.5*(1-Math.sin(Math.PI*t)));
-        }
-        walls.push(x,p.y-.03,z,x,ground,z);wallUV.push(along/5,p.y/5,along/5,ground/5);
-      }
-      if(i){const a=(i-1)*2;indices.push(a,a+2,a+1,a+1,a+2,a+3);
-        for(const side of [0,2]){const a=(i-1)*4+side;wallIndices.push(a,a+1,a+4,a+1,a+5,a+4);}}
-    }
-    for(const [name,pos,idx,uv,norm,material] of [
-      ['senda',positions,indices,uvs,normals,this.deck],['contencion',walls,wallIndices,wallUV,wallNormals,this.stone]
-    ] as const){
-      const mesh=new Mesh(name+'-'+trail.id,this.scene),data=new VertexData();
-      VertexData.ComputeNormals(pos,idx,norm);Object.assign(data,{positions:pos,indices:idx,uvs:uv,normals:norm});
-      data.applyToMesh(mesh);mesh.material=material;mesh.parent=root;mesh.isPickable=false;mesh.freezeWorldMatrix();
+    const root=this.root(trail.id);
+    // Dry routes are painted by TerrainStream. Only water crossings need a deck.
+    for(const [index,c] of trail.crossings.entries()){
+      const points=trail.points.slice(c.start,c.end+1);
+      const bridge=this.buildBridge({id:`cruce-${trail.id}-${index}`,name:trail.name,width:trail.width,
+        points,spanStart:0,spanEnd:Infinity});bridge.parent=root;
     }
     return root;
   }
   private buildBridge(route:BridgeRoute):TransformNode{
     const root=this.root(route.id),positions:number[]=[],indices:number[]=[],uvs:number[]=[],normals:number[]=[];
+    const edges=route.points.map((_,i)=>{
+      const a=route.points[Math.max(0,i-1)],b=route.points[Math.min(i+1,route.points.length-1)];
+      const length=Math.hypot(b.x-a.x,b.z-a.z);
+      return {nx:-(b.z-a.z)/length,nz:(b.x-a.x)/length};
+    });
     let along=0;
     for(let i=0;i<route.points.length;i++){
-      const p=route.points[i],other=route.points[Math.min(i+1,route.points.length-1)],prev=route.points[Math.max(0,i-1)];
-      const dx=other.x-prev.x,dz=other.z-prev.z,len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len;
+      const p=route.points[i],prev=route.points[Math.max(0,i-1)],{nx,nz}=edges[i];
       if(i)along+=Math.hypot(p.x-prev.x,p.z-prev.z);
-      for(const side of [-1,1]){positions.push(p.x+nx*route.width/2*side,p.y,p.z+nz*route.width/2*side);uvs.push(side*route.width/8,along/8);}
+      for(const side of [-1,1]){const x=p.x+nx*route.width/2*side,z=p.z+nz*route.width/2*side;
+        positions.push(x,p.y,z);uvs.push(along/2,(side+1)*route.width/8);}
       if(i){const a=(i-1)*2;indices.push(a,a+2,a+1,a+1,a+2,a+3);}
       if(i%8===0){
         const ground=this.heightAt(p.x,p.z),height=p.y-ground;
         if(height>2){this.box('pilar-viaducto',4.2,height-1.5,4.2,new Vector3(p.x,ground+(height-1.5)/2,p.z),this.stone,root);
           this.box('zapata-viaducto',7,2,7,new Vector3(p.x,ground+.4,p.z),this.stone,root);}
-        if(bridgeRailBlocks(route,p.x,p.z))for(const side of [-1,1])this.box('poste-baranda',.65,1.9,.65,
-          new Vector3(p.x+nx*side*(route.width/2-.2),p.y+1,p.z+nz*side*(route.width/2-.2)),this.deck,root);
+        if(bridgeRailBlocks(route,p.x,p.z))for(const side of [-1,1]){
+          const x=p.x+nx*side*(route.width/2-.2),z=p.z+nz*side*(route.width/2-.2);
+          this.box('pilastra-baranda',.62,1.65,.62,new Vector3(x,p.y+.825,z),this.deck,root);
+          this.box('basa-pilastra',.84,.22,.84,new Vector3(x,p.y+.11,z),this.deck,root);
+          this.box('coronacion-pilastra',.82,.20,.82,new Vector3(x,p.y+1.75,z),this.deck,root);
+        }
       }
+      if(i%2===0&&i%8!==0&&bridgeRailBlocks(route,p.x,p.z))for(const side of [-1,1])
+        this.box('barrote-hierro',.095,1.83,.095,new Vector3(p.x+nx*side*(route.width/2-.2),p.y+.855,p.z+nz*side*(route.width/2-.2)),this.railing,root);
     }
     const mesh=new Mesh('tablero-'+route.id,this.scene),data=new VertexData();
     VertexData.ComputeNormals(positions,indices,normals);Object.assign(data,{positions,indices,normals,uvs});data.applyToMesh(mesh);
-    mesh.material=this.deck;mesh.parent=root;mesh.isPickable=false;
+    mesh.material=this.wood;mesh.parent=root;mesh.isPickable=false;
     mesh.receiveShadows=true;
     for(const side of [-1,1]){
-      const a=route.points[0],b=route.points.at(-1)!,len=Math.hypot(b.x-a.x,b.z-a.z);
-      const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len;
+      const edge=(i:number,inset=0)=>{const p=route.points[i],{nx,nz}=edges[i];
+        return new Vector3(p.x+nx*side*(route.width/2-inset),p.y,p.z+nz*side*(route.width/2-inset));};
       let section:Vector3[]=[];
-      const flush=()=>{if(section.length>1){this.tube('pasamanos-piedra',section,.22,this.deck,root);
-        this.tube('baranda-inferior',section.map(p=>p.add(new Vector3(0,-.85,0))),.15,this.deck,root);}section=[];};
-      for(const p of route.points){
+      const flush=()=>{if(section.length>1){this.tube('pasamanos-hierro',section,.095,this.railing,root);
+        this.tube('baranda-inferior',section.map(p=>p.add(new Vector3(0,-.85,0))),.065,this.railing,root);}section=[];};
+      for(const [i,p] of route.points.entries()){
         if(!bridgeRailBlocks(route,p.x,p.z)){flush();continue;}
-        section.push(new Vector3(p.x+nx*side*(route.width/2-.2),p.y+1.75,p.z+nz*side*(route.width/2-.2)));
+        section.push(edge(i,.2).add(new Vector3(0,1.75,0)));
       }flush();
-      this.tube('viga-longitudinal',route.points.map(p=>new Vector3(p.x+nx*side*(route.width/2-.6),p.y-.55,p.z+nz*side*(route.width/2-.6))),.42,this.stone,root);
+      this.tube('viga-longitudinal',route.points.map((_,i)=>edge(i,.6).add(new Vector3(0,-.55,0))),.42,this.stone,root);
       for(let i=1;i<route.points.length;i++){
-        const a=route.points[i-1],b=route.points[i],length=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+        const a=edge(i-1),b=edge(i),length=Vector3.Distance(a,b);
         const fascia=this.box('canto-tablero',length+.08,1.05,.55,
-          new Vector3((a.x+b.x)/2+nx*side*route.width/2,(a.y+b.y)/2-.53,(a.z+b.z)/2+nz*side*route.width/2),this.deck,root);
+          new Vector3((a.x+b.x)/2,(a.y+b.y)/2-.53,(a.z+b.z)/2),this.deck,root);
         fascia.rotation.z=Math.atan2(b.y-a.y,Math.hypot(b.x-a.x,b.z-a.z));
         fascia.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
+        const coping=this.box('cornisa-puente',length+.08,.18,.72,fascia.position.add(new Vector3(0,.5,0)),this.deck,root);
+        coping.rotation.copyFrom(fascia.rotation);
       }
     }
     for(let i=8;i<route.points.length;i+=8){
@@ -229,21 +222,6 @@ export class MountainPassSystem {
       this.tube('arco-portante',path,1.05,this.stone,root);
     }
     this.merge(root);return root;
-  }
-  private buildPortal(id:string,x:number,z:number):TransformNode{
-    const root=this.root('acceso-'+id),y=this.exteriorHeight(x,z);
-    this.tube('arco-minero',Array.from({length:17},(_,i)=>{
-      const a=i*Math.PI/16;return new Vector3(x+Math.cos(a)*4.3,y+3+Math.sin(a)*4.3,z-4);
-    }),1.25,this.stone,root);
-    for(const side of [-1,1]){
-      this.box('jamba',2.1,4,3,new Vector3(x+side*4.3,y+1.7,z-4),this.stone,root);
-    }
-    this.box('umbral',7.5,6,.3,new Vector3(x,y+3,z-4.4),this.dark,root);
-    this.box('descanso-entrada',11,.35,11,new Vector3(x,y-.22,z),this.deck,root);
-    this.merge(root);
-    this.hanging.push(new HangingLanterns(this.scene,root,this.secondaryDynamics,
-      [-1,1].map(side=>({x:x+side*3,y:y+6.8,z:z-2,length:2.35})),this.dark,this.glow));
-    return root;
   }
   private buildInterior():void{
     const root=this.root('galerias-ferragris');this.interior=root;
@@ -326,6 +304,7 @@ export class MountainPassSystem {
     this.disposeInterior();
     for(const group of this.hanging)group.dispose();this.hanging.length=0;this.secondaryDynamics.dispose();
     for(const root of [...this.bridgeRoots,...this.trailRoots,...this.portals.values()])root.dispose(false,false);
-    for(const mat of [this.stone,this.deck,this.glow,this.dark,this.crystal,this.signs])mat.dispose(false,true);
+    this.wood.dispose(false,true);
+    for(const mat of [this.stone,this.deck,this.railing,this.glow,this.dark,this.crystal,this.signs])mat.dispose(false,true);
   }
 }

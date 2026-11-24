@@ -1,0 +1,31 @@
+{
+  "event": {
+    "phase": "capture-X",
+    "accepted": true,
+    "point": {
+      "x": -1184.8689154073463,
+      "y": 11.04876628796277,
+      "z": 2029.1891745773382
+    },
+    "normal": {
+      "x": 0,
+      "y": 1,
+      "z": 0
+    },
+    "radius": 3.4,
+    "level": 4,
+    "elapsed": 1.1145000000298022,
+    "marker": 1.1,
+    "frame": 96.29280000257491,
+    "animation": "Sword And Shield Casting"
+  },
+  "stats": {
+    "activeBursts": 1,
+    "dustPuffs": 48,
+    "debris": 22,
+    "maxDrawCalls": 6,
+    "maxDustPuffs": 96,
+    "maxDebris": 44
+  },
+  "age": 0.1602000000178814
+}

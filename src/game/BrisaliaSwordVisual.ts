@@ -12,6 +12,7 @@ export const BRISALIA_SWORD_MODELS=[
 ] as const;
 export const BRISALIA_SWORD_DEFAULT_POSITION_CM=[-15.5,-1,-10] as const;
 export const BRISALIA_SWORD_DEFAULT_ROTATION_DEG=[38,-1,10] as const;
+export const BRISALIA_SWORD_LENGTH_SCALE=[1,1,1,1.3] as const;
 const PALM_FRACTION=.75;
 const EDGE_DOWN_ROLL=150*Math.PI/180;
 const HANDLE_CENTER_Y=-.07;
@@ -25,6 +26,7 @@ export class BrisaliaSwordVisual {
   private currentLevel:SwordLevel=0;
   private currentRoot:AbstractMesh|null=null;
   private pendingLoad:Promise<void>=Promise.resolve();
+  private loadingLevel:SwordLevel=0;
   private serial=0;
   private disposed=false;
   private readonly gripJoints:GripJoint[];
@@ -34,6 +36,8 @@ export class BrisaliaSwordVisual {
   private handScale:Vector3|null=null;
   private placementOffset=new Vector3(...BRISALIA_SWORD_DEFAULT_POSITION_CM).scaleInPlace(.01);
   private placementRotation=new Vector3(...BRISALIA_SWORD_DEFAULT_ROTATION_DEG);
+  private readonly bladeTip=new Vector3();
+  private bladeContacts:Vector3[]=[];
 
   constructor(private readonly scene:Scene,private readonly hand:TransformNode,
     private readonly importer:typeof ImportMeshAsync=ImportMeshAsync){
@@ -72,6 +76,23 @@ export class BrisaliaSwordVisual {
   get rotationDegrees():Vector3{return this.placementRotation.clone();}
   whenReady():Promise<void>{return this.pendingLoad;}
 
+  /** Actual authored blade extremity, including grip, scale and animated wrist. */
+  tipWorldToRef(out:Vector3):boolean{
+    if(!this.level||!this.currentRoot)return false;
+    Vector3.TransformCoordinatesToRef(this.bladeTip,this.currentRoot.computeWorldMatrix(true),out);
+    return true;
+  }
+
+  /** Authored vertices along both blade edges; never the handle or an inflated box. */
+  bladeWorldToRef(out:Vector3[]):boolean{
+    if(!this.level||!this.currentRoot)return false;
+    const matrix=this.currentRoot.computeWorldMatrix(true);
+    for(let i=0;i<this.bladeContacts.length;i++)
+      Vector3.TransformCoordinatesToRef(this.bladeContacts[i],matrix,out[i]??(out[i]=new Vector3()));
+    out.length=this.bladeContacts.length;
+    return true;
+  }
+
   setOffsetMeters(x:number,y:number,z:number):void{
     if(![x,y,z].every(Number.isFinite))return;
     this.placementOffset.set(x,y,z);
@@ -103,10 +124,24 @@ export class BrisaliaSwordVisual {
   setLevel(level:SwordLevel):void{
     if(this.disposed||level===this.desiredLevel)return;
     this.desiredLevel=level;
-    const serial=++this.serial;
     if(level===0){this.currentRoot?.setEnabled(false);this.releaseGrip=true;return;}
-    if(this.currentLevel===level&&this.currentRoot){this.currentRoot.setEnabled(true);return;}
-    this.pendingLoad=this.loadLevel(level,serial);
+    if(this.currentLevel===level&&this.currentRoot){
+      if(this.loadingLevel&&this.loadingLevel!==level){++this.serial;this.loadingLevel=0;}
+      this.currentRoot.setEnabled(true);return;
+    }
+    this.preload(level);
+  }
+
+  /** Keep only the owned variant ready, even while the player is unarmed. */
+  preload(level:Exclude<SwordLevel,0>):Promise<void>{
+    if(this.disposed||this.currentLevel===level||this.loadingLevel===level||
+      this.desiredLevel!==0&&this.desiredLevel!==level)return this.pendingLoad;
+    const serial=++this.serial;
+    this.loadingLevel=level;
+    this.pendingLoad=this.loadLevel(level,serial).finally(()=>{
+      if(this.serial===serial)this.loadingLevel=0;
+    });
+    return this.pendingLoad;
   }
 
   /** Keep the fist closed after the source NLA action samples its open hand. */
@@ -129,8 +164,29 @@ export class BrisaliaSwordVisual {
         for(const mesh of result.meshes)mesh.dispose(false,true);
         throw new Error(`Espada de Brisalia incompleta: ${path}`);
       }
-      if(this.disposed||serial!==this.serial||this.desiredLevel!==level){
+      if(this.disposed||serial!==this.serial){
         root.dispose(false,true);return;
+      }
+      const inverse=root.computeWorldMatrix(true).clone().invert(),point=new Vector3(),tip=new Vector3();
+      let tipY=-Infinity;
+      const bladeVertices:Vector3[]=[];
+      for(const mesh of result.meshes){
+        const positions=mesh.getVerticesData('position');if(!positions)continue;
+        const matrix=mesh.computeWorldMatrix(true).multiply(inverse);
+        for(let i=0;i<positions.length;i+=3){
+          point.set(positions[i],positions[i+1],positions[i+2]);Vector3.TransformCoordinatesToRef(point,matrix,point);
+          if(point.y>tipY){tipY=point.y;tip.copyFrom(point);}
+          if(point.y>=.03)bladeVertices.push(point.clone());
+        }
+      }
+      // Six length bands, with two real edge vertices per band, plus the tip.
+      // Retain at most 13 points after loading, independent of model tessellation.
+      const contacts=[tip.clone()];
+      for(let band=0;band<6;band++){
+        const vertices=bladeVertices.filter(p=>Math.min(5,Math.floor((p.y-.03)/(tipY-.03)*6))===band);
+        if(!vertices.length)continue;
+        const left=vertices.reduce((a,b)=>b.x<a.x?b:a),right=vertices.reduce((a,b)=>b.x>a.x?b:a);
+        for(const edge of [left,right])if(!contacts.some(p=>p.equals(edge)))contacts.push(edge);
       }
       // Mixamo's hand inherits the rig's 1/100 unit conversion. Compensate
       // its world scale so the authored blade is proportional to Santi's body.
@@ -155,7 +211,7 @@ export class BrisaliaSwordVisual {
       const visualScale=TRAVERSAL.playerHeight*.45;
       root.scaling.multiplyInPlace(new Vector3(
         visualScale/Math.abs(handScale.x),
-        visualScale/Math.abs(handScale.y),
+        visualScale*BRISALIA_SWORD_LENGTH_SCALE[level-1]/Math.abs(handScale.y),
         visualScale/Math.abs(handScale.z)));
       // The inner palm skin is near local +Z 2.2 and the handle extends about
       // 1.5 units toward it. Seat the handle against that surface, outside it.
@@ -166,10 +222,12 @@ export class BrisaliaSwordVisual {
       }
       this.currentRoot?.dispose(false,true);
       this.currentRoot=root;this.currentLevel=level;
+      this.bladeTip.copyFrom(tip);
+      this.bladeContacts=contacts;
       this.gripTarget=gripTarget;this.baseRotation=root.rotationQuaternion.clone();
       this.handScale=handScale;
       this.applyPlacement();
-      root.setEnabled(true);
+      root.setEnabled(this.desiredLevel===level);
     }catch(error){
       if(!this.disposed)console.warn('[Auralia] No se pudo cargar '+path,error);
     }

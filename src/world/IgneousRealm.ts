@@ -251,12 +251,12 @@ export class IgneousRealm {
     // clip long before the dark masonry. Area-like lava lights keep their curve.
     return Math.min(lamp.intensity,1.5*Math.max(.25,nearestSquared));
   }
-  update(dt:number,p:B.Vector3,characters:readonly B.TransformNode[],grounded:boolean):B.Vector3|null{
+  update(dt:number,p:B.Vector3,characters:readonly B.TransformNode[],grounded:boolean,effects:readonly B.AbstractMesh[]=[]):B.Vector3|null{
     if(!this.enabled)return null;
     this.crystal?.update(dt);
     this.refresh-=dt;
     if(this.refresh<=0){
-      this.refresh=.4;const actors=characters.flatMap(c=>c.getChildMeshes(false));
+      this.refresh=.4;const actors=[...characters.flatMap(c=>c.getChildMeshes(false)),...effects];
       if(actors.length!==this.actorMeshes.length||actors.some((m,i)=>m!==this.actorMeshes[i])){
         this.actorMeshes=actors;
         for(const light of [this.actorsFill!,...this.actorLights]){light.includedOnlyMeshes=actors;light.setEnabled(actors.length>0);}

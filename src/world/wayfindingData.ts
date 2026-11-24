@@ -53,16 +53,14 @@ export function traceRoadRoute(roads:readonly GuideRoad[],start:GuidePoint,end:G
 export function brisaliaWayfinding(origin:{x:number;z:number}):WayfindingSite[]{
   const S=BRISALIA_SCALE,metric=(x:number,z:number):GuidePoint=>[x*S,z*S];
   const entry=(id:string)=>brisaliaApproach(BRISALIA_BUILDINGS.find(b=>b.id===id)!);
-  const destinations={castillo:{label:'Castillo',at:metric(135,-69)},posada:{label:'Posada',at:entry('B02')},
+  const destinations={posada:{label:'Posada',at:entry('B02')},
     taller:{label:'Taller',at:entry('B04')},centro:{label:'Centro',at:metric(-10,-65)},salida:{label:'Acceso sur',at:metric(1,10)}};
   const sites:{id:string;asset:WayfindingAsset;at:GuidePoint;junction:GuidePoint;location:string;yaw:number;dest:(keyof typeof destinations)[]}[]=[
-    {id:'welcome',asset:'wayfindingBoard',at:metric(4.8,4),junction:metric(1,4),location:'Acceso sur',yaw:Math.PI,dest:['castillo','posada','taller']},
+    {id:'welcome',asset:'wayfindingBoard',at:metric(4.8,4),junction:metric(1,4),location:'Acceso sur',yaw:Math.PI,dest:['centro','posada','taller']},
     {id:'welcome-lamp',asset:'wayfindingLamp',at:metric(4.8,7.1),junction:metric(1,4),location:'Acceso sur',yaw:Math.PI,dest:[]},
     {id:'south-bend',asset:'wayfindingPointer2',at:metric(-13.4,-6.6),junction:metric(-10,-10),location:'Camino sur',yaw:Math.PI,dest:['centro','salida']},
-    {id:'central',asset:'wayfindingBoard',at:metric(20.7,-61.4),junction:metric(17,-65),location:'Cruce central',yaw:0,dest:['castillo','posada','taller']},
+    {id:'central',asset:'wayfindingBoard',at:metric(20.7,-61.4),junction:metric(17,-65),location:'Cruce central',yaw:0,dest:['salida','posada','taller']},
     {id:'central-lamp',asset:'wayfindingLamp',at:metric(21.2,-68.6),junction:metric(17,-65),location:'Cruce central',yaw:Math.PI,dest:[]},
-    {id:'castle',asset:'wayfindingPointer1',at:metric(138.5,-57),junction:metric(135,-57),location:'Camino al castillo',yaw:Math.PI,dest:['castillo']},
-    {id:'castle-lamp',asset:'wayfindingLamp',at:metric(131.5,-58),junction:metric(135,-57),location:'Camino al castillo',yaw:0,dest:[]}
   ];
   return sites.map(s=>{
     const routes=s.dest.map(id=>{const d=destinations[id],points=traceRoadRoute(BRISALIA_PATHS,s.junction,d.at);

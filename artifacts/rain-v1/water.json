@@ -1,0 +1,23 @@
+{
+  "lake": {
+    "id": "tres-vertientes",
+    "x": -2647.472297764587,
+    "z": -1050.6724232456897
+  },
+  "surface": {
+    "height": 1,
+    "kind": "water"
+  },
+  "waterCells": 4225,
+  "stats": {
+    "quality": "medium",
+    "drops": 5200,
+    "splashes": 800,
+    "drawCalls": 2,
+    "surfaceReady": true,
+    "surfaceProgress": 1,
+    "surfaceBudget": 128,
+    "intensity": 1,
+    "disposed": false
+  }
+}

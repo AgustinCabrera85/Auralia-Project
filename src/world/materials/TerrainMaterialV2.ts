@@ -1,3 +1,4 @@
+import { TerrainRoadPaint, ROAD_GLSL, ROAD_UNIFORMS, ROAD_SAMPLERS } from './TerrainRoadPaint';
 /**
  * Auralia World Editor — Surface Materials v2.
  * Six independently authored 1K albedos and normal maps; two 1K runtime normal atlases.
@@ -65,6 +66,9 @@ uniform sampler2D texSnow;
 uniform sampler2D texLava;
 uniform sampler2D normAtlas0;
 uniform sampler2D normAtlas1;
+#ifdef TERRAIN_ROADS
+${ROAD_GLSL}
+#endif
 
 vec2 rotate2(vec2 p,float a){
   float c=cos(a),s=sin(a);
@@ -154,6 +158,15 @@ void main(void) {
   bump+=w1.x*vec3(sN.x,0.0,sN.y)*.27;
   bump+=w1.y*vec3(lN.x,0.0,lN.y)*.55;
   vec3 N=normalize(geometricNormal+bump);
+#ifdef TERRAIN_ROADS
+  vec4 road=terrainRoad(p);
+  if(road.a>.001){
+    albedo=mix(albedo,texture2D(roadAlbedo,p/7.27).rgb*road.rgb,road.a);
+    vec3 detail=texture2D(roadNormal,p/7.27).rgb*2.0-1.0;
+    N=normalize(mix(N,normalize(geometricNormal+vec3(detail.x,0.0,detail.y)*.35),road.a));
+    roughness=mix(roughness,.92,road.a);
+  }
+#endif
 
   vec3 L=normalize(sunDirection);
   float visibility=characterSunVisibility(vWorldPos);
@@ -179,16 +192,18 @@ const SURFACES=['grass','soil','rock','sand','snow','lava'] as const;
 
 export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   {material:ShaderMaterial;dispose:()=>void}{
+  const roadsEnabled=scene.getEngine().getCaps().maxTexturesImageUnits>=12;
   const shadows=scene.getEngine().getCaps().maxTexturesImageUnits>8;
   const material=new ShaderMaterial('auralia-terrain-six-textures-v2',scene,
     {vertex:SHADER,fragment:SHADER},
     {attributes:['position','normal','color','uv'],
-     defines:shadows?['#define CHARACTER_SHADOWS']:[],
+     defines:[...(shadows?['#define CHARACTER_SHADOWS']:[]),...(roadsEnabled?['#define TERRAIN_ROADS']:[])],
      uniforms:['world','worldViewProjection','cameraPosition','sunDirection','sunColor',
        'fogColor','fogDensity','macroStrength','macroScale','layerScale',
-       'forestCenter','forestRadii',...CHARACTER_SHADOW_UNIFORMS],
+       'forestCenter','forestRadii',...CHARACTER_SHADOW_UNIFORMS,...ROAD_UNIFORMS],
      samplers:[...SURFACES.map(s=>`tex${s[0].toUpperCase()}${s.slice(1)}`),
-       'normAtlas0','normAtlas1',...(shadows?['characterShadowMap']:[])]});
+       'normAtlas0','normAtlas1',...(shadows?['characterShadowMap']:[]),...(roadsEnabled?ROAD_SAMPLERS:[])]});
+  const roads=roadsEnabled?new TerrainRoadPaint(scene,material):undefined;
   material.backFaceCulling=false;
   const light=scene.lights.find(l=>l instanceof DirectionalLight) as DirectionalLight|undefined;
   material.setVector3('sunDirection',light?light.direction.scale(-1).normalize():new Vector3(.5,1,-.4).normalize());
@@ -234,7 +249,7 @@ export function createTerrainMaterial(scene:Scene,config:TerrainMaterialConfig):
   });
   return {material,dispose:()=>{
     scene.onBeforeRenderObservable.remove(observer);
-    material.dispose();
+    roads?.dispose();material.dispose();
     for(const tex of textures)tex.dispose();
   }};
 }

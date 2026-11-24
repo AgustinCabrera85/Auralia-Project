@@ -11,6 +11,8 @@ import { AuraliaFoliageWind } from './AuraliaFoliageWind';
 import { WORLD_FOREST, forestFrontRows, worldForestEnabled } from './geography/WorldForest';
 import { activeGeography } from './geography/ActiveGeography';
 import { createTreeSprite, treeSpriteView } from './TreeSprite';
+import { treePerchGeometry, type BirdTree } from './wildlife/BirdHabitat';
+import { updateInstanceBuffer } from './DynamicInstanceBuffers';
 
 type Cell = { cx:number; cz:number };
 const kinds:readonly VegetationKind[]=['arbolito1','arbolito2','arbolito3','plantitas1','arbolitoSeco','tronco1',...BRISALIA_PLANT_ASSETS];
@@ -53,8 +55,12 @@ export class VegetationSystem {
   private farBatch=0;
   private visualFocus={x:0,z:0};
   private lastBufferFocus={x:Infinity,z:Infinity};
+  private buffersDirty=false;
+  private bufferWork:Generator<void,void,void>|null=null;
+  private bufferWorkMs=0;
   private readonly treeColliders:TreeColliderSystem;
   private readonly foliageWind:AuraliaFoliageWind;
+  private readonly birdPerches=new Map<VegetationKind,ReturnType<typeof treePerchGeometry>>();
 
   get activeChunkCount():number{return this.chunks.size;}
   get instanceCount():number{return this.visibleCount;}
@@ -219,7 +225,7 @@ export class VegetationSystem {
     this.visualFocus={x,z};
     const forest=worldForestEnabled();
     if(this.initialized&&previousCenter.cx===this.center.cx&&previousCenter.cz===this.center.cz){
-      if(this.ready&&Math.hypot(x-this.lastBufferFocus.x,z-this.lastBufferFocus.z)>(forest?12:36))this.refreshBuffers();
+      if(this.ready&&Math.hypot(x-this.lastBufferFocus.x,z-this.lastBufferFocus.z)>(forest?12:36))this.buffersDirty=true;
       return;
     }
     this.initialized=true;
@@ -241,7 +247,7 @@ export class VegetationSystem {
       return da-db;
     });
     if(this.ready&&(changed||previousCenter.cx!==this.center.cx||previousCenter.cz!==this.center.cz||
-      Math.hypot(x-this.lastBufferFocus.x,z-this.lastBufferFocus.z)>36))this.refreshBuffers();
+      Math.hypot(x-this.lastBufferFocus.x,z-this.lastBufferFocus.z)>36))this.buffersDirty=true;
   }
 
   /** Only heading changes of eight degrees trigger a front-row reassessment. */
@@ -249,26 +255,31 @@ export class VegetationSystem {
     const length=Math.hypot(x,z);if(length<.001||!worldForestEnabled())return;
     x/=length;z/=length;
     if(x*this.viewDirection.x+z*this.viewDirection.z>Math.cos(Math.PI*8/180))return;
-    this.viewDirection={x,z};if(this.ready)this.refreshBuffers();
+    this.viewDirection={x,z};if(this.ready)this.buffersDirty=true;
   }
 
-  /** Up to four cheap placement cells within 2.5ms; idle frames do no uploads. */
-  update():void{
-    if(!this.ready||this.disposed||!this.pending.length)return;
-    const forest=worldForestEnabled(),start=performance.now();let generated=0,close=false;
-    do{
+  /** Placement, selection and uploads cooperate with the caller's frame budget. */
+  update(budgetMs=2.5):void{
+    if(!this.ready||this.disposed)return;
+    const forest=worldForestEnabled(),start=performance.now(),deadline=start+Math.max(0,budgetMs);let generated=0,close=false;
+    if(this.bufferWork){this.advanceBuffers(deadline);return;}
+    while(this.pending.length&&performance.now()<deadline){
       const cell=this.pending[0],size=MAINLAND.chunkSize;
       if(activeGeography()&&!activeGeography()!.source.isReady([cell.cx*size-24,cell.cz*size-24,(cell.cx+1)*size+24,(cell.cz+1)*size+24]))break;
       this.pending.shift();
       this.chunks.set(chunkKey(cell.cx,cell.cz),vegetationForChunk(cell.cx,cell.cz,this.exclusions()));
       close ||= Math.hypot(cell.cx-this.center.cx,cell.cz-this.center.cz)<=4;
       generated++;this.farBatch++;
-    }while(forest&&this.pending.length&&generated<4&&performance.now()-start<2.5);
+      if(!forest||generated>=4)break;
+    }
     this.placementMs=performance.now()-start;
     if(generated&&(close||this.farBatch>=(forest?12:4)||!this.pending.length)){
       this.farBatch=0;
-      this.refreshBuffers();
+      this.buffersDirty=true;
     }
+    // Heading, movement and streamed placements can all change in one frame.
+    // Upload their combined result once, including when the placement queue is empty.
+    if(this.buffersDirty){this.bufferWork=this.buildBuffers();this.bufferWorkMs=0;this.advanceBuffers(deadline);}
   }
 
   /** Re-evaluate decorative placements after a structure is added or removed. */
@@ -282,12 +293,25 @@ export class VegetationSystem {
 
   private refreshBuffers():void{
     if(!this.ready)return;
-    const start=performance.now(),forest=worldForestEnabled();
-    this.lastBufferFocus={...this.visualFocus};
-    this.visibleCount=0;
-    this.visibleFarCount=0;
-    this.visibleCanopyCount=0;
-    this.frontTreeCount=0;
+    this.bufferWork=null;
+    const start=performance.now();for(const _ of this.buildBuffers()){}
+    this.bufferBuildMs=performance.now()-start;
+  }
+
+  private advanceBuffers(deadline:number):void{
+    const start=performance.now();
+    while(this.bufferWork&&performance.now()<deadline){
+      if(this.bufferWork.next().done)this.bufferWork=null;
+    }
+    this.bufferWorkMs+=performance.now()-start;
+    if(!this.bufferWork)this.bufferBuildMs=this.bufferWorkMs;
+  }
+
+  private *buildBuffers():Generator<void,void,void>{
+    this.buffersDirty=false;
+    const forest=worldForestEnabled(),focus={...this.visualFocus},center={...this.center},view={...this.viewDirection};
+    this.lastBufferFocus=focus;
+    let visibleCount=0,visibleFarCount=0,visibleCanopyCount=0,frontTreeCount=0,visited=0;
     const matrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const farMatrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const lowMatrices=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
@@ -295,14 +319,15 @@ export class VegetationSystem {
     const spriteViews=new Map<VegetationKind,number[]>(kinds.map(kind=>[kind,[]]));
     const collidable:VegetationPlacement[]=[];
     const visible:{p:VegetationPlacement;distance:number}[]=[];
-    for(const [key,placements] of this.chunks){
+    for(const [key,placements] of [...this.chunks]){
       const [cx,cz]=key.split(':').map(Number);
-      const dx=cx-this.center.cx,dz=cz-this.center.cz;
+      const dx=cx-center.cx,dz=cz-center.cz;
       const plantsNear=dx*dx+dz*dz<=(VEGETATION_CONFIG.renderRadiusChunks.plants+.35)**2;
       for(const p of placements){
+        if(visited++%128===0)yield;
         if(p.kind==='plantitas1'&&!plantsNear)continue;
         if(!this.sources.has(p.kind))continue;
-        const distance=Math.hypot(p.x-this.visualFocus.x,p.z-this.visualFocus.z);
+        const distance=Math.hypot(p.x-focus.x,p.z-focus.z);
         if(isBrisaliaPlant(p.kind)&&distance>(p.castleBorder?220:120))continue;
         // Each tree has a stable fade-out distance; no hard forest ring or scale jump.
         if(p.obstacleRadius&&distance>(forest?WORLD_FOREST.fadeStart:350)+
@@ -311,10 +336,14 @@ export class VegetationSystem {
         visible.push({p,distance});
       }
     }
+    yield;
     if(forest)visible.sort((a,b)=>a.distance-b.distance||a.p.x-b.p.x||a.p.z-b.p.z);
-    const front=forest?forestFrontRows(visible.filter(({p})=>this.canopySources.has(p.kind)),this.visualFocus,this.viewDirection):new Set<VegetationPlacement>();
+    yield;
+    const front=forest?forestFrontRows(visible.filter(({p})=>this.canopySources.has(p.kind)),focus,view):new Set<VegetationPlacement>();
+    yield;
     let full=0,medium=0;
     for(const {p,distance} of visible){
+        if(visited++%128===0)yield;
         if(p.obstacleRadius&&distance<130)collidable.push(p);
         const jitter=hash01(Math.floor(p.x),Math.floor(p.z),4927);
         let target=matrices;
@@ -326,13 +355,13 @@ export class VegetationSystem {
         }else if(p.obstacleRadius&&this.farSources.has(p.kind)){
           if(forest&&this.canopySources.has(p.kind)){
             if(distance<=WORLD_FOREST.fullDistance+jitter*25&&full<WORLD_FOREST.maxFullTrees)full++;
-            else if(front.has(p))this.frontTreeCount++;
+            else if(front.has(p))frontTreeCount++;
             else if(distance<=WORLD_FOREST.mediumDistance+jitter*80&&medium<WORLD_FOREST.maxMediumTrees){target=farMatrices;medium++;}
             else target=canopyMatrices;
           }else if(distance>300+jitter*45)target=farMatrices;
         }
         if(target===canopyMatrices){
-          const dx=this.visualFocus.x-p.x,dz=this.visualFocus.z-p.z;
+          const dx=focus.x-p.x,dz=focus.z-p.z;
           const length=Math.max(.001,Math.hypot(dx,dz)),c=-dz/length*p.scale,s=-dx/length*p.scale;
           target.get(p.kind)!.push(c,0,-s,0,0,p.scale,0,0,s,0,c,0,p.x,p.y,p.z,1);
           spriteViews.get(p.kind)!.push(treeSpriteView(p.yaw,dx,dz));
@@ -341,11 +370,14 @@ export class VegetationSystem {
           if(!matrix){matrix=new Float32Array(Matrix.Compose(new Vector3(p.scale,p.scale,p.scale),Quaternion.RotationAxis(Vector3.Up(),p.yaw),new Vector3(p.x,p.y,p.z)).m);this.placementMatrices.set(p,matrix);}
           target.get(p.kind)!.push(...matrix);
         }
-        if(target===farMatrices&&p.obstacleRadius)this.visibleFarCount++;
-        if(target===canopyMatrices)this.visibleCanopyCount++;
-        this.visibleCount++;
+        if(target===farMatrices&&p.obstacleRadius)visibleFarCount++;
+        if(target===canopyMatrices)visibleCanopyCount++;
+        visibleCount++;
     }
     for(const kind of kinds){
+      // Publish the complete LOD family for a species together. Keep the last
+      // valid family visible while the next selection is being prepared.
+      yield;
       const source=this.sources.get(kind);
       const farSource=this.farSources.get(kind);
       const lowSource=this.lowSources.get(kind as BrisaliaPlantKind);
@@ -353,13 +385,13 @@ export class VegetationSystem {
         [lowSource,lowMatrices.get(kind)!],[this.canopySources.get(kind),canopyMatrices.get(kind)!]] as const){
         if(!mesh)continue;
         mesh.isVisible=data.length>0;
-        mesh.thinInstanceSetBuffer('matrix',new Float32Array(data),16,true);
-        if(mesh.metadata?.treeSprite)mesh.thinInstanceSetBuffer('treeView',new Float32Array(spriteViews.get(kind)!),1,true);
-        if(data.length)mesh.thinInstanceRefreshBoundingInfo();
+        updateInstanceBuffer(mesh,'matrix',data,16);
+        if(mesh.metadata?.treeSprite)updateInstanceBuffer(mesh,'treeView',spriteViews.get(kind)!,1);
       }
     }
     this.treeColliders.sync(collidable,this.treeFocus.x,this.treeFocus.z);
-    this.bufferBuildMs=performance.now()-start;
+    this.visibleCount=visibleCount;this.visibleFarCount=visibleFarCount;
+    this.visibleCanopyCount=visibleCanopyCount;this.frontTreeCount=frontTreeCount;
   }
 
   private treeFocus={x:0,z:0};
@@ -382,14 +414,33 @@ export class VegetationSystem {
     return this.treeColliders.queryGround(x,z,originY,maxDistance);
   }
 
+  /** Uses the streamed placements and exact source-mesh surfaces, including scale/yaw. */
+  birdTrees(x:number,z:number,radius:number):BirdTree[]{
+    const result:BirdTree[]=[];
+    for(const placements of this.chunks.values())for(const p of placements){
+      if(!p.obstacleRadius||Math.hypot(p.x-x,p.z-z)>radius)continue;
+      const source=this.sources.get(p.kind);if(!source)continue;
+      let geometry=this.birdPerches.get(p.kind);
+      if(!geometry){geometry=treePerchGeometry(source);this.birdPerches.set(p.kind,geometry);}
+      const c=Math.cos(p.yaw),s=Math.sin(p.yaw),r=geometry.radius*p.scale;
+      const id=`tree:${p.kind}:${p.x}:${p.z}`;
+      result.push({id,canopy:p.kind!=='arbolitoSeco',perches:geometry.points.map(q=>({x:p.x+(q.x*c+q.z*s)*p.scale,
+        y:p.y+q.y*p.scale,z:p.z+(-q.x*s+q.z*c)*p.scale})),
+        obstacle:{id,minX:p.x-r,maxX:p.x+r,minZ:p.z-r,maxZ:p.z+r,top:p.y+geometry.top*p.scale}});
+    }
+    return result;
+  }
+
   queryTreeWall(x:number,y:number,z:number,dx:number,dz:number,reach:number):TreeWallHit|null{
     return this.treeColliders.queryWall(x,y,z,dx,dz,reach);
   }
 
   dispose():void{
     this.disposed=true;
+    this.bufferWork=null;
     this.pending=[];
     this.chunks.clear();
+    this.birdPerches.clear();
     this.treeColliders.dispose();
     this.foliageWind.dispose();
     for(const source of this.sources.values())source.dispose(false,false);

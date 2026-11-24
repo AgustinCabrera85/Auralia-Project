@@ -1,10 +1,12 @@
-import { Engine, EngineInstrumentation, Scene, SceneInstrumentation } from '@babylonjs/core';
+import { Engine, EngineInstrumentation, Scene, SceneInstrumentation, type AbstractMesh } from '@babylonjs/core';
 import type { DynamicsMetrics } from '../physics/ChainDynamics';
+import type { RainFX } from '../world/climate/RainFX.js';
 import { PHASE_LABELS, T, TELEMETRY_COLUMNS, TELEMETRY_PHASES, TelemetryHistory, TelemetryMemoryHistory,
   type TelemetryPhase } from './telemetryData';
 
 export type TelemetryWorldStats={zone:string;near:number;mid:number;far:number;
-  vegetation:number;vegetationLod:number;grass:number;grassSectors:number;secondaryDynamics?:DynamicsMetrics};
+  vegetation:number;vegetationLod:number;grass:number;grassSectors:number;secondaryDynamics?:DynamicsMetrics;
+  rain?:ReturnType<RainFX['getStats']>};
 type BrowserEvent={timeMs:number;kind:'resource'|'longtask';label:string;durationMs:number};
 const ms=(value:number):string=>value.toFixed(1)+' ms';
 
@@ -87,6 +89,9 @@ export class GameTelemetry {
     if(this.recording&&!this.sceneStats){
       this.sceneStats=new SceneInstrumentation(this.scene);
       this.sceneStats.captureActiveMeshesEvaluationTime=true;
+      this.sceneStats.captureAnimationsTime=true;
+      this.sceneStats.captureRenderTargetsRenderTime=true;
+      this.sceneStats.captureRenderTime=true;
       this.engineStats=new EngineInstrumentation(this.engine);
       this.engineStats.captureShaderCompilationTime=true;
       if(this.gpuSupported)this.engineStats.captureGPUFrameTime=true;
@@ -145,17 +150,31 @@ export class GameTelemetry {
     if(!this.capturing)return;
     this.updateEnd=performance.now();this.frame[T.updateMs]=this.updateEnd-this.frameStart;
   }
-  recordCamera(durationMs:number):void{
-    if(this.capturing)this.frame[T.cameraMs]+=durationMs;
+  recordCamera(durationMs:number,collisionMs=durationMs,precipitationMs=0):void{
+    if(!this.capturing)return;
+    this.frame[T.cameraMs]+=durationMs;
+    this.frame[T.cameraCollisionMs]+=collisionMs;
+    this.frame[T.precipitationMs]+=precipitationMs;
+    this.frame[T.immersionMs]+=Math.max(0,durationMs-collisionMs-precipitationMs);
   }
   endRender():void{
     if(!this.capturing)return;
     this.renderEnd=performance.now();this.frame[T.renderMs]=this.renderEnd-this.updateEnd;
   }
-  endFrame(pendingTerrain:number,x:number,z:number):void{
+  endFrame(pendingTerrain:number,x:number,z:number,hero?:readonly AbstractMesh[]):void{
     if(!this.capturing)return;
     this.frame[T.drawCalls]=this.sceneStats!.drawCallsCounter.current;
     this.frame[T.activeMeshesMs]=this.sceneStats!.activeMeshesEvaluationTimeCounter.current;
+    this.frame[T.animationMs]=this.sceneStats!.animationsTimeCounter.current;
+    this.frame[T.renderTargetsMs]=this.sceneStats!.renderTargetsRenderTimeCounter.current;
+    this.frame[T.drawMs]=this.sceneStats!.renderTimeCounter.current;
+    this.frame[T.heroVisible]=0;this.frame[T.heroActive]=0;
+    const active=this.scene.getActiveMeshes();
+    for(const mesh of hero??[]){
+      if(!mesh.getTotalVertices())continue;
+      if(mesh.isEnabled()&&mesh.isVisible&&mesh.visibility>0)this.frame[T.heroVisible]++;
+      if(active.contains(mesh))this.frame[T.heroActive]++;
+    }
     this.frame[T.triangles]=this.scene.getActiveIndices()/3;
     this.frame[T.pendingTerrain]=pendingTerrain;
     this.frame[T.pendingLoads]=this.scene.getWaitingItemsCount();
@@ -192,8 +211,14 @@ export class GameTelemetry {
       `Actualización       ${ms(a[T.updateMs]).padStart(8)} / ${ms(p[T.updateMs])}\n`+
       TELEMETRY_PHASES.map(phase=>`${PHASE_LABELS[phase].padEnd(22)}${ms(a[T[phase]]).padStart(8)} / ${ms(p[T[phase]])}`).join('\n')+
       `\nBabylon CPU         ${ms(a[T.renderMs]).padStart(8)} / ${ms(p[T.renderMs])}`+
-      `\n  Cámara (incluida)  ${ms(a[T.cameraMs]).padStart(8)} / ${ms(p[T.cameraMs])}`+
+      `\n  Cámara/clima/agua ${ms(a[T.cameraMs]).padStart(8)} / ${ms(p[T.cameraMs])}`+
+      `\n    Colisión cámara ${ms(a[T.cameraCollisionMs]).padStart(8)} / ${ms(p[T.cameraCollisionMs])}`+
+      `\n    Precipitación  ${ms(a[T.precipitationMs]).padStart(8)} / ${ms(p[T.precipitationMs])}`+
+      `\n    Inmersión/agua ${ms(a[T.immersionMs]).padStart(8)} / ${ms(p[T.immersionMs])}`+
       `\n  Evaluación mallas  ${ms(a[T.activeMeshesMs]).padStart(8)} / ${ms(p[T.activeMeshesMs])}`+
+      `\n  Animación/IK CPU  ${ms(a[T.animationMs]).padStart(8)} / ${ms(p[T.animationMs])}`+
+      `\n  Pases auxiliares  ${ms(a[T.renderTargetsMs]).padStart(8)} / ${ms(p[T.renderTargetsMs])}`+
+      `\n  Dibujo CPU        ${ms(a[T.drawMs]).padStart(8)} / ${ms(p[T.drawMs])}`+
       `\nGPU                 ${stats.gpuMs===null?(this.gpuSupported?'esperando muestra':'no disponible'):ms(stats.gpuMs)}`+
       `\nShaders CPU (suma)  ${ms(a[T.shaderMs]*stats.count)}`;
     const world=this.worldStats();
@@ -201,6 +226,7 @@ export class GameTelemetry {
     const memory=(performance as Performance&{memory?:{usedJSHeapSize:number}}).memory;
     f.get('scene')!.textContent=`Draw calls ${Math.round(this.frame[T.drawCalls])} · triángulos ${Math.round(this.frame[T.triangles]).toLocaleString()}\n`+
       `Mallas activas ${this.scene.getActiveMeshes().length}/${this.scene.meshes.length} · materiales ${this.scene.materials.length}\n`+
+      `Deformadores ${this.scene.morphTargetManagers.length} · esqueletos ${this.scene.skeletons.length} · grupos de animación ${this.scene.animationGroups.length}\n`+
       `Terreno N/M/F ${world.near}/${world.mid}/${world.far} · cola ${pending(this.frame[T.pendingTerrain])}\n`+
       `Vegetación ${world.vegetation} (${world.vegetationLod} LOD)\n`+
       `Pasto ${world.grass} · sectores ${world.grassSectors}\n`+
@@ -212,7 +238,10 @@ export class GameTelemetry {
       `\nMemoria JS: no incluye toda la RAM de Chrome ni la memoria GPU`+
       `\nRender ${this.engine.getRenderWidth()}×${this.engine.getRenderHeight()} · ${world.zone}`+
       `\nVentana ${viewport?.clientWidth??0}×${viewport?.clientHeight??0} · escala 3D ${(100/this.engine.getHardwareScalingLevel()).toFixed(0)} %`+
-      `\nX ${Math.round(this.frame[T.x])} · Z ${Math.round(this.frame[T.z])}`;
+      `\nX ${Math.round(this.frame[T.x])} · Z ${Math.round(this.frame[T.z])}`+
+      `\nSanti: ${this.frame[T.heroActive]}/${this.frame[T.heroVisible]} mallas seleccionadas/visibles`+
+      (world.rain?`\nLluvia ${(world.rain.intensity*100).toFixed(0)} % · ${world.rain.drawCalls} dibujos · ${world.rain.surfaceLastQueries} consultas/frame`+
+        `\nCaché lluvia ${world.rain.surfaceMs.toFixed(2)} ms · ${world.rain.surfaceQueries} consultas totales`:'');
     const slow=this.history.slowFrames(now-this.started);
     f.get('hitches')!.textContent=slow.length?slow.map(row=>
       `${(row.timeMs/1000).toFixed(1)} s · ${ms(row.frameMs)} · ${row.label}`+
@@ -243,14 +272,15 @@ export class GameTelemetry {
   }
   /** Same bounded data used by the F8 download; no second profiler for benchmarks. */
   snapshot(){
-    return {version:2,exportedAt:new Date().toISOString(),windowMs:10000,
+    return {version:3,exportedAt:new Date().toISOString(),windowMs:10000,
       capacityFrames:this.history.capacity,gpuTimerSupported:this.gpuSupported,
       notes:'frameMs es el intervalo real; bloques CPU pertenecen al frame anterior. GPU asíncrona; null si no está disponible.',
       world:this.worldStats(),resolution:[this.engine.getRenderWidth(),this.engine.getRenderHeight()],
       viewportCss:[this.engine.getRenderingCanvas()?.clientWidth??null,
         this.engine.getRenderingCanvas()?.clientHeight??null],
       devicePixelRatio:window.devicePixelRatio,hardwareScalingLevel:this.engine.getHardwareScalingLevel(),
-      phases:PHASE_LABELS,frames:this.history.exportRows(),events:this.events.map(event=>({...event})),
+      phases:PHASE_LABELS,frames:this.history.exportRows(),hitches:this.history.exportHitches(),
+      events:this.events.map(event=>({...event})),
       memory:{intervalMs:this.memoryHistory.intervalMs,capacitySamples:this.memoryHistory.capacity,
         notes:'Bytes del heap JavaScript, no RAM total de Chrome ni memoria GPU. Lectura aproximada; null si no está disponible. Contadores de recursos de Babylon. Solo se muestrea mientras la telemetría está grabando.',
         samples:this.memoryHistory.exportRows()}};

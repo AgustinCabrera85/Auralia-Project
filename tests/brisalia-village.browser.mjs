@@ -33,14 +33,15 @@ export async function auditVillage(world){
     check(a.boundsMax[0]+1<b.boundsMin[0]||b.boundsMax[0]+1<a.boundsMin[0]||
       a.boundsMax[2]+1<b.boundsMin[2]||b.boundsMax[2]+1<a.boundsMin[2],`${a.id}/${b.id} separated`);
   }
-  const o=world.geographicWorld.town,S=BRISALIA_SCALE,x=o.x+135*S;
+  const o=world.geographicWorld.palace,S=BRISALIA_SCALE,x=o.x;
   const castle=world.village.buildings.get('B28');
   // Babylon splits multi-primitive GLB meshes into individual render objects.
   check(castle.root.metadata.revision===5&&castle.sourceMeshes>=2062,'Rev5 replaces the old castle');
   const castleMaterials=castle.meshes.flatMap(m=>m.material?.subMaterials??[m.material]);
   check(castleMaterials.some(m=>m?.bumpTexture&&m?.metallicTexture),'Rev5 PBR normal and roughness maps retained');
   // Walk the real capsule through source steps and the opened gate into the yard.
-  const startZ=o.z-66*S,endZ=o.z-85*S,controller=new CharacterTraversalController();
+  const startZ=o.z+38*S,endZ=o.z+19*S,controller=new CharacterTraversalController();
+  await world.travelGeographic(x,startZ,'Palacio de Nácar');
   world.traversal.teleport(x,world.walkHeightAt(x,startZ),startZ);
   world.player.position.set(x,world.walkHeightAt(x,startZ),startZ);
   world.streamMainland(x,startZ,true);
@@ -54,7 +55,7 @@ export async function auditVillage(world){
       run:false,sprint:false,jumpPressed:false},physics);
   }
   check(controller.position.z<=endZ,`Castle entrance walk: ${JSON.stringify(controller.position)}, target Z ${endZ}`);
-  const yardZ=o.z-88*S,ground=world.geographicWorld.surface.heightAt(x,yardZ);
+  const yardZ=o.z+16*S,ground=world.geographicWorld.surface.heightAt(x,yardZ);
   const yardMesh=world.village.ground(x,yardZ,ground+.15,.3);
   check(yardMesh===null,'Courtyard has no building floor over the map terrain');
   const roadMesh=world.scene.getMeshByName('brisalia:connected-streets');

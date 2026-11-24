@@ -188,5 +188,48 @@ button:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
 .landmark-list button:hover {background:#eac78223;}
 .landmark-list strong {font-size:12px;display:block;}
 .landmark-list small {display:block;color:#c2d6d3;line-height:1.5;margin-top:4px;font-size:11px;}
+.atlas-layout {grid-template-columns:minmax(0,min(620px,calc(92vh - 270px))) minmax(240px,1fr);gap:18px;}
+.atlas-shell {min-width:0;--atlas-zoom:1;}
+.atlas-toolbar,.atlas-footer {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.atlas-toolbar {margin-bottom:10px;color:#dcc895;font-size:9px;letter-spacing:1.6px;font-weight:700;}
+.atlas-toolbar>div {display:flex;gap:4px;}
+.atlas-toolbar button {border:1px solid #d6c19350;background:#19323a;color:#f1e1bd;border-radius:5px;padding:6px 8px;font-size:11px;cursor:pointer;}
+.atlas-toolbar button:hover {background:#375357;}
+.atlas-toolbar button:disabled {opacity:.35;cursor:default;}
+.atlas-viewport {aspect-ratio:1;background:#193541;border-radius:8px;cursor:grab;touch-action:none;user-select:none;}
+.atlas-viewport.dragging {cursor:grabbing;}
+.atlas-layer {position:relative;width:100%;height:100%;transform-origin:0 0;}
+.atlas-relief {width:100%;height:100%;display:block;}
+.atlas-grid path {fill:none;stroke:#dde3c7;stroke-width:.6;opacity:.09;pointer-events:none;}
+.atlas-region {font:calc(14px / var(--atlas-label-scale,1)) Georgia,serif;letter-spacing:calc(1.4px / var(--atlas-label-scale,1));fill:#eee4c4;stroke:#26392ee0;stroke-width:calc(3px / var(--atlas-label-scale,1));paint-order:stroke;pointer-events:none;}
+.atlas-ocean {font:13px Georgia,serif;letter-spacing:6px;fill:#97bcc0;opacity:.7;pointer-events:none;}
+.atlas-marker {cursor:pointer;outline:none;}
+.atlas-symbol {transform:scale(calc(1 / var(--atlas-zoom,1)));}
+.atlas-hit {fill:transparent;}
+.atlas-pin {fill:#e8d5a6;stroke:#283e37;stroke-width:1.3;}
+.atlas-pin.floating {fill:#bbc9df;}
+.atlas-pin-center {fill:#435748;pointer-events:none;}
+.atlas-number {font:bold 14px sans-serif;fill:#f8edcf;stroke:#253a30;stroke-width:2px;paint-order:stroke;pointer-events:none;}
+.atlas-marker:hover .atlas-pin,.atlas-marker:focus .atlas-pin,.atlas-marker.selected .atlas-pin {fill:#fff7d4;stroke:#ffe49a;stroke-width:2;}
+.atlas-marker.selected .atlas-number {font-size:16px;fill:#fff1ab;}
+.atlas-layer .player-map-marker {width:14px;height:14px;border-width:1px;font-size:11px;background:#dcefe8;box-shadow:0 0 0 3px #132d35aa;color:#25505c;animation:none;transform:translate(-50%,-50%) scale(calc(1 / var(--atlas-zoom)));}
+.atlas-north {position:absolute;right:14px;top:10px;display:grid;justify-items:center;font-size:30px;line-height:1.1;color:#eedfbd;text-shadow:0 1px 3px #09282c;pointer-events:none;}
+.atlas-north span {font:10px Georgia,serif;}
+.atlas-scale {position:absolute;left:4%;bottom:3%;width:14.2857%;color:#f0e8cf;font-size:10px;text-shadow:0 1px 2px #10252b;pointer-events:none;}
+.atlas-scale i {display:block;border:solid #e1dbbc;border-width:0 1px 2px;height:5px;}
+.atlas-footer {margin-top:9px;flex-wrap:wrap;font-size:10px;color:#acbfb9;line-height:1.6;}
+.atlas-details {padding:18px;background:#112a32;}
+.atlas-details h3 {font-size:23px;margin:8px 0;}
+.atlas-details .atlas-coordinates {margin:0 0 18px;font:11px monospace;color:#a8bcb8;}
+.atlas-destination {padding:13px;border:1px solid #d7bd7a60;border-radius:8px;background:#d9bd7610;}
+.atlas-destination small {display:block;color:#cbb67c;font-size:9px;letter-spacing:1.4px;}
+.atlas-destination strong {display:block;margin:9px 0 12px;font:18px Georgia,serif;color:#f5e8c4;}
+.atlas-destination button {width:100%;border:1px solid #e0cb94;background:#d4bf88;color:#1b3338;padding:8px;border-radius:5px;cursor:pointer;font-weight:bold;}
+.atlas-destinations {max-height:290px;margin-top:16px;gap:3px;}
+.atlas-destinations button {display:flex;gap:9px;align-items:center;border-color:transparent;border-radius:5px;background:transparent;padding:8px;cursor:pointer;}
+.atlas-destinations button>span {font:10px monospace;color:#bba87b;}
+.atlas-destinations button.current {border-color:#dbc28b70;background:#cdb77e15;}
+.atlas-details .map-hint {font-size:11px;color:#9fb4b0;}
+@media(max-width:900px){.atlas-layout{grid-template-columns:1fr;}.atlas-toolbar{flex-wrap:wrap;}.atlas-destinations{max-height:220px;}}
 .map-marker.explorable {background:#367f6e;border-color:#d9eab0;}
 @media(max-width:900px){.terrain-status{display:none;}.regional-layout{grid-template-columns:1fr;}.landmark-list{max-height:260px;}}
