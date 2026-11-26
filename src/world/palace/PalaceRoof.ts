@@ -1,5 +1,6 @@
-import {PALACE_PLAN} from './BrisaliaPalacePlan';
 import {face,geometry,pavilionRoof,roofGeometry,type Geometry,type P3} from './PalaceGeometry';
+import {PALACE_TOWER_CENTERS,towerRoofHole} from './PalaceTowerLayout';
+import {PALACE_DESIGN} from './PalaceDesign';
 type Surface={p:P3[];normal:P3;plane:P3};
 const E=1e-7;
 // The roof projects beyond the column axes; the ceiling stops at those axes.
@@ -26,7 +27,7 @@ function subtract(p:P3[],q:P3[]){
  * pavilion/tower roofs are clipped to the upper envelope: no stacked surfaces,
  * low internal hip ends or accidental sight holes through the roof. */
 export function palaceRoof(){
-  const base=geometry(),y=9.2,h=12.4;
+  const base=geometry(),y=9.2,h=11.8;
   const outer:P3[]=[[-36.8,y,-.8],[36.8,y,-.8],[36.8,y,56.8],[-36.8,y,56.8]];
   const ridge:P3[]=[[-26.4,h,8.6],[26.4,h,8.6],[26.4,h,48.4],[-26.4,h,48.4]];
   const eave=COURTYARD_EAVE;
@@ -38,7 +39,14 @@ export function palaceRoof(){
     n=n.map(v=>v/len*(n[1]<0?-1:1)) as P3;face(base,p,n,1.5);
   };
   for(let i=0;i<4;i++){const j=(i+1)%4;quad([outer[i],outer[j],ridge[j],ridge[i]]);quad([ridge[i],ridge[j],inner[j],inner[i]]);}
-  const pavilion=pavilionRoof(PALACE_PLAN.roofs[0]),inputs:Geometry[]=[base,pavilion.roof,...PALACE_PLAN.roofs.filter(r=>r.id==='R07'||r.id==='R08').map(roofGeometry)];
+  const gallery=geometry();
+  for(const s of [-1,1]){
+    const a=Math.min(s*10.4,s*28),b=Math.max(s*10.4,s*28),rise=.5,run=3.7,n=Math.hypot(rise,run);
+    face(gallery,[[a,8.9,-3.6],[b,8.9,-3.6],[b,9.4,.1],[a,9.4,.1]],[0,run/n,-rise/n]);
+  }
+  const dormers=[-23,-16,16,23].map(x=>pavilionRoof({bounds_xz:[x-1.25,x+1.25,.5,4.8],eave_y:11.25,ridge_y:12.5}).roof);
+  const towers=geometry();for(const cx of [-32,32])face(towers,[[cx-4.8,PALACE_DESIGN.towerEave,-.8],[cx+4.8,PALACE_DESIGN.towerEave,-.8],[cx+4.8,PALACE_DESIGN.towerEave,10.8],[cx-4.8,PALACE_DESIGN.towerEave,10.8]],[0,1,0]);
+  const inputs:Geometry[]=[base,gallery,roofGeometry(PALACE_DESIGN.pavilion),...dormers,towers];
   const surfaces:Surface[]=[];
   for(const g of inputs)for(let i=0;i<g.indices.length;i+=3){
     const ids=g.indices.slice(i,i+3),p=ids.map(n=>g.positions.slice(n*3,n*3+3) as P3),n=g.normals.slice(ids[0]*3,ids[0]*3+3) as P3;
@@ -54,9 +62,11 @@ export function palaceRoof(){
       const blocker=same?t.p:clip(t.p,d[0],d[1],d[2]-E);
       if(blocker.length>=3)polys=polys.flatMap(p=>subtract(p,blocker));
     }
+    if(Math.abs(s.plane[2]-PALACE_DESIGN.towerEave)<E&&Math.abs(s.normal[1]-1)<E)
+      for(const cx of PALACE_TOWER_CENTERS)polys=polys.flatMap(p=>subtract(p,towerRoofHole(cx).map(([x,z])=>[x,PALACE_DESIGN.towerEave,z])));
     for(const p of polys){
       const first=roof.positions.length/3;face(roof,p,s.normal);
-      const [nx,ny,nz]=s.normal,horizontal=Math.hypot(nx,nz),across=[nz/horizontal,0,-nx/horizontal],down=[nx*ny/horizontal,-horizontal,nz*ny/horizontal];
+      const [nx,ny,nz]=s.normal,horizontal=Math.hypot(nx,nz),across=horizontal>1e-7?[nz/horizontal,0,-nx/horizontal]:[1,0,0],down=horizontal>1e-7?[nx*ny/horizontal,-horizontal,nz*ny/horizontal]:[0,0,1];
       for(let j=first;j<roof.positions.length/3;j++){
         const v=roof.positions.slice(j*3,j*3+3);
         roof.uvs[j*2]=v.reduce((sum,n,k)=>sum+n*across[k],0)/1.8;
@@ -108,8 +118,16 @@ export function palaceRoof(){
   }
   // Gable plaster meets the deck underside. Extending it to the tile skin
   // would put plaster and the timber verge in exactly the same vertical plane.
-  const ends=geometry(),r=PALACE_PLAN.roofs[0],[a,b,c,d]=r.bounds_xz,mid=(a+b)/2;
-  const inset=thickness*(mid-a)/(r.ridge_y-r.eave_y);
-  for(const [z,normal] of [[c,-1],[d,1]])face(ends,[[a+inset,r.eave_y,z],[b-inset,r.eave_y,z],[mid,r.ridge_y-thickness,z]],[0,0,normal]);
-  return {roof,ends,soffit,fascia};
+  const ends=geometry();
+  for(const x of [-23,-16,16,23])for(const [z,normal] of [[.5,-1],[4.8,1]])
+    face(ends,[[x-1.07,11.25,z],[x+1.07,11.25,z],[x,12.32,z]],[0,0,normal]);
+  // Walkable battlements use stone, sharing the same sealed envelope.
+  const pitched=geometry(),terraces=geometry();
+  for(let i=0;i<roof.indices.length;i+=3){
+    const ids=roof.indices.slice(i,i+3),n=roof.normals.slice(ids[0]*3,ids[0]*3+3) as P3;
+    const out=n[1]>.999999?terraces:pitched,base=out.positions.length/3;
+    for(const j of ids){out.positions.push(...roof.positions.slice(j*3,j*3+3));out.normals.push(...roof.normals.slice(j*3,j*3+3));out.uvs.push(...roof.uvs.slice(j*2,j*2+2));}
+    out.indices.push(base,base+1,base+2);
+  }
+  return {roof:pitched,terraces,ends,soffit,fascia};
 }

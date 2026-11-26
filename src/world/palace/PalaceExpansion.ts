@@ -15,11 +15,13 @@ function split(poly:V[],axis:0|2,at:number,less:boolean){
     if(da<-1e-8&&db>1e-8||da>1e-8&&db<-1e-8){const t=da/(da-db);out.push({p:a.p.map((v,j)=>v+(b.p[j]-v)*t) as P3,n:a.n.map((v,j)=>v+(b.n[j]-v)*t) as P3,uv:a.uv.map((v,j)=>v+(b.uv[j]-v)*t) as [number,number]});}
   }return out;
 }
-export function expandGeometry(source:Geometry,rigid=false,keepUV=false):Geometry{
+export function expandGeometry(source:Geometry,rigid:boolean|readonly [number,number]=false,keepUV=false):Geometry{
   if(rigid){
     let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;
     for(let i=0;i<source.positions.length;i+=3){x0=Math.min(x0,source.positions[i]);x1=Math.max(x1,source.positions[i]);z0=Math.min(z0,source.positions[i+2]);z1=Math.max(z1,source.positions[i+2]);}
-    const x=(x0+x1)/2,z=(z0+z1)/2,ox=expandX(x)-x,oz=expandZ(z)-z;
+    // Multi-material assemblies must share an authored pivot. Computing a
+    // separate bounding-box centre for petals, pollen and stems pulls them apart.
+    const [x,z]=typeof rigid==='boolean'?[(x0+x1)/2,(z0+z1)/2]:rigid,ox=expandX(x)-x,oz=expandZ(z)-z;
     return {...source,positions:source.positions.map((v,i)=>v+(i%3===0?ox:i%3===2?oz:0))};
   }
   const g=geometry();

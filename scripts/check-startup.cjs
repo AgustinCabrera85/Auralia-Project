@@ -37,7 +37,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await capture(label+'-game');
    if(label==='palace'){
     console.log(JSON.stringify({visit:await evaluate(`import('/tests/brisalia-palace.browser.mjs').then(m=>m.visit())`)}));
-    const palaceViews=['overview','front','court','hall','upper','stairs','ceiling','audience','audience-ceiling','flag','facade-close','stair-top','gallery-close','beam-joint','gallery-rail','roof-below','gallery-night','stair-side','portico-support','stair-landing','stair-arrival','gallery-floor','column-close','facade-standing','facade-jump','court-eave-low','court-eave-upper','court-eave-above','court-eave-corner','column-base','column-capital'];
+    const palaceViews=['great-hall','corridor-corner','wardrobe','arrival-rail','planter-contact','gallery-end','arcade-bearing','roof-tiles','flowers','player','reference','gallery-front','rear-garden','bedroom','bathroom','fountain','crest','stone-detail','library-map','workshop','overview','front','court','hall','upper','stairs','ceiling','audience','audience-ceiling','flag','facade-close','stair-top','gallery-close','beam-joint','gallery-rail','roof-below','gallery-night','stair-side','portico-support','stair-landing','stair-arrival','gallery-floor','column-close','facade-standing','facade-jump','court-eave-low','court-eave-upper','court-eave-above','court-eave-corner','column-base','column-capital'];
     for(const view of process.argv[3]?process.argv[3].split(','):palaceViews){
      if(!palaceViews.includes(view))throw Error('Unknown palace review view: '+view);
      await evaluate(`import('/tests/brisalia-palace.browser.mjs').then(m=>m.view('${view}'))`);await capture('brisalia-palace-'+view);

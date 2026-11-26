@@ -28,25 +28,26 @@ export function palaceStairRails(stair:Stair):Part[]{
   };
   // The short horizontal easing pieces use the adjacent newel, not doubled posts.
   const newelNodes=[0,2,3,4,5,8,9,10,11,12,13,16,17,20];
-  for(const index of newelNodes){const q=path[index],[x,y,z]=q;points.push(q);newels.push([x-.07,x+.07,base(q)-.025,y+.09,z-.07,z+.07]);}
+  for(const index of newelNodes){const q=path[index],[x,y,z]=q;points.push(q);newels.push([x-.11,x+.11,base(q)-.025,y+.14,z-.11,z+.11]);}
   for(let i=1;i<path.length;i++){
-    const a=path[i-1],b=path[i],length=Math.hypot(b[0]-a[0],b[2]-a[2]),count=Math.ceil(length/.2);
+    const a=path[i-1],b=path[i],length=Math.hypot(b[0]-a[0],b[2]-a[2]),count=Math.ceil(length/.3);
     for(let j=1;j<count;j++){
       const q=a.map((v,k)=>v+(b[k]-v)*j/count) as P3;
       if(points.some(p=>Math.hypot(p[0]-q[0],p[2]-q[2])<.16&&Math.abs(p[1]-q[1])<.3))continue;
-      const [x,y,z]=q;balusters.push([x-.045,x+.045,base(q)-.015,y-.045,z-.045,z+.045]);
+      const [x,y,z]=q;balusters.push([x-.065,x+.065,base(q)-.015,y-.065,z-.065,z+.065]);
     }
     add('guard-collider'+i,'hidden',rampGeometry(a,b,.12,1.1),true);
   }
-  add('continuous-handrail','oak',handrailGeometry(path));
+  add('continuous-handrail','oak',handrailGeometry(path,.2,.18));
   add('newels','oak',unionBoxes(newels,geometry(),true));
-  add('stair-balusters','column',unionBoxes(balusters));
+  add('stair-balusters','oak',unionBoxes(balusters,geometry(),true));
+  add('newel-ironwork','iron',unionBoxes(points.map(([x,y,z])=>[x-.118,x+.118,y-.18,y-.11,z-.118,z+.118] as Box)));
   // The landing bears on a rear crossbeam and two masonry piers, outside the
   // walking route. Its underside no longer hangs unsupported in the room.
   const side=Math.sign(stair.bounds_xz[0]+stair.bounds_xz[1]),x=side*34.55;
   add('landing-bearers','trim',unionBoxes([
-    [x-.2,x+.2,1.84,2.1,40,44],
-    [x-.2,x+.2,0,1.84,40,40.4],[x-.2,x+.2,0,1.84,43.6,44],
+    [x-.28,x+.28,1.5,1.8,40,44],
+    [x-.28,x+.28,0,1.5,40,40.5],[x-.28,x+.28,0,1.5,43.5,44],
   ]),true);
   return parts;
 }

@@ -722,6 +722,9 @@ export class CharacterTraversalController {
 
   private tryMantle(wall:TraversalWall,world:TraversalWorld,input:TraversalInput):boolean{
     const p=this.position;
+    // An uphill jump can hit the terrain with the low capsule probe while its
+    // feet are still rising. A walkable slope is not a lip to climb over.
+    if(this.mode!=='climbing'&&wall.terrain&&slopeAllowed(wall.normalY,input.sprint))return false;
     const normalLength=Math.hypot(wall.normalX,wall.normalZ);
     if(normalLength<1e-5)return false;
     let target:TraversalPosition|null=null;
@@ -758,6 +761,10 @@ export class CharacterTraversalController {
     }
     if(!target)return false;
     const distance=Math.hypot(target.x-p.x,target.z-p.z);
+    if(distance<1e-5)return false;
+    // Direct airborne mantles have no preceding climbing state. Derive their
+    // facing from the actual destination, never a stale/default climb normal.
+    this.climbNormal={x:(p.x-target.x)/distance,z:(p.z-target.z)/distance};
     this.mode='mantling';this.mantle={from:{...p},to:target,elapsed:0,
       duration:Math.max(.65,Math.min(1.1,distance/6))};
     this.supportRockId=wall.rockId;this.climbRockId=null;this.lastClimbWall=null;this.velocityY=0;

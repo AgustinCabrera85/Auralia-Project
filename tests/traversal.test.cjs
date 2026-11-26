@@ -253,6 +253,24 @@ const slope=(angle)=>({
   fallbackHeight:(x)=>x*Math.tan(angle*Math.PI/180)
 });
 const gentle=new CharacterTraversalController();
+// Real terrain wall queries used to turn sprint+jump into a mantle, then use
+// an uninitialised climb normal to rotate the avatar toward the camera.
+for(const fps of [30,60,144])for(const angle of [8,20,35,42,55,60])for(const heading of [0,Math.PI/2,2.4]){
+  const dx=Math.cos(heading),dz=Math.sin(heading),grade=Math.tan(angle*Math.PI/180);
+  const height=(x,z)=>(x*dx+z*dz)*grade;
+  const world={...flat,fallbackHeight:height,wall:(...args)=>terrainWallAt(height,...args),
+    ground:(x,z,origin,max)=>{const y=height(x,z);return y<=origin&&y>=origin-max?{height:y,normalY:Math.cos(angle*Math.PI/180)}:null;}};
+  const runner=new CharacterTraversalController();runner.teleport(0,0,0);
+  for(let i=0;i<fps/2;i++)runner.step(1/fps,input({moveX:dx,moveZ:dz,forwardX:dx,forwardZ:dz,vertical:1,sprint:true}),world);
+  let jumped=false;
+  for(let i=0;i<fps*1.5;i++){
+    runner.step(1/fps,input({moveX:dx,moveZ:dz,forwardX:dx,forwardZ:dz,vertical:1,sprint:true,jumpPressed:i===0}),world);
+    jumped||=runner.mode==='airborne';
+    assert.ok(!['mantling','climbing','hanging'].includes(runner.mode),`${fps} FPS / ${angle} deg: a continuous hillside is not a ledge`);
+    assert.equal(runner.climbFacing,null,'ordinary uphill jump must preserve locomotion facing');
+  }
+  assert.ok(jumped,'sprint+Space still jumps');
+}
 gentle.teleport(0,0,0);
 gentle.step(.02,input({moveX:1,vertical:1}),slope(35));
 assert.equal(gentle.mode,'grounded');
@@ -382,6 +400,15 @@ const wallWorld=(top,climbable)=>({
       normalZ:0,rockId:'column',climbable}:null
 });
 const blocked=new CharacterTraversalController();
+// A valid airborne mantle must initialise its own heading even when the
+// character has never climbed a wall (the previous normal is then zero).
+const lowTerrainWall=wallWorld(2,true),directMantleWorld={...lowTerrainWall,
+ ground:(...args)=>{const g=lowTerrainWall.ground(...args);return g?{height:g.height,normalY:g.normalY}:null;},
+ wall:(...args)=>{const hit=lowTerrainWall.wall(...args);return hit?{...hit,normalX:-Math.sqrt(.91),normalY:.3,terrain:true}:null;}};
+const directMantler=new CharacterTraversalController();directMantler.teleport(.5,1,0);directMantler.mode='airborne';directMantler.velocityY=5;
+directMantler.step(.02,input({moveX:1,vertical:1,jumpPressed:true}),directMantleWorld);
+assert.equal(directMantler.mode,'mantling','genuine low terrain lip remains climbable');
+assert.ok(directMantler.climbFacing.x>.99&&Math.abs(directMantler.climbFacing.z)<.01,'direct mantle faces its landing, not the camera');
 blocked.teleport(0,0,0);
 for(let i=0;i<10;i++)blocked.step(.02,input({moveX:1,vertical:1}),wallWorld(30,false));
 assert.ok(blocked.position.x<.5,'untagged wall blocks the capsule');

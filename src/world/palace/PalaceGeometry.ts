@@ -24,6 +24,21 @@ export function face(g:Geometry,points:readonly P3[],normal:P3,uvScale=1):void{
   for(let i=1;i<ordered.length-1;i++)g.indices.push(base,base+i,base+i+1);
 }
 export function boxGeometry(b:Box,g=geometry(),wood=false):Geometry{unionBoxes([b],g,wood);return g;}
+/** A solid dressed stone with a clipped top arris. Used for individual entry
+ * treads so the stair reads as joined blocks instead of a single poured slab. */
+export function wornStoneBlock(b:Box,g=geometry(),bevel=.025):Geometry{
+  const [a,c,lo,hi,d,e]=b,q=bevel;
+  face(g,[[a+q,hi,d+q],[c-q,hi,d+q],[c-q,hi,e-q],[a+q,hi,e-q]],[0,1,0]);
+  face(g,[[a,lo,d],[c,lo,d],[c,lo,e],[a,lo,e]],[0,-1,0]);
+  for(const [z,s] of [[d,-1],[e,1]]){
+    face(g,[[a,lo,z],[c,lo,z],[c,hi-q,z],[a,hi-q,z]],[0,0,s]);
+    face(g,[[a,hi-q,z],[c,hi-q,z],[c-q,hi,z-s*q],[a+q,hi,z-s*q]],[0,Math.SQRT1_2,s*Math.SQRT1_2]);
+  }
+  for(const [x,s] of [[a,-1],[c,1]]){
+    face(g,[[x,lo,d],[x,lo,e],[x,hi-q,e],[x,hi-q,d]],[s,0,0]);
+    face(g,[[x,hi-q,d],[x,hi-q,e],[x-s*q,hi,e-q],[x-s*q,hi,d+q]],[s*Math.SQRT1_2,Math.SQRT1_2,0]);
+  }return g;
+}
 /** A timber cut perpendicular to its length, with longitudinal grain on every
  * side. Unlike a ramp this is a real rectangular section in its own frame. */
 export function timberGeometry(a:readonly number[],b:readonly number[],width:number,depth:number):Geometry{
@@ -60,25 +75,34 @@ export function handrailGeometry(path:readonly P3[],width=.12,depth=.12):Geometr
     length+=segmentLength;
   }return g;
 }
-/** A stepped flight carried by a thin inclined slab, rather than a stack of
- * boxes with a common horizontal bottom hanging into the stairwell. */
+/** A stepped masonry flight with a continuous inclined underside. The worn
+ * leading arris is cut into the tread, without raising the walking surface. */
 export function stairFlightGeometry(steps:readonly {bounds_xz:readonly number[];top_y:number}[],start:readonly number[],end:readonly number[],thickness=.3):Geometry{
+  if(Math.abs(end[0]-start[0])<1e-7){
+    const rotate=(p:readonly number[])=>[p[2],p[1],-p[0]];
+    const g=stairFlightGeometry(steps.map(s=>({...s,bounds_xz:[s.bounds_xz[2],s.bounds_xz[3],-s.bounds_xz[1],-s.bounds_xz[0]]})),rotate(start),rotate(end),thickness);
+    for(const values of [g.positions,g.normals])for(let i=0;i<values.length;i+=3){const x=values[i];values[i]=-values[i+2];values[i+2]=x;}
+    return g;
+  }
   const g=geometry(),slope=(end[1]-start[1])/(end[0]-start[0]),direction=Math.sign(end[0]-start[0]),length=Math.hypot(slope,1);
   const bottom=(x:number)=>start[1]+(x-start[0])*slope-thickness;
   const sorted=[...steps].sort((a,b)=>direction*(a.bounds_xz[0]-b.bounds_xz[0]));
   for(const [index,step] of sorted.entries()){
     const [a,b,c,d]=step.bounds_xz,y=step.top_y,ya=bottom(a),yb=bottom(b),lead=direction>0?a:b,trail=direction>0?b:a;
-    face(g,[[a,y,c],[b,y,c],[b,y,d],[a,y,d]],[0,1,0]);
+    const chamfer=.025,inner=lead+direction*chamfer;
+    face(g,[[inner,y,c],[trail,y,c],[trail,y,d],[inner,y,d]],[0,1,0]);
+    face(g,[[lead,y-chamfer,c],[inner,y,c],[inner,y,d],[lead,y-chamfer,d]],[-direction/Math.SQRT2,1/Math.SQRT2,0]);
     face(g,[[a,ya,c],[b,yb,c],[b,yb,d],[a,ya,d]],[slope/length,-1/length,0]);
-    for(const [z,n] of [[c,-1],[d,1]])face(g,[[a,ya,z],[b,yb,z],[b,y,z],[a,y,z]],[0,0,n]);
+    for(const [z,n] of [[c,-1],[d,1]])face(g,[[lead,bottom(lead),z],[trail,bottom(trail),z],[trail,y,z],[inner,y,z],[lead,y-chamfer,z]],[0,0,n]);
     const previous=index?sorted[index-1].top_y:bottom(lead);
-    face(g,[[lead,previous,c],[lead,y,c],[lead,y,d],[lead,previous,d]],[-direction,0,0]);
+    face(g,[[lead,previous,c],[lead,y-chamfer,c],[lead,y-chamfer,d],[lead,previous,d]],[-direction,0,0]);
     if(index===sorted.length-1)face(g,[[trail,bottom(trail),c],[trail,y,c],[trail,y,d],[trail,bottom(trail),d]],[direction,0,0]);
   }
   return g;
 }
-export function turnedGeometry(x:number,z:number,profile:readonly (readonly [number,number])[],sides=12,smooth=false):Geometry{
+export function turnedGeometry(x:number,z:number,profile:readonly (readonly [number,number])[],sides=12,smooth=false,profileUV=false):Geometry{
   const g=geometry();
+  const distances=[0];for(let j=1;j<profile.length;j++)distances.push(distances[j-1]+Math.hypot(profile[j][0]-profile[j-1][0],profile[j][1]-profile[j-1][1]));
   for(let j=1;j<profile.length;j++)for(let i=0;i<sides;i++){
     const a=i*Math.PI*2/sides,b=(i+1)*Math.PI*2/sides,[r0,y0]=profile[j-1],[r1,y1]=profile[j];
     const n:P3=[Math.cos((a+b)/2)*(y1-y0),r0-r1,Math.sin((a+b)/2)*(y1-y0)],l=Math.hypot(...n);
@@ -89,6 +113,13 @@ export function turnedGeometry(x:number,z:number,profile:readonly (readonly [num
       const angle=Math.atan2(g.positions[k*3+2]-z,g.positions[k*3]-x),len=Math.hypot(y1-y0,r0-r1);
       g.normals.splice(k*3,3,Math.cos(angle)*(y1-y0)/len,(r0-r1)/len,Math.sin(angle)*(y1-y0)/len);
       g.uvs[k*2]=angle*.24;g.uvs[k*2+1]=g.positions[k*3+1];
+      if(profileUV){
+        // Follow the meridian, including horizontal rims. Height-only V collapses
+        // their UV triangles and makes normal/parallax derivatives undefined.
+        const radius=Math.hypot(g.positions[k*3]-x,g.positions[k*3+2]-z),y=g.positions[k*3+1];
+        const continuous=angle+Math.round(((a+b)/2-angle)/(Math.PI*2))*Math.PI*2;
+        g.uvs[k*2]=continuous*.75;g.uvs[k*2+1]=distances[j-1]+((radius-r0)*(r1-r0)+(y-y0)*(y1-y0))/len;
+      }
     }
   }return g;
 }

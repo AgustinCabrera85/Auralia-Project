@@ -2086,7 +2086,12 @@ export class WorldView {
     }
     const palaceDoor=this.brisaliaPalace?.nearestDoor(this.player.position);
     if(palaceDoor&&this.traversal.canInteract){
-      const label=`E ? ${palaceDoor.open?'Cerrar':'Abrir'} puerta`;this.interactTarget=null;
+      const label=`E · ${palaceDoor.open?'Cerrar':'Abrir'} puerta`;this.interactTarget=null;
+      if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
+    }
+    const palaceAction=zone.id==='brisalia'&&this.traversal.canInteract?this.brisaliaPalace?.nearestInteraction(this.player.position):null;
+    if(palaceAction){
+      const label=`E · ${palaceAction.verb}`;this.interactTarget=null;
       if(label!==this.previousHint){this.previousHint=label;this.callbacks.hint(label);}return;
     }
     let nearest: Interactable | null = null;
@@ -2108,6 +2113,8 @@ export class WorldView {
     this.interactTarget = this.traversal.canInteract?nearest:null;
     let label=nearest&&this.traversal.canInteract?`E  ·  ${nearest.verb}`:
       'WASD mover · Espacio salto ×2 · Q combo / patada aérea · F barrida · R roll · V equipo · E usar';
+    const palaceRoom=!nearest&&zone.id==='brisalia'?this.brisaliaPalace?.roomAt(this.player.position):null;
+    if(palaceRoom)label=`Palacio · ${palaceRoom.name} · E para usar puertas cercanas`;
     if(this.traversal.mode==='swimming')label=`WASD nadar · Shift rápido · Espacio ${this.traversal.swimSubmerged?'volver a la superficie':'sumergirse'}${this.geographicWorld?' · Ctrl descender':''}`;
     else if(this.traversal.mode==='hanging')label='Colgando del borde · W subir · S o Espacio soltarse';
     else if(this.traversal.mode==='climbing')label='W/S trepar · A/D moverse · Espacio soltarse';
@@ -2169,6 +2176,10 @@ export class WorldView {
       if(!this.brisaliaPalace.toggleDoor(this.player.position))this.callbacks.notify('Alejate un paso de la hoja para cerrar la puerta.');return;
     }
     if(this.abilities.manager.controlLocked)return;
+    if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement&&this.traversal.canInteract){
+      const action=this.brisaliaPalace?.nearestInteraction(this.player.position);
+      if(action){if(action.kind==='craft')this.callbacks.openCraft();else this.callbacks.dialogue(action.title,action.text!);return;}
+    }
     if(this.store.state.zone==='brisalia'&&!this.blocked()&&!this.placement&&this.traversal.canInteract&&
       !this.lagoon.inside&&!this.mountainPasses.inside){
       const p=this.player.position,action=this.volcanicCave.nearestAction(p);

@@ -7,8 +7,8 @@ const scope=globalThis as unknown as {onmessage:(e:MessageEvent<{stone:Uint8Clam
 scope.onmessage=({data})=>{
   try{
     const surfaces:Partial<Record<PalaceSurface,PreparedSurface>>={};
-    for(const kind of ['limestone','cutstone','whiteMarble','marble','terracotta','cloth','stucco'] as const){
-      const detail=kind==='terracotta'?data.clay:['limestone','cutstone','whiteMarble','marble'].includes(kind)?data.stone:undefined;
+    for(const kind of ['limestone','cutstone','flagstone','masonry','whiteMarble','clay','earth','cloth','stucco','floorboards'] as const){
+      const detail=kind==='clay'?data.clay:['limestone','cutstone','flagstone','masonry','whiteMarble'].includes(kind)?data.stone:undefined;
       const {size,albedo,normalHeight,orm}=palaceSurfaceMaps(kind,detail?1024:512,detail);
       surfaces[kind]={size,albedo,normalHeight,orm};
     }

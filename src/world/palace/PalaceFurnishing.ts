@@ -1,12 +1,15 @@
 import {PALACE_PLAN} from './BrisaliaPalacePlan';
 import {face,geometry,unionBoxes,type Box,type P3} from './PalaceGeometry';
 import {rectBox,type Part,type DoorSpec} from './PalaceModel';
+import {palacePlant} from './PalacePlanting';
 import {palaceFacade} from './PalaceFacade';
-import {PALACE_OPENINGS,PALACE_COLUMNS} from './PalaceLayout';
-import {expandZ} from './PalaceExpansion';
+import {PALACE_OPENINGS,PALACE_COLUMNS,PALACE_FURNITURE} from './PalaceLayout';
+import {expandX,expandZ} from './PalaceExpansion';
+import {palaceRoomProps} from './PalaceRoomProps';
+import {medievalWashFurniture} from './PalaceMedieval';
 /** Turn the plan's occupancy envelopes into recognizable objects. No geometry
  * or collider extends beyond its authored furniture footprint. */
-export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=false){
+export function palaceFurnishing(parts:Part[],_doors:DoorSpec[],includeFurniture=true){
   const boxes=(id:string,material:string,boxes:readonly Box[],solid=false,detail=true)=>{
     const valid=boxes.filter(b=>b[1]>b[0]&&b[3]>b[2]&&b[5]>b[4]);if(valid.length)parts.push({id,material:material==='stone'&&/facade-bands|pilaster|capital/.test(id)?'trim':material,solid,detail,data:unionBoxes(valid,geometry(),material==='oak')});
   };
@@ -19,32 +22,44 @@ export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=
     }parts.push({id,material:mat,solid,detail,data:g,rigid:true});
   };
   const legs=(r:readonly number[],y:number,h:number):Box[]=>{const [a,b,c,d]=r;return [a+.06,b-.18].flatMap(x=>[c+.06,d-.18].map(z=>[x,x+.12,y,y+h,z,z+.12] as Box));};
-  for(const f of includeFurniture?PALACE_PLAN.furniture:[]){
-    if(f.id.startsWith('P05-C'))continue;
-    const y=f.level==='PB'?0:4.8,[x0,x1,z0,z1]=f.bounds,w=x1-x0,d=z1-z0,h=f.height,x=(x0+x1)/2,z=(z0+z1)/2,name=f.name.toLowerCase();
+  for(const f of includeFurniture?PALACE_FURNITURE:[]){
+    const first=parts.length,[a,b,c,d]=f.bounds,cx=(a+b)/2,cz=(c+d)/2;
+    const room=PALACE_PLAN.levels[f.level].rooms.find(r=>f.id.startsWith(r.id+'-'));
+    const bathrooms:readonly {id:string;bounds_xz:readonly number[]}[]=PALACE_PLAN.levels[f.level].bathrooms;
+    const bath=bathrooms.find(q=>f.id.startsWith(q.id+'-'));
+    const storage=/estante|estanter|biblioteca|archivo|armario|vitrina/.test(f.name.toLowerCase())||f.id.endsWith('-A')||f.id==='S15-E';
+    const support=bath??(storage?room:undefined);
+    const wall=support?[a-support.bounds_xz[0],support.bounds_xz[1]-b,c-support.bounds_xz[2],support.bounds_xz[3]-d].map((gap,side)=>({gap,side})).sort((a,b)=>a.gap-b.gap)[0].side:-1;
+    const rotate=wall>=0?wall<2:(b-a)<(d-c)&&!['bed','bath'].includes(f.kind)&&!f.id.startsWith('BS')&&!f.id.endsWith('-C');
+    const flip=wall===2;
+    const direction=wall>=0?(wall===1?-1:1):room&&(room.bounds_xz[0]+room.bounds_xz[1])/2<cx?-1:1;
+    const bounds=rotate?[cx-(d-c)/2,cx+(d-c)/2,cz-(b-a)/2,cz+(b-a)/2]:f.bounds;
+    const build=()=>{
+    const y=f.level==='PB'?0:4.8,[x0,x1,z0,z1]=bounds,w=x1-x0,d=z1-z0,h=f.height,x=(x0+x1)/2,z=(z0+z1)/2,name=f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     // One simple occupied volume; fine feet, pages and handles have no colliders.
-    single(f.id+':collision','hidden',rectBox(f.bounds,y,y+h),true);
-    if(f.kind==='bed'||/cama/.test(name)){
-      single(f.id+':frame','oak',rectBox(f.bounds,y+.12,y+h*.38));
+    single(f.id+':collision','hidden',rectBox(bounds,y,y+(f.id.endsWith('-SH')?.63:h)),true);
+    if(f.id.startsWith('P05-C')){
+      boxes(f.id+':cloak-rack','oak',[[x0+.1,x0+.23,y,y+1.85,z-.12,z+.12],[x1-.23,x1-.1,y,y+1.85,z-.12,z+.12],[x0+.1,x1-.1,y+1.73,y+1.85,z-.1,z+.1],[x0+.05,x0+.3,y,y+.12,z0+.1,z1-.1],[x1-.3,x1-.05,y,y+.12,z0+.1,z1-.1]]);
+      for(let i=0;i<3;i++)single(f.id+':cloak'+i,i%2?'sage':'velvet',[x0+.3+i*w*.23,x0+.55+i*w*.23,y+.42,y+1.73,z-.065,z+.065]);
+    }else if(f.kind==='bed'||f.id.endsWith('-C')||f.id.startsWith('S11-F')){
+      boxes(f.id+':feet','oak',legs(bounds,y,.23));
+      single(f.id+':frame','oak',rectBox(bounds,y+.19,y+h*.38));
       single(f.id+':mattress','linen',[x0+.06,x1-.06,y+h*.38,y+h*.66,z0+.08,z1-.08]);
-      single(f.id+':cover','rose',[x0+.055,x1-.055,y+h*.66,y+h*.74,z0+.07,z1-d*.32]);
-      single(f.id+':pillow','linen',[x0+w*.16,x1-w*.16,y+h*.66,y+h*.86,z1-d*.28,z1-.1]);
-      single(f.id+':headboard','oak',[x0,x1,y,y+h,z1-.08,z1]);
+      single(f.id+':cover','rose',[x0+.055,x1-.055,y+h*.66,y+h*.74,z0+d*.32,z1-.07]);
+      for(let j=0;j<2;j++)single(f.id+':pillow'+j,'linen',[x0+w*(.1+j*.46),x0+w*(.44+j*.46),y+h*.66,y+h*.86,z0+.1,z0+d*.25]);
+      single(f.id+':headboard','oak',[x0,x1,y,y+h,z0,z0+.08]);
     }else if(/inodoro/.test(name)||f.id.endsWith('-WC')){
-      lathe(f.id+':porcelain','ceramic',x,z,[[0,y],[w*.25,y],[w*.18,y+.2],[w*.45,y+h*.63],[w*.44,y+h*.78],[w*.32,y+h*.8],[w*.3,y+h*.62],[0,y+h*.55]]);
-      single(f.id+':tank','ceramic',[x0+.04,x1-.04,y+.25,y+h,z1-d*.24,z1]);
+      medievalWashFurniture(parts,f.id,bounds,y,'stool');
     }else if(/ducha/.test(name)||f.id.endsWith('-SH')){
-      single(f.id+':tray','ceramic',rectBox(f.bounds,y,y+.08));
-      single(f.id+':shower','brass',[x-.025,x+.025,y+.08,y+h,z1-.09,z1-.04]);
-      single(f.id+':screen','glass',[x0+.03,x0+.05,y+.1,y+h,z0+.1,z1-.05]);
+      medievalWashFurniture(parts,f.id,bounds,y,'tub');
     }else if(/lavabo/.test(name)||f.id.endsWith('-LV')){
-      single(f.id+':vanity','oak',rectBox(f.bounds,y+.12,y+h*.72));
-      lathe(f.id+':bowl','ceramic',x,z,[[0,y+h*.72],[Math.min(w,d)*.43,y+h*.85],[Math.min(w,d)*.44,y+h],[Math.min(w,d)*.36,y+h],[0,y+h*.8]]);
-    }else if(/estante|estanter|biblioteca|archivo|armario|vitrina/.test(name)||f.id.endsWith('-A')){
+      medievalWashFurniture(parts,f.id,bounds,y,'basin');
+    }else if((/estante|estanter|biblioteca|archivo|armario|vitrina/.test(name)&&!(h<1&&w>1.5&&d>1.5))||f.id.endsWith('-A')||f.id==='S15-E'){
       if(/armario/.test(name)||f.id.endsWith('-A')){
         single(f.id+':cabinet','oak',[x0,x1,y,y+h,z0+.05,z1]);
+        for(const [a,b] of [[x0+.07,x-.035],[x+.035,x1-.07]])boxes(f.id+':door-panel'+a,'oak',[[a,a+.045,y+.12,y+h-.12,z0,z0+.05],[b-.045,b,y+.12,y+h-.12,z0,z0+.05],[a,b,y+.12,y+.17,z0,z0+.05],[a,b,y+h-.17,y+h-.12,z0,z0+.05]]);
         for(const xx of [x-.08,x+.08])single(f.id+':handle'+xx,'brass',[xx-.015,xx+.015,y+h*.4,y+h*.57,z0,z0+.055]);
-        continue;
+        return;
       }
       const vertical:Box[]=[[x0,x0+.08,y,y+h,z0,z1],[x1-.08,x1,y,y+h,z0,z1],[x0,x1,y,y+h,z1-.06,z1]];
       const shelves=Math.max(2,Math.floor(h/.38));for(let k=0;k<=shelves;k++)vertical.push([x0,x1,y+k*(h-.06)/shelves,y+k*(h-.06)/shelves+.06,z0,z1]);
@@ -54,25 +69,28 @@ export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=
         single(f.id+`:book${k}:${j}`,['rose','sage','gold','linen'][(k+j)%4],[a,a+.11,lo,Math.min(y+h-.07,lo+.22+(j%3)*.03),z0+.08,z0+Math.min(.3,d-.08)]);
       }
     }else if(/fog[oó]n|cocina/.test(name)){
-      single(f.id+':stove','stone',rectBox(f.bounds,y,y+h-.2));
+      single(f.id+':stove','stone',rectBox(bounds,y,y+h-.2));
       for(let k=0;k<3;k++)lathe(f.id+':pot'+k,'iron',x0+w*(k+.5)/3,z,[[0,y+h-.2],[.15,y+h-.2],[.18,y+h-.07],[.16,y+h]],false);
     }else {
-      const bench=/banco|asiento|sill[oó]n/.test(name),seat=bench?Math.min(.45,h-.09):h-.1;
-      boxes(f.id+':legs','oak',legs(f.bounds,y,seat));single(f.id+':top','oak',rectBox(f.bounds,y+seat,y+seat+.09));
+      const bench=(f.id!=='P01-F0'&&!f.id.startsWith('P07')&&/banco|asiento|sill[oó]n/.test(name))||f.id.startsWith('S14-'),seat=bench?Math.min(.45,h-.09):h-.1;
+      boxes(f.id+':legs','oak',legs(bounds,y,seat));single(f.id+':top','oak',rectBox(bounds,y+seat,y+seat+.09));
       if(bench&&h>.6)single(f.id+':back','oak',[x0,x1,y+seat,y+h,z1-.08,z1]);
       if(!bench){single(f.id+':runner','sage',[x0+w*.3,x1-w*.3,y+h-.009,y+h-.003,z0+.12,z1-.12]);}
     }
+    };build();
+    const ox=expandX(cx)-cx,oz=expandZ(cz)-cz;
+    for(const part of parts.slice(first)){
+      const g=part.data;
+      for(let i=0;i<g.positions.length;i+=3){
+        if(flip){g.positions[i]=2*cx-g.positions[i];g.positions[i+2]=2*cz-g.positions[i+2];g.normals[i]*=-1;g.normals[i+2]*=-1;}
+        if(rotate){const x=g.positions[i]-cx,z=g.positions[i+2]-cz,nx=g.normals[i],nz=g.normals[i+2];g.positions[i]=cx-direction*z;g.positions[i+2]=cz+direction*x;g.normals[i]=-direction*nz;g.normals[i+2]=direction*nx;}
+        g.positions[i]+=ox;g.positions[i+2]+=oz;
+      }part.expanded=true;
+    }
+
   }
-  for(const fixture of PALACE_PLAN.public_wc_cubicles.fixtures){
-    const c={id:fixture.cubicle_id,fixtures:fixture};
-    const f=PALACE_PLAN.furniture.find(f=>f.id===c.id)!,[a,b,d,e]=f.bounds,t=.08,door=.9,dx=fixture.door_center_xz[0],y=0,h=2.2;
-    boxes(c.id+':partitions','plaster',[[a,a+t,y,h,d,e],[b-t,b,y,h,d,e],[a+t,b-t,y,h,d,d+t],[a+t,dx-door/2,y,h,e-t,e],[dx+door/2,b-t,y,h,e-t,e],[dx-door/2,dx+door/2,2.05,h,e-t,e]],true);
-    doors.push({thickness:t,opening:{id:c.id+':door',wall_id:c.id,width:door,height:2.05,kind:'door',leaf_count:1,angle_deg:100,leaf_thickness:.04,linked_room:'P05',center_xyz:[dx,1.025,e-t/2],span_axis:'X',bottom_y:0,open_normal_xz:[0,1]}});
-    const r=c.fixtures.toilet_bounds_xz,tx=c.fixtures.toilet_center_xz[0],tz=c.fixtures.toilet_center_xz[1];
-    if(includeFurniture){single(c.id+':wc-collider','hidden',rectBox(r,0,.75),true);
-      lathe(c.id+':wc','ceramic',tx,tz,[[0,0],[.2,0],[.15,.28],[.3,.48],[.31,.55],[.22,.55],[0,.36]]);
-      single(c.id+':tank','ceramic',[tx-.26,tx+.26,.3,.75,r[2],r[2]+.18]);}
-  }
+  // The former public cubicles are now an open court wardrobe. The original
+  // room aperture remains; no modern sanitary partitions or extra doors.
   // Exterior cornices and cornice bands give the long facades a human scale.
   for(const [y,h,p] of [[4.48,.27,.12],[8.94,.26,.3]]){
     boxes('facade-bands'+y,'stone',[[ -36.2-p,36.2+p,y,y+h,-.2-p,-.2],[-36.2-p,36.2+p,y,y+h,56.2,56.2+p],[-36.2-p,-36.2,y,y+h,-.2,56.2],[36.2,36.2+p,y,y+h,-.2,56.2]],false,false);
@@ -80,6 +98,7 @@ export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=
   // The facade owns the corner quoins and portico columns. Do not superimpose
   // the former generic pilasters/capitals on those finished assemblies.
   const lamps:P3[]=[];
+  for(const x of [-32,32])for(const y of [6.5,10.5,13.5])lamps.push([x+Math.sign(x)*3.45,y,5]);
   for(const x of [-3.3,3.3,-15,15,-24,24])lamps.push([x,2.7,-.75]);
   for(const y of [2.8,7.6])for(const c of PALACE_COLUMNS){const [x,z]=c.center_xz;if(Math.abs(x)===16&&[24,31.2,40].includes(z))lamps.push([x-Math.sign(x)*.4,y,z]);}
   for(const x of [-12,0,12])lamps.push([x,3.65,50]);
@@ -102,7 +121,7 @@ export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=
   for(const o of PALACE_OPENINGS.PA){if(o.kind!=='window'||o.center_xyz[2]!==0)continue;
     const [x,,z]=o.center_xyz,y=o.bottom_y-.28;
     single(o.id+':flowerbox','oak',[x-o.width/2,x+o.width/2,y,y+.24,z-.7,z-.21],false,false);
-    for(let i=0;i<9;i++){const xx=x-o.width*.45+i*o.width*.9/8;lathe(o.id+':flowers'+i,i%3?'rose':'linen',xx,-.48,[[0,y+.24],[.15,y+.34],[.16,y+.45],[0,y+.52]],false,false);}
+    for(let i=0;i<9;i++){const xx=x-o.width*.45+i*o.width*.9/8;palacePlant(parts,o.id+':flowers'+i,xx,y+.24,-.48,.14,.2,4);}
   }
   // Walk ring and north/south approach are one non-overlapping courtyard surface.
   const ring=geometry(),courtZ=expandZ(29);for(let i=0;i<64;i++){
@@ -116,6 +135,21 @@ export function palaceFurnishing(parts:Part[],doors:DoorSpec[],includeFurniture=
   }
   lathe('courtyard-planter','stone',0,29,[[2.8,-.08],[3,-.08],[3,.42],[2.8,.42],[2.8,-.08]],true,false);
   lathe('court-trunk-collider','hidden',0,29,[[.45,0],[.45,6]],true,false);
+  if(includeFurniture){
+    // The six-metre central aisle stays clear up to the ceremonial dais.
+    single('P11:dais','trim',[-4,4,0,.15,52.5,55.35],true,false);
+    single('P11:carpet','velvet',[-2.7,2.7,.004,.012,44.8,52.45],false,false);
+    boxes('P11:carpet-border','gold',[[-2.64,-2.59,.012,.016,44.9,52.35],[2.59,2.64,.012,.016,44.9,52.35],[-2.59,2.59,.012,.016,44.9,44.95],[-2.59,2.59,.012,.016,52.3,52.35]],false,false);
+    for(const x of [-1.25,1.25]){
+      for(const dx of [-.5,.5])single('P11:throne-front-leg'+x+dx,'oak',[x+dx-.08,x+dx+.08,.15,.65,53.84,54],true,false);
+      boxes('P11:throne-gilding'+x,'gold',[[x-.4,x-.35,1.02,2.02,54.81,54.85],[x+.35,x+.4,1.02,2.02,54.81,54.85],[x-.4,x+.4,1.02,1.07,54.81,54.85],[x-.4,x+.4,1.97,2.02,54.81,54.85]],false,false);
+      boxes('P11:throne-frame'+x,'oak',[[x-.58,x+.58,.15,.28,53.8,55],[x-.58,x-.44,.28,2.22,54.83,55],[x+.44,x+.58,.28,2.22,54.83,55],[x-.44,x+.44,.65,2.08,54.88,54.98],[x-.58,x+.58,.65,.78,53.8,55],[x-.58,x-.44,.78,1.03,54,54.9],[x+.44,x+.58,.78,1.03,54,54.9]],true,false);
+      single('P11:throne-cushion'+x,'velvet',[x-.43,x+.43,.78,.9,53.86,54.82],false,false);
+      single('P11:throne-upholstery'+x,'velvet',[x-.36,x+.36,1.05,1.95,54.84,54.88],false,false);
+      for(const dx of [-.51,.51])lathe('P11:throne-finial'+x+dx,'gold',x+dx,54.9,[[.07,2.22],[.11,2.29],[.07,2.39],[0,2.45]],false,false);
+    }
+  }
   palaceFacade(parts);
+  if(includeFurniture)palaceRoomProps(parts);
   return {lamps};
 }

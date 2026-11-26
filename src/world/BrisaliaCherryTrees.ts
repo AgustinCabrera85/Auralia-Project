@@ -1,4 +1,4 @@
-import {palaceWorld, PALACE_SCALE} from './palace/PalaceSite';
+import {palaceWorld, palaceTreeGroundOffset} from './palace/PalaceSite';
 import {ASSET_CATALOG} from './assetCatalog';
 import {BRISALIA_SCALE,brisaliaPlatformWeight,brisaliaRoadEdge,inBrisaliaFootprint} from './brisaliaLayout';
 import {getWorldDocument,type PlacedAsset} from './editor/WorldEditState';
@@ -52,9 +52,9 @@ export function brisaliaCherryTrees(world:ActiveWorldGeography,exclusions:readon
 export function installBrisaliaCherryTrees(world:ActiveWorldGeography,exclusions:readonly VegetationExclusion[]):number{
   const doc=getWorldDocument(),existing=doc.assets.filter(p=>!p.id.startsWith(BRISALIA_CHERRY_PREFIX));
   const trees=brisaliaCherryTrees(world,exclusions,existing);
-  for(const [i,[x,z]] of [[0,29],[-22,-15],[22,-15],[-43,15],[43,15],[-43,42],[43,42],[-25,70],[25,70]].entries()){
-    const assetId=BRISALIA_CHERRIES[i%3];trees.push({id:`${BRISALIA_CHERRY_PREFIX}palace:${i}`,assetId,...palaceWorld(x,z),scale:i===0?.85:1,yaw:i*1.7,
-      yOffset:z<0?0:.6*PALACE_SCALE,collisionRadius:ASSET_CATALOG[assetId].collisionRadius});
+  for(const [i,[x,z]] of [[0,29],[-24,-11],[24,-11],[-43,15],[43,15],[-43,42],[43,42],[-25,70],[25,70]].entries()){
+    const assetId=BRISALIA_CHERRIES[i%3];trees.push({id:`${BRISALIA_CHERRY_PREFIX}palace:${i}`,assetId,...palaceWorld(x,z),scale:i===0?1.4:i<=2?1.5:1.2,yaw:i*1.7,
+      yOffset:palaceTreeGroundOffset(x,z),collisionRadius:ASSET_CATALOG[assetId].collisionRadius});
   }
   doc.assets=[...existing,...trees];return trees.length;
 }

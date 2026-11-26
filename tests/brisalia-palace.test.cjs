@@ -5,16 +5,60 @@ const {palaceFurnishing}=require('../.test-build/world/palace/PalaceFurnishing.j
 const {roofGeometry,slabBoxes,unionBoxes,turnedGeometry,inPoly}=require('../.test-build/world/palace/PalaceGeometry.js');
 const {palaceWorld,palaceLocal,palaceSiteHeight,PALACE_SCALE}=require('../.test-build/world/palace/PalaceSite.js');
 const {expandGeometry,expandX,expandZ}=require('../.test-build/world/palace/PalaceExpansion.js');
-const {PALACE_OPENINGS,PALACE_COLUMNS}=require('../.test-build/world/palace/PalaceLayout.js');
+const {PALACE_OPENINGS,PALACE_COLUMNS,PALACE_FURNITURE}=require('../.test-build/world/palace/PalaceLayout.js');
 const {palaceSurfaceMaps}=require('../.test-build/world/palace/PalaceSurfaceMaps.js');
 const {stairRailPath}=require('../.test-build/world/palace/PalaceStairRails.js');
+const {palacePlant}=require('../.test-build/world/palace/PalacePlanting.js');
 const {COURTYARD_EAVE:eave}=require('../.test-build/world/palace/PalaceRoof.js');
+const {towerRoofHole}=require('../.test-build/world/palace/PalaceTowerLayout.js');
+const {palaceTreeGroundOffset}=require('../.test-build/world/palace/PalaceSite.js');
+const {palaceFountainGeometry,palaceOverflowPoint,palaceOverflowGeometry,palaceReservoirGeometry,PALACE_FOUNTAIN}=require('../.test-build/world/palace/PalaceFountainGeometry.js');
+const fountain=palaceFountainGeometry(),fountainPoints=fountain.flatMap(p=>p.data.positions);
+assert.ok(Math.abs(Math.max(...fountainPoints.filter((_,i)=>i%3===1))-PALACE_FOUNTAIN.height)<1e-6,'Canary fountain height differs from the plan');
+assert.ok(Math.abs(Math.max(...fountainPoints.filter((_,i)=>i%3===0))*2-PALACE_FOUNTAIN.diameter)<1e-6,'Round basin does not fit the authored footprint');
+for(const part of fountain){assert.ok(part.data.positions.every(Number.isFinite)&&part.data.normals.every(Number.isFinite),'Invalid sculpted fountain geometry');assert.ok(part.data.indices.every(n=>n>=0&&n<part.data.positions.length/3));}
+for(const upper of [false,true])for(let side=0;side<32;side++){
+ const a=side*Math.PI/16,start=palaceOverflowPoint(0,a,upper),end=palaceOverflowPoint(1,a,upper);
+ assert.ok(Math.abs(Math.hypot(start[0],start[2])-(upper?PALACE_FOUNTAIN.upperLip:PALACE_FOUNTAIN.lowerLip))<1e-7,'Water starts detached from cup lip');
+ assert.ok(Math.abs(end[1]-(upper?PALACE_FOUNTAIN.lowerY:PALACE_FOUNTAIN.waterY))<1e-7,'Overflow does not meet the receiving water surface');
+ let previous=start;for(let i=1;i<=100;i++){
+  const point=palaceOverflowPoint(i/100,a,upper),radius=Math.hypot(point[0],point[2]);
+  assert.ok(point[1]<=previous[1]&&radius>=Math.hypot(previous[0],previous[2])-1e-7,'Overflow rises or flows into its cup');
+  if(point[1]<(upper?1.92:1.44))assert.ok(radius>(upper?.6:1.14),'Overflow penetrates the stone lip');previous=point;
+ }
+}
+for(const upper of [false,true]){
+ const sheet=palaceOverflowGeometry(upper);
+ assert.ok(sheet.positions.every(Number.isFinite)&&sheet.normals.every(Number.isFinite));
+ for(let i=0;i<sheet.positions.length;i+=3)assert.ok(Math.abs(Math.hypot(...sheet.normals.slice(i,i+3))-1)<1e-6,'Invalid overflow normal');
+ for(let i=0;i<sheet.indices.length;i+=3){
+  const ids=sheet.indices.slice(i,i+3),[a,b,c]=ids.map(n=>sheet.positions.slice(n*3,n*3+3)),u=b.map((v,k)=>v-a[k]),v=c.map((v,k)=>v-a[k]);
+  const cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  assert.ok(cross.reduce((sum,n,k)=>sum+n*sheet.normals[ids[0]*3+k],0)<0,'Water faces render in the wrong transparency order');
+ }
+ for(let j=0;j<=24;j++)for(let axis=0;axis<3;axis++)assert.ok(Math.abs(sheet.positions[(j*129)*3+axis]-sheet.positions[(j*129+128)*3+axis])<1e-6,'Open seam in overflow curtain');
+}
+const reservoirs=palaceReservoirGeometry();
+for(const upper of [false,true]){
+ const source=palaceOverflowPoint(0,0,upper);
+ assert.ok(reservoirs.positions.some((x,i)=>i%3===0&&Math.abs(x-source[0])<1e-7&&reservoirs.positions[i+1]===source[1]),'Reservoir does not join the overflow');
+}
+const fountainStone=fountain[0].data;
+for(let i=0;i<fountainStone.indices.length;i+=3){
+ const [a,b,c]=fountainStone.indices.slice(i,i+3).map(n=>fountainStone.uvs.slice(n*2,n*2+2));
+ assert.ok(Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))>1e-10,'Collapsed fountain UV triangle produces unstable normal/parallax shading');
+}
 function projectedArea(g){let sum=0;for(let i=0;i<g.indices.length;i+=3){const [a,b,c]=g.indices.slice(i,i+3).map(n=>g.positions.slice(n*3,n*3+3));sum+=Math.abs((b[0]-a[0])*(c[2]-a[2])-(c[0]-a[0])*(b[2]-a[2]))/2;}return sum;}
 for(const roof of p.roofs){const [x0,x1,z0,z1]=roof.bounds_xz,expected=(x1-x0)*(z1-z0)-roof.cutouts_xz.reduce((s,r)=>s+(r[1]-r[0])*(r[3]-r[2]),0),g=roofGeometry(roof);assert.ok(Math.abs(projectedArea(g)-expected)<1e-5,roof.id+': roof has holes or double faces');}
 for(const s of p.slabs){const boxes=slabBoxes(s.outer,s.holes,s.bottom_y,s.top_y);assert.ok(!boxes.some(b=>b[0]<0&&b[1]>0&&b[4]<29&&b[5]>29),'Courtyard filled');}
 // Two overlapping slabs union to a 3x1 top, instead of four square metres.
 const union=unionBoxes([[0,2,0,1,0,1],[1,3,0,1,0,1]]);assert.ok(Math.abs(projectedArea(union)-6)<1e-7);
 const model=buildPalaceModel();palaceFurnishing(model.parts,model.doors);
+// The long library shelf sits against the north wall. Its books must face the
+// room, not disappear behind the cabinet's closed back.
+const shelfBooks=model.parts.filter(q=>q.id.startsWith('P06-F1:book'));
+assert.ok(shelfBooks.length>0);
+for(const book of shelfBooks)assert.ok(Math.min(...book.data.positions.filter((_,i)=>i%3===2))>14.85,'Library books face into the wall');
 // Architectural lining must not pop with a jump or wrap the exterior in oak.
 const lining=model.parts.find(p=>p.id==='PA:skirting');assert.equal(lining.detail,false);
 for(let i=0;i<lining.data.positions.length;i+=3){const [x,,z]=lining.data.positions.slice(i,i+3);assert.ok(x>=-35.8-1e-6&&x<=35.8+1e-6&&z>=.2-1e-6&&z<=55.8+1e-6,'Interior oak protrudes through the exterior wall');}
@@ -28,11 +72,24 @@ for(const stair of p.stairs){
 }
 const galleryBeam=model.parts.find(p=>p.id==='gallery-beams').data;
 for(let i=0;i<galleryBeam.positions.length;i+=3)assert.ok(Math.abs(galleryBeam.positions[i+1]-4.8)>1e-6,'Oak beam shares the paving plane');
-const roof=expandGeometry(model.parts.find(p=>p.id==='roof-shell').data),roofArea=(expandX(36.8)-expandX(-36.8))*(expandZ(56.8)-expandZ(-.8))-(expandX(eave.right)-expandX(eave.left))*(expandZ(eave.back)-expandZ(eave.front));
-assert.ok(Math.abs(projectedArea(roof)-roofArea)<1e-4,'Roof has holes or stacked surfaces: '+projectedArea(roof)+' / '+roofArea);
+const roof=expandGeometry(model.parts.find(p=>p.id==='roof-shell').data),roofArea=(expandX(36.8)-expandX(-36.8))*(expandZ(56.8)-expandZ(-.8))+(expandX(28)-expandX(-28))*2.8-(expandX(eave.right)-expandX(eave.left))*(expandZ(eave.back)-expandZ(eave.front));
+const terrace=model.parts.find(p=>p.id==='tower-roof-stone').data;
+const stairOpenings=[-32,32].reduce((s,x)=>{const h=towerRoofHole(x);return s+(h[1][0]-h[0][0])*(h[2][1]-h[0][1]);},0);
+assert.ok(Math.abs(projectedArea(roof)+projectedArea(terrace)+stairOpenings-roofArea)<1e-4,'Roof has unintended holes or stacked surfaces');
 assert.equal(expandX(16)-expandX(-16),40);assert.equal(expandZ(40)-expandZ(18),32);
 assert.equal(expandX(20)-expandX(-20),48);assert.equal(expandZ(56)-expandZ(44),16);
-assert.equal(model.doors.length,73);assert.equal(model.anchors.length,33);
+assert.equal(model.doors.length,68);assert.equal(model.anchors.length,33);
+for(const o of Object.values(PALACE_OPENINGS).flat())for(const c of p.chimneys){
+ const [a,b,d,e]=c.shaft_bounds_xz,[x,,z]=o.center_xyz;
+ if(o.span_axis==='Z'&&x>=a-.21&&x<=b+.21)assert.ok(z+o.width/2+.18<d||z-o.width/2-.18>e,o.id+': opening intersects '+c.id);
+}
+for(const x of [-43,43])for(const z of [15,42])assert.equal(palaceTreeGroundOffset(x,z),-.04,'Side lawn trees received raised garden offset');
+assert.ok(Math.abs(palaceTreeGroundOffset(0,29)-(.52*PALACE_SCALE-.04))<1e-8);
+assert.ok(Math.abs(palaceTreeGroundOffset(25,70)-(.6*PALACE_SCALE-.04))<1e-8);
+for(const o of PALACE_OPENINGS.PB.filter(o=>['PB-D002','PB-D003'].includes(o.id))){
+ assert.ok(o.center_xyz[2]-o.width/2-.18>9.9+1.08*1.12+.15,'Tower blocks lateral door jamb');
+ assert.ok(o.center_xyz[2]+o.width/2+.18<13.88,'Lateral door casing crosses interior corner');
+}
 for(const upper of PALACE_OPENINGS.PA.filter(o=>o.kind==='window'&&o.center_xyz[2]===0))assert.ok(PALACE_OPENINGS.PB.some(o=>o.kind==='window'&&o.center_xyz[0]===upper.center_xyz[0]&&o.center_xyz[2]===0),'Unaligned '+upper.id);
 for(const o of [...PALACE_OPENINGS.PB,...PALACE_OPENINGS.PA].filter(o=>o.kind==='door'))for(const c of PALACE_COLUMNS){
   const axis=o.span_axis==='X'?0:1,at=o.center_xyz[axis===0?0:2],cross=o.center_xyz[axis===0?2:0];
@@ -49,7 +106,7 @@ for(const [axis,box] of [[0,[-20,20,4.2,4.5,27.8,28.2]],[1,[-.2,.2,0,4.5,27.8,28
   assert.ok(Math.abs(g.uvs[n*2+1]-g.positions[n*3+axis]/2)<1e-6,'Cross-grain on timber axis '+axis);
  }
 }
-for(const kind of ['oak','limestone','cutstone','whiteMarble','stucco','terracotta','cloth','marble']){
+for(const kind of ['oak','floorboards','limestone','cutstone','whiteMarble','stucco','terracotta','cloth','marble']){
  const maps=palaceSurfaceMaps(kind,128);assert.ok(maps.height.every(v=>Number.isFinite(v)&&v>=0&&v<=1));
  for(let i=0;i<maps.normalHeight.length;i+=4){const n=maps.normalHeight.slice(i,i+3).map(v=>v);assert.ok(Math.abs(Math.hypot(...Array.from(n,v=>v/127.5-1))-1)<.015,'Invalid tangent normal '+kind);}
 }
@@ -59,7 +116,7 @@ const balconySlab=model.parts.find(p=>p.id==='portico-balcony-slab');assert.ok(b
 assert.ok(Math.min(...balconySlab.data.positions.filter((_,i)=>i%3===2))<=-1.1,'Balcony floor does not reach its front guardrail');
 // The soffit is a complete downward-facing roof, not just double-sided tiles.
 const shell=model.parts.find(p=>p.id==='roof-shell').data,soffit=model.parts.find(p=>p.id==='roof-soffit').data;
-assert.ok(Math.abs(projectedArea(shell)-projectedArea(soffit))<1e-5,'Roof underside has a sight hole');
+assert.ok(Math.abs(projectedArea(shell)+projectedArea(terrace)-projectedArea(soffit))<1e-5,'Roof underside has a sight hole');
 assert.ok(soffit.normals.filter((_,i)=>i%3===1).every(y=>y<0),'Soffit faces away from the viewer below');
 assert.ok(model.parts.find(p=>p.id==='roof-fascia').data.indices.length>0,'Roof has open paper-thin eaves');
 // A column is an assembly with one axis. The piecewise building enlargement
@@ -104,10 +161,22 @@ for(const [axis,edge,ceiling] of [[0,eave.left,-16],[0,eave.right,16],[2,eave.fr
  }
  assert.ok(ys.length&&Math.abs(Math.min(...ys)-8.9)<1e-6&&Math.abs(Math.max(...ys)-9.2)<1e-6,'Incomplete courtyard fascia');
 }
-const gable=model.parts.find(p=>p.id==='pavilion-gables').data,r=p.roofs[0],mid=(r.bounds_xz[0]+r.bounds_xz[1])/2;
-for(let i=0;i<gable.positions.length;i+=3){
- const [x,y]=gable.positions.slice(i,i+2),roofY=r.ridge_y-Math.abs(x-mid)*(r.ridge_y-r.eave_y)/(mid-r.bounds_xz[0]);
- assert.ok(y<=roofY-.18+1e-6,'Plaster gable intersects timber verge');
+// The central pavilion is hipped; only the four glazed dormers have gables.
+assert.ok(model.parts.some(p=>p.id==='reference:central-lantern-light'));
+assert.ok(model.parts.some(p=>p.material==='floorOak'));
+assert.ok(!model.parts.some(p=>p.material==='floorTile'));
+assert.ok(model.parts.some(p=>p.id==='S03-C:frame'));
+assert.ok(!model.parts.some(p=>/^(S02|S07|BS02|BS07)-/.test(p.id)),'Furniture occupies the tower stair core');
+// Furnishings translate with their room without stretching their individual
+// footprints. This also catches a sideways cabinet or rotated sanitary fitting.
+for(const f of PALACE_FURNITURE.filter(f=>!f.id.startsWith('P05-C'))){
+ const [a,b,c,d]=f.bounds,cx=(a+b)/2,cz=(c+d)/2,ox=expandX(cx)-cx,oz=expandZ(cz)-cz;
+ const parts=model.parts.filter(q=>q.id.startsWith(f.id+':'));
+ assert.ok(parts.length,f.id+': furniture is missing');
+ for(const part of parts)for(let i=0;i<part.data.positions.length;i+=3){
+  const x=part.data.positions[i],z=part.data.positions[i+2];
+  assert.ok(x>=a+ox-1e-6&&x<=b+ox+1e-6&&z>=c+oz-1e-6&&z<=d+oz+1e-6,f.id+': geometry leaves its furniture footprint ('+part.id+')');
+ }
 }
 // Backface culling must expose the top to the sky and the underside below.
 for(const g of [shell,soffit,fascia])for(let i=0;i<g.indices.length;i+=3){
@@ -150,9 +219,53 @@ for(const stair of p.stairs){
  const g=model.parts.find(p=>p.id===stair.id+':visible-treads1').data,flight=stair.collision_ramps[1];
  for(let i=0;i<g.positions.length;i+=3)if(g.normals[i+1]<-.5){
   const rampY=flight.start_xyz[1]+(g.positions[i]-flight.start_xyz[0])*(flight.end_xyz[1]-flight.start_xyz[1])/(flight.end_xyz[0]-flight.start_xyz[0]);
-  assert.ok(Math.abs(rampY-g.positions[i+1]-.3)<1e-6,'Stair flight has a hanging solid block instead of an inclined slab');
+  assert.ok(Math.abs(rampY-g.positions[i+1]-.6)<1e-6,'Stair flight has an inconsistent masonry underside');
  }
 }
+// Medieval fixtures, load paths and tall-hall volume must survive expansion.
+assert.ok(!model.parts.some(q=>/:tank|:shower|:screen|:porcelain|:partitions/.test(q.id)),'Modern sanitary fixture returned');
+assert.equal(model.parts.filter(q=>q.id.endsWith(':staved-tub')).length,7);
+assert.equal(model.anchors.find(q=>q.id==='P05').name,'Guardarropa de la corte');
+assert.ok(model.parts.some(q=>q.id==='castle:merlons32'));
+const highCeiling=model.parts.find(q=>q.id==='great-hall:ceiling').data;
+assert.ok(Math.max(...highCeiling.positions.filter((_,i)=>i%3===1))-4.8>7,'Great hall lost its tall vaulted volume');
+assert.ok(new Set(highCeiling.normals.filter((_,i)=>i%3===0).map(x=>x.toFixed(3))).size>20,'Great hall reverted to a flat box ceiling');
+const ceiling=model.parts.find(q=>q.id==='upper-ceiling').data;
+for(let i=0;i<ceiling.indices.length;i+=3){const ids=ceiling.indices.slice(i,i+3),x=ids.reduce((s,n)=>s+ceiling.positions[n*3],0)/3,z=ids.reduce((s,n)=>s+ceiling.positions[n*3+2],0)/3;assert.ok(!(x>-9.87&&x<9.87&&z>4.13&&z<13.87),'Old ceiling closes the great hall');}
+for(const arch of model.parts.filter(q=>q.id.startsWith('courtyard-arch'))){
+ assert.equal(arch.expanded,true);
+ const ps=arch.data.positions,axis=Math.max(...ps.filter((_,i)=>i%3===0))-Math.min(...ps.filter((_,i)=>i%3===0))>1?0:2,cross=axis===0?2:0;
+ const a=Math.min(...ps.filter((_,i)=>i%3===axis)),b=Math.max(...ps.filter((_,i)=>i%3===axis)),c=(Math.min(...ps.filter((_,i)=>i%3===cross))+Math.max(...ps.filter((_,i)=>i%3===cross)))/2;
+ for(const end of [a,b])assert.ok(PALACE_COLUMNS.some(q=>{const xy=[expandX(q.center_xz[0]),expandZ(q.center_xz[1])],i=axis===0?0:1;return Math.abs(xy[1-i]-c)<1e-6&&Math.abs(Math.abs(xy[i]-end)-.285)<1e-5;}),'Arch is detached from an impost');
+ assert.ok(Math.abs(Math.max(...ps.filter((_,i)=>i%3===1))-4.105)<1e-6,'Spandrel no longer reaches the gallery beam');
+}
+for(const part of model.parts.filter(q=>q.id.startsWith('front-step')&&!q.id.endsWith(':collision'))){assert.equal(part.solid,false,'Worn arrises must not block stair traversal');assert.ok(model.parts.some(q=>q.id===part.id+':collision'&&q.solid));}
+assert.ok(model.parts.filter(q=>q.plant).length>30,'Existing vegetation assets are no longer reused');
+// Flower materials used to expand around different bounding-box centres.
+// Exercise courtyard scale changes and both sides of its piecewise boundaries.
+const insideSolid=(g,p)=>{
+ const ray=[.371,.593,.713],hits=[],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0);
+ for(let i=0;i<g.indices.length;i+=3){
+  const [a,b,c]=g.indices.slice(i,i+3).map(n=>g.positions.slice(n*3,n*3+3)),e=b.map((v,k)=>v-a[k]),f=c.map((v,k)=>v-a[k]),h=cross(ray,f),det=dot(e,h);
+  if(Math.abs(det)<1e-10)continue;const s=p.map((v,k)=>v-a[k]),u=dot(s,h)/det,q=cross(s,e),v=dot(ray,q)/det,t=dot(f,q)/det;
+  if(u>=0&&v>=0&&u+v<=1&&t>1e-7&&!hits.some(n=>Math.abs(n-t)<1e-6))hits.push(t);
+ }return hits.length%2===1;
+};
+for(const [x,z,radius] of [[13.9,20.5,.65],[-15.9,39.95,.65],[16.05,44.05,.3]]){
+ const parts=[];palacePlant(parts,'flower-regression',x,0,z,radius,.65,3);
+ const expanded=parts.filter(p=>!p.plant).map(p=>({...p,data:expandGeometry(p.data,p.rigid)}));
+ for(const p of parts.filter(p=>!p.plant)){
+  const transformed=expanded.find(q=>q.id===p.id).data;
+  for(let i=0;i<p.data.positions.length;i++)assert.ok(Math.abs(transformed.positions[i]-p.data.positions[i]-(i%3===0?expandX(x)-x:i%3===2?expandZ(z)-z:0))<1e-7,'Flower components do not share one planting origin');
+  assert.ok(transformed.normals.every(Number.isFinite),'Curved flower has invalid normals');
+ }
+ const support=expanded.find(p=>p.id.endsWith(':stems')).data,disk=expanded.find(p=>p.material==='pollen').data;
+ for(const p of expanded.filter(p=>p.material.startsWith('flower')))for(let start=0;start<p.data.positions.length;start+=72){
+  const vertices=Array.from({length:24},(_,i)=>p.data.positions.slice(start+i*3,start+i*3+3));
+  assert.ok(vertices.some(v=>insideSolid(support,v)||insideSolid(disk,v)),'A petal floats outside its receptacle after expansion');
+ }
+}
+for(const name of ['flagstone','masonry','earth','clay']){const map=palaceSurfaceMaps(name,128);assert.ok(map.height.every(Number.isFinite));assert.ok(Math.max(...map.height)-Math.min(...map.height)>.02,'Flat relief '+name);}
 for(const part of model.parts){const g=part.data;assert.ok(g.positions.every(Number.isFinite)&&g.uvs.every(Number.isFinite)&&g.normals.every(Number.isFinite),part.id+': invalid geometry/UV');assert.ok(g.indices.length%3===0);}
 const point=palaceWorld(0,-16),local=palaceLocal(point.x,point.z);assert.ok(Math.abs(local.z+16)<1e-8);
 assert.ok(palaceSiteHeight(point.x,point.z,40,50)<50-.7*PALACE_SCALE,'Soil intersects plaza');
